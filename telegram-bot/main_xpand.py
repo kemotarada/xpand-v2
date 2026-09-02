@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND UNIFIED PRODUCTION RUNTIME V3.0
+# XPAND UNIFIED PRODUCTION RUNTIME V3.1
 #
 # ONE XPAND
 #
@@ -12,18 +12,16 @@
 # - Same primary user: Ihab
 # - Same technical voice identity
 # - Same Palestinian communication style
+# - Professional AI image generation
 #
-# Runtime architecture:
-#
-# main_xpand.py
-#      ↓
-# legacy production main.py engine
-#      ↓
-# Telegram text / voice
-#      ↓
-# shared PostgreSQL
-#      ↑
-# XPAND Call Server
+# Image Studio:
+# - GPT-Image-2
+# - Nano Banana 2
+# - Nano Banana Pro
+# - AUTO smart routing
+# - BEST multi-model mode
+# - Telegram Preview + Original
+# - Text + Voice image requests
 #
 # IMPORTANT:
 # - Legacy KEMO_* environment names remain supported
@@ -37,12 +35,14 @@ import os
 
 import main as core
 
+import xpand_image_telegram as xpand_images
+
 
 # =========================================================
 # VERSION / IDENTITY
 # =========================================================
 
-VERSION = "3.0"
+VERSION = "3.1"
 
 AGENT_NAME = "XPAND"
 
@@ -55,16 +55,6 @@ PRIMARY_USER_NAME = "إيهاب"
 
 # =========================================================
 # UNIFIED VOICE
-#
-# Preferred new variable:
-# XPAND_VOICE_ID
-#
-# Legacy variables remain compatible:
-# KEMO_VOICE
-# KEMO_TTS_VOICE
-#
-# The call server uses the same XPAND_VOICE_ID fallback
-# chain, so both channels can use one technical voice.
 # =========================================================
 
 XPAND_VOICE_ID = (
@@ -87,11 +77,6 @@ XPAND_VOICE_ID = (
 )
 
 
-#
-# main.py references KEMO_VOICE globally during TTS.
-# Override its runtime value without changing the proven
-# underlying Telegram engine.
-#
 core.KEMO_VOICE = (
     XPAND_VOICE_ID
 )
@@ -99,16 +84,10 @@ core.KEMO_VOICE = (
 
 # =========================================================
 # MASTER PROMPT VERSION
-#
-# main.py stores master_system_prompt in PostgreSQL.
-# A new version forces the exact prompt below to replace
-# the previous prompt in kemo_config.
-#
-# The call server reads this SAME database prompt.
 # =========================================================
 
 core.MASTER_PROMPT_VERSION = (
-    "2026-09-02-xpand-unified-ai-agent-v3"
+    "2026-09-02-xpand-unified-ai-agent-v3.1"
 )
 
 
@@ -410,7 +389,40 @@ send_chat_message(
 - failed
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-11. قواعد حاسمة
+11. توليد الصور الاحترافية
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+لدى XPAND محرك صور احترافي متعدد الموديلات.
+
+إذا طلب إيهاب إنشاء صورة أو تصميم أو بوستر أو إعلان أو Visual:
+
+- اعتبر الطلب طلب تنفيذ حقيقي لتوليد صورة.
+- لا تكتفِ بوصف كيف يمكن إنشاء الصورة.
+- استخدم محرك الصور الفعلي إذا كان متاحًا.
+- افهم الوصف الطبيعي بالعربية أو الإنجليزية.
+- حافظ على هدف إيهاب الأساسي ولا تغيّر فكرته.
+- حسّن التوجيه الفني داخليًا للحصول على نتيجة احترافية.
+- اختر الموديل الأنسب للمهمة تلقائيًا.
+- إذا طلب إيهاب موديلًا محددًا، احترم اختياره.
+- إذا طلب أعلى جودة أو BEST، استخدم الوضع الاحترافي المناسب.
+- إذا طلب 4K، استخدم موديل يدعم مخرجات عالية الدقة حسب إمكانيات النظام.
+- أرسل معاينة مناسبة للمحادثة.
+- أرسل النسخة الأصلية كملف عندما تكون متاحة.
+- لا تقل إن الصورة تم إنشاؤها إلا بعد نجاح التوليد فعليًا.
+- لا تقل إن الصورة أُرسلت إلا بعد نجاح الإرسال إلى Telegram.
+- احفظ بيانات الصورة والموديل والطلب للمتابعة لاحقًا.
+- تعامل مع طلبات الصور من النص والفويس بنفس الطريقة.
+
+الموديلات الأساسية في XPAND Image Studio:
+
+- GPT-Image-2
+- Nano Banana 2
+- Nano Banana Pro
+
+اختيار الموديل يتم حسب نوع المهمة والجودة المطلوبة.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. قواعد حاسمة
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 - إيهاب هو نفس المستخدم في جميع القنوات.
@@ -423,14 +435,13 @@ send_chat_message(
 - لا تجعل إيهاب يعيد شرح ما قاله في قناة أخرى.
 - حافظ على سياق المشروع والقرارات والمهام عبر الزمن.
 - إذا تعارضت رسالة حديثة مع معلومة قديمة، اعتمد الأحدث وحدّث الذاكرة.
-- إذا كان الطلب واضحًا، نفّذه مباشرة.""".strip()
+- إذا كان الطلب واضحًا، نفّذه مباشرة.
+- إذا طلب إيهاب إنشاء صورة، نفّذ التوليد الفعلي بدل الاكتفاء باقتراح Prompt.
+""".strip()
 
 
 # =========================================================
 # TELEGRAM OPERATIONAL RULES
-#
-# Personality/identity come from MASTER_SYSTEM_PROMPT.
-# These rules only describe the active Telegram runtime.
 # =========================================================
 
 core.TELEGRAM_RUNTIME_RULES = r"""
@@ -457,6 +468,11 @@ XPAND TELEGRAM RUNTIME CONTEXT
 
 إذا كان الرد Voice:
 استخدم نفس هوية XPAND وطريقة الكلام الفلسطينية.
+
+إذا طلب إيهاب إنشاء صورة:
+دع XPAND Image Studio ينفذ التوليد الفعلي.
+
+لا تعطِ Prompt فقط إذا كان المطلوب هو إنشاء الصورة.
 
 لا تدّعِ تنفيذ أداة لم تنفذ فعلياً.
 
@@ -490,11 +506,6 @@ except Exception:
 
 # =========================================================
 # FAMILY RELATION PATCH
-#
-# main.py contains legacy predicates such as:
-# "اسم والد كريم"
-#
-# Replace only the static relation metadata.
 # =========================================================
 
 try:
@@ -545,12 +556,6 @@ except Exception as error:
 
 # =========================================================
 # CANONICAL FACT SAFETY PATCH
-#
-# The legacy deterministic family parser passes
-# subject="كريم".
-#
-# Keep the parser itself intact and normalize only the
-# legacy subject/predicate before database persistence.
 # =========================================================
 
 ORIGINAL_UPSERT_CANONICAL_FACT = (
@@ -964,6 +969,21 @@ def xpand_ensure_core_lessons(
             "لا تؤكد إرسال أو تنفيذ شيء "
             "قبل نجاح الأداة فعلياً."
         ),
+
+        (
+            "إذا طلب إيهاب إنشاء صورة، "
+            "استخدم XPAND Image Studio للتوليد الفعلي."
+        ),
+
+        (
+            "طلبات الصور من النص والفويس "
+            "يجب أن تستخدم نفس محرك الصور."
+        ),
+
+        (
+            "لا تقل إن الصورة تم إنشاؤها "
+            "إلا إذا نجح التوليد فعلياً."
+        ),
     ]
 
 
@@ -982,12 +1002,6 @@ core.ensure_core_lessons = (
 
 # =========================================================
 # MEMORY CONTEXT LABELS
-#
-# Do NOT blindly replace every occurrence of "كريم"
-# because Ihab may legitimately talk about a person named
-# Karim in future conversations.
-#
-# Replace only structural labels created by old main.py.
 # =========================================================
 
 ORIGINAL_BUILD_MEMORY_CONTEXT = (
@@ -1067,9 +1081,6 @@ except Exception:
 
 # =========================================================
 # CHAT INSTRUCTIONS
-#
-# The exact shared MASTER_SYSTEM_PROMPT stays first.
-# Runtime context is added after it.
 # =========================================================
 
 def xpand_build_chat_instructions(
@@ -1157,11 +1168,6 @@ core.build_chat_instructions = (
 
 # =========================================================
 # UNIFIED TTS PROMPT
-#
-# Telegram voice uses this.
-#
-# The technical voice is XPAND_VOICE_ID.
-# The call server is configured to use the same ID.
 # =========================================================
 
 def xpand_build_tts_prompt(
@@ -1236,6 +1242,7 @@ def xpand_handle_command(
                 "💬 النص والفويس والمكالمة = محادثة واحدة\n"
                 "🎙️ نفس هوية الصوت\n"
                 "🧠 ذاكرة موحدة\n"
+                "🎨 إنشاء صور احترافية\n"
                 "🔎 بحث عند الحاجة\n"
                 "⏰ تذكيرات\n"
                 "📞 مكالمة مباشرة"
@@ -1259,6 +1266,34 @@ core.handle_command = (
 
 
 # =========================================================
+# XPAND IMAGE STUDIO INSTALL
+#
+# IMPORTANT:
+#
+# Install AFTER:
+# - XPAND handle_command patch
+# - XPAND ask/chat identity patches
+#
+# Image Studio then wraps:
+#
+# core.handle_command
+# core.ask_kemo
+#
+# Text image request:
+# handle_command -> Image Studio
+#
+# Voice image request:
+# transcribe -> ask_kemo -> Image Studio
+# =========================================================
+
+IMAGE_STUDIO_STATUS = (
+    xpand_images.install(
+        core
+    )
+)
+
+
+# =========================================================
 # STARTUP HEADER
 # =========================================================
 
@@ -1271,11 +1306,11 @@ def print_header():
     )
 
     print(
-        " XPAND UNIFIED PRODUCTION RUNTIME V3.0"
+        " XPAND UNIFIED PRODUCTION RUNTIME V3.1"
     )
 
     print(
-        " TEXT + VOICE + LIVE CALL = ONE XPAND"
+        " TEXT + VOICE + LIVE CALL + IMAGE = ONE XPAND"
     )
 
     print(
@@ -1345,6 +1380,42 @@ def print_header():
     )
 
     print(
+        "✅ XPAND Image Studio installed"
+    )
+
+    print(
+        "✅ Text image-generation requests"
+    )
+
+    print(
+        "✅ Voice image-generation requests"
+    )
+
+    print(
+        "✅ GPT-Image-2 routing"
+    )
+
+    print(
+        "✅ Nano Banana 2 routing"
+    )
+
+    print(
+        "✅ Nano Banana Pro routing"
+    )
+
+    print(
+        "✅ BEST multi-model image mode"
+    )
+
+    print(
+        "✅ Telegram image Preview + Original"
+    )
+
+    print(
+        "✅ Image metadata persistence"
+    )
+
+    print(
         "🚫 No Karim primary-user fallback"
     )
 
@@ -1368,13 +1439,13 @@ def main():
     # core.main() will:
     #
     # 1. initialize PostgreSQL
-    # 2. call sync_master_system_prompt()
-    # 3. see the new MASTER_PROMPT_VERSION
-    # 4. persist the exact MASTER_SYSTEM_PROMPT
-    # 5. start the shared memory worker
-    # 6. start Telegram text + voice
+    # 2. sync shared master_system_prompt
+    # 3. start Permanent Memory worker
+    # 4. start Telegram text
+    # 5. start Telegram voice
     #
-    # The call server reads the same DB prompt.
+    # XPAND Image Studio hooks are already installed
+    # before core.main() enters Telegram polling.
     #
 
     core.main()
@@ -1420,5 +1491,5 @@ if __name__ == "__main__":
 
 
 # =========================================================
-# XPAND UNIFIED PRODUCTION RUNTIME V3.0
+# XPAND UNIFIED PRODUCTION RUNTIME V3.1
 # =========================================================
