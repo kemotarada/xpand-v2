@@ -1,13 +1,13 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "agent_id": "xpand",
-  "agent_name": "XPAND Agent",
+  "agent_name": "XPAND",
 
   "capabilities": {
     "general_chat": {
       "enabled": true,
       "status": "verified",
-      "description": "General AI text conversation.",
+      "description": "General intelligent AI conversation for Ihab and XPAND company.",
       "verification": {
         "verified": true,
         "method": "real_telegram_message_test"
@@ -17,7 +17,7 @@
     "voice": {
       "enabled": true,
       "status": "verified",
-      "description": "Receive Telegram voice messages and reply with voice.",
+      "description": "Receive Telegram voice messages, understand the transcribed message, generate a response and reply with voice.",
       "input": {
         "telegram_voice": true,
         "speech_to_text": true
@@ -27,6 +27,8 @@
         "text_to_speech": true
       },
       "reply_mode": "voice_to_voice",
+      "same_identity_as_text": true,
+      "same_personality_as_text": true,
       "verification": {
         "verified": true,
         "method": "real_voice_to_voice_test"
@@ -35,76 +37,103 @@
 
     "web_search": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_verified",
+      "description": "Web search capability. Must not be claimed or used until runtime support is installed and successfully tested."
     },
 
     "company_knowledge": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Dedicated XPAND company knowledge base is not installed yet."
     },
 
     "documents_rag": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Document retrieval and RAG capability is not installed yet."
     },
 
     "crm": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "CRM integration is not installed yet."
     },
 
     "lead_capture": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Lead capture integration is not installed yet."
     },
 
     "appointments": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Appointment management capability is not installed yet."
     },
 
     "calendar": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Calendar integration is not installed yet."
     },
 
     "email": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Email integration is not installed yet."
     },
 
     "image_generation": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Image generation capability is not installed yet."
     },
 
     "live_call": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_verified",
+      "description": "Live call capability must remain disabled in this manifest until the production call runtime is successfully tested."
     },
 
     "human_handoff": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Human handoff capability is not installed yet."
     },
 
     "analytics": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Analytics capability is not installed yet."
     },
 
     "admin_panel": {
       "enabled": false,
-      "status": "not_installed"
+      "status": "not_installed",
+      "description": "Admin panel capability is not installed yet."
     }
+  },
+
+  "behavior": {
+    "company": "XPAND",
+    "primary_user": "إيهاب",
+    "default_language": "ar",
+    "default_dialect": "palestinian_shami",
+    "natural_conversation": true,
+    "concise_by_default": true,
+    "avoid_robotic_language": true
   },
 
   "rules": {
     "never_mark_verified_without_real_test": true,
+    "never_claim_disabled_capability": true,
+    "never_claim_external_action_without_execution": true,
     "never_store_secrets_here": true,
     "capabilities_must_be_agent_scoped": true,
-    "external_actions_require_permission_when_needed": true
+    "external_actions_require_permission_when_needed": true,
+    "memory_must_not_leak_between_users": true,
+    "memory_must_not_leak_between_agents": true
   },
 
-  "notes": "This file is the human-readable capability manifest for XPAND. Runtime capability state is currently also stored in Postgres."
+  "notes": "This is the runtime capability manifest for XPAND, the AI agent of XPAND company. The primary user is Ihab. Only capabilities confirmed by real runtime testing are marked as verified. Runtime capability state may also exist in Postgres. Secrets, API keys, Telegram tokens and database credentials must never be stored in this file."
 }
