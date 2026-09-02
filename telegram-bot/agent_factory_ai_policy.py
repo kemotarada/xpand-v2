@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY - AI POLICY ENFORCEMENT V1.0
+# XPAND AGENT FACTORY - AI POLICY ENFORCEMENT V1.0
 #
 # PURPOSE
 # ---------------------------------------------------------
@@ -1573,7 +1573,7 @@ def main():
     )
 
     print(
-        " KEMO AGENT FACTORY AI POLICY V1.0"
+        " XPAND AGENT FACTORY AI POLICY V1.0"
     )
 
     print(

@@ -1,2 +1,2 @@
 # kemo-agent-projects
-Private workspace for Kemo Agent website projects
+Private workspace for XPAND Agent website projects

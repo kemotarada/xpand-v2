@@ -1,7 +1,7 @@
 # =========================================================
-# KEMO AGENT CAPABILITY ENGINE V1.0
+# XPAND AGENT CAPABILITY ENGINE V1.0
 #
-# Dynamic capabilities for Kemo Agent Factory.
+# Dynamic capabilities for XPAND Agent Factory.
 #
 # Karim:
 # "كيمو ضيف لـ XPAND Agent ميزة الفويس"
@@ -1008,7 +1008,7 @@ def install_voice_for_agent(
                 "kemo.text_to_voice_ogg",
 
             "installedBy":
-                "Kemo Agent Capability Engine",
+                "XPAND Agent Capability Engine",
 
             "engineVersion":
                 VERSION,
@@ -1908,7 +1908,7 @@ def print_header():
         "=============================================="
     )
     print(
-        " KEMO AGENT CAPABILITY ENGINE V1.0"
+        " XPAND AGENT CAPABILITY ENGINE V1.0"
     )
     print(
         " DYNAMIC AGENT FEATURES"
@@ -2012,7 +2012,7 @@ if __name__ == "__main__":
 
         print("")
         print(
-            "👋 Kemo Agent Capability Engine stopped."
+            "👋 XPAND Agent Capability Engine stopped."
         )
 
 

@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY NATURAL COMMANDS V1.1
+# XPAND AGENT FACTORY NATURAL COMMANDS V1.1
 #
 # Understand natural Karim commands such as:
 #
@@ -608,7 +608,7 @@ def print_header():
         "=============================================="
     )
     print(
-        " KEMO AGENT FACTORY COMMANDS V1.1"
+        " XPAND AGENT FACTORY COMMANDS V1.1"
     )
     print(
         " NATURAL LANGUAGE FEATURE CONTROL"

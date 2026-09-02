@@ -1,5 +1,5 @@
 // =========================================================
-// KEMO AGENT LIVE CALL UI V2.5
+// XPAND AGENT LIVE CALL UI V2.5
 //
 // OPENAI REALTIME / WEBRTC
 // GEMINI IAPETUS UNIFIED VOICE
@@ -6085,7 +6085,7 @@ async function initializePage() {
 
 
   console.log(
-    " KEMO AGENT LIVE CALL UI V2.5"
+    " XPAND AGENT LIVE CALL UI V2.5"
   );
 
 
@@ -6198,7 +6198,7 @@ async function initializePage() {
 
 
   console.log(
-    "🔒 No Kemo personal memory"
+    "🔒 No XPAND personal memory"
   );
 }
 

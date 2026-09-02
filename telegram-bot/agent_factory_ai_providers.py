@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY - AI PROVIDER ROUTER V1.0
+# XPAND AGENT FACTORY - AI PROVIDER ROUTER V1.0
 #
 # PURPOSE
 # ---------------------------------------------------------
@@ -2390,7 +2390,7 @@ def main():
     )
 
     print(
-        " KEMO AGENT FACTORY AI PROVIDERS V1.0"
+        " XPAND AGENT FACTORY AI PROVIDERS V1.0"
     )
 
     print(
@@ -2523,7 +2523,7 @@ def main():
     )
 
     print(
-        "🔒 Kemo personal memory: NOT exposed to XPAND"
+        "🔒 XPAND personal memory: NOT exposed to XPAND"
     )
 
     print(

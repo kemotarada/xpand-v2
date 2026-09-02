@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY
+# XPAND AGENT FACTORY
 # OPENAI LIVE CALL PROVISIONER V2.2
 #
 # XPAND LIVE CALL
@@ -3301,7 +3301,7 @@ def main():
         "================================================"
     )
     print(
-        " KEMO AGENT FACTORY OPENAI CALL V2.2"
+        " XPAND AGENT FACTORY OPENAI CALL V2.2"
     )
     print(
         " XPAND REALTIME / WEBRTC PROVISIONER"

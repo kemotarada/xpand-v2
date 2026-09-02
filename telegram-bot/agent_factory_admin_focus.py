@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT ADMIN - FOCUSED RUNTIME V1.1
+# XPAND AGENT ADMIN - FOCUSED RUNTIME V1.1
 #
 # PURPOSE
 # ---------------------------------------------------------

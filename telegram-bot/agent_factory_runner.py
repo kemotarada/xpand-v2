@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY RUNNER V1.0
+# XPAND AGENT FACTORY RUNNER V1.0
 #
 # FIRST REAL AGENT FACTORY
 #
@@ -1699,7 +1699,7 @@ def factory_agents_response(
 
 
     lines = [
-        "🤖 وكلاء Kemo Agent Factory:"
+        "🤖 وكلاء XPAND Agent Factory:"
     ]
 
 
@@ -3290,7 +3290,7 @@ def telegram_request_with_factory(
 
 
 # =========================================================
-# KEMO AGENT FACTORY ROUTER
+# XPAND AGENT FACTORY ROUTER
 # =========================================================
 
 def handle_agent_factory_request(
@@ -3567,7 +3567,7 @@ def print_factory_header():
         "=============================================="
     )
     print(
-        " KEMO AGENT FACTORY V1.0"
+        " XPAND AGENT FACTORY V1.0"
     )
     print(
         " TELEGRAM GENERAL AI AGENT FACTORY"
@@ -3578,7 +3578,7 @@ def print_factory_header():
     print("")
 
     print(
-        "✅ Existing Kemo preserved"
+        "✅ Existing XPAND preserved"
     )
 
     print(
@@ -3698,7 +3698,7 @@ if __name__ == "__main__":
 
         print("")
         print(
-            "👋 Kemo Agent Factory stopped."
+            "👋 XPAND Agent Factory stopped."
         )
 
 

@@ -4,7 +4,7 @@
 # PURPOSE
 # ---------------------------------------------------------
 # Adds a DIRECT database profile-sync command above the
-# existing Kemo Agent Admin stack.
+# existing XPAND Agent Admin stack.
 #
 # This command DOES NOT use:
 # - Gemini

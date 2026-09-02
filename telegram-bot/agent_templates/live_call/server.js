@@ -1,5 +1,5 @@
 // ======================================================
-// KEMO AGENT LIVE CALL TEMPLATE V2.4
+// XPAND AGENT LIVE CALL TEMPLATE V2.4
 //
 // OPENAI REALTIME / WEBRTC
 //
@@ -4584,7 +4584,7 @@ async function start() {
         );
 
         console.log(
-          " KEMO AGENT LIVE CALL TEMPLATE V2.4"
+          " XPAND AGENT LIVE CALL TEMPLATE V2.4"
         );
 
         console.log(
@@ -4736,7 +4736,7 @@ async function start() {
         );
 
         console.log(
-          "🔒 Kemo personal memory: DISABLED"
+          "🔒 XPAND personal memory: DISABLED"
         );
 
         console.log(

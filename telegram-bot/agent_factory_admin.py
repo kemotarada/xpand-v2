@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT ADMIN CORE V1.1
+# XPAND AGENT ADMIN CORE V1.1
 #
 # PERMANENT AGENT MANAGEMENT
 #
@@ -3057,7 +3057,7 @@ def choose_files_for_request(
 
 
     system_instruction = """
-You are Kemo Agent Factory's repository maintenance planner.
+You are XPAND Agent Factory's repository maintenance planner.
 
 Your job is to select the smallest set of EXISTING files
 required to implement the owner's code request.
@@ -3289,7 +3289,7 @@ def generate_code_changes(
 
 
     system_instruction = """
-You are Kemo Agent Factory's senior maintenance engineer.
+You are XPAND Agent Factory's senior maintenance engineer.
 
 Create safe FULL-FILE replacements for the owner's requested
 code change.
@@ -4270,7 +4270,7 @@ def apply_pending_change(
 
 
     commit_message = (
-        "Kemo Agent Admin: "
+        "XPAND Agent Admin: "
         +
         clean_text(
             pending.get(
@@ -4857,7 +4857,7 @@ def ask_kemo_with_agent_admin(
 
         print(
             (
-                "❌ KEMO AGENT ADMIN | "
+                "❌ XPAND AGENT ADMIN | "
                 +
                 clean_text(
                     error,
@@ -5002,7 +5002,7 @@ def print_header(
     )
 
     print(
-        " KEMO AGENT ADMIN CORE V1.1"
+        " XPAND AGENT ADMIN CORE V1.1"
     )
 
     print(
@@ -5263,7 +5263,7 @@ def main():
 
 
     print(
-        "✅ KEMO AGENT ADMIN ONLINE"
+        "✅ XPAND AGENT ADMIN ONLINE"
     )
 
 
@@ -5294,7 +5294,7 @@ if __name__ == "__main__":
         print("")
 
         print(
-            "👋 Kemo Agent Admin stopped."
+            "👋 XPAND Agent Admin stopped."
         )
 
 
@@ -5304,7 +5304,7 @@ if __name__ == "__main__":
 
         print(
             (
-                "❌ Kemo Agent Admin startup failed: "
+                "❌ XPAND Agent Admin startup failed: "
                 +
                 clean_text(
                     error,

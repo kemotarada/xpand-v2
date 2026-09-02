@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT FACTORY - LIVE CALL PROVISIONER V1.0
+# XPAND AGENT FACTORY - LIVE CALL PROVISIONER V1.0
 #
 # Purpose:
 #
@@ -63,7 +63,7 @@ from datetime import datetime, timezone
 
 
 # =========================================================
-# EXISTING KEMO AGENT FACTORY STACK
+# EXISTING XPAND AGENT FACTORY STACK
 # =========================================================
 
 import agent_factory_profiles as profiles
@@ -1917,7 +1917,7 @@ def railway_create_project(
 
                 "description":
                     (
-                        "Kemo Agent Factory isolated project."
+                        "XPAND Agent Factory isolated project."
                     ),
             }
         }
@@ -2822,7 +2822,7 @@ def wait_for_health(
                     raise RuntimeError(
                         (
                             "Health did not confirm "
-                            "Kemo personal memory isolation."
+                            "XPAND personal memory isolation."
                         )
                     )
 
@@ -4613,7 +4613,7 @@ def main():
     )
 
     print(
-        " KEMO AGENT FACTORY CALL PROVISIONER V1.0"
+        " XPAND AGENT FACTORY CALL PROVISIONER V1.0"
     )
 
     print(

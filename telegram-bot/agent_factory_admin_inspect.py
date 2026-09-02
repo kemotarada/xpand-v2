@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO ADMIN REPOSITORY INSPECT V1.0
+# XPAND ADMIN REPOSITORY INSPECT V1.0
 #
 # READ-ONLY GITHUB / REPOSITORY INSPECTION
 #
@@ -1285,7 +1285,7 @@ def gemini_inspect(
 
 
     system_instruction = """
-You are Kemo's READ-ONLY repository inspector.
+You are XPAND's READ-ONLY repository inspector.
 
 Your job is to inspect the supplied GitHub source files and
 answer the owner's diagnostic question.
@@ -1666,7 +1666,7 @@ def openai_inspect(
 
 
     instructions = """
-You are Kemo's READ-ONLY GitHub repository inspector.
+You are XPAND's READ-ONLY GitHub repository inspector.
 
 Inspect the supplied source code and answer the owner's
 diagnostic question.
@@ -2125,7 +2125,7 @@ def install_repository_inspect():
     )
 
     print(
-        " KEMO ADMIN REPOSITORY INSPECT V1.0"
+        " XPAND ADMIN REPOSITORY INSPECT V1.0"
     )
 
     print(
@@ -2249,7 +2249,7 @@ if __name__ == "__main__":
         print("")
 
         print(
-            "👋 Kemo Repository Inspector stopped."
+            "👋 XPAND Repository Inspector stopped."
         )
 
 
@@ -2259,7 +2259,7 @@ if __name__ == "__main__":
 
         print(
             (
-                "❌ Kemo Repository Inspector startup failed | "
+                "❌ XPAND Repository Inspector startup failed | "
                 +
                 clean_text(
                     error,

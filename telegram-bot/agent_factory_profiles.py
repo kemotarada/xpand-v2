@@ -1,5 +1,5 @@
 # =========================================================
-# KEMO AGENT PROFILE ENGINE V1.0
+# XPAND AGENT PROFILE ENGINE V1.0
 #
 # AGENT-SCOPED FILESYSTEM PROFILES
 #
@@ -21,7 +21,7 @@
 #
 # Telegram Child Bot
 #        ↓
-# Kemo Agent Factory
+# XPAND Agent Factory
 #        ↓
 # Profile Engine
 #        ↓
@@ -33,7 +33,7 @@
 #
 #
 # IMPORTANT:
-# - Kemo personal memory stays isolated
+# - XPAND personal memory stays isolated
 # - Agent secrets NEVER come from GitHub profile files
 # - Runtime Telegram tokens remain managed securely
 # - Missing profile falls back safely to old behavior
@@ -976,7 +976,7 @@ Purpose:
 Language mode:
 {ai.get("language_mode", "auto")}
 
-Independent from Kemo personal memory:
+Independent from XPAND personal memory:
 {ai.get("independent_from_kemo_personal_memory", True)}
 
 Memory scope:
@@ -1614,7 +1614,7 @@ def print_header():
     )
 
     print(
-        " KEMO AGENT PROFILE ENGINE V1.0"
+        " XPAND AGENT PROFILE ENGINE V1.0"
     )
 
     print(
@@ -1661,7 +1661,7 @@ def print_header():
     )
 
     print(
-        "✅ Kemo personal memory isolation"
+        "✅ XPAND personal memory isolation"
     )
 
     print(
@@ -1744,7 +1744,7 @@ if __name__ == "__main__":
         print("")
 
         print(
-            "👋 Kemo Agent Profile Engine stopped."
+            "👋 XPAND Agent Profile Engine stopped."
         )
 
 
