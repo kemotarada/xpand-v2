@@ -1,42 +1,28 @@
 // ======================================================
-// KEMO HUMAN CALL SERVER V6.1
+// XPAND UNIFIED CALL SERVER V7.0
 //
-// ONE KEMO
-// WHOLE-PC REALTIME CONTROL
+// ONE XPAND
 //
-// Features:
-// - Same Telegram + Call memory
-// - 15-minute conversation continuity
+// Unified:
+// - Telegram text
+// - Telegram voice
+// - Live call
+// - Shared PostgreSQL memory
+// - Shared conversation history
+// - Shared primary user: Ihab
+// - Shared voice configuration
+//
+// Live-call features:
+// - Real-time call turn persistence
+// - Persistent-memory learning queue
+// - Send messages/links from call to Telegram
 // - Reminders
 // - Web search
-// - Telegram messaging
+// - Desktop control
+// - Chrome direct control
 //
-// Desktop:
-// - Persistent WebSocket transport
-// - Open installed Windows programs
-// - Bring windows to foreground
-// - Read Windows UI via UI Automation
-// - Click / invoke / type / select Windows controls
-//
-// Browser:
-// - Chrome CDP direct control
-// - DOM read
-// - DOM click
-// - Search
-// - Type
-// - Scroll
-// - Video control
-// - Back / forward / reload
-// - Open URL and bring Chrome to foreground
-//
-// Fallback:
-// - Screenshot Vision only when DOM/UIA cannot do it
-//
-// Safety:
-// - No arbitrary shell
-// - No arbitrary remote JavaScript tool
-// - Explicit actions only
-// - Confirmation for sensitive irreversible actions
+// Compatibility:
+// Legacy KEMO_* environment variable names are supported.
 // ======================================================
 
 import express from "express";
@@ -47,6 +33,17 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const { Pool } = pg;
+
+
+// ======================================================
+// IDENTITY
+// ======================================================
+
+const AGENT_NAME = "XPAND";
+const PRIMARY_USER_NAME = "إيهاب";
+const COMPANY_NAME = "XPAND";
+
+const SERVER_VERSION = "7.0-unified-xpand";
 
 
 // ======================================================
@@ -77,17 +74,34 @@ const TAVILY_API_KEY = String(
   process.env.TAVILY_API_KEY || ""
 ).trim();
 
-const KEMO_TIMEZONE = String(
-  process.env.KEMO_TIMEZONE || "Asia/Hebron"
+const XPAND_TIMEZONE = String(
+  process.env.XPAND_TIMEZONE
+  ||
+  process.env.KEMO_TIMEZONE
+  ||
+  "Asia/Hebron"
 ).trim();
 
 const LIVE_MODEL = String(
+  process.env.XPAND_LIVE_MODEL
+  ||
   process.env.KEMO_LIVE_MODEL
   ||
   "gemini-3.1-flash-live-preview"
 ).trim();
 
-const KEMO_VOICE = String(
+//
+// One technical voice identity for all channels.
+//
+// Preferred:
+// XPAND_VOICE_ID
+//
+// Compatibility:
+// KEMO_VOICE / KEMO_LIVE_VOICE
+//
+const XPAND_VOICE_ID = String(
+  process.env.XPAND_VOICE_ID
+  ||
   process.env.KEMO_VOICE
   ||
   process.env.KEMO_LIVE_VOICE
@@ -95,49 +109,52 @@ const KEMO_VOICE = String(
   "Iapetus"
 ).trim();
 
-const KEMO_TOOL_MODEL = String(
+const TOOL_MODEL = String(
+  process.env.XPAND_TOOL_MODEL
+  ||
   process.env.KEMO_TOOL_MODEL
   ||
   "gemini-3.5-flash-lite"
 ).trim();
 
-const KEMO_DESKTOP_URL = String(
-  process.env.KEMO_DESKTOP_URL || ""
+const DESKTOP_URL = String(
+  process.env.XPAND_DESKTOP_URL
+  ||
+  process.env.KEMO_DESKTOP_URL
+  ||
+  ""
 )
   .trim()
   .replace(/\/+$/g, "");
 
-const KEMO_DESKTOP_KEY = String(
-  process.env.KEMO_DESKTOP_KEY || ""
+const DESKTOP_KEY = String(
+  process.env.XPAND_DESKTOP_KEY
+  ||
+  process.env.KEMO_DESKTOP_KEY
+  ||
+  ""
 ).trim();
 
-const KEMO_DESKTOP_DEVICE_ID = String(
-  process.env.KEMO_DESKTOP_DEVICE_ID || "main-pc"
+const DESKTOP_DEVICE_ID = String(
+  process.env.XPAND_DESKTOP_DEVICE_ID
+  ||
+  process.env.KEMO_DESKTOP_DEVICE_ID
+  ||
+  "main-pc"
 ).trim();
 
 const CALL_CONTINUITY_MINUTES = Math.max(
   1,
   Number(
-    process.env.KEMO_CALL_CONTINUITY_MINUTES || 15
+    process.env.XPAND_CALL_CONTINUITY_MINUTES
+    ||
+    process.env.KEMO_CALL_CONTINUITY_MINUTES
+    ||
+    15
   ) || 15
 );
 
-
-// ======================================================
-// SPEED / SAFETY
-// ======================================================
-
 const DESKTOP_SYNC_TIMEOUT_MS = 30000;
-
-const VISUAL_MIN_CONFIDENCE = Math.max(
-  0.65,
-  Math.min(
-    0.99,
-    Number(
-      process.env.KEMO_VISUAL_MIN_CONFIDENCE || 0.84
-    ) || 0.84
-  )
-);
 
 
 // ======================================================
@@ -145,14 +162,10 @@ const VISUAL_MIN_CONFIDENCE = Math.max(
 // ======================================================
 
 const __filename =
-  fileURLToPath(
-    import.meta.url
-  );
+  fileURLToPath(import.meta.url);
 
 const __dirname =
-  path.dirname(
-    __filename
-  );
+  path.dirname(__filename);
 
 const DIST_INDEX =
   path.join(
@@ -168,25 +181,14 @@ const ROOT_INDEX =
   );
 
 const STATIC_DIR =
-  fs.existsSync(
-    DIST_INDEX
-  )
-    ?
-    path.join(
-      __dirname,
-      "dist"
-    )
-    :
-    __dirname;
+  fs.existsSync(DIST_INDEX)
+    ? path.join(__dirname, "dist")
+    : __dirname;
 
 const INDEX_FILE =
-  fs.existsSync(
-    DIST_INDEX
-  )
-    ?
-    DIST_INDEX
-    :
-    ROOT_INDEX;
+  fs.existsSync(DIST_INDEX)
+    ? DIST_INDEX
+    : ROOT_INDEX;
 
 
 // ======================================================
@@ -195,17 +197,10 @@ const INDEX_FILE =
 
 const pool =
   new Pool({
-    connectionString:
-      DATABASE_URL,
-
-    max:
-      6,
-
-    idleTimeoutMillis:
-      30000,
-
-    connectionTimeoutMillis:
-      10000
+    connectionString: DATABASE_URL,
+    max: 8,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000
   });
 
 
@@ -222,10 +217,7 @@ function cleanText(
   )
     .replace(/\u0000/g, "")
     .trim()
-    .slice(
-      0,
-      maxLength
-    );
+    .slice(0, maxLength);
 }
 
 
@@ -239,8 +231,10 @@ function normalizeArabic(
     .replace(/[أإآ]/g, "ا")
     .replace(/ة/g, "ه")
     .replace(/ى/g, "ي")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
     .replace(/[\u064B-\u065F]/g, "")
-    .replace(/[^\p{L}\p{N}_.\s]/gu, " ")
+    .replace(/[^\p{L}\p{N}_.\s:/-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -251,16 +245,12 @@ function containsAny(
   markers
 ) {
   const source =
-    normalizeArabic(
-      text
-    );
+    normalizeArabic(text);
 
   return markers.some(
     marker =>
       source.includes(
-        normalizeArabic(
-          marker
-        )
+        normalizeArabic(marker)
       )
   );
 }
@@ -273,11 +263,20 @@ function clamp(
 ) {
   return Math.max(
     min,
-    Math.min(
-      max,
-      value
-    )
+    Math.min(max, value)
   );
+}
+
+
+function sha256(
+  value
+) {
+  return crypto
+    .createHash("sha256")
+    .update(
+      String(value || "")
+    )
+    .digest("hex");
 }
 
 
@@ -344,29 +343,14 @@ function localIsoString(
     new Intl.DateTimeFormat(
       "en-CA",
       {
-        timeZone:
-          KEMO_TIMEZONE,
-
-        year:
-          "numeric",
-
-        month:
-          "2-digit",
-
-        day:
-          "2-digit",
-
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit",
-
-        second:
-          "2-digit",
-
-        hourCycle:
-          "h23"
+        timeZone: XPAND_TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
       }
     );
 
@@ -374,17 +358,13 @@ function localIsoString(
 
   for (
     const part
-    of formatter.formatToParts(
-      date
-    )
+    of formatter.formatToParts(date)
   ) {
     if (
-      part.type !==
-      "literal"
+      part.type !== "literal"
     ) {
-      parts[
-        part.type
-      ] = part.value;
+      parts[part.type] =
+        part.value;
     }
   }
 
@@ -403,41 +383,20 @@ function humanLocalTime(
     return new Intl.DateTimeFormat(
       "ar-PS",
       {
-        timeZone:
-          KEMO_TIMEZONE,
-
-        weekday:
-          "long",
-
-        year:
-          "numeric",
-
-        month:
-          "long",
-
-        day:
-          "numeric",
-
-        hour:
-          "numeric",
-
-        minute:
-          "2-digit",
-
-        second:
-          "2-digit",
-
-        hour12:
-          true
+        timeZone: XPAND_TIMEZONE,
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
       }
-    ).format(
-      date
-    );
+    ).format(date);
 
   } catch {
-    return localIsoString(
-      date
-    );
+    return localIsoString(date);
   }
 }
 
@@ -464,6 +423,7 @@ async function initDatabase() {
     ON messages(chat_id, id DESC);
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS memories (
       id BIGSERIAL PRIMARY KEY,
@@ -477,6 +437,7 @@ async function initDatabase() {
     );
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS profile_facts (
       id BIGSERIAL PRIMARY KEY,
@@ -489,6 +450,7 @@ async function initDatabase() {
     );
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS lessons (
       id BIGSERIAL PRIMARY KEY,
@@ -498,6 +460,7 @@ async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS call_sessions (
@@ -519,6 +482,37 @@ async function initDatabase() {
       started_at DESC
     );
   `);
+
+
+  //
+  // One record for every completed live-call turn.
+  //
+  // This makes call → Telegram memory persistence
+  // real-time and idempotent.
+  //
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS call_turns (
+      id BIGSERIAL PRIMARY KEY,
+      call_id TEXT NOT NULL,
+      turn_id TEXT NOT NULL,
+      user_id BIGINT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      message_id BIGINT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(call_id, turn_id)
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS
+    idx_call_turns_call_created
+    ON call_turns(
+      call_id,
+      created_at ASC
+    );
+  `);
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS scheduled_jobs (
@@ -545,6 +539,7 @@ async function initDatabase() {
     );
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS kemo_events (
       id BIGSERIAL PRIMARY KEY,
@@ -557,6 +552,7 @@ async function initDatabase() {
     );
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS kemo_config (
       config_key TEXT PRIMARY KEY,
@@ -564,6 +560,7 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS dialect_terms (
@@ -575,6 +572,7 @@ async function initDatabase() {
       PRIMARY KEY(user_id, term)
     );
   `);
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS canonical_facts (
@@ -598,6 +596,7 @@ async function initDatabase() {
     );
   `);
 
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS memory_archive (
       id BIGSERIAL PRIMARY KEY,
@@ -611,6 +610,7 @@ async function initDatabase() {
       UNIQUE(user_id, source_type, source_id)
     );
   `);
+
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS memory_learning_jobs (
@@ -631,8 +631,9 @@ async function initDatabase() {
     );
   `);
 
+
   console.log(
-    "✅ Shared database ready"
+    "✅ XPAND shared database ready"
   );
 }
 
@@ -670,14 +671,9 @@ async function safeRows(
 // ======================================================
 
 let masterPromptCache = {
-  prompt:
-    "",
-
-  version:
-    "",
-
-  loadedAt:
-    0
+  prompt: "",
+  version: "",
+  loadedAt: 0
 };
 
 
@@ -695,16 +691,14 @@ async function loadSharedMasterPrompt(
     60000
   ) {
     return {
-      ok:
-        true,
-
+      ok: true,
       prompt:
         masterPromptCache.prompt,
-
       version:
         masterPromptCache.version
     };
   }
+
 
   const [
     promptRows,
@@ -715,30 +709,34 @@ async function loadSharedMasterPrompt(
       safeRows(`
         SELECT config_value
         FROM kemo_config
-        WHERE config_key = 'master_system_prompt'
+        WHERE config_key =
+          'master_system_prompt'
         LIMIT 1
       `),
 
       safeRows(`
         SELECT config_value
         FROM kemo_config
-        WHERE config_key = 'master_system_prompt_version'
+        WHERE config_key =
+          'master_system_prompt_version'
         LIMIT 1
       `)
 
     ]);
 
+
   const prompt =
     cleanText(
       promptRows[0]?.config_value,
-      70000
+      100000
     );
 
   const version =
     cleanText(
       versionRows[0]?.config_value,
-      200
+      300
     );
+
 
   if (
     required
@@ -750,23 +748,18 @@ async function loadSharedMasterPrompt(
     );
   }
 
-  if (
-    prompt
-  ) {
+
+  if (prompt) {
     masterPromptCache = {
       prompt,
       version,
-      loadedAt:
-        Date.now()
+      loadedAt: Date.now()
     };
   }
 
-  return {
-    ok:
-      Boolean(
-        prompt
-      ),
 
+  return {
+    ok: Boolean(prompt),
     prompt,
     version
   };
@@ -799,19 +792,19 @@ async function loadDialectProfile(
       ]
     );
 
-  if (
-    !rows.length
-  ) {
+
+  if (!rows.length) {
     return {
       context:
-        "لا توجد بصمة لهجة إضافية."
+        "لا توجد بصمة لهجة إضافية محفوظة."
     };
   }
+
 
   return {
     context:
       [
-        "=== تعبيرات كريم ===",
+        "=== تعبيرات إيهاب ===",
 
         ...rows.map(
           row =>
@@ -836,8 +829,7 @@ function verifyTelegramInitData(
 ) {
 
   if (
-    typeof initData !==
-      "string"
+    typeof initData !== "string"
     ||
     !initData.trim()
   ) {
@@ -846,41 +838,39 @@ function verifyTelegramInitData(
     );
   }
 
+
   const params =
     new URLSearchParams(
       initData
     );
 
-  const receivedHash =
-    params.get(
-      "hash"
-    );
 
-  if (
-    !receivedHash
-  ) {
+  const receivedHash =
+    params.get("hash");
+
+
+  if (!receivedHash) {
     throw new Error(
       "Telegram hash missing"
     );
   }
 
-  params.delete(
-    "hash"
-  );
+
+  params.delete("hash");
+
 
   const dataCheckString =
     [...params.entries()]
       .sort(
         ([a], [b]) =>
-          a.localeCompare(
-            b
-          )
+          a.localeCompare(b)
       )
       .map(
         ([key, value]) =>
           `${key}=${value}`
       )
       .join("\n");
+
 
   const secretKey =
     crypto
@@ -893,6 +883,7 @@ function verifyTelegramInitData(
       )
       .digest();
 
+
   const calculatedHash =
     crypto
       .createHmac(
@@ -902,9 +893,8 @@ function verifyTelegramInitData(
       .update(
         dataCheckString
       )
-      .digest(
-        "hex"
-      );
+      .digest("hex");
+
 
   const a =
     Buffer.from(
@@ -918,11 +908,11 @@ function verifyTelegramInitData(
       "hex"
     );
 
+
   if (
     !a.length
     ||
-    a.length !==
-      b.length
+    a.length !== b.length
     ||
     !crypto.timingSafeEqual(
       a,
@@ -934,36 +924,34 @@ function verifyTelegramInitData(
     );
   }
 
-  const rawUser =
-    params.get(
-      "user"
-    );
 
-  if (
-    !rawUser
-  ) {
+  const rawUser =
+    params.get("user");
+
+
+  if (!rawUser) {
     throw new Error(
       "Telegram user missing"
     );
   }
 
+
   const user =
-    JSON.parse(
-      rawUser
-    );
+    JSON.parse(rawUser);
+
 
   const userId =
     String(
       user?.id || ""
     );
 
-  if (
-    !userId
-  ) {
+
+  if (!userId) {
     throw new Error(
       "Telegram user id missing"
     );
   }
+
 
   if (
     TELEGRAM_ALLOWED_USER_ID
@@ -975,6 +963,7 @@ function verifyTelegramInitData(
       "Unauthorized Telegram user"
     );
   }
+
 
   return {
     userId,
@@ -989,30 +978,15 @@ function verifyTelegramInitData(
 
 function createCallSecret() {
   return crypto
-    .randomBytes(
-      32
-    )
-    .toString(
-      "base64url"
-    );
+    .randomBytes(32)
+    .toString("base64url");
 }
 
 
 function hashCallSecret(
   value
 ) {
-  return crypto
-    .createHash(
-      "sha256"
-    )
-    .update(
-      String(
-        value || ""
-      )
-    )
-    .digest(
-      "hex"
-    );
+  return sha256(value);
 }
 
 
@@ -1022,22 +996,15 @@ function secureEqualHex(
 ) {
   try {
     const left =
-      Buffer.from(
-        a,
-        "hex"
-      );
+      Buffer.from(a, "hex");
 
     const right =
-      Buffer.from(
-        b,
-        "hex"
-      );
+      Buffer.from(b, "hex");
 
     return (
       left.length > 0
       &&
-      left.length ===
-        right.length
+      left.length === right.length
       &&
       crypto.timingSafeEqual(
         left,
@@ -1077,16 +1044,17 @@ async function getCallSession(
       ]
     );
 
+
   const row =
     rows[0];
 
-  if (
-    !row
-  ) {
+
+  if (!row) {
     throw new Error(
       "Call session not found"
     );
   }
+
 
   if (
     !secureEqualHex(
@@ -1104,16 +1072,17 @@ async function getCallSession(
     );
   }
 
+
   if (
     requireActive
     &&
-    row.status !==
-      "active"
+    row.status !== "active"
   ) {
     throw new Error(
       "Call session is closed"
     );
   }
+
 
   return {
     callId:
@@ -1147,11 +1116,11 @@ async function saveMessageWithArchive(
       12000
     );
 
-  if (
-    !text
-  ) {
+
+  if (!text) {
     return null;
   }
+
 
   const inserted =
     await db.query(
@@ -1162,8 +1131,14 @@ async function saveMessageWithArchive(
         role,
         content
       )
-      VALUES ($1, $2, $3)
-      RETURNING id, created_at
+      VALUES (
+        $1,
+        $2,
+        $3
+      )
+      RETURNING
+        id,
+        created_at
       `,
       [
         userId,
@@ -1172,10 +1147,12 @@ async function saveMessageWithArchive(
       ]
     );
 
+
   const messageId =
     Number(
       inserted.rows[0].id
     );
+
 
   await db.query(
     `
@@ -1210,13 +1187,12 @@ async function saveMessageWithArchive(
       messageId,
       role,
       text,
-      normalizeArabic(
-        text
-      ),
+      normalizeArabic(text),
       inserted.rows[0]
         .created_at
     ]
   );
+
 
   return messageId;
 }
@@ -1237,7 +1213,253 @@ async function saveSharedMessage(
 
 
 // ======================================================
-// MEMORY
+// MEMORY LEARNING QUEUE
+// ======================================================
+
+async function enqueueMemoryLearning(
+  db,
+  userId,
+  text,
+  sourceMessageId
+) {
+
+  const clean =
+    cleanText(
+      text,
+      8000
+    );
+
+
+  if (!clean) {
+    return;
+  }
+
+
+  const sourceHash =
+    sha256(
+      String(userId)
+      +
+      "|"
+      +
+      normalizeArabic(clean)
+    );
+
+
+  await db.query(
+    `
+    INSERT INTO memory_learning_jobs
+    (
+      user_id,
+      chat_id,
+      source_message_id,
+      source_hash,
+      text,
+      status
+    )
+    VALUES (
+      $1,
+      $1,
+      $2,
+      $3,
+      $4,
+      'pending'
+    )
+    ON CONFLICT(
+      user_id,
+      source_hash
+    )
+    DO NOTHING
+    `,
+    [
+      userId,
+      sourceMessageId,
+      sourceHash,
+      clean
+    ]
+  );
+}
+
+
+// ======================================================
+// REAL-TIME CALL TURN PERSISTENCE
+// ======================================================
+
+async function persistCallTurn(
+  session,
+  {
+    turnId,
+    role,
+    text
+  }
+) {
+
+  const normalizedRole =
+    role === "assistant"
+      ? "assistant"
+      : "user";
+
+
+  const clean =
+    cleanText(
+      text,
+      8000
+    );
+
+
+  if (!clean) {
+    return {
+      ok: true,
+      saved: false,
+      reason: "empty"
+    };
+  }
+
+
+  const safeTurnId =
+    cleanText(
+      turnId
+      ||
+      sha256(
+        normalizedRole
+        +
+        "|"
+        +
+        clean
+      ).slice(0, 32),
+      200
+    );
+
+
+  const client =
+    await pool.connect();
+
+
+  try {
+    await client.query("BEGIN");
+
+
+    const reserved =
+      await client.query(
+        `
+        INSERT INTO call_turns
+        (
+          call_id,
+          turn_id,
+          user_id,
+          role,
+          content
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5
+        )
+        ON CONFLICT(
+          call_id,
+          turn_id
+        )
+        DO NOTHING
+        RETURNING id
+        `,
+        [
+          session.callId,
+          safeTurnId,
+          session.userId,
+          normalizedRole,
+          clean
+        ]
+      );
+
+
+    //
+    // Already saved.
+    //
+    if (
+      !reserved.rows.length
+    ) {
+      await client.query("COMMIT");
+
+      return {
+        ok: true,
+        saved: false,
+        duplicate: true
+      };
+    }
+
+
+    const messageId =
+      await saveMessageWithArchive(
+        client,
+        session.userId,
+        normalizedRole,
+        clean
+      );
+
+
+    await client.query(
+      `
+      UPDATE call_turns
+      SET message_id = $3
+      WHERE
+        call_id = $1
+        AND turn_id = $2
+      `,
+      [
+        session.callId,
+        safeTurnId,
+        messageId
+      ]
+    );
+
+
+    //
+    // User speech enters the same memory-learning queue
+    // used by Telegram text/voice.
+    //
+    if (
+      normalizedRole === "user"
+    ) {
+      await enqueueMemoryLearning(
+        client,
+        session.userId,
+        clean,
+        messageId
+      );
+    }
+
+
+    await client.query("COMMIT");
+
+
+    return {
+      ok: true,
+      saved: true,
+      messageId
+    };
+
+
+  } catch (error) {
+
+    try {
+      await client.query(
+        "ROLLBACK"
+      );
+    } catch {}
+
+
+    throw error;
+
+
+  } finally {
+    client.release();
+  }
+}
+
+
+// ======================================================
+// PERSISTENT MEMORY
 // ======================================================
 
 async function savePersistentMemory(
@@ -1256,11 +1478,11 @@ async function savePersistentMemory(
       5000
     );
 
-  if (
-    !text
-  ) {
+
+  if (!text) {
     return null;
   }
+
 
   const existing =
     await safeRows(
@@ -1269,7 +1491,8 @@ async function savePersistentMemory(
       FROM memories
       WHERE
         user_id = $1
-        AND LOWER(content) = LOWER($2)
+        AND LOWER(content) =
+            LOWER($2)
       LIMIT 1
       `,
       [
@@ -1278,9 +1501,9 @@ async function savePersistentMemory(
       ]
     );
 
-  if (
-    existing.length
-  ) {
+
+  if (existing.length) {
+
     await pool.query(
       `
       UPDATE memories
@@ -1300,10 +1523,12 @@ async function savePersistentMemory(
       ]
     );
 
+
     return Number(
       existing[0].id
     );
   }
+
 
   const result =
     await pool.query(
@@ -1334,6 +1559,7 @@ async function savePersistentMemory(
       ]
     );
 
+
   return Number(
     result.rows[0].id
   );
@@ -1350,6 +1576,7 @@ async function recallMemory(
       query,
       700
     );
+
 
   const memories =
     await safeRows(
@@ -1374,6 +1601,7 @@ async function recallMemory(
       ]
     );
 
+
   const archive =
     await safeRows(
       `
@@ -1384,7 +1612,8 @@ async function recallMemory(
       FROM memory_archive
       WHERE
         user_id = $1
-        AND normalized_content ILIKE $2
+        AND normalized_content
+          ILIKE $2
       ORDER BY
         created_at DESC
       LIMIT 15
@@ -1397,15 +1626,12 @@ async function recallMemory(
       ]
     );
 
-  return {
-    ok:
-      true,
 
+  return {
+    ok: true,
     query:
       cleanQuery,
-
     memories,
-
     archiveEvidence:
       archive
   };
@@ -1447,6 +1673,7 @@ async function buildMemoryContext(
         ]
       ),
 
+
       safeRows(
         `
         SELECT
@@ -1462,6 +1689,7 @@ async function buildMemoryContext(
         ]
       ),
 
+
       safeRows(
         `
         SELECT
@@ -1472,12 +1700,13 @@ async function buildMemoryContext(
         ORDER BY
           importance DESC,
           updated_at DESC
-        LIMIT 25
+        LIMIT 30
         `,
         [
           userId
         ]
       ),
+
 
       safeRows(
         `
@@ -1488,12 +1717,13 @@ async function buildMemoryContext(
         FROM messages
         WHERE chat_id = $1
         ORDER BY id DESC
-        LIMIT 30
+        LIMIT 40
         `,
         [
           userId
         ]
       ),
+
 
       safeRows(
         `
@@ -1515,14 +1745,14 @@ async function buildMemoryContext(
 
     ]);
 
+
   const sections = [];
 
-  if (
-    canonical.length
-  ) {
+
+  if (canonical.length) {
     sections.push(
       [
-        "=== CANONICAL FACTS ===",
+        "=== CANONICAL FACTS — إيهاب ===",
 
         ...canonical.map(
           item =>
@@ -1541,12 +1771,11 @@ async function buildMemoryContext(
     );
   }
 
-  if (
-    profile.length
-  ) {
+
+  if (profile.length) {
     sections.push(
       [
-        "=== ملف كريم ===",
+        "=== ملف إيهاب ===",
 
         ...profile.map(
           item =>
@@ -1563,12 +1792,11 @@ async function buildMemoryContext(
     );
   }
 
-  if (
-    memories.length
-  ) {
+
+  if (memories.length) {
     sections.push(
       [
-        "=== ذكريات ===",
+        "=== ذاكرة XPAND المشتركة ===",
 
         ...memories.map(
           item =>
@@ -1585,12 +1813,11 @@ async function buildMemoryContext(
     );
   }
 
-  if (
-    messages.length
-  ) {
+
+  if (messages.length) {
     sections.push(
       [
-        "=== آخر المحادثة المشتركة ===",
+        "=== آخر المحادثة الموحدة من جميع القنوات ===",
 
         ...[
           ...messages
@@ -1599,40 +1826,40 @@ async function buildMemoryContext(
           .map(
             item =>
               (
-                (
-                  item.role ===
-                  "assistant"
-                    ?
-                    "Kemo"
-                    :
-                    "كريم"
-                )
-                +
-                ": "
-                +
-                cleanText(
-                  item.content,
-                  1000
-                )
+                item.role ===
+                "assistant"
+                  ?
+                  "XPAND"
+                  :
+                  "إيهاب"
+              )
+              +
+              ": "
+              +
+              cleanText(
+                item.content,
+                1200
               )
           )
       ].join("\n")
     );
   }
 
-  if (
-    reminders.length
-  ) {
+
+  if (reminders.length) {
     sections.push(
       [
-        "=== التذكيرات ===",
+        "=== التذكيرات النشطة ===",
 
         ...reminders.map(
           item =>
             (
               `- #${item.id}: `
               +
-              item.message
+              cleanText(
+                item.message,
+                1000
+              )
               +
               " | "
               +
@@ -1647,15 +1874,14 @@ async function buildMemoryContext(
     );
   }
 
+
   return (
-    sections.join(
-      "\n\n"
-    )
+    sections.join("\n\n")
     ||
-    "لا توجد ذاكرة إضافية."
+    "لا توجد ذاكرة إضافية محفوظة حتى الآن."
   ).slice(
     0,
-    28000
+    36000
   );
 }
 
@@ -1687,6 +1913,7 @@ async function getConversationContinuity(
         ]
       ),
 
+
       safeRows(
         `
         SELECT
@@ -1712,7 +1939,9 @@ async function getConversationContinuity(
 
     ]);
 
+
   const dates = [];
+
 
   if (
     messages[0]?.created_at
@@ -1725,6 +1954,7 @@ async function getConversationContinuity(
     );
   }
 
+
   if (
     calls[0]?.interaction_at
   ) {
@@ -1736,6 +1966,7 @@ async function getConversationContinuity(
     );
   }
 
+
   dates.sort(
     (a, b) =>
       b.getTime()
@@ -1743,12 +1974,12 @@ async function getConversationContinuity(
       a.getTime()
   );
 
+
   const last =
     dates[0];
 
-  if (
-    !last
-  ) {
+
+  if (!last) {
     return {
       isContinuation:
         false,
@@ -1761,6 +1992,7 @@ async function getConversationContinuity(
     };
   }
 
+
   const gapMinutes =
     (
       Date.now()
@@ -1769,6 +2001,7 @@ async function getConversationContinuity(
     )
     /
     60000;
+
 
   return {
     isContinuation:
@@ -1788,7 +2021,7 @@ async function getConversationContinuity(
 
 
 // ======================================================
-// EVENT
+// EVENTS
 // ======================================================
 
 async function recordEvent(
@@ -1857,12 +2090,14 @@ async function createEphemeralToken() {
       30 * 60 * 1000
     ).toISOString();
 
+
   const newSessionExpireTime =
     new Date(
       Date.now()
       +
       2 * 60 * 1000
     ).toISOString();
+
 
   const response =
     await fetch(
@@ -1881,18 +2116,17 @@ async function createEphemeralToken() {
 
         body:
           JSON.stringify({
-            uses:
-              1,
-
+            uses: 1,
             expireTime,
-
             newSessionExpireTime
           })
       }
     );
 
+
   const data =
     await response.json();
+
 
   if (
     !response.ok
@@ -1906,6 +2140,7 @@ async function createEphemeralToken() {
     );
   }
 
+
   return data.name;
 }
 
@@ -1916,7 +2151,7 @@ async function createEphemeralToken() {
 
 function toolModels() {
   return [
-    KEMO_TOOL_MODEL,
+    TOOL_MODEL,
     "gemini-3.7-flash",
     "gemini-3.5-flash"
   ].filter(
@@ -1927,10 +2162,8 @@ function toolModels() {
     ) =>
       item
       &&
-      array.indexOf(
-        item
-      ) ===
-        index
+      array.indexOf(item)
+      === index
   );
 }
 
@@ -1972,22 +2205,19 @@ function parseJsonText(
       )
       .trim();
 
+
   try {
-    return JSON.parse(
-      text
-    );
+    return JSON.parse(text);
 
   } catch {}
 
+
   const start =
-    text.indexOf(
-      "{"
-    );
+    text.indexOf("{");
 
   const end =
-    text.lastIndexOf(
-      "}"
-    );
+    text.lastIndexOf("}");
+
 
   if (
     start >= 0
@@ -2002,6 +2232,7 @@ function parseJsonText(
     );
   }
 
+
   throw new Error(
     "Invalid Gemini JSON"
   );
@@ -2015,11 +2246,13 @@ async function callGeminiVisionJson(
 
   let lastError = null;
 
+
   for (
     const model
     of toolModels()
   ) {
     try {
+
       const response =
         await fetch(
           (
@@ -2027,9 +2260,7 @@ async function callGeminiVisionJson(
             +
             "v1beta/models/"
             +
-            encodeURIComponent(
-              model
-            )
+            encodeURIComponent(model)
             +
             ":generateContent"
           ),
@@ -2049,13 +2280,11 @@ async function callGeminiVisionJson(
               JSON.stringify({
                 contents: [
                   {
-                    role:
-                      "user",
+                    role: "user",
 
                     parts: [
                       {
-                        text:
-                          prompt
+                        text: prompt
                       },
 
                       {
@@ -2072,12 +2301,8 @@ async function callGeminiVisionJson(
                 ],
 
                 generationConfig: {
-                  temperature:
-                    0,
-
-                  maxOutputTokens:
-                    1200,
-
+                  temperature: 0,
+                  maxOutputTokens: 1200,
                   responseMimeType:
                     "application/json"
                 }
@@ -2085,12 +2310,12 @@ async function callGeminiVisionJson(
           }
         );
 
+
       const data =
         await response.json();
 
-      if (
-        !response.ok
-      ) {
+
+      if (!response.ok) {
         throw new Error(
           data?.error?.message
           ||
@@ -2098,15 +2323,14 @@ async function callGeminiVisionJson(
         );
       }
 
+
       return parseJsonText(
-        extractGeminiText(
-          data
-        )
+        extractGeminiText(data)
       );
 
+
     } catch (error) {
-      lastError =
-        error;
+      lastError = error;
 
       console.log(
         (
@@ -2121,6 +2345,7 @@ async function callGeminiVisionJson(
       );
     }
   }
+
 
   throw (
     lastError
@@ -2162,14 +2387,14 @@ async function telegramRequest(
         },
 
         body:
-          JSON.stringify(
-            payload
-          )
+          JSON.stringify(payload)
       }
     );
 
+
   const data =
     await response.json();
+
 
   if (
     !response.ok
@@ -2182,6 +2407,7 @@ async function telegramRequest(
       "Telegram request failed"
     );
   }
+
 
   return data;
 }
@@ -2198,11 +2424,20 @@ async function sendTelegramMessage(
       12000
     );
 
+
+  if (!clean) {
+    throw new Error(
+      "Telegram message is empty"
+    );
+  }
+
+
   for (
     let i = 0;
     i < clean.length;
     i += 4000
   ) {
+
     await telegramRequest(
       "sendMessage",
       {
@@ -2213,14 +2448,151 @@ async function sendTelegramMessage(
           clean.slice(
             i,
             i + 4000
-          )
+          ),
+
+        disable_web_page_preview:
+          true
       }
     );
   }
 
+
   return {
-    ok:
-      true
+    ok: true
+  };
+}
+
+
+async function sendChatMessageFromCall(
+  userId,
+  args
+) {
+
+  const title =
+    cleanText(
+      args?.title,
+      500
+    );
+
+  const message =
+    cleanText(
+      args?.message,
+      8000
+    );
+
+  const url =
+    cleanText(
+      args?.url,
+      4000
+    );
+
+
+  if (
+    url
+    &&
+    !/^https?:\/\//i.test(url)
+  ) {
+    throw new Error(
+      "Only http/https URLs are allowed"
+    );
+  }
+
+
+  let finalText = "";
+
+
+  if (message) {
+    finalText = message;
+  }
+
+
+  if (
+    title
+    &&
+    !finalText
+  ) {
+    finalText = title;
+  }
+
+
+  if (url) {
+
+    if (!finalText) {
+      finalText =
+        "تفضل إيهاب، هذا الرابط اللي طلبته بالمكالمة:";
+    }
+
+
+    if (
+      title
+      &&
+      !finalText.includes(title)
+    ) {
+      finalText +=
+        "\n\n"
+        +
+        title;
+    }
+
+
+    finalText +=
+      "\n"
+      +
+      url;
+  }
+
+
+  if (!finalText) {
+    throw new Error(
+      "Message or URL is required"
+    );
+  }
+
+
+  await sendTelegramMessage(
+    userId,
+    finalText
+  );
+
+
+  //
+  // The outgoing Telegram message is also part of
+  // the unified conversation.
+  //
+  await saveSharedMessage(
+    userId,
+    "assistant",
+    finalText
+  );
+
+
+  await recordEvent(
+    userId,
+    userId,
+    "call_to_chat_message",
+    finalText,
+    {
+      sourceChannel:
+        cleanText(
+          args?.source_channel
+          ||
+          "live_call",
+          100
+        ),
+
+      url:
+        url || null
+    }
+  );
+
+
+  return {
+    ok: true,
+    sent: true,
+    channel: "telegram",
+    message: finalText,
+    url:
+      url || null
   };
 }
 
@@ -2233,13 +2605,26 @@ async function searchWeb(
   query
 ) {
 
-  if (
-    !TAVILY_API_KEY
-  ) {
+  if (!TAVILY_API_KEY) {
     throw new Error(
       "Tavily is not configured"
     );
   }
+
+
+  const cleanQuery =
+    cleanText(
+      query,
+      700
+    );
+
+
+  if (!cleanQuery) {
+    throw new Error(
+      "Search query missing"
+    );
+  }
+
 
   const response =
     await fetch(
@@ -2259,10 +2644,7 @@ async function searchWeb(
         body:
           JSON.stringify({
             query:
-              cleanText(
-                query,
-                700
-              ),
+              cleanQuery,
 
             search_depth:
               "basic",
@@ -2279,12 +2661,12 @@ async function searchWeb(
       }
     );
 
+
   const data =
     await response.json();
 
-  if (
-    !response.ok
-  ) {
+
+  if (!response.ok) {
     throw new Error(
       data?.detail
       ||
@@ -2292,9 +2674,9 @@ async function searchWeb(
     );
   }
 
+
   return {
-    ok:
-      true,
+    ok: true,
 
     results:
       (
@@ -2305,10 +2687,7 @@ async function searchWeb(
           data.results
           :
           []
-      ).slice(
-        0,
-        5
-      )
+      ).slice(0, 5)
   };
 }
 
@@ -2336,9 +2715,10 @@ async function localTimestampToUtc(
           50
         ),
 
-        KEMO_TIMEZONE
+        XPAND_TIMEZONE
       ]
     );
+
 
   return new Date(
     result.rows[0]
@@ -2359,15 +2739,16 @@ async function createReminder(
       1500
     );
 
-  if (
-    !reason
-  ) {
+
+  if (!reason) {
     throw new Error(
       "Reminder reason missing"
     );
   }
 
+
   let runAt;
+
 
   if (
     args?.delaySeconds !==
@@ -2379,10 +2760,9 @@ async function createReminder(
         args.delaySeconds
       );
 
+
     if (
-      !Number.isFinite(
-        seconds
-      )
+      !Number.isFinite(seconds)
       ||
       seconds < 1
     ) {
@@ -2391,12 +2771,14 @@ async function createReminder(
       );
     }
 
+
     runAt =
       new Date(
         Date.now()
         +
         seconds * 1000
       );
+
 
   } else if (
     args?.runAtLocal
@@ -2407,12 +2789,14 @@ async function createReminder(
         args.runAtLocal
       );
 
+
   } else {
 
     throw new Error(
       "Reminder time missing"
     );
   }
+
 
   const result =
     await pool.query(
@@ -2459,24 +2843,26 @@ async function createReminder(
         cleanText(
           args?.message
           ||
-          `كريم، تذكيرك: ${reason}`,
+          `إيهاب، تذكيرك: ${reason}`,
           2000
         ),
 
         runAt,
 
-        KEMO_TIMEZONE,
+        XPAND_TIMEZONE,
 
         JSON.stringify({
           reason,
-          callId
+          callId,
+          sourceChannel:
+            "live_call"
         })
       ]
     );
 
+
   return {
-    ok:
-      true,
+    ok: true,
 
     jobId:
       Number(
@@ -2518,10 +2904,9 @@ async function listReminders(
       ]
     );
 
-  return {
-    ok:
-      true,
 
+  return {
+    ok: true,
     reminders:
       rows
   };
@@ -2535,9 +2920,9 @@ async function cancelReminder(
 
   let rows = [];
 
-  if (
-    args?.jobId
-  ) {
+
+  if (args?.jobId) {
+
     rows =
       await safeRows(
         `
@@ -2560,9 +2945,11 @@ async function cancelReminder(
         ]
       );
 
+
   } else if (
     args?.latest
   ) {
+
     rows =
       await safeRows(
         `
@@ -2588,6 +2975,7 @@ async function cancelReminder(
       );
   }
 
+
   return {
     ok:
       rows.length > 0,
@@ -2604,9 +2992,9 @@ async function cancelReminder(
 
 function desktopConfigured() {
   return Boolean(
-    KEMO_DESKTOP_URL
+    DESKTOP_URL
     &&
-    KEMO_DESKTOP_KEY
+    DESKTOP_KEY
   );
 }
 
@@ -2621,8 +3009,16 @@ async function desktopFetch(
   } = {}
 ) {
 
+  if (!DESKTOP_URL) {
+    throw new Error(
+      "Desktop URL is not configured"
+    );
+  }
+
+
   const controller =
     new AbortController();
+
 
   const timer =
     setTimeout(
@@ -2631,33 +3027,34 @@ async function desktopFetch(
       timeout
     );
 
+
   try {
+
     const headers = {
       "Accept":
         "application/json"
     };
 
-    if (
-      authenticated
-    ) {
+
+    if (authenticated) {
       headers[
         "X-Kemo-Desktop-Key"
       ] =
-        KEMO_DESKTOP_KEY;
+        DESKTOP_KEY;
     }
 
-    if (
-      body !== null
-    ) {
+
+    if (body !== null) {
       headers[
         "Content-Type"
       ] =
         "application/json";
     }
 
+
     const response =
       await fetch(
-        KEMO_DESKTOP_URL
+        DESKTOP_URL
         +
         endpoint,
         {
@@ -2678,21 +3075,28 @@ async function desktopFetch(
         }
       );
 
+
     const raw =
       await response.text();
 
-    const data =
-      raw
-        ?
-        JSON.parse(
-          raw
-        )
-        :
-        {};
 
-    if (
-      !response.ok
-    ) {
+    let data = {};
+
+
+    if (raw) {
+      try {
+        data =
+          JSON.parse(raw);
+
+      } catch {
+        data = {
+          raw
+        };
+      }
+    }
+
+
+    if (!response.ok) {
       throw new Error(
         data?.error
         ||
@@ -2700,7 +3104,9 @@ async function desktopFetch(
       );
     }
 
+
     return data;
+
 
   } catch (error) {
 
@@ -2713,12 +3119,12 @@ async function desktopFetch(
       );
     }
 
+
     throw error;
 
+
   } finally {
-    clearTimeout(
-      timer
-    );
+    clearTimeout(timer);
   }
 }
 
@@ -2733,33 +3139,31 @@ async function runDesktopCommand(
   const started =
     Date.now();
 
+
   const response =
     await desktopFetch(
       "/api/command-sync",
       {
-        method:
-          "POST",
-
+        method: "POST",
         timeout:
           timeoutMs + 5000,
 
         body: {
           action,
-
           deviceId:
-            KEMO_DESKTOP_DEVICE_ID,
-
+            DESKTOP_DEVICE_ID,
           args,
-
           timeoutMs
         }
       }
     );
 
+
   const elapsed =
     Date.now()
     -
     started;
+
 
   console.log(
     (
@@ -2781,6 +3185,7 @@ async function runDesktopCommand(
     )
   );
 
+
   if (
     response?.status ===
     "failed"
@@ -2793,6 +3198,7 @@ async function runDesktopCommand(
       "Desktop command failed"
     );
   }
+
 
   return {
     ...(
@@ -2812,17 +3218,13 @@ async function runDesktopCommand(
 
 async function desktopHealth() {
 
-  if (
-    !desktopConfigured()
-  ) {
+  if (!desktopConfigured()) {
     return {
-      ok:
-        false,
-
-      configured:
-        false
+      ok: false,
+      configured: false
     };
   }
+
 
   try {
     return {
@@ -2841,14 +3243,12 @@ async function desktopHealth() {
         true
     };
 
+
   } catch (error) {
+
     return {
-      ok:
-        false,
-
-      configured:
-        true,
-
+      ok: false,
+      configured: true,
       error:
         error.message
     };
@@ -2871,27 +3271,28 @@ async function inspectScreen(
       30000
     );
 
+
   const imageBase64 =
     cleanText(
       screenshot?.imageBase64,
       20000000
     );
 
-  if (
-    !imageBase64
-  ) {
+
+  if (!imageBase64) {
     throw new Error(
       "Screenshot missing"
     );
   }
 
+
   const result =
     await callGeminiVisionJson(
       imageBase64,
       `
-أنت ترى Screenshot الحالية فقط من كمبيوتر كريم.
+أنت ترى Screenshot الحالية فقط من كمبيوتر إيهاب.
 
-سؤال كريم:
+سؤال إيهاب:
 ${cleanText(
   question,
   1000
@@ -2908,9 +3309,9 @@ JSON:
 `
     );
 
+
   return {
-    ok:
-      true,
+    ok: true,
 
     screenAnalysis:
       cleanText(
@@ -2923,22 +3324,110 @@ JSON:
 
 // ======================================================
 // LIVE RUNTIME RULES
+//
+// These are operational call rules.
+// The personality itself comes from the shared
+// master_system_prompt in PostgreSQL.
 // ======================================================
 
 const CALL_RUNTIME_RULES = `
 ==================================================
-KEMO WHOLE-PC LIVE CONTROL
+XPAND UNIFIED LIVE CALL RUNTIME
 ==================================================
 
-أنت نفس Kemo الموجود في Telegram.
+أنت XPAND نفسه الموجود في Telegram.
 
-احكي مع كريم بشكل فلسطيني طبيعي ومختصر.
+المستخدم هو إيهاب.
 
-نفّذ طلبه مباشرة.
-لا تدعي أن عملية نجحت إلا بعد نجاح الأداة.
+هذه المكالمة ليست شخصية أو ذاكرة منفصلة.
+
+المحادثة النصية، الرسائل الصوتية والمكالمة
+كلها محادثة واحدة مستمرة مبنية على نفس user_id.
+
+لا تعرّف حالك من جديد إذا السياق مستمر.
+
+لا تنادِ المستخدم باسم كريم.
+
+لا تستخدم شخصية Kemo.
 
 ==================================================
-أنت تتحكم بالكمبيوتر كامل
+المحادثة الموحدة
+==================================================
+
+استخدم آخر المحادثة المشتركة والذاكرة الموجودة أدناه.
+
+إذا إيهاب ذكر:
+- الرابط
+- المشروع
+- الملف
+- آخر حكي
+- الشي اللي كنا بنشتغل عليه
+
+راجع السياق والذاكرة أولاً قبل سؤاله من جديد.
+
+==================================================
+إرسال شيء إلى الشات أثناء المكالمة
+==================================================
+
+إذا إيهاب قال مثلاً:
+
+- ابعثلي الرابط
+- ابعثه على المحادثة
+- ابعثلي الموقع
+- حط الرابط بالشات
+- بدي الرابط مكتوب
+- ابعثلي التفاصيل على Telegram
+
+استخدم أداة:
+
+send_chat_message
+
+فوراً.
+
+إذا الرابط ناتج من search_web،
+خذ URL الصحيح من نتيجة الأداة
+ثم استخدم send_chat_message.
+
+لا تقرأ الرابط الطويل بصوتك.
+
+بعد نجاح send_chat_message فقط:
+أكد لإيهاب صوتياً إنه انبعث.
+
+إذا الأداة فشلت:
+لا تقل إنه انبعث.
+
+==================================================
+الذاكرة
+==================================================
+
+كل كلام مهم من إيهاب في المكالمة يدخل
+إلى نفس سجل messages وmemory_archive.
+
+كلام إيهاب المكتمل يدخل أيضاً إلى
+memory_learning_jobs لكي يتعلمه نفس
+محرك الذاكرة المستخدم في Telegram.
+
+استخدم remember_information فقط
+عندما يطلب إيهاب صراحة حفظ شيء مهم
+أو عندما تكون المعلومة واضحة وطويلة الأمد.
+
+==================================================
+الصوت
+==================================================
+
+الصوت التقني لهذه المكالمة هو نفس هوية الصوت
+المستخدمة في XPAND.
+
+لا تغيّر شخصية الكلام بسبب القناة.
+
+احكي فلسطيني طبيعي، واضح، هادئ وواثق.
+
+الجمل في المكالمة تكون أقصر من النص.
+
+لا تقرأ روابط طويلة أو رموز تقنية بصوتك.
+
+==================================================
+الكمبيوتر
 ==================================================
 
 عندك مساران مباشران:
@@ -2946,194 +3435,113 @@ KEMO WHOLE-PC LIVE CONTROL
 1. Chrome CDP / DOM Direct
 2. Windows UI Automation Direct
 
-والـScreenshot والماوس البصري هما fallback فقط.
+Screenshot/Vision هو fallback فقط.
+
+داخل Chrome:
+استخدم browser_* أولاً.
+
+داخل برامج Windows:
+استخدم desktop_* أولاً.
+
+لا تأخذ Screenshot قبل كل عملية.
 
 ==================================================
 فتح البرامج
 ==================================================
 
-إذا كريم قال:
-"افتح Photoshop"
-"افتح الحاسبة"
-"افتح VS Code"
-"افتح TradingView"
+إذا إيهاب طلب فتح برنامج:
 
-استخدم:
 desktop_open_program
 
-هذه الأداة:
-- تبحث عن البرنامج المثبت
-- تفتحه
-- أو إذا كان مفتوحاً تجيبه للواجهة أمام كريم
-
-لا تستخدم Screenshot لفتح البرامج.
+مثال:
+app = "Calculator"
 
 ==================================================
-التعامل مع برامج Windows
+Windows UI Automation
 ==================================================
 
-إذا كريم يريد الضغط أو الكتابة داخل برنامج:
-
-استخدم Windows UI Automation أولاً.
-
-إذا تحتاج تعرف الموجود:
+لقراءة برنامج:
 desktop_read_app
 
-إذا يريد الضغط:
+للضغط:
 desktop_app_click
 
-إذا يريد الكتابة:
+للكتابة:
 desktop_app_type
 
-إذا يريد اختيار عنصر:
+للاختيار:
 desktop_app_select
 
-إذا يريد فقط إحضار نافذة للواجهة:
+لإحضار النافذة:
 desktop_focus_window
 
 ==================================================
-مثال
+Chrome
 ==================================================
 
-كريم:
-"افتح الحاسبة"
-
-desktop_open_program:
-app = "Calculator"
-
-كريم:
-"اضغط 7"
-
-desktop_app_click:
-window = "Calculator"
-name = "7"
-
-==================================================
-Chrome / المواقع
-==================================================
-
-إذا الطلب داخل موقع أو Chrome:
-استخدم browser_* أولاً.
-
+لفتح رابط:
 browser_open_url
-يفتح الرابط ويجيب Chrome للواجهة.
 
+لقراءة الصفحة:
 browser_read_page
-يقرأ عناصر DOM مباشرة.
 
+للضغط:
 browser_click
-يضغط العنصر مباشرة.
 
+للبحث:
 browser_search
-يبحث مباشرة.
 
-browser_type
-يكتب مباشرة.
-
+لتشغيل فيديو:
 browser_play_video
-يشغل الفيديو.
 
+لإيقاف فيديو:
 browser_pause_video
-يوقف الفيديو.
 
+للتمرير:
 browser_scroll
-يحرك الصفحة.
+
+للرجوع:
+browser_back
+
+للتقدم:
+browser_forward
+
+لإعادة التحميل:
+browser_reload
 
 ==================================================
-مثال Google
+الصدق التنفيذي
 ==================================================
 
-كريم:
-"افتح جوجل"
+لا تقل إن إجراء تم إلا بعد نجاح الأداة.
 
-استخدم:
-browser_open_url
-url=https://www.google.com/
+لا تقل:
+"بعثتلك"
+إلا بعد نجاح send_chat_message.
 
-Chrome يجب أن يظهر أمام كريم.
-
-==================================================
-مثال YouTube
-==================================================
-
-كريم:
-"افتح يوتيوب وابحث عن سورة مريم"
-
-نفذ:
-browser_open_url
-ثم:
-browser_search
-
-إذا كريم قال بعدها:
-"شغل أول فيديو"
-
-استخدم:
-browser_read_page
-إذا احتجت النص
-ثم:
-browser_click
-
-==================================================
-قاعدة السرعة
-==================================================
-
-لا تأخذ Screenshot قبل كل عملية.
-
-داخل Chrome:
-DOM أولاً.
-
-داخل برامج Windows:
-UI Automation أولاً.
-
-Screenshot/Vision فقط إذا فشلت الأدوات المباشرة.
-
-==================================================
-قاعدة الالتزام
-==================================================
-
-نفذ ما طلبه كريم فقط.
-
-لا تعمل ضغطات إضافية.
-لا تفتح أشياء لم يطلبها.
-لا تكمل خطوات من نفسك.
+لا تقل:
+"فتحت"
+إلا بعد نجاح أداة الفتح.
 
 ==================================================
 الأفعال الحساسة
 ==================================================
 
 قبل:
-- دفع
-- شراء
-- حذف نهائي
-- إرسال رسالة
-- نشر
+- الدفع
+- الشراء
+- الحذف النهائي
+- إرسال رسالة إلى شخص خارجي
+- النشر
 - Submit نهائي
 - إنشاء حساب
 - تحويل أموال
 
-اطلب تأكيد كريم قبل تنفيذ الخطوة النهائية.
+اطلب موافقة إيهاب قبل الخطوة النهائية.
 
-==================================================
-الشاشة
-==================================================
-
-إذا قال:
-"شو ظاهر على شاشة الكمبيوتر؟"
-
-استخدم:
-desktop_screenshot
-
-إذا قال:
-"شو موجود ببرنامج Photoshop؟"
-
-استخدم:
-desktop_read_app
-
-إذا قال:
-"شو موجود بصفحة Chrome؟"
-
-استخدم:
-browser_read_page
+إرسال رابط أو معلومة إلى نفس محادثة إيهاب
+بناءً على طلبه المباشر أثناء المكالمة
+لا يحتاج موافقة إضافية.
 `;
 
 
@@ -3152,14 +3560,20 @@ function buildLiveInstructions(
     continuity?.isContinuation
       ?
       `
-هذا الاتصال تكملة مباشرة لتفاعل سابق.
-لا تسلم على كريم من جديد.
-كمل مباشرة من السياق.
+هذه المكالمة تكملة مباشرة للمحادثة السابقة مع إيهاب.
+
+لا تبدأ تعارفاً جديداً.
+لا تسأل "كيف أقدر أساعدك؟".
+كمل من السياق الحالي مباشرة.
 `
       :
       `
-مسموح تحية فلسطينية قصيرة مرة واحدة.
+هذه بداية تفاعل جديد نسبياً.
+
+مسموح تحية فلسطينية قصيرة واحدة فقط.
+بعدها ادخل مباشرة في الحديث.
 `;
+
 
   return `
 ${masterPrompt}
@@ -3173,26 +3587,26 @@ CONTINUITY
 ${continuityText}
 
 ==================================================
-PALESTINE TIME
+CURRENT PALESTINE TIME
 ==================================================
 
 ${humanLocalTime()}
 
 Timezone:
-${KEMO_TIMEZONE}
+${XPAND_TIMEZONE}
 
 ==================================================
-DIALECT
+IHAB DIALECT PROFILE
 ==================================================
 
 ${dialectContext}
 
 ==================================================
-MEMORY
+UNIFIED XPAND MEMORY
 ==================================================
 
 ${memoryContext}
-`;
+`.trim();
 }
 
 
@@ -3206,10 +3620,6 @@ function buildLiveTools() {
     {
       functionDeclarations: [
 
-        // ==================================================
-        // TIME
-        // ==================================================
-
         {
           name:
             "get_current_time",
@@ -3218,57 +3628,43 @@ function buildLiveTools() {
             "يعطي الوقت الحقيقي الحالي في فلسطين.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
         },
 
 
-        // ==================================================
-        // REMINDERS
-        // ==================================================
-
         {
           name:
             "create_reminder",
 
           description:
-            "ينشئ تذكيراً دائماً.",
+            "ينشئ تذكيراً دائماً لإيهاب في نفس نظام XPAND.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               reason: {
-                type:
-                  "string"
+                type: "string"
               },
 
               message: {
-                type:
-                  "string"
+                type: "string"
               },
 
               delaySeconds: {
-                type:
-                  "integer"
+                type: "integer"
               },
 
               runAtLocal: {
-                type:
-                  "string"
+                type: "string"
               },
 
               title: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3287,15 +3683,11 @@ function buildLiveTools() {
             "list_reminders",
 
           description:
-            "يعرض التذكيرات المعلقة.",
+            "يعرض التذكيرات المعلقة لإيهاب.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -3310,18 +3702,15 @@ function buildLiveTools() {
             "يلغي تذكيراً.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               jobId: {
-                type:
-                  "integer"
+                type: "integer"
               },
 
               latest: {
-                type:
-                  "boolean"
+                type: "boolean"
               }
             },
 
@@ -3331,25 +3720,19 @@ function buildLiveTools() {
         },
 
 
-        // ==================================================
-        // WEB SEARCH
-        // ==================================================
-
         {
           name:
             "search_web",
 
           description:
-            "بحث حديث على الإنترنت.",
+            "بحث حديث على الإنترنت. النتائج تتضمن الروابط ويمكن إرسال الرابط إلى الشات.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               query: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3363,25 +3746,19 @@ function buildLiveTools() {
         },
 
 
-        // ==================================================
-        // MEMORY
-        // ==================================================
-
         {
           name:
             "recall_memory",
 
           description:
-            "يبحث في ذاكرة Kemo المشتركة.",
+            "يبحث في ذاكرة XPAND المشتركة الخاصة بإيهاب.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               query: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3400,21 +3777,18 @@ function buildLiveTools() {
             "remember_information",
 
           description:
-            "يحفظ معلومة مهمة في الذاكرة الدائمة.",
+            "يحفظ معلومة مهمة في ذاكرة XPAND الدائمة لإيهاب.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               content: {
-                type:
-                  "string"
+                type: "string"
               },
 
               category: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3428,25 +3802,56 @@ function buildLiveTools() {
         },
 
 
-        // ==================================================
-        // TELEGRAM
-        // ==================================================
+        {
+          name:
+            "send_chat_message",
 
+          description:
+            "يرسل رسالة أو رابط مباشرة من المكالمة إلى نفس محادثة إيهاب على Telegram. استخدمه فوراً عندما يطلب إيهاب إرسال الرابط أو التفاصيل إلى الشات.",
+
+          parametersJsonSchema: {
+            type: "object",
+
+            properties: {
+              message: {
+                type: "string"
+              },
+
+              url: {
+                type: "string"
+              },
+
+              title: {
+                type: "string"
+              },
+
+              source_channel: {
+                type: "string"
+              }
+            },
+
+            additionalProperties:
+              false
+          }
+        },
+
+
+        //
+        // Legacy alias for compatibility.
+        //
         {
           name:
             "send_telegram_message",
 
           description:
-            "يرسل رسالة إلى Telegram.",
+            "يرسل رسالة إلى نفس محادثة إيهاب على Telegram.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               text: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3460,32 +3865,19 @@ function buildLiveTools() {
         },
 
 
-        // ==================================================
-        // WINDOWS WHOLE-PC
-        // ==================================================
-
         {
           name:
             "desktop_open_program",
 
           description:
-            (
-              "يفتح أي برنامج مثبت على كمبيوتر كريم "
-              +
-              "أو يجلبه إلى مقدمة الشاشة إذا كان مفتوحاً."
-            ),
+            "يفتح برنامجاً مثبتاً على كمبيوتر إيهاب أو يجلب نافذته للمقدمة.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               app: {
-                type:
-                  "string",
-
-                description:
-                  "اسم البرنامج مثل Photoshop أو Calculator أو Visual Studio Code."
+                type: "string"
               }
             },
 
@@ -3504,16 +3896,14 @@ function buildLiveTools() {
             "desktop_list_windows",
 
           description:
-            "يعرض النوافذ والبرامج المفتوحة حالياً.",
+            "يعرض النوافذ والبرامج المفتوحة.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               query: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3528,20 +3918,14 @@ function buildLiveTools() {
             "desktop_focus_window",
 
           description:
-            (
-              "يجلب نافذة برنامج محدد إلى واجهة الشاشة "
-              +
-              "ويجعلها النافذة النشطة أمام كريم."
-            ),
+            "يجلب نافذة برنامج محدد إلى المقدمة.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               window: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3560,30 +3944,22 @@ function buildLiveTools() {
             "desktop_read_app",
 
           description:
-            (
-              "يقرأ عناصر وأزرار وحقول نافذة برنامج Windows "
-              +
-              "مباشرة عبر UI Automation بدون Screenshot."
-            ),
+            "يقرأ عناصر نافذة برنامج Windows عبر UI Automation.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               window: {
-                type:
-                  "string"
+                type: "string"
               },
 
               query: {
-                type:
-                  "string"
+                type: "string"
               },
 
               limit: {
-                type:
-                  "integer"
+                type: "integer"
               }
             },
 
@@ -3602,40 +3978,30 @@ function buildLiveTools() {
             "desktop_app_click",
 
           description:
-            (
-              "يضغط مباشرة على زر أو عنصر داخل برنامج Windows "
-              +
-              "باستخدام UI Automation."
-            ),
+            "يضغط على عنصر داخل برنامج Windows عبر UI Automation.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               window: {
-                type:
-                  "string"
+                type: "string"
               },
 
               name: {
-                type:
-                  "string"
+                type: "string"
               },
 
               controlType: {
-                type:
-                  "string"
+                type: "string"
               },
 
               occurrence: {
-                type:
-                  "integer"
+                type: "integer"
               },
 
               confirmed: {
-                type:
-                  "boolean"
+                type: "boolean"
               }
             },
 
@@ -3655,45 +4021,34 @@ function buildLiveTools() {
             "desktop_app_type",
 
           description:
-            (
-              "يكتب مباشرة داخل حقل في برنامج Windows "
-              +
-              "باستخدام UI Automation."
-            ),
+            "يكتب داخل حقل في برنامج Windows.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               window: {
-                type:
-                  "string"
+                type: "string"
               },
 
               field: {
-                type:
-                  "string"
+                type: "string"
               },
 
               text: {
-                type:
-                  "string"
+                type: "string"
               },
 
               controlType: {
-                type:
-                  "string"
+                type: "string"
               },
 
               clear: {
-                type:
-                  "boolean"
+                type: "boolean"
               },
 
               pressEnter: {
-                type:
-                  "boolean"
+                type: "boolean"
               }
             },
 
@@ -3714,31 +4069,26 @@ function buildLiveTools() {
             "desktop_app_select",
 
           description:
-            "يختار عنصراً من قائمة أو Tab داخل برنامج Windows.",
+            "يختار عنصراً داخل برنامج Windows.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               window: {
-                type:
-                  "string"
+                type: "string"
               },
 
               name: {
-                type:
-                  "string"
+                type: "string"
               },
 
               controlType: {
-                type:
-                  "string"
+                type: "string"
               },
 
               occurrence: {
-                type:
-                  "integer"
+                type: "integer"
               }
             },
 
@@ -3758,22 +4108,14 @@ function buildLiveTools() {
             "desktop_screenshot",
 
           description:
-            (
-              "يلتقط Screenshot حقيقي للشاشة ويحلله. "
-              +
-              "استخدمه فقط عندما يحتاج كريم رؤية الشاشة كاملة "
-              +
-              "أو عندما DOM/UIA غير قادرين."
-            ),
+            "يلتقط Screenshot ويحلل الشاشة. يستخدم عند الحاجة فقط.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               question: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3783,24 +4125,16 @@ function buildLiveTools() {
         },
 
 
-        // ==================================================
-        // BROWSER DIRECT
-        // ==================================================
-
         {
           name:
             "browser_status",
 
           description:
-            "يفحص Chrome Direct ويعرض التبويب الحالي.",
+            "يفحص حالة Chrome Direct.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -3812,25 +4146,18 @@ function buildLiveTools() {
             "browser_read_page",
 
           description:
-            (
-              "يقرأ عناصر الصفحة الحالية مباشرة من DOM "
-              +
-              "بدون Screenshot."
-            ),
+            "يقرأ الصفحة الحالية مباشرة من DOM.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               query: {
-                type:
-                  "string"
+                type: "string"
               },
 
               limit: {
-                type:
-                  "integer"
+                type: "integer"
               }
             },
 
@@ -3845,20 +4172,14 @@ function buildLiveTools() {
             "browser_open_url",
 
           description:
-            (
-              "يفتح رابطاً داخل Chrome ويجلب Chrome "
-              +
-              "إلى واجهة الشاشة أمام كريم."
-            ),
+            "يفتح رابطاً داخل Chrome ويجلب Chrome للمقدمة.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               url: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3877,30 +4198,22 @@ function buildLiveTools() {
             "browser_click",
 
           description:
-            (
-              "يضغط مباشرة على عنصر داخل صفحة Chrome "
-              +
-              "حسب النص الظاهر في العنصر."
-            ),
+            "يضغط على عنصر في Chrome حسب النص.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               text: {
-                type:
-                  "string"
+                type: "string"
               },
 
               occurrence: {
-                type:
-                  "integer"
+                type: "integer"
               },
 
               confirmed: {
-                type:
-                  "boolean"
+                type: "boolean"
               }
             },
 
@@ -3919,16 +4232,14 @@ function buildLiveTools() {
             "browser_search",
 
           description:
-            "يبحث داخل مربع البحث الموجود في الموقع الحالي.",
+            "يبحث داخل مربع البحث بالموقع الحالي.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               text: {
-                type:
-                  "string"
+                type: "string"
               }
             },
 
@@ -3947,15 +4258,11 @@ function buildLiveTools() {
             "browser_play_video",
 
           description:
-            "يشغل الفيديو الحالي مباشرة.",
+            "يشغل الفيديو الحالي.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -3967,15 +4274,11 @@ function buildLiveTools() {
             "browser_pause_video",
 
           description:
-            "يوقف الفيديو الحالي مباشرة.",
+            "يوقف الفيديو الحالي.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -3987,16 +4290,14 @@ function buildLiveTools() {
             "browser_scroll",
 
           description:
-            "يحرك صفحة Chrome، موجب للأسفل وسالب للأعلى.",
+            "يمرر صفحة Chrome. الموجب للأسفل والسالب للأعلى.",
 
           parametersJsonSchema: {
-            type:
-              "object",
+            type: "object",
 
             properties: {
               amount: {
-                type:
-                  "integer"
+                type: "integer"
               }
             },
 
@@ -4015,15 +4316,11 @@ function buildLiveTools() {
             "browser_back",
 
           description:
-            "يرجع صفحة للخلف في Chrome.",
+            "يرجع صفحة للخلف.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -4035,15 +4332,11 @@ function buildLiveTools() {
             "browser_forward",
 
           description:
-            "يتقدم صفحة للأمام في Chrome.",
+            "يتقدم صفحة للأمام.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -4055,15 +4348,11 @@ function buildLiveTools() {
             "browser_reload",
 
           description:
-            "يعيد تحميل صفحة Chrome الحالية.",
+            "يعيد تحميل الصفحة الحالية.",
 
           parametersJsonSchema: {
-            type:
-              "object",
-
-            properties:
-              {},
-
+            type: "object",
+            properties: {},
             additionalProperties:
               false
           }
@@ -4092,38 +4381,23 @@ async function executeLiveTool(
     sessionInfo;
 
 
-  switch (
-    toolName
-  ) {
-
-    // ==================================================
-    // TIME
-    // ==================================================
+  switch (toolName) {
 
     case "get_current_time":
 
       return {
-        ok:
-          true,
-
+        ok: true,
         timezone:
-          KEMO_TIMEZONE,
-
+          XPAND_TIMEZONE,
         localIso:
           localIsoString(),
-
         human:
           humanLocalTime(),
-
         utc:
           new Date()
             .toISOString()
       };
 
-
-    // ==================================================
-    // REMINDERS
-    // ==================================================
 
     case "create_reminder":
 
@@ -4149,20 +4423,12 @@ async function executeLiveTool(
       );
 
 
-    // ==================================================
-    // SEARCH
-    // ==================================================
-
     case "search_web":
 
       return await searchWeb(
         args?.query
       );
 
-
-    // ==================================================
-    // MEMORY
-    // ==================================================
 
     case "recall_memory":
 
@@ -4187,59 +4453,40 @@ async function executeLiveTool(
                 100
               ),
 
-            importance:
-              5,
-
+            importance: 5,
             source:
               "live_call"
           }
         );
 
-      return {
-        ok:
-          true,
 
+      return {
+        ok: true,
         memoryId
       };
     }
 
 
-    // ==================================================
-    // TELEGRAM
-    // ==================================================
+    case "send_chat_message":
 
-    case "send_telegram_message": {
-
-      const text =
-        cleanText(
-          args?.text,
-          12000
-        );
-
-      await sendTelegramMessage(
+      return await sendChatMessageFromCall(
         userId,
-        text
+        args || {}
       );
 
-      await saveSharedMessage(
+
+    case "send_telegram_message":
+
+      return await sendChatMessageFromCall(
         userId,
-        "assistant",
-        text
+        {
+          message:
+            args?.text,
+          source_channel:
+            "live_call"
+        }
       );
 
-      return {
-        ok:
-          true,
-
-        sent:
-          true
-      };
-    }
-
-
-    // ==================================================
-    // WHOLE-PC WINDOWS
-    // ==================================================
 
     case "desktop_open_program": {
 
@@ -4249,21 +4496,13 @@ async function executeLiveTool(
           300
         );
 
-      if (
-        !app
-      ) {
+
+      if (!app) {
         throw new Error(
           "Program name missing"
         );
       }
 
-      console.log(
-        (
-          "🚀 OPEN PROGRAM | "
-          +
-          app
-        )
-      );
 
       return await runDesktopCommand(
         "open_installed_app",
@@ -4290,82 +4529,49 @@ async function executeLiveTool(
       );
 
 
-    case "desktop_focus_window": {
-
-      const window =
-        cleanText(
-          args?.window,
-          500
-        );
-
-      console.log(
-        (
-          "🎯 FOCUS WINDOW | "
-          +
-          window
-        )
-      );
+    case "desktop_focus_window":
 
       return await runDesktopCommand(
         "window_activate",
         {
-          window
+          window:
+            cleanText(
+              args?.window,
+              500
+            )
         },
         15000
       );
-    }
 
 
-    case "desktop_read_app": {
+    case "desktop_read_app":
 
-      const window =
-        cleanText(
-          args?.window,
-          500
-        );
+      return await runDesktopCommand(
+        "uia_snapshot",
+        {
+          window:
+            cleanText(
+              args?.window,
+              500
+            ),
 
-      const result =
-        await runDesktopCommand(
-          "uia_snapshot",
-          {
-            window,
+          query:
+            cleanText(
+              args?.query,
+              500
+            ),
 
-            query:
-              cleanText(
-                args?.query,
-                500
+          limit:
+            clamp(
+              Number(
+                args?.limit || 180
               ),
-
-            limit:
-              clamp(
-                Number(
-                  args?.limit || 180
-                ),
-                20,
-                250
-              )
-          },
-          20000
-        );
-
-      console.log(
-        (
-          "🪟 UIA READ | "
-          +
-          window
-          +
-          " | elements="
-          +
-          (
-            result?.count
-            ??
-            "?"
-          )
-        )
+              20,
+              250
+            )
+        },
+        20000
       );
-
-      return result;
-    }
 
 
     case "desktop_app_click": {
@@ -4382,49 +4588,27 @@ async function executeLiveTool(
           500
         );
 
+
       if (
-        actionNeedsConfirmation(
-          name
-        )
+        actionNeedsConfirmation(name)
         &&
-        args?.confirmed !==
-          true
+        args?.confirmed !== true
       ) {
         return {
-          ok:
-            true,
-
-          completed:
-            false,
-
-          needsConfirmation:
-            true,
-
+          ok: true,
+          completed: false,
+          needsConfirmation: true,
           message:
-            "هاي ضغطة حساسة أو نهائية. أكدلي أول."
+            "هاي خطوة حساسة أو نهائية. أكدلي أول."
         };
       }
 
-      console.log(
-        (
-          "🖱️ UIA CLICK | "
-          +
-          window
-          +
-          " | "
-          +
-          name
-        )
-      );
 
       return await runDesktopCommand(
         "uia_execute",
         {
-          action:
-            "click",
-
+          action: "click",
           window,
-
           name,
 
           controlType:
@@ -4448,51 +4632,30 @@ async function executeLiveTool(
     }
 
 
-    case "desktop_app_type": {
-
-      const window =
-        cleanText(
-          args?.window,
-          500
-        );
-
-      const field =
-        cleanText(
-          args?.field,
-          500
-        );
-
-      const text =
-        cleanText(
-          args?.text,
-          6000
-        );
-
-      console.log(
-        (
-          "⌨️ UIA TYPE | "
-          +
-          window
-          +
-          " | "
-          +
-          field
-        )
-      );
+    case "desktop_app_type":
 
       return await runDesktopCommand(
         "uia_execute",
         {
-          action:
-            "type",
+          action: "type",
 
-          window,
+          window:
+            cleanText(
+              args?.window,
+              500
+            ),
 
           name:
-            field,
+            cleanText(
+              args?.field,
+              500
+            ),
 
           value:
-            text,
+            cleanText(
+              args?.text,
+              6000
+            ),
 
           controlType:
             cleanText(
@@ -4501,41 +4664,33 @@ async function executeLiveTool(
             ),
 
           clear:
-            args?.clear !==
-            false,
+            args?.clear !== false,
 
           pressEnter:
-            args?.pressEnter ===
-            true
+            args?.pressEnter === true
         },
         15000
       );
-    }
 
 
-    case "desktop_app_select": {
-
-      const window =
-        cleanText(
-          args?.window,
-          500
-        );
-
-      const name =
-        cleanText(
-          args?.name,
-          500
-        );
+    case "desktop_app_select":
 
       return await runDesktopCommand(
         "uia_execute",
         {
-          action:
-            "select",
+          action: "select",
 
-          window,
+          window:
+            cleanText(
+              args?.window,
+              500
+            ),
 
-          name,
+          name:
+            cleanText(
+              args?.name,
+              500
+            ),
 
           controlType:
             cleanText(
@@ -4555,7 +4710,6 @@ async function executeLiveTool(
         },
         15000
       );
-    }
 
 
     case "desktop_screenshot":
@@ -4569,10 +4723,6 @@ async function executeLiveTool(
         "شو ظاهر على الشاشة؟"
       );
 
-
-    // ==================================================
-    // BROWSER
-    // ==================================================
 
     case "browser_status":
 
@@ -4615,31 +4765,22 @@ async function executeLiveTool(
           3000
         );
 
+
       if (
         !/^https?:\/\//i
-          .test(
-            url
-          )
+          .test(url)
       ) {
         throw new Error(
           "Only http/https URLs allowed"
         );
       }
 
-      console.log(
-        (
-          "🌐 OPEN URL | "
-          +
-          url
-        )
-      );
 
       return await runDesktopCommand(
         "browser_execute",
         {
           action:
             "open_url",
-
           url
         },
         15000
@@ -4655,43 +4796,27 @@ async function executeLiveTool(
           1000
         );
 
+
       if (
-        actionNeedsConfirmation(
-          text
-        )
+        actionNeedsConfirmation(text)
         &&
-        args?.confirmed !==
-          true
+        args?.confirmed !== true
       ) {
         return {
-          ok:
-            true,
-
-          completed:
-            false,
-
-          needsConfirmation:
-            true,
-
+          ok: true,
+          completed: false,
+          needsConfirmation: true,
           message:
             "هاي خطوة حساسة أو نهائية. أكدلي أول."
         };
       }
 
-      console.log(
-        (
-          "🌐 DOM CLICK | "
-          +
-          text
-        )
-      );
 
       return await runDesktopCommand(
         "browser_execute",
         {
           action:
             "click_text",
-
           text,
 
           occurrence:
@@ -4835,13 +4960,14 @@ function sanitizeTranscript(
     return [];
   }
 
+
   return transcript
-    .slice(
-      0,
-      500
-    )
+    .slice(0, 500)
     .map(
-      item => {
+      (
+        item,
+        index
+      ) => {
 
         const role =
           item?.role ===
@@ -4851,27 +4977,34 @@ function sanitizeTranscript(
             :
             "user";
 
+
         const text =
           cleanText(
             item?.text,
             8000
           );
 
-        if (
-          !text
-        ) {
+
+        if (!text) {
           return null;
         }
 
+
         return {
+          turnId:
+            cleanText(
+              item?.turnId
+              ||
+              `final-${index}`,
+              200
+            ),
+
           role,
           text
         };
       }
     )
-    .filter(
-      Boolean
-    );
+    .filter(Boolean);
 }
 
 
@@ -4882,16 +5015,19 @@ function sanitizeTranscript(
 const app =
   express();
 
+
 app.disable(
   "x-powered-by"
 );
 
+
 app.use(
   express.json({
     limit:
-      "4mb"
+      "6mb"
   })
 );
+
 
 app.use(
   (
@@ -4937,31 +5073,67 @@ app.get(
   ) => {
 
     try {
+
       await pool.query(
         "SELECT 1"
       );
 
+
       const desktop =
         await desktopHealth();
 
+
+      const master =
+        await loadSharedMasterPrompt(
+          false
+        );
+
+
       res.json({
-        ok:
-          true,
+        ok: true,
 
         service:
-          "kemo-call",
+          "xpand-call",
 
         version:
-          "6.1-whole-pc-direct",
+          SERVER_VERSION,
+
+        agent:
+          AGENT_NAME,
+
+        primaryUser:
+          PRIMARY_USER_NAME,
+
+        company:
+          COMPANY_NAME,
 
         model:
           LIVE_MODEL,
 
         voice:
-          KEMO_VOICE,
+          XPAND_VOICE_ID,
+
+        timezone:
+          XPAND_TIMEZONE,
 
         continuityMinutes:
           CALL_CONTINUITY_MINUTES,
+
+        sharedMasterPrompt:
+          Boolean(
+            master?.prompt
+          ),
+
+        masterPromptVersion:
+          master?.version
+          ||
+          "",
+
+        realtimeCallMemory:
+          true,
+
+        sendChatMessage:
+          true,
 
         desktopOnline:
           Boolean(
@@ -5002,13 +5174,13 @@ app.get(
           localIsoString()
       });
 
+
     } catch (error) {
+
       res
         .status(500)
         .json({
-          ok:
-            false,
-
+          ok: false,
           error:
             error.message
         });
@@ -5029,6 +5201,7 @@ app.post(
   ) => {
 
     try {
+
       const {
         userId,
         user
@@ -5036,6 +5209,7 @@ app.post(
         verifyTelegramInitData(
           req.body?.initData
         );
+
 
       const [
         master,
@@ -5066,11 +5240,14 @@ app.post(
 
         ]);
 
+
       const callId =
         crypto.randomUUID();
 
+
       const callSecret =
         createCallSecret();
+
 
       const systemInstruction =
         buildLiveInstructions(
@@ -5079,6 +5256,7 @@ app.post(
           dialect.context,
           continuity
         );
+
 
       await pool.query(
         `
@@ -5105,40 +5283,40 @@ app.post(
         ]
       );
 
+
       await recordEvent(
         userId,
         userId,
         "live_call_started",
-        "بدأت مكالمة Kemo Whole-PC",
+        "بدأت مكالمة XPAND الموحدة",
         {
           callId,
-
           version:
-            "6.1",
-
-          wholePc:
+            SERVER_VERSION,
+          sharedConversation:
             true
         }
       );
 
+
       res.json({
-        ok:
-          true,
+        ok: true,
 
         callId,
-
         callSecret,
-
         ephemeralToken,
 
         model:
           LIVE_MODEL,
 
         voice:
-          KEMO_VOICE,
+          XPAND_VOICE_ID,
+
+        voiceId:
+          XPAND_VOICE_ID,
 
         timezone:
-          KEMO_TIMEZONE,
+          XPAND_TIMEZONE,
 
         systemInstruction,
 
@@ -5153,17 +5331,17 @@ app.post(
         sharedConversation:
           true,
 
-        realtimeDesktop:
+        realtimeCallMemory:
           true,
 
-        wholePcDirect:
+        sendChatMessage:
           true,
 
-        browserDirect:
-          true,
+        agent:
+          AGENT_NAME,
 
-        windowsUIAutomation:
-          true,
+        primaryUser:
+          PRIMARY_USER_NAME,
 
         user: {
           id:
@@ -5176,6 +5354,7 @@ app.post(
         }
       });
 
+
     } catch (error) {
 
       console.error(
@@ -5183,12 +5362,74 @@ app.post(
         error
       );
 
+
       res
         .status(500)
         .json({
-          ok:
-            false,
+          ok: false,
+          error:
+            error.message
+        });
+    }
+  }
+);
 
+
+// ======================================================
+// REAL-TIME CALL TURN
+// ======================================================
+
+app.post(
+  "/api/call/turn",
+  async (
+    req,
+    res
+  ) => {
+
+    try {
+
+      const session =
+        await getCallSession(
+          req.body?.callId,
+          req.body?.callSecret,
+          true
+        );
+
+
+      const result =
+        await persistCallTurn(
+          session,
+          {
+            turnId:
+              req.body?.turnId,
+
+            role:
+              req.body?.role,
+
+            text:
+              req.body?.text
+          }
+        );
+
+
+      res.json({
+        ok: true,
+        ...result
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "❌ Call turn:",
+        error
+      );
+
+
+      res
+        .status(400)
+        .json({
+          ok: false,
           error:
             error.message
         });
@@ -5209,6 +5450,7 @@ app.post(
   ) => {
 
     try {
+
       const session =
         await getCallSession(
           req.body?.callId,
@@ -5216,24 +5458,29 @@ app.post(
           true
         );
 
+
       const toolName =
         cleanText(
           req.body?.toolName,
           100
         );
 
+
       console.log(
         (
-          "🛠️ Live tool: "
+          "🛠️ XPAND live tool: "
           +
           toolName
         )
       );
 
+
       const started =
         Date.now();
 
+
       try {
+
         const result =
           await executeLiveTool(
             session,
@@ -5241,8 +5488,8 @@ app.post(
             (
               req.body?.args
               &&
-              typeof req.body.args ===
-                "object"
+              typeof req.body.args
+              === "object"
             )
               ?
               req.body.args
@@ -5250,10 +5497,12 @@ app.post(
               {}
           );
 
+
         const elapsed =
           Date.now()
           -
           started;
+
 
         console.log(
           (
@@ -5269,18 +5518,16 @@ app.post(
           )
         );
 
-        res.json({
-          ok:
-            true,
 
+        res.json({
+          ok: true,
           tool:
             toolName,
-
           elapsedMs:
             elapsed,
-
           result
         });
+
 
       } catch (toolError) {
 
@@ -5288,6 +5535,7 @@ app.post(
           Date.now()
           -
           started;
+
 
         console.error(
           (
@@ -5305,29 +5553,25 @@ app.post(
           )
         );
 
-        res.json({
-          ok:
-            false,
 
+        res.json({
+          ok: false,
           tool:
             toolName,
-
           elapsedMs:
             elapsed,
-
           error:
             toolError.message
         });
       }
+
 
     } catch (error) {
 
       res
         .status(401)
         .json({
-          ok:
-            false,
-
+          ok: false,
           error:
             error.message
         });
@@ -5349,7 +5593,9 @@ app.post(
 
     let session;
 
+
     try {
+
       session =
         await getCallSession(
           req.body?.callId,
@@ -5357,57 +5603,56 @@ app.post(
           false
         );
 
+
     } catch (error) {
+
       return res
         .status(401)
         .json({
-          ok:
-            false,
-
+          ok: false,
           error:
             error.message
         });
     }
+
 
     if (
       session.status ===
       "ended"
     ) {
       return res.json({
-        ok:
-          true,
-
+        ok: true,
         alreadySaved:
           true
       });
     }
+
 
     const transcript =
       sanitizeTranscript(
         req.body?.transcript
       );
 
-    const client =
-      await pool.connect();
 
     try {
-      await client.query(
-        "BEGIN"
-      );
 
+      //
+      // Save anything that was not already persisted
+      // live through /api/call/turn.
+      //
       for (
         const turn
         of transcript
       ) {
-        await saveMessageWithArchive(
-          client,
-          session.userId,
-          turn.role,
-          turn.text
+
+        await persistCallTurn(
+          session,
+          turn
         );
       }
 
-      await client.query(
+
+      await pool.query(
         `
         UPDATE call_sessions
         SET
@@ -5424,41 +5669,51 @@ app.post(
         ]
       );
 
-      await client.query(
-        "COMMIT"
+
+      await recordEvent(
+        session.userId,
+        session.userId,
+        "live_call_ended",
+        "انتهت مكالمة XPAND الموحدة",
+        {
+          callId:
+            session.callId,
+
+          savedTurns:
+            transcript.length
+        }
       );
 
+
       res.json({
-        ok:
-          true,
+        ok: true,
 
         savedTurns:
           transcript.length,
 
         sharedConversation:
+          true,
+
+        realtimeCallMemory:
           true
       });
 
+
     } catch (error) {
 
-      try {
-        await client.query(
-          "ROLLBACK"
-        );
-      } catch {}
+      console.error(
+        "❌ End call:",
+        error
+      );
+
 
       res
         .status(500)
         .json({
-          ok:
-            false,
-
+          ok: false,
           error:
             error.message
         });
-
-    } finally {
-      client.release();
     }
   }
 );
@@ -5472,8 +5727,7 @@ app.use(
   express.static(
     STATIC_DIR,
     {
-      index:
-        false
+      index: false
     }
   )
 );
@@ -5487,8 +5741,7 @@ app.use(
   ) => {
 
     if (
-      req.method ===
-        "GET"
+      req.method === "GET"
       &&
       !req.path.startsWith(
         "/api/"
@@ -5503,6 +5756,7 @@ app.use(
       );
     }
 
+
     next();
   }
 );
@@ -5516,54 +5770,60 @@ async function start() {
 
   const missing = [];
 
-  if (
-    !TELEGRAM_BOT_TOKEN
-  ) {
+
+  if (!TELEGRAM_BOT_TOKEN) {
     missing.push(
       "TELEGRAM_BOT_TOKEN"
     );
   }
 
-  if (
-    !GEMINI_API_KEY
-  ) {
+
+  if (!GEMINI_API_KEY) {
     missing.push(
       "GEMINI_API_KEY"
     );
   }
 
-  if (
-    !DATABASE_URL
-  ) {
+
+  if (!DATABASE_URL) {
     missing.push(
       "DATABASE_URL"
     );
   }
 
+
   if (
-    missing.length
+    !TELEGRAM_ALLOWED_USER_ID
   ) {
+    missing.push(
+      "TELEGRAM_ALLOWED_USER_ID"
+    );
+  }
+
+
+  if (missing.length) {
+
     console.error(
       (
         "❌ Missing variables: "
         +
-        missing.join(
-          ", "
-        )
+        missing.join(", ")
       )
     );
 
-    process.exit(
-      1
-    );
+
+    process.exit(1);
   }
 
+
   await initDatabase();
+
 
   const master =
     await loadSharedMasterPrompt(
       false
     );
+
 
   app.listen(
     PORT,
@@ -5573,15 +5833,16 @@ async function start() {
       const desktop =
         await desktopHealth();
 
+
       console.log("");
       console.log(
         "======================================="
       );
       console.log(
-        " KEMO HUMAN CALL SERVER V6.1"
+        " XPAND UNIFIED CALL SERVER V7.0"
       );
       console.log(
-        " WHOLE-PC REALTIME DIRECT CONTROL"
+        " TEXT + VOICE + LIVE CALL = ONE XPAND"
       );
       console.log(
         "======================================="
@@ -5593,11 +5854,23 @@ async function start() {
       );
 
       console.log(
+        `✅ Agent: ${AGENT_NAME}`
+      );
+
+      console.log(
+        `✅ Primary user: ${PRIMARY_USER_NAME}`
+      );
+
+      console.log(
         `✅ Live model: ${LIVE_MODEL}`
       );
 
       console.log(
-        `✅ Voice: ${KEMO_VOICE}`
+        `✅ Unified voice: ${XPAND_VOICE_ID}`
+      );
+
+      console.log(
+        `✅ Timezone: ${XPAND_TIMEZONE}`
       );
 
       console.log(
@@ -5611,11 +5884,45 @@ async function start() {
       );
 
       console.log(
-        "✅ Shared Telegram + Call conversation"
+        (
+          "✅ Shared master prompt: "
+          +
+          (
+            master?.prompt
+              ?
+              "LOADED"
+              :
+              "missing"
+          )
+        )
+      );
+
+      console.log(
+        (
+          "✅ Master prompt version: "
+          +
+          (
+            master?.version
+            ||
+            "unknown"
+          )
+        )
+      );
+
+      console.log(
+        "✅ Shared Telegram + Voice + Call conversation"
+      );
+
+      console.log(
+        "✅ Real-time call turn persistence"
       );
 
       console.log(
         "✅ Shared Permanent Memory"
+      );
+
+      console.log(
+        "✅ Call → Telegram send_chat_message"
       );
 
       console.log(
@@ -5674,75 +5981,25 @@ async function start() {
         )
       );
 
-      console.log(
-        (
-          "🎯 Foreground control: "
-          +
-          (
-            desktop?.foregroundControl
-              ?
-              "READY"
-              :
-              "not ready"
-          )
-        )
-      );
-
-      console.log(
-        "🚀 Installed app launcher: READY"
-      );
-
-      console.log(
-        "🖼️ Screenshot Vision: FALLBACK ONLY"
-      );
-
-      console.log(
-        "🛡️ Sensitive final actions require confirmation"
-      );
-
-      console.log(
-        (
-          "✅ Tavily: "
-          +
-          (
-            TAVILY_API_KEY
-              ?
-              "configured"
-              :
-              "MISSING"
-          )
-        )
-      );
-
-      console.log(
-        (
-          "✅ Shared Master Prompt: "
-          +
-          (
-            master.ok
-              ?
-              "ready"
-              :
-              "MISSING"
-          )
-        )
-      );
-
       console.log("");
     }
   );
 }
 
 
-start().catch(
-  error => {
-    console.error(
-      "❌ Startup failed:",
-      error
-    );
+// ======================================================
+// START SERVER
+// ======================================================
 
-    process.exit(
-      1
-    );
-  }
-);
+start()
+  .catch(
+    error => {
+
+      console.error(
+        "❌ XPAND call server startup failed:",
+        error
+      );
+
+      process.exit(1);
+    }
+  );
