@@ -5,9 +5,9 @@ import {
 
 
 // =========================================================
-// KEMO HUMAN CALL UI V4
+// XPAND HUMAN CALL UI V4
 //
-// ONE KEMO
+// ONE XPAND
 //
 // - Ultra fast live audio
 // - Shared Telegram/call context
@@ -117,7 +117,7 @@ const PLAYBACK_LEAD_SECONDS =
 const LIVE_CONVERSATION_POLICY = `
 قواعد المكالمة السريعة:
 
-- هذه نفس محادثة Kemo الموجودة على Telegram.
+- هذه نفس محادثة XPAND الموجودة على Telegram.
 - لا تتعامل مع المكالمة كشخص أو مساعد مختلف.
 - ابدأ الرد بسرعة فور انتهاء كلام كريم.
 - لا تعمل مقدمة قبل الجواب.
@@ -1530,7 +1530,7 @@ function triggerLocalBargeIn(
 
   setVisualState(
     "listening",
-    "kemo يسمعك..."
+    "XPAND يسمعك..."
   );
 
 
@@ -2040,7 +2040,7 @@ async function playPCMChunk(
 
   setVisualState(
     "speaking",
-    "kemo يحكي..."
+    "XPAND يحكي..."
   );
 
 
@@ -2077,7 +2077,7 @@ async function playPCMChunk(
               ?
               "الميكروفون مكتوم"
               :
-              "kemo يسمعك..."
+              "XPAND يسمعك..."
           );
         }
       }
@@ -2251,7 +2251,7 @@ function getToolLabel(
   return (
     labels[name]
     ||
-    "kemo بنفّذ..."
+    "XPAND بنفّذ..."
   );
 }
 
@@ -2653,7 +2653,7 @@ function handleUserTranscription(
 
     setVisualState(
       "thinking",
-      "kemo يرد..."
+      "XPAND يرد..."
     );
   }
 }
@@ -2733,7 +2733,7 @@ function handleServerContent(
 
 
     setCaption(
-      "kemo: "
+      "XPAND: "
       +
       pendingModelText
     );
@@ -2820,7 +2820,7 @@ function handleServerContent(
           ?
           "الميكروفون مكتوم"
           :
-          "kemo يسمعك..."
+          "XPAND يسمعك..."
       );
     }
   }
@@ -3111,7 +3111,7 @@ async function startCall() {
     if (!initData) {
 
       throw new Error(
-        "افتح المكالمة من زر kemo داخل تيليغرام."
+        "افتح المكالمة من زر XPAND داخل تيليغرام."
       );
     }
 
@@ -3290,7 +3290,7 @@ async function startCall() {
 
     setVisualState(
       "listening",
-      "kemo يسمعك..."
+      "XPAND يسمعك..."
     );
 
 
@@ -3301,7 +3301,7 @@ async function startCall() {
     // IMPORTANT:
     //
     // أقل من 15 دقيقة:
-    // لا نجبر Kemo يحكي أي شيء.
+    // لا نجبر XPAND يحكي أي شيء.
     // ينتظر كريم ويكمل السياق.
     //
     // أكثر من 15 دقيقة:
@@ -3354,7 +3354,7 @@ async function startCall() {
 
 
       // لا نرسل prompt لبدء الكلام.
-      // Kemo ينتظر كريم ويكمل من آخر سياق.
+      // XPAND ينتظر كريم ويكمل من آخر سياق.
     }
 
 
@@ -3429,7 +3429,7 @@ function toggleMute() {
       ?
       "الميكروفون مكتوم"
       :
-      "kemo يسمعك..."
+      "XPAND يسمعك..."
   );
 }
 
@@ -3770,7 +3770,7 @@ console.log(
 );
 
 console.log(
-  " KEMO HUMAN CALL UI V4 - ONE KEMO"
+  " XPAND HUMAN CALL UI V4 - ONE XPAND"
 );
 
 console.log(
@@ -3811,5 +3811,5 @@ console.log(
 
 
 // =========================================================
-// KEMO HUMAN CALL UI V4
+// XPAND HUMAN CALL UI V4
 // =========================================================
