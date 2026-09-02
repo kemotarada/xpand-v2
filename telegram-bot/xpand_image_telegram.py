@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND TELEGRAM IMAGE STUDIO V1.0
+# XPAND TELEGRAM IMAGE STUDIO V1.0.1
 #
 # Connects XPAND Smart Image Engine to Telegram.
 #
@@ -18,7 +18,7 @@
 # - requests
 #
 # Does NOT modify legacy main.py directly.
-# Installed later from main_xpand.py.
+# Installed from main_xpand.py.
 # =========================================================
 
 from __future__ import annotations
@@ -41,11 +41,9 @@ from xpand_image_engine import (
 # VERSION
 # =========================================================
 
-VERSION = "1.0"
+VERSION = "1.0.1"
 
-MODULE_NAME = (
-    "XPAND Telegram Image Studio"
-)
+MODULE_NAME = "XPAND Telegram Image Studio"
 
 
 # =========================================================
@@ -139,7 +137,6 @@ def normalized(
         12000
     ).lower()
 
-
     replacements = {
         "أ": "ا",
         "إ": "ا",
@@ -150,7 +147,6 @@ def normalized(
         "ئ": "ي",
     }
 
-
     for old, new in replacements.items():
 
         text = text.replace(
@@ -158,20 +154,17 @@ def normalized(
             new
         )
 
-
     text = re.sub(
         r"[\u064B-\u065F]",
         "",
         text
     )
 
-
     text = re.sub(
         r"\s+",
         " ",
         text
     )
-
 
     return text.strip()
 
@@ -184,7 +177,6 @@ def contains_any(
     source = normalized(
         text
     )
-
 
     return any(
         normalized(
@@ -275,16 +267,13 @@ def looks_like_image_generation_request(
         12000
     )
 
-
     if not value:
 
         return False
 
-
     source = normalized(
         value
     )
-
 
     if source.startswith(
         "/image"
@@ -292,11 +281,6 @@ def looks_like_image_generation_request(
 
         return True
 
-
-    #
-    # Avoid treating educational questions about images
-    # as generation requests.
-    #
     if contains_any(
         value,
         IMAGE_QUESTION_MARKERS
@@ -304,18 +288,15 @@ def looks_like_image_generation_request(
 
         return False
 
-
     has_action = contains_any(
         value,
         IMAGE_ACTION_MARKERS
     )
 
-
     has_asset = contains_any(
         value,
         IMAGE_ASSET_MARKERS
     )
-
 
     return (
         has_action
@@ -352,7 +333,6 @@ def detect_generation_mode(
 
         return "best"
 
-
     if contains_any(
         text,
         [
@@ -366,7 +346,6 @@ def detect_generation_mode(
 
         return "openai"
 
-
     if contains_any(
         text,
         [
@@ -379,7 +358,6 @@ def detect_generation_mode(
 
         return "google_pro"
 
-
     if contains_any(
         text,
         [
@@ -390,7 +368,6 @@ def detect_generation_mode(
     ):
 
         return "google_fast"
-
 
     return "auto"
 
@@ -425,12 +402,10 @@ def detect_requested_image_count(
         text
     )
 
-
     patterns = [
         r"\b([1-4])\s*(?:صور|صوره|صورة|نسخ|خيارات)\b",
         r"\b(?:صور|نسخ|خيارات)\s*([1-4])\b",
     ]
-
 
     for pattern in patterns:
 
@@ -438,7 +413,6 @@ def detect_requested_image_count(
             pattern,
             source
         )
-
 
         if match:
 
@@ -453,7 +427,6 @@ def detect_requested_image_count(
                     )
                 )
             )
-
 
     for marker, value in NUMBER_WORDS.items():
 
@@ -480,7 +453,6 @@ def detect_requested_image_count(
                     )
                 )
 
-
     return 1
 
 
@@ -497,7 +469,6 @@ def extract_image_prompt(
         10000
     )
 
-
     if value.lower().startswith(
         "/image"
     ):
@@ -507,7 +478,6 @@ def extract_image_prompt(
                 "/image"
             ):
         ].strip()
-
 
     return value
 
@@ -530,13 +500,11 @@ def telegram_api_url(
         1000
     )
 
-
     if not token:
 
         raise RuntimeError(
             "TELEGRAM_BOT_TOKEN missing"
         )
-
 
     return (
         "https://api.telegram.org/bot"
@@ -564,26 +532,22 @@ def send_photo_bytes(
 
     buffer.name = filename
 
-
     response = requests.post(
         telegram_api_url(
             core,
             "sendPhoto"
         ),
-
         data={
             "chat_id":
                 str(
                     chat_id
                 ),
-
             "caption":
                 clean_text(
                     caption,
                     1000
                 ),
         },
-
         files={
             "photo": (
                 filename,
@@ -593,14 +557,10 @@ def send_photo_bytes(
                 "image/png"
             )
         },
-
-        timeout=
-            TELEGRAM_TIMEOUT
+        timeout=TELEGRAM_TIMEOUT
     )
 
-
     data = response.json()
-
 
     if (
         not response.ok
@@ -621,7 +581,6 @@ def send_photo_bytes(
             )
         )
 
-
     return data
 
 
@@ -640,26 +599,22 @@ def send_document_bytes(
 
     buffer.name = filename
 
-
     response = requests.post(
         telegram_api_url(
             core,
             "sendDocument"
         ),
-
         data={
             "chat_id":
                 str(
                     chat_id
                 ),
-
             "caption":
                 clean_text(
                     caption,
                     1000
                 ),
         },
-
         files={
             "document": (
                 filename,
@@ -669,14 +624,10 @@ def send_document_bytes(
                 "application/octet-stream"
             )
         },
-
-        timeout=
-            TELEGRAM_TIMEOUT
+        timeout=TELEGRAM_TIMEOUT
     )
 
-
     data = response.json()
-
 
     if (
         not response.ok
@@ -696,7 +647,6 @@ def send_document_bytes(
                 )
             )
         )
-
 
     return data
 
@@ -721,7 +671,6 @@ def extract_photo_file_id(
         )
     )
 
-
     if (
         not isinstance(
             photos,
@@ -732,7 +681,6 @@ def extract_photo_file_id(
     ):
 
         return ""
-
 
     return clean_text(
         photos[-1].get(
@@ -758,7 +706,6 @@ def extract_document_info(
         )
     )
 
-
     if not isinstance(
         document,
         dict
@@ -768,7 +715,6 @@ def extract_document_info(
             "file_id": "",
             "file_unique_id": "",
         }
-
 
     return {
         "file_id":
@@ -847,7 +793,6 @@ def ensure_image_table(
                 """
             )
 
-
             cur.execute(
                 """
                 CREATE INDEX IF NOT EXISTS
@@ -878,7 +823,6 @@ def save_image_record(
         ensure_image_table(
             core
         )
-
 
         with core.db_connect() as conn:
 
@@ -931,7 +875,6 @@ def save_image_record(
                     """,
                     (
                         user_id,
-
                         chat_id,
 
                         clean_text(
@@ -1015,9 +958,7 @@ def save_image_record(
                     )
                 )
 
-
                 row = cur.fetchone()
-
 
                 return (
                     int(
@@ -1027,7 +968,6 @@ def save_image_record(
                     else
                     None
                 )
-
 
     except Exception as error:
 
@@ -1040,7 +980,6 @@ def save_image_record(
                 )
             )
         )
-
 
         return None
 
@@ -1058,16 +997,13 @@ def provider_label(
 
         return "GPT-Image-2"
 
-
     if provider == "google_fast":
 
         return "Nano Banana 2"
 
-
     if provider == "google_pro":
 
         return "Nano Banana Pro"
-
 
     return clean_text(
         model,
@@ -1096,14 +1032,12 @@ def deliver_generated_image(
         image.model
     )
 
-
     counter = (
         f" | {index}/{total}"
         if total > 1
         else
         ""
     )
-
 
     caption = (
         "🎨 XPAND Image"
@@ -1135,13 +1069,11 @@ def deliver_generated_image(
         )
     )
 
-
     photo_file_id = ""
 
     document_file_id = ""
 
     document_file_unique_id = ""
-
 
     # -----------------------------------------------------
     # PREVIEW
@@ -1162,22 +1094,13 @@ def deliver_generated_image(
                 )
             )
 
-
             photo_file_id = (
                 extract_photo_file_id(
                     photo_response
                 )
             )
 
-
         except Exception as error:
-
-            #
-            # A very large 4K image can exceed Telegram's
-            # photo-preview constraints.
-            #
-            # Do not fail the original document delivery.
-            #
 
             print(
                 (
@@ -1189,12 +1112,35 @@ def deliver_generated_image(
                 )
             )
 
-
     # -----------------------------------------------------
     # ORIGINAL
     # -----------------------------------------------------
 
     if SEND_ORIGINAL:
+
+        document_caption = (
+            "📦 XPAND Original"
+            +
+            counter
+            +
+            "\n"
+            +
+            label
+            +
+            " | "
+            +
+            clean_text(
+                image.aspect_ratio,
+                30
+            )
+            +
+            " | "
+            +
+            clean_text(
+                image.image_size,
+                30
+            )
+        )
 
         document_response = (
             send_document_bytes(
@@ -1203,31 +1149,9 @@ def deliver_generated_image(
                 image.image_bytes,
                 image.filename,
                 image.mime_type,
-                (
-                    "📦 XPAND Original"
-                    +
-                    counter
-                    +
-                    "\n"
-                    +
-                    label
-                    +
-                    " | "
-                    +
-                    clean_text(
-                        image.aspect_ratio,
-                        30
-                    )
-                    +
-                    " | "
-                    +
-                    clean_text(
-                        image.image_size,
-                        30
-                    )
-                )
+                document_caption
             )
-
+        )
 
         document_info = (
             extract_document_info(
@@ -1235,20 +1159,17 @@ def deliver_generated_image(
             )
         )
 
-
         document_file_id = (
             document_info[
                 "file_id"
             ]
         )
 
-
         document_file_unique_id = (
             document_info[
                 "file_unique_id"
             ]
         )
-
 
     image_db_id = save_image_record(
         core,
@@ -1277,7 +1198,6 @@ def deliver_generated_image(
         source_channel=
             source_channel
     )
-
 
     return {
         "image_id":
@@ -1316,29 +1236,24 @@ def generate_and_deliver(
         text
     )
 
-
     if not prompt:
 
         raise RuntimeError(
             "اكتبلي وصف الصورة اللي بدك إياها."
         )
 
-
     mode = detect_generation_mode(
         prompt
     )
-
 
     number = detect_requested_image_count(
         prompt
     )
 
-
     core.send_action(
         chat_id,
         "upload_photo"
     )
-
 
     print(
         (
@@ -1356,20 +1271,12 @@ def generate_and_deliver(
         )
     )
 
-
     result = generate_image(
         prompt,
-
-        mode=
-            mode,
-
-        number=
-            number,
-
-        allow_fallback=
-            True,
+        mode=mode,
+        number=number,
+        allow_fallback=True,
     )
-
 
     if (
         not result.ok
@@ -1381,14 +1288,11 @@ def generate_and_deliver(
             "ما رجعت صورة من محرك التوليد."
         )
 
-
     delivered = []
-
 
     total = len(
         result.images
     )
-
 
     for index, image in enumerate(
         result.images,
@@ -1399,7 +1303,6 @@ def generate_and_deliver(
             chat_id,
             "upload_photo"
         )
-
 
         delivered.append(
             deliver_generated_image(
@@ -1428,9 +1331,7 @@ def generate_and_deliver(
             )
         )
 
-
     models = []
-
 
     for image in result.images:
 
@@ -1439,13 +1340,11 @@ def generate_and_deliver(
             image.model
         )
 
-
         if model_name not in models:
 
             models.append(
                 model_name
             )
-
 
     summary = (
         "تم إنشاء صورة بواسطة XPAND Image Studio. "
@@ -1464,17 +1363,11 @@ def generate_and_deliver(
         )
     )
 
-
-    #
-    # Keep the image operation inside the same unified
-    # XPAND conversation memory.
-    #
     core.save_message(
         chat_id,
         "assistant",
         summary
     )
-
 
     core.record_event(
         user_id,
@@ -1517,7 +1410,6 @@ def generate_and_deliver(
         }
     )
 
-
     print(
         (
             "✅ XPAND IMAGE DELIVERED"
@@ -1537,7 +1429,6 @@ def generate_and_deliver(
             )
         )
     )
-
 
     return {
         "ok":
@@ -1579,7 +1470,6 @@ def handle_text_image_request(
 
         return False
 
-
     try:
 
         result = generate_and_deliver(
@@ -1590,7 +1480,6 @@ def handle_text_image_request(
             source_channel=
                 "telegram_text"
         )
-
 
         if result.get(
             "errors"
@@ -1608,7 +1497,6 @@ def handle_text_image_request(
                 )
             )
 
-
     except Exception as error:
 
         print(
@@ -1620,7 +1508,6 @@ def handle_text_image_request(
                 )
             )
         )
-
 
         core.record_event(
             user_id,
@@ -1634,7 +1521,6 @@ def handle_text_image_request(
                     "telegram_text"
             }
         )
-
 
         core.send_message(
             chat_id,
@@ -1650,7 +1536,6 @@ def handle_text_image_request(
             )
         )
 
-
     return True
 
 
@@ -1662,9 +1547,6 @@ def install(
     core
 ) -> Dict[str, Any]:
 
-    #
-    # Avoid double patching after hot reload/import.
-    #
     if getattr(
         core,
         "_XPAND_IMAGE_TELEGRAM_INSTALLED",
@@ -1679,21 +1561,13 @@ def install(
                 True,
         }
 
-
     # -----------------------------------------------------
     # TEXT
-    #
-    # main.py saves/ingests the user message first,
-    # then calls handle_command.
-    #
-    # We hook here so an image request does not get passed
-    # to the normal chat model afterwards.
     # -----------------------------------------------------
 
     original_handle_command = (
         core.handle_command
     )
-
 
     def xpand_image_handle_command(
         chat_id,
@@ -1710,37 +1584,23 @@ def install(
 
             return True
 
-
         return original_handle_command(
             chat_id,
             user_id,
             text
         )
 
-
     core.handle_command = (
         xpand_image_handle_command
     )
 
-
     # -----------------------------------------------------
     # VOICE
-    #
-    # main.py transcribes voice, saves the user turn,
-    # handles time/memory/call intents, then asks ask_kemo.
-    #
-    # Hook ask_kemo so a spoken request such as:
-    #
-    # "اعمللي صورة سيارة بالليل 4K"
-    #
-    # generates the image and the existing voice pipeline
-    # speaks a short completion acknowledgement.
     # -----------------------------------------------------
 
     original_ask = (
         core.ask_kemo
     )
-
 
     def xpand_image_ask(
         chat_id,
@@ -1763,12 +1623,10 @@ def install(
                         "telegram_voice"
                 )
 
-
                 models = result.get(
                     "models",
                     []
                 )
-
 
                 if models:
 
@@ -1777,11 +1635,9 @@ def install(
                         "وبعثتلك المعاينة والنسخة الأصلية."
                     )
 
-
                 return (
                     "تم، ولّدتلك الصورة وبعثتلك إياها."
                 )
-
 
             except Exception as error:
 
@@ -1794,7 +1650,6 @@ def install(
                         )
                     )
                 )
-
 
                 core.record_event(
                     user_id,
@@ -1809,12 +1664,10 @@ def install(
                     }
                 )
 
-
                 return (
                     "صار خلل بتوليد الصورة، "
                     "وما رح أحكيلك إنها نجحت وهي ما نجحت."
                 )
-
 
         return original_ask(
             chat_id,
@@ -1822,26 +1675,22 @@ def install(
             user_message
         )
 
-
     core.ask_kemo = (
         xpand_image_ask
     )
-
 
     core._XPAND_IMAGE_TELEGRAM_INSTALLED = (
         True
     )
 
-
     status = get_image_engine_status()
-
 
     print("")
     print(
         "=========================================="
     )
     print(
-        " XPAND TELEGRAM IMAGE STUDIO V1.0"
+        " XPAND TELEGRAM IMAGE STUDIO V1.0.1"
     )
     print(
         "=========================================="
@@ -1934,7 +1783,6 @@ def install(
     )
     print("")
 
-
     return {
         "ok":
             True,
@@ -1958,7 +1806,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND TELEGRAM IMAGE STUDIO V1.0"
+        " XPAND TELEGRAM IMAGE STUDIO V1.0.1"
     )
     print(
         "=========================================="
@@ -2067,7 +1915,6 @@ if __name__ == "__main__":
             False
         ),
     ]
-
 
     for text, expected in tests:
 
