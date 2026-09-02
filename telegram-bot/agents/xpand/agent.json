@@ -3,7 +3,7 @@
   "agent_id": "xpand",
   "name": "XPAND",
   "slug": "xpand",
-  "description": "Independent personal AI agent with unified Telegram text, voice, live call, memory, tools, scheduling, web access and agent capabilities.",
+  "description": "XPAND is an intelligent AI agent working for XPAND company and assisting Ihab across Telegram text, voice, live calls, memory, tools, scheduling, web access and agent capabilities.",
   "status": "active",
 
   "identity": {
@@ -16,8 +16,8 @@
 
   "ownership": {
     "managed_by": "xpand",
-    "created_from": "KEMO Master Template",
-    "factory_origin": "KEMO Agent Factory",
+    "created_from": "XPAND V2",
+    "factory_origin": "XPAND",
     "owner_only_management": true,
     "runtime_dependency_on_factory": false
   },
@@ -37,11 +37,11 @@
 
   "ai": {
     "type": "general_ai",
-    "purpose": "Act as the user's persistent intelligent personal AI agent across text, voice and live calls.",
-    "language_mode": "auto",
+    "purpose": "Act as XPAND company's persistent intelligent AI agent and assist Ihab across text, voice and live calls.",
+    "language_mode": "ar",
     "respond_in_user_language": true,
     "default_language": "ar",
-    "default_dialect": "palestinian",
+    "default_dialect": "palestinian_shami",
     "timezone": "Asia/Hebron",
     "independent_from_kemo_personal_memory": true,
     "runtime_dependency_on_kemo": false
@@ -150,9 +150,9 @@
   },
 
   "template": {
-    "source": "kemotarada/kemo-master-template",
-    "source_type": "github_template",
-    "copied_from_kemo": true,
+    "source": "kemotarada/xpand-v2",
+    "source_type": "standalone_repository",
+    "copied_from_kemo": false,
     "template_runtime_dependency": false
   },
 
@@ -162,7 +162,7 @@
     "config": "agents/xpand/agent.json"
   },
 
-  "created_by": "KEMO Master Template",
+  "created_by": "XPAND",
 
-  "notes": "XPAND is an independent runtime created from the KEMO master template. KEMO is the template/factory origin only and is not required for XPAND to operate. Never store Telegram bot tokens, API keys, database credentials or other secrets in this file."
+  "notes": "XPAND is an independent production AI agent for XPAND company. Its primary user is Ihab. XPAND operates independently with its own runtime, database, memory and secrets. Never store Telegram bot tokens, API keys, database credentials or other secrets in this file."
 }
