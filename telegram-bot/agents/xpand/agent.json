@@ -1,77 +1,159 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "agent_id": "xpand",
-  "name": "XPAND Agent",
+  "name": "XPAND",
   "slug": "xpand",
-  "description": "General AI assistant for XPAND with Telegram text and voice interaction.",
+  "description": "Independent personal AI agent with unified Telegram text, voice, live call, memory, tools, scheduling, web access and agent capabilities.",
   "status": "active",
 
+  "identity": {
+    "agent_name": "XPAND",
+    "runtime_identity": "xpand",
+    "environment": "production",
+    "independent_agent": true,
+    "runtime_dependency_on_kemo": false
+  },
+
   "ownership": {
-    "managed_by": "kemo",
-    "factory": "KEMO Agent Factory",
-    "owner_only_management": true
+    "managed_by": "xpand",
+    "created_from": "KEMO Master Template",
+    "factory_origin": "KEMO Agent Factory",
+    "owner_only_management": true,
+    "runtime_dependency_on_factory": false
   },
 
   "telegram": {
     "enabled": true,
-    "display_name": "XPAND Agent",
-    "username": "@XPAND_ihabBot",
+    "display_name": "XPAND",
+    "username": "@XPANDIHAB220_bot",
     "managed_bot": true,
     "bot_management_mode": true,
+    "text_enabled": true,
+    "voice_enabled": true,
+    "live_call_enabled": true,
     "token_storage": "secure_runtime_only",
     "token_in_repository": false
   },
 
   "ai": {
     "type": "general_ai",
-    "purpose": "Answer general questions and assist users naturally.",
+    "purpose": "Act as the user's persistent intelligent personal AI agent across text, voice and live calls.",
     "language_mode": "auto",
     "respond_in_user_language": true,
-    "independent_from_kemo_personal_memory": true
+    "default_language": "ar",
+    "default_dialect": "palestinian",
+    "timezone": "Asia/Hebron",
+    "independent_from_kemo_personal_memory": true,
+    "runtime_dependency_on_kemo": false
   },
 
   "capabilities": {
     "general_chat": {
       "enabled": true,
-      "status": "verified"
+      "status": "active"
     },
 
     "voice": {
       "enabled": true,
-      "status": "verified",
+      "status": "active",
       "input": "telegram_voice",
       "speech_to_text": true,
       "text_to_speech": true,
-      "reply_mode": "voice_to_voice"
+      "reply_mode": "voice_to_voice",
+      "same_identity_as_text": true,
+      "same_memory_as_text": true
+    },
+
+    "live_call": {
+      "enabled": true,
+      "status": "active",
+      "same_identity_as_text": true,
+      "same_memory_as_text": true,
+      "same_personality_as_text": true,
+      "barge_in": true,
+      "real_time_conversation": true
+    },
+
+    "memory": {
+      "enabled": true,
+      "persistent": true,
+      "cross_channel": true
+    },
+
+    "web_search": {
+      "enabled": true
+    },
+
+    "scheduler": {
+      "enabled": true
+    },
+
+    "agent_factory": {
+      "enabled": true
+    },
+
+    "desktop": {
+      "enabled": true
     }
   },
 
   "memory": {
     "enabled": true,
-    "type": "conversation_history",
+    "persistent": true,
     "scope": "xpand_only",
-    "share_with_kemo_personal_memory": false
+    "subject": "primary_user",
+    "share_with_kemo_personal_memory": false,
+
+    "channels": {
+      "telegram_text": true,
+      "telegram_voice": true,
+      "live_call": true
+    },
+
+    "continuity": {
+      "unified_identity": true,
+      "unified_memory": true,
+      "unified_preferences": true,
+      "unified_user_profile": true,
+      "unified_conversation_context": true
+    }
   },
 
   "security": {
     "store_secrets_in_git": false,
     "expose_tokens_in_logs": false,
     "allow_arbitrary_shell": false,
-    "allow_automatic_external_actions": false
+    "allow_automatic_external_actions": false,
+    "runtime_isolated_from_kemo": true,
+    "database_isolated": true,
+    "secrets_isolated": true
   },
 
   "deployment": {
-    "mode": "shared_kemo_runtime",
-    "github_repo": "kemo-telegram-bot",
-    "railway_service": "kemo-telegram-bot",
-    "dedicated_repository": false,
-    "dedicated_railway_service": false
+    "mode": "dedicated_runtime",
+    "github_repo": "kemotarada/xpand-v2",
+    "railway_project": "xpand-v2-production",
+
+    "services": {
+      "telegram_bot": "kemo-telegram-bot",
+      "call": "kemo-call",
+      "desktop": "kemo-desktop",
+      "scheduler": "kemo-scheduler",
+      "database": "Postgres"
+    },
+
+    "dedicated_repository": true,
+    "dedicated_railway_project": true,
+    "dedicated_database": true,
+    "dedicated_secrets": true,
+    "runtime_dependency_on_kemo": false
   },
 
-  "future_architecture": {
-    "dedicated_github_repository": true,
-    "dedicated_railway_project": true,
-    "dedicated_railway_service": true
+  "template": {
+    "source": "kemotarada/kemo-master-template",
+    "source_type": "github_template",
+    "copied_from_kemo": true,
+    "template_runtime_dependency": false
   },
 
   "files": {
@@ -80,6 +162,7 @@
     "config": "agents/xpand/config.json"
   },
 
-  "created_by": "KEMO Agent Factory",
-  "notes": "This file contains configuration only. Never store Telegram bot tokens, API keys, database credentials, or other secrets here."
+  "created_by": "KEMO Master Template",
+
+  "notes": "XPAND is an independent runtime created from the KEMO master template. KEMO is the template/factory origin only and is not required for XPAND to operate. Never store Telegram bot tokens, API keys, database credentials or other secrets in this file."
 }
