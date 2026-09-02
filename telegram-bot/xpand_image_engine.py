@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND SMART IMAGE ENGINE V1.0
+# XPAND SMART IMAGE ENGINE V1.1
 #
 # Professional multi-model image generation for XPAND.
 #
@@ -8,13 +8,21 @@
 # - Google Gemini 3 Pro Image / Nano Banana Pro
 # - Google Gemini 3.1 Flash Image / Nano Banana 2
 #
-# Goals:
-# - Natural Arabic requests
-# - Smart automatic model routing
-# - Professional prompt enhancement
-# - 4K routing where supported
-# - BEST mode using multiple premium models
-# - No extra Python SDK dependencies
+# BEST MODE:
+# - Uses ALL available top image models.
+# - If user requests 3 images:
+#     1 x GPT-Image-2
+#     1 x Nano Banana Pro
+#     1 x Nano Banana 2
+#
+# FIX V1.1:
+# - Removed unsupported Gemini "delivery" parameter.
+# - Gemini generation now loops correctly for >1 image.
+# - BEST mode genuinely uses all 3 models.
+# - Requested count is distributed across providers.
+# - More robust Gemini image extraction.
+#
+# No extra SDK required.
 #
 # Existing requirement:
 # requests>=2.32.0,<3
@@ -23,13 +31,21 @@
 from __future__ import annotations
 
 import base64
-import mimetypes
 import os
 import re
 import time
 import uuid
+
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import requests
 
@@ -38,8 +54,13 @@ import requests
 # IDENTITY
 # =========================================================
 
-ENGINE_NAME = "XPAND Smart Image Engine"
-ENGINE_VERSION = "1.0"
+ENGINE_NAME = (
+    "XPAND Smart Image Engine"
+)
+
+ENGINE_VERSION = (
+    "1.1"
+)
 
 
 # =========================================================
@@ -116,7 +137,7 @@ REQUEST_TIMEOUT = max(
 
 
 # =========================================================
-# PROVIDER ENDPOINTS
+# API ENDPOINTS
 # =========================================================
 
 OPENAI_IMAGE_GENERATION_URL = (
@@ -134,13 +155,21 @@ GEMINI_INTERACTIONS_URL = (
 # ROUTE NAMES
 # =========================================================
 
-ROUTE_OPENAI = "openai"
+ROUTE_OPENAI = (
+    "openai"
+)
 
-ROUTE_GOOGLE_FAST = "google_fast"
+ROUTE_GOOGLE_FAST = (
+    "google_fast"
+)
 
-ROUTE_GOOGLE_PRO = "google_pro"
+ROUTE_GOOGLE_PRO = (
+    "google_pro"
+)
 
-ROUTE_BEST = "best"
+ROUTE_BEST = (
+    "best"
+)
 
 
 # =========================================================
@@ -177,20 +206,22 @@ SUPPORTED_GOOGLE_IMAGE_SIZES = {
 # EXCEPTIONS
 # =========================================================
 
-class XPANDImageError(Exception):
-    """Base XPAND image-generation error."""
+class XPANDImageError(
+    Exception
+):
+    """Base XPAND image error."""
 
 
 class XPANDImageConfigurationError(
     XPANDImageError
 ):
-    """Missing API key or invalid configuration."""
+    """Missing API configuration."""
 
 
 class XPANDImageProviderError(
     XPANDImageError
 ):
-    """Provider API returned an error."""
+    """Image provider API failure."""
 
 
 # =========================================================
@@ -199,59 +230,99 @@ class XPANDImageProviderError(
 
 @dataclass
 class ImageRoute:
+
     provider: str
+
     model: str
+
     reason: str
+
     aspect_ratio: str
+
     image_size: str
+
     quality: str
 
 
 @dataclass
 class GeneratedImage:
+
     image_bytes: bytes
+
     mime_type: str
+
     provider: str
+
     model: str
+
     prompt: str
+
     original_prompt: str
+
     aspect_ratio: str
+
     image_size: str
+
     quality: str
+
     route_reason: str
+
     request_id: str = ""
-    metadata: Dict[str, Any] = field(
+
+    metadata: Dict[
+        str,
+        Any
+    ] = field(
         default_factory=dict
     )
 
+
     @property
-    def extension(self) -> str:
+    def extension(
+        self
+    ) -> str:
 
         mapping = {
-            "image/png": ".png",
-            "image/jpeg": ".jpg",
-            "image/jpg": ".jpg",
-            "image/webp": ".webp",
+            "image/png":
+                ".png",
+
+            "image/jpeg":
+                ".jpg",
+
+            "image/jpg":
+                ".jpg",
+
+            "image/webp":
+                ".webp",
         }
+
 
         return mapping.get(
             self.mime_type.lower(),
             ".png"
         )
 
+
     @property
-    def filename(self) -> str:
+    def filename(
+        self
+    ) -> str:
 
         provider_name = (
             self.provider
-            .replace("_", "-")
+            .replace(
+                "_",
+                "-"
+            )
         )
+
 
         unique = (
             self.request_id
             or
             uuid.uuid4().hex[:10]
         )
+
 
         return (
             f"XPAND-{provider_name}-{unique}"
@@ -261,14 +332,28 @@ class GeneratedImage:
 
 @dataclass
 class ImageGenerationResponse:
+
     ok: bool
-    images: List[GeneratedImage]
+
+    images: List[
+        GeneratedImage
+    ]
+
     selected_route: str
-    routes: List[ImageRoute]
+
+    routes: List[
+        ImageRoute
+    ]
+
     original_prompt: str
+
     enhanced_prompt: str
+
     elapsed_seconds: float
-    errors: List[str] = field(
+
+    errors: List[
+        str
+    ] = field(
         default_factory=list
     )
 
@@ -288,7 +373,10 @@ def clean_text(
             if value is not None
             else ""
         )
-        .replace("\x00", "")
+        .replace(
+            "\x00",
+            ""
+        )
         .strip()[:max_length]
     )
 
@@ -302,14 +390,31 @@ def normalize_arabic(
         20000
     ).lower()
 
+
     text = (
         text
-        .replace("أ", "ا")
-        .replace("إ", "ا")
-        .replace("آ", "ا")
-        .replace("ة", "ه")
-        .replace("ى", "ي")
+        .replace(
+            "أ",
+            "ا"
+        )
+        .replace(
+            "إ",
+            "ا"
+        )
+        .replace(
+            "آ",
+            "ا"
+        )
+        .replace(
+            "ة",
+            "ه"
+        )
+        .replace(
+            "ى",
+            "ي"
+        )
     )
+
 
     text = re.sub(
         r"[\u064B-\u065F]",
@@ -317,11 +422,13 @@ def normalize_arabic(
         text
     )
 
+
     text = re.sub(
         r"\s+",
         " ",
         text
     )
+
 
     return text.strip()
 
@@ -331,9 +438,12 @@ def contains_any(
     markers: Sequence[str]
 ) -> bool:
 
-    normalized = normalize_arabic(
-        text
+    normalized = (
+        normalize_arabic(
+            text
+        )
     )
+
 
     return any(
         normalize_arabic(
@@ -358,19 +468,24 @@ def detect_aspect_ratio(
         20
     )
 
+
     if (
         explicit
-        in SUPPORTED_ASPECT_RATIOS
+        in
+        SUPPORTED_ASPECT_RATIOS
     ):
+
         return explicit
 
 
-    normalized = normalize_arabic(
-        prompt
+    normalized = (
+        normalize_arabic(
+            prompt
+        )
     )
 
 
-    ratio_patterns = [
+    ratios = [
         "1:1",
         "2:3",
         "3:2",
@@ -388,9 +503,10 @@ def detect_aspect_ratio(
     ]
 
 
-    for ratio in ratio_patterns:
+    for ratio in ratios:
 
         if ratio in normalized:
+
             return ratio
 
 
@@ -408,6 +524,7 @@ def detect_aspect_ratio(
             "phone wallpaper",
         ]
     ):
+
         return "9:16"
 
 
@@ -421,6 +538,7 @@ def detect_aspect_ratio(
             "profile",
         ]
     ):
+
         return "1:1"
 
 
@@ -434,6 +552,7 @@ def detect_aspect_ratio(
             "اعلان سوشال",
         ]
     ):
+
         return "4:5"
 
 
@@ -453,6 +572,7 @@ def detect_aspect_ratio(
             "أفقي",
         ]
     ):
+
         return "16:9"
 
 
@@ -465,6 +585,7 @@ def detect_aspect_ratio(
             "ملصق",
         ]
     ):
+
         return "2:3"
 
 
@@ -476,27 +597,38 @@ def detect_image_size(
     requested_size: str = ""
 ) -> str:
 
-    explicit = (
-        clean_text(
-            requested_size,
-            20
-        )
-        .upper()
-    )
+    explicit = clean_text(
+        requested_size,
+        20
+    ).upper()
 
 
     aliases = {
-        "0.5K": "512",
-        "512PX": "512",
-        "512": "512",
-        "1K": "1K",
-        "2K": "2K",
-        "4K": "4K",
+        "0.5K":
+            "512",
+
+        "512PX":
+            "512",
+
+        "512":
+            "512",
+
+        "1K":
+            "1K",
+
+        "2K":
+            "2K",
+
+        "4K":
+            "4K",
     }
 
 
     if explicit in aliases:
-        return aliases[explicit]
+
+        return aliases[
+            explicit
+        ]
 
 
     if contains_any(
@@ -516,6 +648,7 @@ def detect_image_size(
             "ultra high resolution",
         ]
     ):
+
         return "4K"
 
 
@@ -530,6 +663,7 @@ def detect_image_size(
             "high quality",
         ]
     ):
+
         return "2K"
 
 
@@ -553,6 +687,7 @@ def detect_quality(
         "high",
         "auto",
     }:
+
         return explicit
 
 
@@ -568,6 +703,7 @@ def detect_quality(
             "تجريبي",
         ]
     ):
+
         return "medium"
 
 
@@ -590,7 +726,9 @@ def extract_quoted_text(
     ]
 
 
-    results: List[str] = []
+    results: List[
+        str
+    ] = []
 
 
     for pattern in patterns:
@@ -605,11 +743,13 @@ def extract_quoted_text(
                 1000
             )
 
+
             if (
                 value
                 and
                 value not in results
             ):
+
                 results.append(
                     value
                 )
@@ -637,23 +777,28 @@ def build_professional_prompt(
         )
 
 
-    directives: List[str] = [
+    directives: List[
+        str
+    ] = [
         (
             "Create a premium professional image based "
             "strictly on the user's requested concept."
         ),
+
         (
             "Preserve the user's subject, intent, requested "
             "objects, colors, environment, composition, "
             "and constraints."
         ),
+
         (
             "Use strong visual hierarchy, intentional "
             "composition, realistic lighting behavior, "
-            "high-quality materials and textures, "
-            "clean edges, coherent perspective, and "
+            "high-quality materials and textures, clean "
+            "edges, coherent perspective, and "
             "commercial-grade finishing."
         ),
+
         (
             "Avoid accidental extra objects, malformed "
             "details, duplicated subjects, broken anatomy, "
@@ -682,9 +827,10 @@ def build_professional_prompt(
                 (
                     "Photorealistic commercial photography, "
                     "physically plausible illumination, "
-                    "natural skin/material detail, realistic "
+                    "natural material detail, realistic "
                     "lens behavior and refined color grading."
                 ),
+
                 (
                     "Avoid CGI-looking surfaces unless the "
                     "user explicitly requests a 3D render."
@@ -704,6 +850,9 @@ def build_professional_prompt(
             "عبوة",
             "package",
             "packaging",
+            "ساعه",
+            "ساعة",
+            "watch",
         ]
     ):
 
@@ -713,11 +862,12 @@ def build_professional_prompt(
                     "Treat this as premium product "
                     "advertising photography."
                 ),
+
                 (
                     "Keep the product visually dominant, "
                     "well separated from the background, "
-                    "with polished reflections and controlled "
-                    "studio-grade lighting."
+                    "with polished reflections and "
+                    "controlled studio-grade lighting."
                 ),
             ]
         )
@@ -744,6 +894,7 @@ def build_professional_prompt(
                     "high-budget international advertising "
                     "campaign."
                 ),
+
                 (
                     "Leave intentional negative space where "
                     "useful for marketing copy without "
@@ -763,15 +914,13 @@ def build_professional_prompt(
         ]
     ):
 
-        directives.extend(
-            [
-                (
-                    "Use cinematic composition, controlled "
-                    "contrast, motivated lighting, depth, "
-                    "atmospheric separation and filmic "
-                    "color grading."
-                ),
-            ]
+        directives.append(
+            (
+                "Use cinematic composition, controlled "
+                "contrast, motivated lighting, depth, "
+                "atmospheric separation and filmic "
+                "color grading."
+            )
         )
 
 
@@ -783,18 +932,16 @@ def build_professional_prompt(
             "luxury",
             "premium",
             "راقي",
+            "high-end",
         ]
     ):
 
-        directives.extend(
-            [
-                (
-                    "Luxury art direction: restrained, "
-                    "elegant, premium materials, deliberate "
-                    "lighting and sophisticated color "
-                    "relationships."
-                ),
-            ]
+        directives.append(
+            (
+                "Luxury art direction: restrained, elegant, "
+                "premium materials, deliberate lighting "
+                "and sophisticated color relationships."
+            )
         )
 
 
@@ -808,29 +955,32 @@ def build_professional_prompt(
         ]
     ):
 
-        directives.extend(
-            [
-                (
-                    "Produce a top-tier physically based "
-                    "3D render with premium materials, "
-                    "accurate reflections, realistic "
-                    "shadows and professional rendering."
-                ),
-            ]
+        directives.append(
+            (
+                "Produce a top-tier physically based 3D "
+                "render with premium materials, accurate "
+                "reflections, realistic shadows and "
+                "professional rendering."
+            )
         )
 
 
-    quoted_texts = extract_quoted_text(
-        user_prompt
+    quoted_texts = (
+        extract_quoted_text(
+            user_prompt
+        )
     )
 
 
     if quoted_texts:
 
         exact_text = "\n".join(
-            f'- "{item}"'
+            (
+                f'- "{item}"'
+            )
             for item in quoted_texts
         )
+
 
         directives.append(
             (
@@ -845,7 +995,8 @@ def build_professional_prompt(
 
     directives.append(
         (
-            f"Target aspect ratio: {aspect_ratio}."
+            f"Target aspect ratio: "
+            f"{aspect_ratio}."
         )
     )
 
@@ -873,7 +1024,9 @@ def build_professional_prompt(
         "XPAND PROFESSIONAL ART DIRECTION:\n"
         +
         "\n".join(
-            f"- {item}"
+            (
+                f"- {item}"
+            )
             for item in directives
         )
     )
@@ -894,28 +1047,59 @@ def normalize_mode(
 
 
     aliases = {
-        "auto": "auto",
-        "smart": "auto",
+        "auto":
+            "auto",
 
-        "openai": ROUTE_OPENAI,
-        "gpt": ROUTE_OPENAI,
-        "gpt-image-2": ROUTE_OPENAI,
+        "smart":
+            "auto",
 
-        "google_fast": ROUTE_GOOGLE_FAST,
-        "google-fast": ROUTE_GOOGLE_FAST,
-        "nano banana 2": ROUTE_GOOGLE_FAST,
-        "nano-banana-2": ROUTE_GOOGLE_FAST,
-        "flash": ROUTE_GOOGLE_FAST,
+        "openai":
+            ROUTE_OPENAI,
 
-        "google_pro": ROUTE_GOOGLE_PRO,
-        "google-pro": ROUTE_GOOGLE_PRO,
-        "nano banana pro": ROUTE_GOOGLE_PRO,
-        "nano-banana-pro": ROUTE_GOOGLE_PRO,
-        "pro": ROUTE_GOOGLE_PRO,
+        "gpt":
+            ROUTE_OPENAI,
 
-        "best": ROUTE_BEST,
-        "max": ROUTE_BEST,
-        "premium": ROUTE_BEST,
+        "gpt-image-2":
+            ROUTE_OPENAI,
+
+        "google_fast":
+            ROUTE_GOOGLE_FAST,
+
+        "google-fast":
+            ROUTE_GOOGLE_FAST,
+
+        "nano banana 2":
+            ROUTE_GOOGLE_FAST,
+
+        "nano-banana-2":
+            ROUTE_GOOGLE_FAST,
+
+        "flash":
+            ROUTE_GOOGLE_FAST,
+
+        "google_pro":
+            ROUTE_GOOGLE_PRO,
+
+        "google-pro":
+            ROUTE_GOOGLE_PRO,
+
+        "nano banana pro":
+            ROUTE_GOOGLE_PRO,
+
+        "nano-banana-pro":
+            ROUTE_GOOGLE_PRO,
+
+        "pro":
+            ROUTE_GOOGLE_PRO,
+
+        "best":
+            ROUTE_BEST,
+
+        "max":
+            ROUTE_BEST,
+
+        "premium":
+            ROUTE_BEST,
     }
 
 
@@ -932,7 +1116,9 @@ def select_image_route(
     image_size: str = "",
     quality: str = "",
     reference_count: int = 0
-) -> List[ImageRoute]:
+) -> List[
+    ImageRoute
+]:
 
     chosen_mode = normalize_mode(
         mode
@@ -972,17 +1158,28 @@ def select_image_route(
     ) -> ImageRoute:
 
         return ImageRoute(
-            provider=provider,
-            model=model,
-            reason=reason,
-            aspect_ratio=final_aspect_ratio,
-            image_size=final_image_size,
-            quality=final_quality
+            provider=
+                provider,
+
+            model=
+                model,
+
+            reason=
+                reason,
+
+            aspect_ratio=
+                final_aspect_ratio,
+
+            image_size=
+                final_image_size,
+
+            quality=
+                final_quality,
         )
 
 
     # -----------------------------------------------------
-    # EXPLICIT MODES
+    # EXPLICIT ROUTES
     # -----------------------------------------------------
 
     if (
@@ -995,7 +1192,9 @@ def select_image_route(
             route(
                 ROUTE_OPENAI,
                 OPENAI_IMAGE_MODEL,
-                "OpenAI requested explicitly."
+                (
+                    "OpenAI requested explicitly."
+                )
             )
         ]
 
@@ -1010,7 +1209,9 @@ def select_image_route(
             route(
                 ROUTE_GOOGLE_FAST,
                 GOOGLE_IMAGE_FAST_MODEL,
-                "Nano Banana 2 requested explicitly."
+                (
+                    "Nano Banana 2 requested explicitly."
+                )
             )
         ]
 
@@ -1025,10 +1226,18 @@ def select_image_route(
             route(
                 ROUTE_GOOGLE_PRO,
                 GOOGLE_IMAGE_PRO_MODEL,
-                "Nano Banana Pro requested explicitly."
+                (
+                    "Nano Banana Pro requested explicitly."
+                )
             )
         ]
 
+
+    # -----------------------------------------------------
+    # TRUE BEST MODE
+    #
+    # ALL THREE MODELS.
+    # -----------------------------------------------------
 
     if (
         chosen_mode
@@ -1041,8 +1250,7 @@ def select_image_route(
                 ROUTE_OPENAI,
                 OPENAI_IMAGE_MODEL,
                 (
-                    "BEST mode: premium OpenAI "
-                    "generation."
+                    "BEST mode: GPT-Image-2."
                 )
             ),
 
@@ -1050,8 +1258,15 @@ def select_image_route(
                 ROUTE_GOOGLE_PRO,
                 GOOGLE_IMAGE_PRO_MODEL,
                 (
-                    "BEST mode: premium Google "
-                    "generation."
+                    "BEST mode: Nano Banana Pro."
+                )
+            ),
+
+            route(
+                ROUTE_GOOGLE_FAST,
+                GOOGLE_IMAGE_FAST_MODEL,
+                (
+                    "BEST mode: Nano Banana 2."
                 )
             ),
         ]
@@ -1132,8 +1347,6 @@ def select_image_route(
             "text",
             "typography",
             "تايبوجرافي",
-            "بوستر",
-            "poster",
             "headline",
             "عنوان",
         ]
@@ -1157,7 +1370,6 @@ def select_image_route(
     )
 
 
-    # Fast/high-volume request:
     if fast_request:
 
         return [
@@ -1165,14 +1377,12 @@ def select_image_route(
                 ROUTE_GOOGLE_FAST,
                 GOOGLE_IMAGE_FAST_MODEL,
                 (
-                    "Fast request: Nano Banana 2 "
-                    "selected for speed and quality."
+                    "Fast request: Nano Banana 2 selected."
                 )
             )
         ]
 
 
-    # Explicit 4K:
     if needs_4k:
 
         if (
@@ -1200,14 +1410,12 @@ def select_image_route(
                 ROUTE_GOOGLE_FAST,
                 GOOGLE_IMAGE_FAST_MODEL,
                 (
-                    "4K request: Nano Banana 2 "
-                    "selected for native 4K output."
+                    "4K request: Nano Banana 2 selected."
                 )
             )
         ]
 
 
-    # Complex brand / many references:
     if (
         brand_heavy
         or
@@ -1226,7 +1434,6 @@ def select_image_route(
         ]
 
 
-    # Text-heavy / precision instruction:
     if (
         precision_text
         or
@@ -1245,7 +1452,6 @@ def select_image_route(
         ]
 
 
-    # Premium visual request:
     if complex_professional:
 
         return [
@@ -1253,24 +1459,108 @@ def select_image_route(
                 ROUTE_GOOGLE_PRO,
                 GOOGLE_IMAGE_PRO_MODEL,
                 (
-                    "Premium professional art direction: "
+                    "Premium professional request: "
                     "Nano Banana Pro selected."
                 )
             )
         ]
 
 
-    # General high-quality default:
     return [
         route(
             ROUTE_OPENAI,
             OPENAI_IMAGE_MODEL,
             (
                 "General high-quality request: "
-                "GPT-Image-2 selected as default."
+                "GPT-Image-2 selected."
             )
         )
     ]
+
+
+# =========================================================
+# BEST COUNT DISTRIBUTION
+# =========================================================
+
+def distribute_image_count(
+    routes: List[
+        ImageRoute
+    ],
+    requested_number: int
+) -> List[int]:
+
+    if not routes:
+
+        return []
+
+
+    requested_number = max(
+        1,
+        min(
+            int(
+                requested_number
+                or
+                1
+            ),
+            12
+        )
+    )
+
+
+    if len(
+        routes
+    ) == 1:
+
+        return [
+            requested_number
+        ]
+
+
+    #
+    # BEST mode guarantees every selected model
+    # gets at least one generation.
+    #
+    total_target = max(
+        requested_number,
+        len(
+            routes
+        )
+    )
+
+
+    counts = [
+        1
+        for _ in routes
+    ]
+
+
+    remaining = (
+        total_target
+        -
+        len(
+            routes
+        )
+    )
+
+
+    index = 0
+
+
+    while remaining > 0:
+
+        counts[
+            index % len(
+                counts
+            )
+        ] += 1
+
+
+        remaining -= 1
+
+        index += 1
+
+
+    return counts
 
 
 # =========================================================
@@ -1313,20 +1603,29 @@ def openai_size_for_ratio(
 
 def _safe_json(
     response: requests.Response
-) -> Dict[str, Any]:
+) -> Dict[
+    str,
+    Any
+]:
 
     try:
 
-        value = response.json()
+        value = (
+            response.json()
+        )
+
 
         if isinstance(
             value,
             dict
         ):
+
             return value
 
+
         return {
-            "data": value
+            "data":
+                value
         }
 
 
@@ -1362,25 +1661,41 @@ def _provider_error_message(
     ):
 
         message = (
-            error.get("message")
+            error.get(
+                "message"
+            )
             or
-            error.get("status")
+            error.get(
+                "status"
+            )
             or
-            str(error)
+            str(
+                error
+            )
         )
+
 
     else:
 
         message = (
             error
             or
-            data.get("message")
+            data.get(
+                "message"
+            )
             or
-            data.get("detail")
+            data.get(
+                "detail"
+            )
             or
-            data.get("raw")
+            data.get(
+                "raw"
+            )
             or
-            f"HTTP {response.status_code}"
+            (
+                f"HTTP "
+                f"{response.status_code}"
+            )
         )
 
 
@@ -1400,11 +1715,15 @@ def _provider_error_message(
 
 def _download_image_url(
     url: str
-) -> Tuple[bytes, str]:
+) -> Tuple[
+    bytes,
+    str
+]:
 
     response = requests.get(
         url,
-        timeout=REQUEST_TIMEOUT
+        timeout=
+            REQUEST_TIMEOUT
     )
 
 
@@ -1412,7 +1731,7 @@ def _download_image_url(
 
         raise XPANDImageProviderError(
             (
-                "فشل تنزيل الصورة من الرابط: "
+                "فشل تنزيل الصورة: "
                 +
                 str(
                     response.status_code
@@ -1427,14 +1746,18 @@ def _download_image_url(
             ""
         ),
         100
-    ).split(";")[0]
+    ).split(
+        ";"
+    )[0]
 
 
     if not mime_type.startswith(
         "image/"
     ):
 
-        mime_type = "image/png"
+        mime_type = (
+            "image/png"
+        )
 
 
     return (
@@ -1443,12 +1766,73 @@ def _download_image_url(
     )
 
 
+def _decode_base64_image(
+    data: str
+) -> Optional[
+    bytes
+]:
+
+    value = clean_text(
+        data,
+        100000000
+    )
+
+
+    if not value:
+
+        return None
+
+
+    if value.startswith(
+        "data:image/"
+    ):
+
+        try:
+
+            value = value.split(
+                ",",
+                1
+            )[1]
+
+        except Exception:
+
+            return None
+
+
+    try:
+
+        raw = base64.b64decode(
+            value
+        )
+
+
+        if not raw:
+
+            return None
+
+
+        return raw
+
+
+    except Exception:
+
+        return None
+
+
 def _find_inline_images(
     value: Any
-) -> List[Tuple[bytes, str]]:
+) -> List[
+    Tuple[
+        bytes,
+        str
+    ]
+]:
 
     found: List[
-        Tuple[bytes, str]
+        Tuple[
+            bytes,
+            str
+        ]
     ] = []
 
 
@@ -1462,108 +1846,131 @@ def _find_inline_images(
         ):
 
             item_type = clean_text(
-                item.get("type"),
+                item.get(
+                    "type"
+                ),
                 100
             ).lower()
 
 
             mime_type = clean_text(
-                item.get("mime_type")
-                or
-                item.get("mimeType")
-                or
-                "",
+                (
+                    item.get(
+                        "mime_type"
+                    )
+                    or
+                    item.get(
+                        "mimeType"
+                    )
+                    or
+                    ""
+                ),
                 100
             ).lower()
 
 
-            data = (
-                item.get("data")
-                or
-                item.get("b64_json")
-                or
-                item.get("base64")
-            )
+            possible_data = [
+                item.get(
+                    "data"
+                ),
 
+                item.get(
+                    "b64_json"
+                ),
 
-            uri = (
-                item.get("uri")
-                or
-                item.get("url")
-            )
+                item.get(
+                    "base64"
+                ),
+            ]
 
 
             looks_like_image = (
-                item_type == "image"
+                item_type
+                ==
+                "image"
                 or
                 mime_type.startswith(
                     "image/"
                 )
                 or
-                "b64_json" in item
+                (
+                    "b64_json"
+                    in item
+                )
             )
 
 
-            if (
-                looks_like_image
-                and
-                isinstance(
-                    data,
-                    str
-                )
-                and
-                data.strip()
-            ):
+            if looks_like_image:
 
-                try:
+                for data in possible_data:
 
-                    raw = base64.b64decode(
-                        data
-                    )
+                    if isinstance(
+                        data,
+                        str
+                    ):
 
-                    if raw:
-
-                        found.append(
-                            (
-                                raw,
-                                mime_type
-                                or
-                                "image/png"
+                        raw = (
+                            _decode_base64_image(
+                                data
                             )
                         )
 
-                except Exception:
 
-                    pass
+                        if raw:
+
+                            found.append(
+                                (
+                                    raw,
+                                    (
+                                        mime_type
+                                        or
+                                        "image/jpeg"
+                                    )
+                                )
+                            )
 
 
-            elif (
-                looks_like_image
-                and
-                isinstance(
-                    uri,
-                    str
-                )
-                and
-                uri.startswith(
-                    (
-                        "http://",
-                        "https://",
+                            break
+
+
+                uri = (
+                    item.get(
+                        "uri"
+                    )
+                    or
+                    item.get(
+                        "url"
                     )
                 )
-            ):
 
-                try:
 
-                    found.append(
-                        _download_image_url(
-                            uri
+                if (
+                    not possible_data[0]
+                    and
+                    isinstance(
+                        uri,
+                        str
+                    )
+                    and
+                    uri.startswith(
+                        (
+                            "http://",
+                            "https://",
                         )
                     )
+                ):
 
-                except Exception:
+                    try:
 
-                    pass
+                        found.append(
+                            _download_image_url(
+                                uri
+                            )
+                        )
+
+                    except Exception:
+
+                        pass
 
 
             for child in item.values():
@@ -1591,26 +1998,35 @@ def _find_inline_images(
 
 
     unique: List[
-        Tuple[bytes, str]
+        Tuple[
+            bytes,
+            str
+        ]
     ] = []
 
 
-    hashes = set()
+    signatures = set()
 
 
-    for image_bytes, mime_type in found:
+    for (
+        image_bytes,
+        mime_type
+    ) in found:
 
         signature = (
-            len(image_bytes),
-            image_bytes[:64]
+            len(
+                image_bytes
+            ),
+            image_bytes[:64],
         )
 
 
-        if signature in hashes:
+        if signature in signatures:
+
             continue
 
 
-        hashes.add(
+        signatures.add(
             signature
         )
 
@@ -1635,7 +2051,9 @@ def generate_with_openai(
     original_prompt: str,
     route: ImageRoute,
     number: int = 1
-) -> List[GeneratedImage]:
+) -> List[
+    GeneratedImage
+]:
 
     if not OPENAI_API_KEY:
 
@@ -1650,13 +2068,27 @@ def generate_with_openai(
     number = max(
         1,
         min(
-            int(number or 1),
+            int(
+                number
+                or
+                1
+            ),
             4
         )
     )
 
 
-    payload: Dict[str, Any] = {
+    provider_size = (
+        openai_size_for_ratio(
+            route.aspect_ratio
+        )
+    )
+
+
+    payload: Dict[
+        str,
+        Any
+    ] = {
         "model":
             route.model,
 
@@ -1667,14 +2099,13 @@ def generate_with_openai(
             number,
 
         "size":
-            openai_size_for_ratio(
-                route.aspect_ratio
-            ),
+            provider_size,
 
         "quality":
             (
                 route.quality
-                if route.quality
+                if
+                route.quality
                 in {
                     "low",
                     "medium",
@@ -1689,15 +2120,23 @@ def generate_with_openai(
 
     response = requests.post(
         OPENAI_IMAGE_GENERATION_URL,
+
         headers={
             "Authorization":
-                f"Bearer {OPENAI_API_KEY}",
+                (
+                    f"Bearer "
+                    f"{OPENAI_API_KEY}"
+                ),
 
             "Content-Type":
                 "application/json",
         },
-        json=payload,
-        timeout=REQUEST_TIMEOUT
+
+        json=
+            payload,
+
+        timeout=
+            REQUEST_TIMEOUT
     )
 
 
@@ -1752,49 +2191,75 @@ def generate_with_openai(
         images[:number]
     ):
 
+        unique_request_id = (
+            request_id
+            or
+            (
+                "oa-"
+                +
+                uuid.uuid4().hex[:10]
+            )
+        )
+
+
+        if number > 1:
+
+            unique_request_id = (
+                unique_request_id
+                +
+                "-"
+                +
+                str(
+                    index + 1
+                )
+            )
+
+
         results.append(
             GeneratedImage(
-                image_bytes=image_bytes,
-                mime_type=(
-                    mime_type
-                    or
-                    "image/png"
-                ),
-                provider=ROUTE_OPENAI,
-                model=route.model,
-                prompt=prompt,
-                original_prompt=(
-                    original_prompt
-                ),
-                aspect_ratio=(
-                    route.aspect_ratio
-                ),
-                image_size=(
-                    payload["size"]
-                ),
-                quality=(
-                    route.quality
-                ),
-                route_reason=(
-                    route.reason
-                ),
-                request_id=(
-                    request_id
-                    or
+                image_bytes=
+                    image_bytes,
+
+                mime_type=
                     (
-                        "oa-"
-                        +
-                        uuid
-                        .uuid4()
-                        .hex[:10]
-                    )
-                ),
+                        mime_type
+                        or
+                        "image/png"
+                    ),
+
+                provider=
+                    ROUTE_OPENAI,
+
+                model=
+                    route.model,
+
+                prompt=
+                    prompt,
+
+                original_prompt=
+                    original_prompt,
+
+                aspect_ratio=
+                    route.aspect_ratio,
+
+                image_size=
+                    provider_size,
+
+                quality=
+                    route.quality,
+
+                route_reason=
+                    route.reason,
+
+                request_id=
+                    unique_request_id,
+
                 metadata={
                     "index":
                         index,
 
                     "provider_size":
-                        payload["size"],
+                        provider_size,
 
                     "requested_image_size":
                         route.image_size,
@@ -1807,51 +2272,47 @@ def generate_with_openai(
 
 
 # =========================================================
-# GEMINI GENERATION
+# GEMINI SINGLE GENERATION
 # =========================================================
 
-def generate_with_gemini(
+def _generate_one_with_gemini(
     prompt: str,
     original_prompt: str,
     route: ImageRoute,
-    number: int = 1
-) -> List[GeneratedImage]:
-
-    if not GEMINI_API_KEY:
-
-        raise XPANDImageConfigurationError(
-            (
-                "GEMINI_API_KEY مش موجود "
-                "على Railway."
-            )
-        )
-
-
-    number = max(
-        1,
-        min(
-            int(number or 1),
-            4
-        )
-    )
-
+    index: int = 0
+) -> GeneratedImage:
 
     image_size = (
         route.image_size
-        if route.image_size
-        in SUPPORTED_GOOGLE_IMAGE_SIZES
+        if
+        route.image_size
+        in
+        SUPPORTED_GOOGLE_IMAGE_SIZES
         else
         "1K"
     )
 
 
     #
-    # Current Gemini Interactions API.
+    # IMPORTANT:
     #
-    # We request inline JPEG so the Telegram bot can
-    # immediately send the bytes without temporary hosting.
+    # Do NOT send:
     #
-    payload: Dict[str, Any] = {
+    # "delivery": "inline"
+    #
+    # The live API/model returned:
+    # "Image delivery mode is not supported."
+    #
+    # Google image-generation examples work with:
+    #
+    # type
+    # aspect_ratio
+    # image_size
+    #
+    payload: Dict[
+        str,
+        Any
+    ] = {
         "model":
             route.model,
 
@@ -1867,18 +2328,13 @@ def generate_with_gemini(
 
             "image_size":
                 image_size,
-
-            "mime_type":
-                "image/jpeg",
-
-            "delivery":
-                "inline",
         },
     }
 
 
     response = requests.post(
         GEMINI_INTERACTIONS_URL,
+
         headers={
             "x-goog-api-key":
                 GEMINI_API_KEY,
@@ -1886,8 +2342,12 @@ def generate_with_gemini(
             "Content-Type":
                 "application/json",
         },
-        json=payload,
-        timeout=REQUEST_TIMEOUT
+
+        json=
+            payload,
+
+        timeout=
+            REQUEST_TIMEOUT
     )
 
 
@@ -1916,14 +2376,146 @@ def generate_with_gemini(
         raise XPANDImageProviderError(
             (
                 "Gemini رجع استجابة ناجحة "
-                "لكن ما لقيت صورة بالنتيجة."
+                "لكن ما لقيت output image."
             )
         )
 
 
+    image_bytes, mime_type = (
+        images[0]
+    )
+
+
     interaction_id = clean_text(
-        data.get("id"),
+        data.get(
+            "id"
+        ),
         200
+    )
+
+
+    unique_request_id = (
+        interaction_id
+        or
+        (
+            "gg-"
+            +
+            uuid.uuid4().hex[:10]
+        )
+    )
+
+
+    if index > 0:
+
+        unique_request_id = (
+            unique_request_id
+            +
+            "-"
+            +
+            str(
+                index + 1
+            )
+        )
+
+
+    return GeneratedImage(
+        image_bytes=
+            image_bytes,
+
+        mime_type=
+            (
+                mime_type
+                or
+                "image/jpeg"
+            ),
+
+        provider=
+            route.provider,
+
+        model=
+            route.model,
+
+        prompt=
+            prompt,
+
+        original_prompt=
+            original_prompt,
+
+        aspect_ratio=
+            route.aspect_ratio,
+
+        image_size=
+            image_size,
+
+        quality=
+            route.quality,
+
+        route_reason=
+            route.reason,
+
+        request_id=
+            unique_request_id,
+
+        metadata={
+            "index":
+                index,
+
+            "interaction_id":
+                interaction_id,
+
+            "google_response_format": {
+                "type":
+                    "image",
+
+                "aspect_ratio":
+                    route.aspect_ratio,
+
+                "image_size":
+                    image_size,
+            },
+        }
+    )
+
+
+# =========================================================
+# GEMINI GENERATION
+#
+# Gemini Interactions image generation naturally returns
+# one final image per interaction.
+#
+# For number > 1 we intentionally perform multiple
+# generations.
+# =========================================================
+
+def generate_with_gemini(
+    prompt: str,
+    original_prompt: str,
+    route: ImageRoute,
+    number: int = 1
+) -> List[
+    GeneratedImage
+]:
+
+    if not GEMINI_API_KEY:
+
+        raise XPANDImageConfigurationError(
+            (
+                "GEMINI_API_KEY مش موجود "
+                "على Railway."
+            )
+        )
+
+
+    number = max(
+        1,
+        min(
+            int(
+                number
+                or
+                1
+            ),
+            4
+        )
     )
 
 
@@ -1932,57 +2524,58 @@ def generate_with_gemini(
     ] = []
 
 
-    for index, (
-        image_bytes,
-        mime_type
-    ) in enumerate(
-        images[:number]
+    errors: List[
+        str
+    ] = []
+
+
+    for index in range(
+        number
     ):
 
-        results.append(
-            GeneratedImage(
-                image_bytes=image_bytes,
-                mime_type=(
-                    mime_type
-                    or
-                    "image/jpeg"
-                ),
-                provider=route.provider,
-                model=route.model,
-                prompt=prompt,
-                original_prompt=(
-                    original_prompt
-                ),
-                aspect_ratio=(
-                    route.aspect_ratio
-                ),
-                image_size=(
-                    image_size
-                ),
-                quality=(
-                    route.quality
-                ),
-                route_reason=(
-                    route.reason
-                ),
-                request_id=(
-                    interaction_id
-                    or
-                    (
-                        "gg-"
-                        +
-                        uuid
-                        .uuid4()
-                        .hex[:10]
-                    )
-                ),
-                metadata={
-                    "index":
-                        index,
+        try:
 
-                    "interaction_id":
-                        interaction_id,
-                }
+            image = (
+                _generate_one_with_gemini(
+                    prompt=
+                        prompt,
+
+                    original_prompt=
+                        original_prompt,
+
+                    route=
+                        route,
+
+                    index=
+                        index,
+                )
+            )
+
+
+            results.append(
+                image
+            )
+
+
+        except Exception as error:
+
+            errors.append(
+                clean_text(
+                    error,
+                    3000
+                )
+            )
+
+
+    if not results:
+
+        raise XPANDImageProviderError(
+            (
+                f"Gemini {route.model} فشل.\n"
+                +
+                "\n".join(
+                    errors
+                )
             )
         )
 
@@ -1996,7 +2589,9 @@ def generate_with_gemini(
 
 def fallback_route_for(
     failed_route: ImageRoute
-) -> Optional[ImageRoute]:
+) -> Optional[
+    ImageRoute
+]:
 
     if (
         failed_route.provider
@@ -2016,7 +2611,7 @@ def fallback_route_for(
             reason=
                 (
                     "Automatic fallback after "
-                    "OpenAI generation failure."
+                    "OpenAI failure."
                 ),
 
             aspect_ratio=
@@ -2050,7 +2645,7 @@ def fallback_route_for(
             reason=
                 (
                     "Automatic fallback after "
-                    "Gemini generation failure."
+                    "Gemini failure."
                 ),
 
             aspect_ratio=
@@ -2076,7 +2671,9 @@ def _run_route(
     enhanced_prompt: str,
     original_prompt: str,
     number: int
-) -> List[GeneratedImage]:
+) -> List[
+    GeneratedImage
+]:
 
     if (
         route.provider
@@ -2095,7 +2692,7 @@ def _run_route(
                 route,
 
             number=
-                number
+                number,
         )
 
 
@@ -2115,7 +2712,7 @@ def _run_route(
                 route,
 
             number=
-                number
+                number,
         )
 
 
@@ -2145,28 +2742,10 @@ def generate_image(
     reference_count: int = 0,
     allow_fallback: bool = True
 ) -> ImageGenerationResponse:
-    """
-    Main XPAND image-generation entry point.
 
-    Examples:
-
-        generate_image(
-            "اعمللي إعلان عطر فاخر على خلفية سودا"
-        )
-
-        generate_image(
-            "اعملها 4K سينمائية",
-            mode="auto",
-            aspect_ratio="16:9"
-        )
-
-        generate_image(
-            "بوستر إعلاني عالمي",
-            mode="best"
-        )
-    """
-
-    started = time.monotonic()
+    started = (
+        time.monotonic()
+    )
 
 
     original_prompt = clean_text(
@@ -2199,11 +2778,20 @@ def generate_image(
             quality,
 
         reference_count=
-            reference_count
+            reference_count,
     )
 
 
-    primary_route = routes[0]
+    if not routes:
+
+        raise XPANDImageError(
+            "ما تم اختيار موديل للصورة."
+        )
+
+
+    primary_route = (
+        routes[0]
+    )
 
 
     enhanced_prompt = (
@@ -2215,26 +2803,67 @@ def generate_image(
     )
 
 
+    route_counts = (
+        distribute_image_count(
+            routes,
+            number
+        )
+    )
+
+
+    print(
+        (
+            "🧠 XPAND IMAGE ROUTES | "
+            +
+            " | ".join(
+                (
+                    f"{route.provider}"
+                    f"/{route.model}"
+                    f" x{count}"
+                )
+                for (
+                    route,
+                    count
+                ) in zip(
+                    routes,
+                    route_counts
+                )
+            )
+        )
+    )
+
+
     results: List[
         GeneratedImage
     ] = []
 
 
-    errors: List[str] = []
+    errors: List[
+        str
+    ] = []
 
 
-    executed_provider_models = set()
+    executed_provider_models = (
+        set()
+    )
 
 
-    for route in routes:
+    for (
+        route,
+        route_count
+    ) in zip(
+        routes,
+        route_counts
+    ):
 
         key = (
             route.provider,
-            route.model
+            route.model,
         )
 
 
         if key in executed_provider_models:
+
             continue
 
 
@@ -2246,10 +2875,17 @@ def generate_image(
         try:
 
             generated = _run_route(
-                route,
-                enhanced_prompt,
-                original_prompt,
-                number
+                route=
+                    route,
+
+                enhanced_prompt=
+                    enhanced_prompt,
+
+                original_prompt=
+                    original_prompt,
+
+                number=
+                    route_count,
             )
 
 
@@ -2264,42 +2900,55 @@ def generate_image(
                 (
                     f"{route.provider}/"
                     f"{route.model}: "
-                    f"{clean_text(error, 3000)}"
+                    f"{clean_text(
+                        error,
+                        3000
+                    )}"
                 )
             )
 
 
             #
-            # BEST mode already has another premium route.
-            # Don't introduce extra fallback requests here.
+            # Multi-model BEST already has other providers.
+            #
+            # We do not introduce a fourth duplicate fallback
+            # because another model is already being tried.
             #
             if (
-                len(routes) > 1
+                len(
+                    routes
+                ) > 1
                 or
                 not allow_fallback
             ):
+
                 continue
 
 
-            fallback = fallback_route_for(
-                route
+            fallback = (
+                fallback_route_for(
+                    route
+                )
             )
 
 
             if fallback is None:
+
                 continue
 
 
             fallback_key = (
                 fallback.provider,
-                fallback.model
+                fallback.model,
             )
 
 
             if (
                 fallback_key
-                in executed_provider_models
+                in
+                executed_provider_models
             ):
+
                 continue
 
 
@@ -2312,10 +2961,17 @@ def generate_image(
 
                 fallback_images = (
                     _run_route(
-                        fallback,
-                        enhanced_prompt,
-                        original_prompt,
-                        number
+                        route=
+                            fallback,
+
+                        enhanced_prompt=
+                            enhanced_prompt,
+
+                        original_prompt=
+                            original_prompt,
+
+                        number=
+                            route_count,
                     )
                 )
 
@@ -2345,9 +3001,11 @@ def generate_image(
 
 
     elapsed = round(
-        time.monotonic()
-        -
-        started,
+        (
+            time.monotonic()
+            -
+            started
+        ),
         3
     )
 
@@ -2359,7 +3017,7 @@ def generate_image(
                 errors
             )
             or
-            "Unknown generation failure."
+            "Unknown image-generation failure."
         )
 
 
@@ -2373,22 +3031,38 @@ def generate_image(
         )
 
 
+    selected_route = (
+        ROUTE_BEST
+        if len(
+            route_counts
+        ) > 1
+        else
+        routes[0].provider
+    )
+
+
     return ImageGenerationResponse(
-        ok=True,
-        images=results,
-        selected_route=(
-            routes[0].provider
-            if routes
-            else
-            ""
-        ),
-        routes=routes,
+        ok=
+            True,
+
+        images=
+            results,
+
+        selected_route=
+            selected_route,
+
+        routes=
+            routes,
+
         original_prompt=
             original_prompt,
+
         enhanced_prompt=
             enhanced_prompt,
+
         elapsed_seconds=
             elapsed,
+
         errors=
             errors,
     )
@@ -2398,7 +3072,10 @@ def generate_image(
 # CONFIGURATION STATUS
 # =========================================================
 
-def get_image_engine_status() -> Dict[str, Any]:
+def get_image_engine_status() -> Dict[
+    str,
+    Any
+]:
 
     return {
         "ok":
@@ -2415,6 +3092,7 @@ def get_image_engine_status() -> Dict[str, Any]:
             ENGINE_VERSION,
 
         "providers": {
+
             "openai": {
                 "configured":
                     bool(
@@ -2459,6 +3137,15 @@ def get_image_engine_status() -> Dict[str, Any]:
                 GEMINI_API_KEY
             ),
 
+        "best_mode_models": [
+            OPENAI_IMAGE_MODEL,
+            GOOGLE_IMAGE_PRO_MODEL,
+            GOOGLE_IMAGE_FAST_MODEL,
+        ],
+
+        "best_mode_provider_count":
+            3,
+
         "google_native_4k":
             True,
 
@@ -2476,6 +3163,7 @@ def describe_route(
 ) -> str:
 
     labels = {
+
         ROUTE_OPENAI:
             "GPT-Image-2",
 
@@ -2503,6 +3191,8 @@ def describe_route(
 
 # =========================================================
 # SELF TEST
+#
+# NO PAID IMAGE GENERATION.
 # =========================================================
 
 if __name__ == "__main__":
@@ -2513,22 +3203,28 @@ if __name__ == "__main__":
 
 
     print("")
+
     print(
         "======================================"
     )
+
     print(
-        " XPAND SMART IMAGE ENGINE V1.0"
+        " XPAND SMART IMAGE ENGINE V1.1"
     )
+
     print(
         "======================================"
     )
+
     print("")
+
 
     print(
         "OpenAI:",
         (
             "READY"
-            if status[
+            if
+            status[
                 "providers"
             ][
                 "openai"
@@ -2542,11 +3238,13 @@ if __name__ == "__main__":
         OPENAI_IMAGE_MODEL
     )
 
+
     print(
         "Nano Banana 2:",
         (
             "READY"
-            if status[
+            if
+            status[
                 "providers"
             ][
                 "google_fast"
@@ -2560,11 +3258,13 @@ if __name__ == "__main__":
         GOOGLE_IMAGE_FAST_MODEL
     )
 
+
     print(
         "Nano Banana Pro:",
         (
             "READY"
-            if status[
+            if
+            status[
                 "providers"
             ][
                 "google_pro"
@@ -2578,16 +3278,108 @@ if __name__ == "__main__":
         GOOGLE_IMAGE_PRO_MODEL
     )
 
+
     print(
         "BEST mode:",
         (
             "READY"
-            if status[
+            if
+            status[
                 "supports_best_mode"
             ]
             else
             "needs both API keys"
         )
+    )
+
+
+    print("")
+
+
+    print(
+        "BEST models:"
+    )
+
+
+    for model in status[
+        "best_mode_models"
+    ]:
+
+        print(
+            " -",
+            model
+        )
+
+
+    print("")
+
+
+    test_routes = (
+        select_image_route(
+            (
+                "اعمللي 3 صور بأفضل نتيجة "
+                "ممكنة لبوستر منتج فاخر"
+            ),
+            mode=
+                "best",
+            aspect_ratio=
+                "4:5",
+        )
+    )
+
+
+    test_counts = (
+        distribute_image_count(
+            test_routes,
+            3
+        )
+    )
+
+
+    print(
+        "BEST 3-image routing:"
+    )
+
+
+    for (
+        route,
+        count
+    ) in zip(
+        test_routes,
+        test_counts
+    ):
+
+        print(
+            (
+                " - "
+                +
+                route.model
+                +
+                " x"
+                +
+                str(
+                    count
+                )
+            )
+        )
+
+
+    print("")
+
+    print(
+        "Expected:"
+    )
+
+    print(
+        " - gpt-image-2 x1"
+    )
+
+    print(
+        " - gemini-3-pro-image x1"
+    )
+
+    print(
+        " - gemini-3.1-flash-image x1"
     )
 
     print("")
