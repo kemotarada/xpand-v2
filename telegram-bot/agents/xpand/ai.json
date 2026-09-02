@@ -1,0 +1,74 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "xpand",
+  "agent_name": "XPAND Agent",
+
+  "provider": {
+    "primary": "openai",
+    "model": "gpt-5.6-terra",
+    "api": "responses",
+    "verified": true
+  },
+
+  "routing_policy": {
+    "all_agent_reasoning": "openai",
+    "all_new_capabilities_inherit_provider": true,
+    "capabilities_must_use_agent_ai_gateway": true,
+    "allow_direct_gemini_reasoning": false,
+    "allow_silent_provider_fallback": false,
+    "fallback_provider": null
+  },
+
+  "voice_pipeline": {
+    "stt": {
+      "provider": "gemini",
+      "role": "speech_to_text_only"
+    },
+    "reasoning": {
+      "provider": "openai",
+      "model": "gpt-5.6-terra"
+    },
+    "tts": {
+      "provider": "gemini",
+      "role": "text_to_speech_only"
+    },
+    "verified": true
+  },
+
+  "future_capability_policy": {
+    "web_search": "openai_reasoning",
+    "company_knowledge": "openai_reasoning",
+    "documents_rag": "openai_reasoning",
+    "crm": "openai_reasoning",
+    "lead_capture": "openai_reasoning",
+    "appointments": "openai_reasoning",
+    "calendar": "openai_reasoning",
+    "email": "openai_reasoning",
+    "website_builder": "openai_reasoning",
+    "image_generation": "openai_reasoning",
+    "analytics": "openai_reasoning",
+    "customer_support": "openai_reasoning",
+    "orders": "openai_reasoning",
+    "memory": "openai_reasoning",
+    "human_handoff": "openai_reasoning"
+  },
+
+  "secrets": {
+    "openai_key_env": "XPAND_OPENAI_API_KEY",
+    "model_env": "XPAND_OPENAI_MODEL",
+    "store_secrets_in_git": false
+  },
+
+  "isolation": {
+    "share_kemo_provider": false,
+    "share_kemo_memory": false,
+    "share_other_agent_keys": false,
+    "share_other_agent_provider_state": false
+  },
+
+  "verification": {
+    "text_openai_verified": true,
+    "voice_openai_reasoning_verified": true,
+    "verified_model": "gpt-5.6-terra"
+  }
+}

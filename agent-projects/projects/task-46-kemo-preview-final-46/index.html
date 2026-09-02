@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview System Works</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #333;
+            --bg-color: #f8fafc;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        header {
+            background-color: var(--white);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--white);
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--white);
+            color: var(--primary-color);
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #e2e8f0;
+        }
+
+        .features {
+            padding: 80px 5%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        footer {
+            background-color: #1e293b;
+            color: var(--white);
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">PreviewSystem</div>
+    </header>
+
+    <section class="hero">
+        <h1>Preview System Works</h1>
+        <p>Experience the power of real-time previewing and efficient system deployment. Built for speed, precision, and reliability.</p>
+        <a href="#" class="btn">Get Started</a>
+    </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <h3>Fast Execution</h3>
+            <p>Our system is optimized for maximum performance, ensuring your previews are rendered instantly.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Clean Design</h3>
+            <p>A minimalist and modern approach to interface design that focuses on user experience.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Reliable Infrastructure</h3>
+            <p>Built on robust technology to ensure 99.9% uptime and seamless accessibility.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Preview System Works. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

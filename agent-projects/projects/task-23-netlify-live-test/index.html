@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kemo Live Preview Works</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#0f1720;
+      --muted:#9aa6b2;
+      --accent:#00d1b2;
+      --glass: rgba(255,255,255,0.04);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:linear-gradient(180deg,var(--bg),#07101a 60%);
+      color:#e6eef3;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .card{
+      width:100%;
+      max-width:720px;
+      background:linear-gradient(180deg,var(--card), rgba(15,23,32,0.9));
+      border-radius:14px;
+      padding:36px;
+      box-shadow:0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(6px);
+    }
+    h1{
+      margin:0 0 12px 0;
+      font-size:clamp(20px,4vw,34px);
+      letter-spacing:-0.02em;
+    }
+    p{
+      margin:0 0 20px 0;
+      color:var(--muted);
+      font-size:clamp(14px,2.2vw,16px);
+      line-height:1.5;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:linear-gradient(180deg,var(--accent), #00b894);
+      color:#052018;
+      border:none;
+      padding:12px 18px;
+      border-radius:10px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,208,178,0.18);
+      transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    }
+    .btn:active{transform:translateY(1px)}
+    .meta{
+      margin-top:18px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    /* Responsive tweaks */
+    @media (max-width:420px){
+      .card{padding:20px}
+      .btn{width:100%; justify-content:center}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <h1>Kemo Live Preview Works</h1>
+    <p>Automatic deployment successful</p>
+    <button class="btn" type="button" aria-pressed="false">Success</button>
+    <div class="meta">Dark responsive test page — single-file HTML/CSS</div>
+  </main>
+</body>
+</html>

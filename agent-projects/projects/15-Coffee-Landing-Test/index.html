@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NOIR Coffee — مقهى فاخر</title>
+  <link rel="stylesheet" href="styles.css">
+  <meta name="description" content="NOIR Coffee - تجربة قهوة فاخرة وتصميم داكن أنيق. احجز طاولتك الآن.">
+</head>
+<body>
+  <!-- شريط تنقل بسيط -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">NOIR <span>Coffee</span></div>
+      <nav class="nav">
+        <a href="#about">عن المقهى</a>
+        <a href="#products">منتجات</a>
+        <a href="#features">المميزات</a>
+        <a href="#testimonials">آراء</a>
+        <button class="btn btn-primary" id="openBooking">حجز طاولة</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <main>
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-content">
+          <h1>NOIR Coffee — حيث تتحول كل فنجان إلى لحظة فخمة</h1>
+          <p class="lead">قهوة مختارة يدويًا، أجواء داكنة أنيقة، وتجربة ضيافة مصممة بعناية.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary" id="heroBook">احجز الآن</button>
+            <a href="#products" class="btn btn-outline">اطلع على منتجاتنا</a>
+          </div>
+          <ul class="hero-meta">
+            <li><strong>ساعات العمل:</strong> 8 ص — 11 م</li>
+            <li><strong>الموقع:</strong> وسط المدينة (محاكي)</li>
+          </ul>
+        </div>
+        <div class="hero-media" aria-hidden="true">
+          <!-- استخدام صورة مجانية من Unsplash كخلفية بصرية -->
+          <div class="hero-photo" style="background-image:url('https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&w=1200&q=80');"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="about" class="section about">
+      <div class="container">
+        <h2>عن NOIR Coffee</h2>
+        <p>NOIR Coffee هو مقهى خيالي فاخر يقدّم حبوبًا مُكيفّة بعناية وتحميصًا دقيقًا. نركّز على جودة المشروب، خبرة المتخصصين، وتجربة ضيوف متسمة بالهدوء والذوق الرفيع.</p>
+      </div>
+    </section>
+
+    <!-- PRODUCTS -->
+    <section id="products" class="section products">
+      <div class="container">
+        <h2>منتجات مميزة</h2>
+        <div class="cards">
+          <article class="card">
+            <div class="card-media" style="background-image:url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80')"></div>
+            <div class="card-body">
+              <h3>Espresso Signature</h3>
+              <p>توازن مثالي بين الحموضة والكثافة — جرعة إسبريسو متقنة.</p>
+              <div class="price">30 SAR</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-media" style="background-image:url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80')"></div>
+            <div class="card-body">
+              <h3>Pour Over Single Origin</h3>
+              <p>قهوة خاصة من مزرعة مُنتقاة، طريقة تحضير يدوي تُبرز النكهات.</p>
+              <div class="price">45 SAR</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card-media" style="background-image:url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80')"></div>
+            <div class="card-body">
+              <h3>Cold Brew Reserve</h3>
+              <p>تخمير بارد طويل لاستخراج نكهات ناعمة ومركزة.</p>
+              <div class="price">40 SAR</div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="section features">
+      <div class="container">
+        <h2>لماذا NOIR؟</h2>
+        <div class="feature-grid">
+          <div class="feature">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h4>حِرفية التحميص</h4>
+            <p>تحميص مُخصص لكل حبة لضمان توازن النكهة.</p>
+          </div>
+          <div class="feature">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h4>مكونات مُنتقاة</h4>
+            <p>حبوب من مزارع متعاونة وعضوية في النخبة.</p>
+          </div>
+          <div class="feature">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22v-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <h4>تجربة ضيافة</h4>
+            <p>أجواء هادئة وخدمة مخصصة لكل زائر.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" class="section testimonials">
+      <div class="container">
+        <h2>آراء العملاء</h2>
+        <div class="testi-slider" id="testiSlider">
+          <blockquote class="testi active">
+            <p>"أفضل فنجان قهوة تذوقته منذ سنوات — جودة ومذاق لا يُعلى عليه."</p>
+            <cite>— سارة آل سعود</cite>
+          </blockquote>
+          <blockquote class="testi">
+            <p>"الجو هنا مثالي للعمل أو الاسترخاء. التقديم مرهف وخبرة الفريق واضحة."</p>
+            <cite>— محمد الشامي</cite>
+          </blockquote>
+          <blockquote class="testi">
+            <p>"تعامل راقٍ وقهوة مصقولة. سأعود بالتأكيد."</p>
+            <cite>— ليان فهد</cite>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA حجز -->
+    <section class="section final-cta">
+      <div class="container cta-inner">
+        <div>
+          <h2>هل تريد تجربة NOIR؟</h2>
+          <p>احجز طاولتك الآن لنضمن لك أفضل استقبال وتجربة قهوة فاخرة.</p>
+        </div>
+        <div>
+          <button class="btn.btn-primary btn-lg" id="openBooking2">احجز طاولتك</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>© NOIR Coffee — تصميم تجريبي. لا تُنشر دون موافقة كريم.</p>
+    </div>
+  </footer>
+
+  <!-- Booking Modal (محاكاة) -->
+  <div class="modal" id="bookingModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <button class="modal-close" id="closeBooking">✕</button>
+      <h3>حجز طاولة — NOIR Coffee</h3>
+      <form id="bookingForm">
+        <label>الاسم
+          <input type="text" name="name" required>
+        </label>
+        <label>تاريخ ووقت
+          <input type="datetime-local" name="datetime" required>
+        </label>
+        <label>عدد الأشخاص
+          <input type="number" name="guests" min="1" max="20" value="2" required>
+        </label>
+        <button class="btn btn-primary" type="submit">أرسل الحجز (محاكاة)</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

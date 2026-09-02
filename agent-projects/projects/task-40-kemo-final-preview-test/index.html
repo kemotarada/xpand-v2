@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kemo Digital | Build Better Digital Experiences</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --accent-color: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --nav-bg: rgba(15, 23, 42, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 1.5rem 10%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--nav-bg);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-decoration: none;
+            letter-spacing: -1px;
+        }
+
+        .logo span {
+            color: var(--accent-color);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 10%;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent),
+                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent);
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 3vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Footer */
+        footer {
+            padding: 2rem 10%;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .hero h1 {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo">Kemo<span>Digital</span></a>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero" id="home">
+        <h1>Build Better <br> Digital Experiences</h1>
+        <p>We help brands scale through cutting-edge design and strategic digital solutions. Transform your vision into a high-performing reality.</p>
+        <a href="#" class="btn-primary">Get Started</a>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Kemo Digital. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

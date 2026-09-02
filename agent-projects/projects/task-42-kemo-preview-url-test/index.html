@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kemo Preview Test | Modern Landing Page</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #333;
+            --light-bg: #f8fafc;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--white);
+        }
+
+        header {
+            background-color: var(--white);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+        }
+
+        .hero {
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+            padding: 0 20px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            color: #64748b;
+        }
+
+        .cta-button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: background 0.3s;
+        }
+
+        .cta-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .features {
+            padding: 5rem 5%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            background-color: var(--light-bg);
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        footer {
+            background-color: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            nav ul {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">KemoPreview</div>
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero" id="home">
+        <h1>Welcome to the Future of Previews</h1>
+        <p>Testing the seamless integration of GitHub pages and agent-driven development. Clean, fast, and efficient.</p>
+        <a href="#features" class="cta-button">Explore More</a>
+    </section>
+
+    <section class="features" id="features">
+        <div class="feature-card">
+            <h3>Fast Deployment</h3>
+            <p>Get your landing page live in seconds with automated GitHub workflows.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Modern Design</h3>
+            <p>Responsive and clean UI built with the latest CSS standards for all devices.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Easy Integration</h3>
+            <p>Seamlessly connect your tools and automate your delivery pipeline.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Kemo Preview URL Test. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>

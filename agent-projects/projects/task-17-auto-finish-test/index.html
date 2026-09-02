@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kemo Agent Works</title>
+  <style>
+    :root{--bg:#f4f6f8;--card:#ffffff;--accent:#0b73ff}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial, sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:1rem;background:var(--bg)}
+    .card{background:var(--card);padding:2rem;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.08);text-align:center;max-width:480px;width:100%}
+    h1{margin:0 0 1rem;font-size:1.25rem;color:#111}
+    p{margin:0 0 1rem;color:#444}
+    button{background:var(--accent);color:#fff;border:none;padding:.75rem 1.25rem;border-radius:8px;font-size:1rem;cursor:pointer}
+    button:active{transform:translateY(1px)}
+    @media (max-width:420px){h1{font-size:1.1rem}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Kemo Agent Works</h1>
+    <button id="testBtn" type="button">Test Successful</button>
+  </div>
+
+  <script>
+    document.getElementById('testBtn').addEventListener('click', function(){
+      alert('Test Successful');
+    });
+  </script>
+</body>
+</html>

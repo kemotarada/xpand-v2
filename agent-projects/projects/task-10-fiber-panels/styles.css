@@ -1,0 +1,41 @@
+/* Basic responsive CSS for MaxFiber demo site */
+:root{--accent:#0ea5a4;--accent2:#7c3aed;--dark:#0f172a;--muted:#64748b}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Arial,\"Noto Naskh Arabic\",sans-serif;margin:0;color:var(--dark);line-height:1.5;background:#f7fafc}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+.site-header{background:#fff;border-bottom:1px solid #e6edf3}
+.site-header .container{display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:700;color:var(--dark);text-decoration:none}
+.nav button{background:transparent;border:1px solid #dbeafe;padding:8px 10px;border-radius:6px;cursor:pointer}
+.hero{padding:40px 0}
+.hero-grid{display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:center}
+.hero h1{font-size:28px;margin:0 0 10px}
+.hero p{color:var(--muted);margin:0 0 18px}
+.btn{display:inline-block;padding:10px 16px;border-radius:8px;text-decoration:none;border:0}
+.btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff}
+.btn.ghost{background:transparent;border:1px solid rgba(15,23,42,.08);color:var(--dark)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px}
+.card{background:#fff;padding:18px;border-radius:10px;box-shadow:0 4px 18px rgba(12,20,30,.04)}
+.section{padding:30px 0}
+.lead{color:var(--muted)}
+.features-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.features-grid div{background:#fff;padding:14px;border-radius:8px}
+.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g-item{background:linear-gradient(180deg,#fff,#f0f9ff);height:140px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.about-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+.site-footer{background:#fff;border-top:1px solid #e6edf3;padding:18px 0;text-align:center}
+.note{font-size:12px;color:var(--muted)}
+.form-actions{margin-top:10px}
+input,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #e6edf3;margin-top:6px}
+/* Responsive */
+@media (max-width:900px){
+  .hero-grid{grid-template-columns:1fr;}
+  .cards{grid-template-columns:1fr}
+  .features-grid{grid-template-columns:repeat(2,1fr)}
+  .gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .about-grid{grid-template-columns:1fr}
+}
+@media (max-width:480px){
+  .hero h1{font-size:20px}
+  .nav button{padding:6px 8px}
+}

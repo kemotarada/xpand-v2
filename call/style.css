@@ -1,0 +1,1335 @@
+/* =========================================================
+   KEMO CALL
+   أسود + أزرق كهربائي
+========================================================= */
+
+:root {
+  --bg: #02060d;
+  --bg-soft: #06101d;
+
+  --blue: #00a8ff;
+  --blue-strong: #008cff;
+  --blue-light: #55c7ff;
+
+  --blue-glow:
+    rgba(0, 168, 255, 0.45);
+
+  --text: #f4f9ff;
+  --muted: #7f93a8;
+
+  --danger: #ff3b4e;
+  --danger-glow:
+    rgba(255, 59, 78, 0.35);
+
+  --panel:
+    rgba(5, 15, 28, 0.72);
+
+  --border:
+    rgba(96, 190, 255, 0.14);
+}
+
+
+/* =========================================================
+   أساس الصفحة
+========================================================= */
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  min-height: 100%;
+
+  background: var(--bg);
+  color: var(--text);
+
+  font-family:
+    "Segoe UI",
+    Tahoma,
+    Arial,
+    sans-serif;
+
+  overflow-x: hidden;
+}
+
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+
+/* =========================================================
+   التطبيق
+========================================================= */
+
+.call-app {
+  position: relative;
+
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(0, 132, 255, 0.10),
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      #02060d 0%,
+      #030914 50%,
+      #02060d 100%
+    );
+}
+
+
+/* =========================================================
+   الخلفية
+========================================================= */
+
+.background-effects {
+  position: fixed;
+  inset: 0;
+
+  overflow: hidden;
+  pointer-events: none;
+
+  z-index: 0;
+}
+
+
+.grid {
+  position: absolute;
+  inset: 0;
+
+  opacity: 0.20;
+
+  background-image:
+    linear-gradient(
+      rgba(0, 153, 255, 0.055) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 153, 255, 0.055) 1px,
+      transparent 1px
+    );
+
+  background-size:
+    42px 42px;
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.85),
+      transparent 88%
+    );
+}
+
+
+.glow {
+  position: absolute;
+
+  width: 380px;
+  height: 380px;
+
+  border-radius: 50%;
+
+  filter: blur(100px);
+
+  opacity: 0.20;
+}
+
+
+.glow-one {
+  top: -170px;
+  left: -150px;
+
+  background:
+    rgba(0, 140, 255, 0.75);
+}
+
+
+.glow-two {
+  right: -170px;
+  bottom: -160px;
+
+  background:
+    rgba(0, 184, 255, 0.45);
+}
+
+
+/* =========================================================
+   أعلى الشاشة
+========================================================= */
+
+.top-bar {
+  position: relative;
+  z-index: 5;
+
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  direction: ltr;
+
+  padding:
+    max(18px, env(safe-area-inset-top))
+    20px
+    10px;
+}
+
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  letter-spacing: 4px;
+
+  color: #d8f1ff;
+}
+
+
+.brand-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+
+  background: var(--blue);
+
+  box-shadow:
+    0 0 8px var(--blue),
+    0 0 22px var(--blue-glow);
+
+  animation:
+    brandPulse 2s ease-in-out infinite;
+}
+
+
+@keyframes brandPulse {
+
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+
+.secure-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  direction: rtl;
+
+  min-height: 31px;
+
+  padding: 7px 11px;
+
+  border:
+    1px solid
+    rgba(0, 168, 255, 0.15);
+
+  border-radius: 999px;
+
+  background:
+    rgba(3, 13, 24, 0.55);
+
+  color: #7ea3bd;
+
+  font-size: 11px;
+
+  backdrop-filter: blur(10px);
+}
+
+
+.secure-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #31d997;
+
+  box-shadow:
+    0 0 9px rgba(49, 217, 151, 0.75);
+}
+
+
+/* =========================================================
+   منتصف الشاشة
+========================================================= */
+
+.call-content {
+  position: relative;
+  z-index: 2;
+
+  flex: 1;
+
+  width: min(
+    100%,
+    620px
+  );
+
+  margin: 0 auto;
+
+  padding:
+    12px 24px 28px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   دائرة kemo
+========================================================= */
+
+.orb {
+  position: relative;
+
+  width: 190px;
+  height: 190px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  margin-bottom: 24px;
+
+  transition:
+    transform 0.3s ease,
+    filter 0.3s ease;
+}
+
+
+.orb-ring {
+  position: absolute;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(0, 168, 255, 0.18);
+
+  transition:
+    all 0.35s ease;
+}
+
+
+.ring-one {
+  width: 100%;
+  height: 100%;
+}
+
+
+.ring-two {
+  width: 82%;
+  height: 82%;
+
+  border-color:
+    rgba(0, 168, 255, 0.26);
+}
+
+
+.ring-three {
+  width: 65%;
+  height: 65%;
+
+  border-color:
+    rgba(85, 199, 255, 0.30);
+}
+
+
+.orb-core {
+  position: relative;
+  z-index: 3;
+
+  width: 96px;
+  height: 96px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(77, 193, 255, 0.36);
+
+  background:
+    radial-gradient(
+      circle at 35% 30%,
+      #0c77c8 0%,
+      #064b83 28%,
+      #03182d 65%,
+      #020b14 100%
+    );
+
+  box-shadow:
+    inset
+    0 0 22px
+    rgba(0, 168, 255, 0.30),
+
+    0 0 24px
+    rgba(0, 168, 255, 0.23),
+
+    0 0 60px
+    rgba(0, 126, 255, 0.16);
+
+  overflow: hidden;
+}
+
+
+.orb-core::before {
+  content: "";
+
+  position: absolute;
+
+  width: 55%;
+  height: 22%;
+
+  top: 12%;
+  left: 20%;
+
+  border-radius: 50%;
+
+  transform:
+    rotate(-18deg);
+
+  background:
+    rgba(255, 255, 255, 0.18);
+
+  filter: blur(8px);
+}
+
+
+.kemo-letter {
+  position: relative;
+  z-index: 4;
+
+  font-size: 38px;
+  font-weight: 800;
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  color: #ecfaff;
+
+  text-shadow:
+    0 0 15px
+    rgba(98, 208, 255, 0.55);
+}
+
+
+/* =========================================================
+   حالة الانتظار
+========================================================= */
+
+.orb.idle .ring-one {
+  animation:
+    idleRing 4s linear infinite;
+}
+
+
+.orb.idle .ring-two {
+  animation:
+    idleRing 5.2s linear infinite reverse;
+}
+
+
+@keyframes idleRing {
+
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   kemo يسمع
+========================================================= */
+
+.orb.listening {
+
+  filter:
+    drop-shadow(
+      0 0 24px
+      rgba(0, 168, 255, 0.25)
+    );
+}
+
+
+.orb.listening .orb-core {
+  animation:
+    listenPulse
+    1.15s
+    ease-in-out
+    infinite;
+}
+
+
+.orb.listening .ring-one {
+  animation:
+    listeningRing
+    1.4s
+    ease-out
+    infinite;
+}
+
+
+.orb.listening .ring-two {
+  animation:
+    listeningRing
+    1.4s
+    ease-out
+    0.3s
+    infinite;
+}
+
+
+@keyframes listenPulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+
+@keyframes listeningRing {
+
+  0% {
+    transform: scale(0.75);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(1.20);
+    opacity: 0;
+  }
+}
+
+
+/* =========================================================
+   kemo يفكر
+========================================================= */
+
+.orb.thinking .orb-core {
+  animation:
+    thinkingCore
+    1.8s
+    ease-in-out
+    infinite;
+}
+
+
+.orb.thinking .ring-one {
+  border-top-color:
+    var(--blue-light);
+
+  animation:
+    thinkingSpin
+    1.4s
+    linear
+    infinite;
+}
+
+
+.orb.thinking .ring-two {
+  border-right-color:
+    var(--blue);
+
+  animation:
+    thinkingSpin
+    2s
+    linear
+    infinite reverse;
+}
+
+
+@keyframes thinkingCore {
+
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+
+@keyframes thinkingSpin {
+
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   kemo يحكي
+========================================================= */
+
+.orb.speaking .orb-core {
+
+  box-shadow:
+    inset
+    0 0 26px
+    rgba(0, 168, 255, 0.40),
+
+    0 0 35px
+    rgba(0, 168, 255, 0.42),
+
+    0 0 90px
+    rgba(0, 123, 255, 0.20);
+
+  animation:
+    speakCore
+    0.55s
+    ease-in-out
+    infinite alternate;
+}
+
+
+.orb.speaking .ring-one {
+  animation:
+    speakRing
+    0.9s
+    ease-in-out
+    infinite alternate;
+}
+
+
+.orb.speaking .ring-two {
+  animation:
+    speakRing
+    0.7s
+    ease-in-out
+    infinite alternate-reverse;
+}
+
+
+@keyframes speakCore {
+
+  from {
+    transform: scale(0.98);
+  }
+
+  to {
+    transform: scale(1.09);
+  }
+}
+
+
+@keyframes speakRing {
+
+  from {
+    transform: scale(0.92);
+    opacity: 0.30;
+  }
+
+  to {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
+}
+
+
+/* =========================================================
+   الهوية
+========================================================= */
+
+.identity h1 {
+  margin: 0;
+
+  font-size: 31px;
+  line-height: 1;
+
+  font-weight: 700;
+
+  letter-spacing: 1px;
+
+  color: #f5fbff;
+}
+
+
+.identity p {
+  min-height: 24px;
+
+  margin:
+    10px 0 0;
+
+  color: var(--blue-light);
+
+  font-size: 14px;
+  font-weight: 500;
+
+  transition:
+    color 0.25s ease;
+}
+
+
+/* =========================================================
+   المؤقت
+========================================================= */
+
+.call-timer {
+  margin-top: 11px;
+
+  min-height: 21px;
+
+  color: #758a9c;
+
+  font-size: 13px;
+  font-variant-numeric:
+    tabular-nums;
+
+  letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   الموجة
+========================================================= */
+
+.waveform {
+  width: min(
+    100%,
+    350px
+  );
+
+  height: 66px;
+
+  margin-top: 21px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  direction: ltr;
+
+  opacity: 0.40;
+
+  transition:
+    opacity 0.3s ease;
+}
+
+
+.waveform span {
+  width: 3px;
+
+  min-height: 4px;
+
+  height: 8px;
+
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #70d2ff,
+      #008cff
+    );
+
+  box-shadow:
+    0 0 7px
+    rgba(0, 168, 255, 0.35);
+
+  transition:
+    height 0.08s linear;
+}
+
+
+.waveform.active {
+  opacity: 1;
+}
+
+
+/* حركة احتياطية
+   قبل ربط الصوت الحقيقي */
+
+.waveform.active span {
+  animation:
+    waveMove
+    0.75s
+    ease-in-out
+    infinite alternate;
+}
+
+
+.waveform.active span:nth-child(2n) {
+  animation-delay: 0.15s;
+}
+
+
+.waveform.active span:nth-child(3n) {
+  animation-delay: 0.28s;
+}
+
+
+.waveform.active span:nth-child(4n) {
+  animation-delay: 0.08s;
+}
+
+
+@keyframes waveMove {
+
+  from {
+    height: 5px;
+  }
+
+  to {
+    height: 34px;
+  }
+}
+
+
+/* =========================================================
+   النص اللحظي
+========================================================= */
+
+.live-caption {
+  width: min(
+    100%,
+    420px
+  );
+
+  min-height: 58px;
+
+  margin-top: 3px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 12px 16px;
+
+  border:
+    1px solid
+    rgba(0, 168, 255, 0.07);
+
+  border-radius: 16px;
+
+  background:
+    rgba(3, 10, 19, 0.40);
+
+  color: #8096a9;
+
+  font-size: 13px;
+  line-height: 1.7;
+
+  backdrop-filter: blur(8px);
+
+  transition:
+    color 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
+}
+
+
+.live-caption.active {
+  color: #c4eaff;
+
+  border-color:
+    rgba(0, 168, 255, 0.14);
+
+  background:
+    rgba(0, 87, 143, 0.08);
+}
+
+
+/* =========================================================
+   زر بدء المكالمة
+========================================================= */
+
+.start-call-button {
+  width: min(
+    100%,
+    310px
+  );
+
+  min-height: 56px;
+
+  margin-top: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 11px;
+
+  border: 0;
+  outline: 0;
+
+  border-radius: 18px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #007fe6,
+      #00b7ff
+    );
+
+  color: white;
+
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 34px
+    rgba(0, 136, 255, 0.24),
+
+    0 0 30px
+    rgba(0, 168, 255, 0.12);
+
+  transition:
+    transform 0.17s ease,
+    box-shadow 0.17s ease,
+    opacity 0.17s ease;
+}
+
+
+.start-call-button:active {
+  transform: scale(0.97);
+}
+
+
+.start-call-button:hover {
+  box-shadow:
+    0 10px 38px
+    rgba(0, 136, 255, 0.34),
+
+    0 0 40px
+    rgba(0, 168, 255, 0.16);
+}
+
+
+.start-call-button:disabled {
+  cursor: default;
+
+  opacity: 0.55;
+
+  transform: none;
+}
+
+
+.start-icon {
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.start-icon svg {
+  width: 21px;
+  height: 21px;
+
+  fill: currentColor;
+}
+
+
+/* =========================================================
+   أزرار أثناء المكالمة
+========================================================= */
+
+.call-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  gap: 55px;
+
+  margin-top: 28px;
+}
+
+
+.control-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 9px;
+
+  min-width: 70px;
+
+  color: #849aad;
+
+  font-size: 12px;
+}
+
+
+.control-button {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 0;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.08);
+
+  border-radius: 50%;
+
+  background:
+    rgba(14, 28, 43, 0.84);
+
+  color: #dbeefe;
+
+  cursor: pointer;
+
+  backdrop-filter: blur(12px);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+
+.control-button:active {
+  transform: scale(0.92);
+}
+
+
+.control-button svg {
+  width: 26px;
+  height: 26px;
+
+  fill: currentColor;
+}
+
+
+.control-button.muted {
+  background:
+    rgba(230, 238, 246, 0.92);
+
+  color: #07111c;
+
+  border-color:
+    rgba(255, 255, 255, 0.35);
+}
+
+
+.control-button.end-call {
+  width: 68px;
+  height: 68px;
+
+  margin-top: -3px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ff4658,
+      #e8152d
+    );
+
+  color: white;
+
+  border-color:
+    rgba(255, 110, 120, 0.36);
+
+  box-shadow:
+    0 8px 28px
+    var(--danger-glow);
+}
+
+
+.control-button.end-call:hover {
+  box-shadow:
+    0 8px 38px
+    rgba(255, 59, 78, 0.45);
+}
+
+
+.mic-off-icon {
+  display: none;
+}
+
+
+.control-button.muted
+.mic-on-icon {
+  display: none;
+}
+
+
+.control-button.muted
+.mic-off-icon {
+  display: block;
+}
+
+
+/* =========================================================
+   صندوق الخطأ
+========================================================= */
+
+.error-box {
+  width: min(
+    100%,
+    390px
+  );
+
+  margin-top: 22px;
+
+  padding: 13px 15px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  border:
+    1px solid
+    rgba(255, 61, 81, 0.22);
+
+  border-radius: 15px;
+
+  background:
+    rgba(96, 9, 21, 0.16);
+
+  color: #ffc0c7;
+
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+
+.error-box strong {
+  color: #ff8793;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   الفوتر
+========================================================= */
+
+.call-footer {
+  position: relative;
+  z-index: 3;
+
+  width: 100%;
+
+  padding:
+    5px
+    18px
+    max(
+      17px,
+      env(safe-area-inset-bottom)
+    );
+
+  display: flex;
+  justify-content: center;
+}
+
+
+.privacy-note {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color: #536b7f;
+
+  font-size: 10px;
+}
+
+
+.privacy-icon {
+  width: 15px;
+  height: 15px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.privacy-icon svg {
+  width: 15px;
+  height: 15px;
+
+  fill: #49677c;
+}
+
+
+/* =========================================================
+   أدوات عامة
+========================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================================================
+   أحجام الموبايل الصغيرة
+========================================================= */
+
+@media (
+  max-height: 720px
+) {
+
+  .orb {
+    width: 150px;
+    height: 150px;
+
+    margin-bottom: 16px;
+  }
+
+
+  .orb-core {
+    width: 78px;
+    height: 78px;
+  }
+
+
+  .kemo-letter {
+    font-size: 31px;
+  }
+
+
+  .identity h1 {
+    font-size: 27px;
+  }
+
+
+  .waveform {
+    height: 48px;
+
+    margin-top: 13px;
+  }
+
+
+  .live-caption {
+    min-height: 48px;
+
+    padding: 9px 14px;
+  }
+
+
+  .start-call-button {
+    margin-top: 17px;
+
+    min-height: 52px;
+  }
+
+
+  .call-controls {
+    margin-top: 19px;
+  }
+}
+
+
+/* =========================================================
+   الشاشات الواسعة
+========================================================= */
+
+@media (
+  min-width: 700px
+) {
+
+  .orb {
+    width: 215px;
+    height: 215px;
+  }
+
+
+  .orb-core {
+    width: 108px;
+    height: 108px;
+  }
+
+
+  .kemo-letter {
+    font-size: 42px;
+  }
+}
+
+
+/* =========================================================
+   تقليل الحركة لمن يطلب ذلك
+========================================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  *,
+  *::before,
+  *::after {
+
+    animation-duration:
+      0.001ms !important;
+
+    animation-iteration-count:
+      1 !important;
+
+    scroll-behavior:
+      auto !important;
+
+    transition-duration:
+      0.001ms !important;
+  }
+}

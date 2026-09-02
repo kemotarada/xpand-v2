@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
+
+  <meta
+    name="theme-color"
+    content="#02060d"
+  />
+
+  <meta
+    name="color-scheme"
+    content="dark"
+  />
+
+  <title>Agent Call</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  />
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+
+  <main class="call-page">
+
+    <!-- =================================================
+         HEADER
+    ================================================== -->
+
+    <header class="call-header">
+
+      <div class="agent-badge">
+        LIVE
+      </div>
+
+      <h1
+        id="agentName"
+        class="agent-name"
+      >
+        الوكيل
+      </h1>
+
+      <p class="call-subtitle">
+        مكالمة صوتية مباشرة
+      </p>
+
+    </header>
+
+
+    <!-- =================================================
+         CALL VISUAL
+    ================================================== -->
+
+    <section class="call-stage">
+
+      <div
+        id="orb"
+        class="orb idle"
+        aria-hidden="true"
+      >
+        <div class="orb-core"></div>
+        <div class="orb-ring orb-ring-one"></div>
+        <div class="orb-ring orb-ring-two"></div>
+      </div>
+
+
+      <div
+        id="waveform"
+        class="waveform"
+        aria-hidden="true"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+
+      <div class="status-area">
+
+        <div
+          id="callStatus"
+          class="call-status"
+        >
+          جاهز للمكالمة
+        </div>
+
+
+        <div
+          id="callTimer"
+          class="call-timer"
+        >
+          00:00
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =================================================
+         LIVE CAPTION
+    ================================================== -->
+
+    <section
+      id="liveCaption"
+      class="live-caption"
+      aria-live="polite"
+    >
+      اضغط ابدأ، واحكي معه طبيعي.
+    </section>
+
+
+    <!-- =================================================
+         ERROR
+    ================================================== -->
+
+    <section
+      id="errorBox"
+      class="error-box hidden"
+      role="alert"
+    >
+      <div class="error-icon">
+        !
+      </div>
+
+      <div
+        id="errorMessage"
+        class="error-message"
+      >
+        صار خلل في الاتصال.
+      </div>
+    </section>
+
+
+    <!-- =================================================
+         START
+    ================================================== -->
+
+    <section class="start-area">
+
+      <button
+        id="startCallButton"
+        class="start-call-button"
+        type="button"
+      >
+        <span class="button-icon">
+          📞
+        </span>
+
+        <span>
+          ابدأ المكالمة
+        </span>
+      </button>
+
+    </section>
+
+
+    <!-- =================================================
+         ACTIVE CALL CONTROLS
+    ================================================== -->
+
+    <section
+      id="callControls"
+      class="call-controls hidden"
+    >
+
+      <button
+        id="muteButton"
+        class="control-button"
+        type="button"
+      >
+        <span class="control-icon">
+          🎙️
+        </span>
+
+        <span id="muteLabel">
+          كتم
+        </span>
+      </button>
+
+
+      <!--
+        زر Speaker / Earpiece يتم إنشاؤه
+        ديناميكياً من app.js هنا.
+      -->
+
+
+      <button
+        id="endCallButton"
+        class="control-button end-call-button"
+        type="button"
+      >
+        <span class="control-icon">
+          ☎️
+        </span>
+
+        <span>
+          إنهاء
+        </span>
+      </button>
+
+    </section>
+
+
+    <!-- =================================================
+         FOOTER
+    ================================================== -->
+
+    <footer class="call-footer">
+
+      <div class="privacy-line">
+        <span class="privacy-dot"></span>
+        جلسة صوتية خاصة بالوكيل
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="/app.js"
+  ></script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+:root { --accent:#0b6b54; --bg:#f8f9fa; --card:#ffffff; --text:#222; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{font-family: "Segoe UI", Tahoma, Arial, sans-serif; background:var(--bg); color:var(--text); margin:0; line-height:1.5; direction:rtl; text-align:right}
+.container{max-width:1000px;margin:0 auto;padding:2rem}
+.site-header{background:linear-gradient(90deg,var(--accent),#074f3f); color:white;padding:3rem 0;text-align:center}
+.site-header h1{margin:0;font-size:2.2rem;letter-spacing:1px}
+.tagline{opacity:0.95;margin-top:0.5rem}
+.contact-btn{margin-top:1rem;padding:0.8rem 1.2rem;border:none;background:white;color:var(--accent);border-radius:6px;cursor:pointer;font-weight:600}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:2rem}
+.feature-card{background:var(--card);padding:1.2rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+.feature-card h3{margin:0 0 0.5rem 0;color:var(--accent)}
+.site-footer{padding:1rem 0;text-align:center;color:#666;font-size:0.9rem;margin-top:3rem}

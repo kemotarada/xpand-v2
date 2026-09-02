@@ -1,0 +1,14 @@
+:root{
+  --bg: #f7f7fb;
+  --primary: #0d6efd;
+  --text: #222;
+}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;line-height:1.6;background:var(--bg);color:var(--text);margin:0}
+.container{max-width:900px;margin:0 auto;padding:24px}
+.site-header{background:white;padding:28px 0;border-bottom:1px solid #e6e9ef}
+.site-header h1{margin:0;font-size:1.6rem}
+.tagline{color:#666;margin-top:6px}
+section{background:white;padding:18px;margin:16px 0;border-radius:8px;border:1px solid #e9edf5}
+.site-footer{padding:16px;text-align:center;color:#666;margin-top:24px}
+@media (max-width:600px){.container{padding:12px}.site-header h1{font-size:1.3rem}}

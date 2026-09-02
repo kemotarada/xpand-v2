@@ -1,0 +1,110 @@
+{
+  "schema_version": "1.0",
+  "agent_id": "xpand",
+  "agent_name": "XPAND Agent",
+
+  "capabilities": {
+    "general_chat": {
+      "enabled": true,
+      "status": "verified",
+      "description": "General AI text conversation.",
+      "verification": {
+        "verified": true,
+        "method": "real_telegram_message_test"
+      }
+    },
+
+    "voice": {
+      "enabled": true,
+      "status": "verified",
+      "description": "Receive Telegram voice messages and reply with voice.",
+      "input": {
+        "telegram_voice": true,
+        "speech_to_text": true
+      },
+      "output": {
+        "telegram_voice": true,
+        "text_to_speech": true
+      },
+      "reply_mode": "voice_to_voice",
+      "verification": {
+        "verified": true,
+        "method": "real_voice_to_voice_test"
+      }
+    },
+
+    "web_search": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "company_knowledge": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "documents_rag": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "crm": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "lead_capture": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "appointments": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "calendar": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "email": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "image_generation": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "live_call": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "human_handoff": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "analytics": {
+      "enabled": false,
+      "status": "not_installed"
+    },
+
+    "admin_panel": {
+      "enabled": false,
+      "status": "not_installed"
+    }
+  },
+
+  "rules": {
+    "never_mark_verified_without_real_test": true,
+    "never_store_secrets_here": true,
+    "capabilities_must_be_agent_scoped": true,
+    "external_actions_require_permission_when_needed": true
+  },
+
+  "notes": "This file is the human-readable capability manifest for XPAND. Runtime capability state is currently also stored in Postgres."
+}

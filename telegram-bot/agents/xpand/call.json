@@ -1,0 +1,147 @@
+{
+  "schema_version": "2.0",
+  "agent_id": "xpand",
+  "agent_name": "XPAND Agent",
+
+  "capability": "live_call",
+
+  "enabled": false,
+  "status": "configured_not_deployed",
+
+  "ai": {
+    "provider": "openai",
+    "realtime_provider": "openai_realtime",
+    "realtime_model": "gpt-realtime-2.1",
+    "general_reasoning_model": "gpt-5.6-terra",
+    "allow_gemini_reasoning": false,
+    "allow_silent_fallback": false,
+    "fallback_provider": null
+  },
+
+  "mode": "realtime_voice",
+
+  "identity": {
+    "profile_source": "agents/xpand/agent.json",
+    "ai_policy_source": "agents/xpand/ai.json",
+    "system_prompt_source": "agents/xpand/system_prompt.md",
+    "capabilities_source": "agents/xpand/capabilities.json",
+
+    "use_kemo_personal_memory": false,
+    "share_memory_with_kemo": false,
+    "share_provider_with_kemo": false
+  },
+
+  "voice": {
+    "pipeline": "openai_realtime_audio_to_audio",
+    "input": "microphone_realtime",
+    "output": "realtime_audio",
+    "conversation_mode": "full_duplex",
+    "barge_in": true,
+    "interruptible": true,
+    "language_mode": "auto",
+
+    "reasoning": {
+      "provider": "openai",
+      "model": "gpt-realtime-2.1"
+    },
+
+    "speech_to_text": {
+      "provider": "openai_realtime",
+      "purpose": "live_transcription"
+    },
+
+    "text_to_speech": {
+      "provider": "openai_realtime",
+      "purpose": "live_audio_response"
+    }
+  },
+
+  "telegram": {
+    "enabled": true,
+    "launch_method": "web_app",
+    "button_text": "📞 مكالمة XPAND",
+    "use_xpand_bot_identity": true
+  },
+
+  "deployment": {
+    "provider": "railway",
+    "dedicated_project": true,
+    "project_name": "xpand-agent",
+    "dedicated_service": true,
+    "service_name": "xpand-call",
+    "status": "not_created",
+    "health_endpoint": "/api/health",
+    "start_endpoint": "/api/call/start"
+  },
+
+  "database": {
+    "isolated": true,
+    "env": "XPAND_DATABASE_URL",
+    "share_kemo_database": false
+  },
+
+  "secrets": {
+    "isolation": "agent_only",
+
+    "required": [
+      "XPAND_OPENAI_API_KEY",
+      "XPAND_DATABASE_URL",
+      "XPAND_CALL_SECRET"
+    ],
+
+    "runtime_managed": [
+      "XPAND_TELEGRAM_BOT_TOKEN"
+    ],
+
+    "store_in_repository": false,
+
+    "forbidden_fallback_secrets": [
+      "GEMINI_API_KEY",
+      "TELEGRAM_BOT_TOKEN",
+      "DATABASE_URL"
+    ]
+  },
+
+  "provider_policy": {
+    "all_live_call_reasoning": "openai",
+    "all_live_call_audio": "openai_realtime",
+    "direct_gemini_reasoning": "blocked",
+    "silent_gemini_fallback": "blocked",
+    "inherit_agents_xpand_ai_json": true
+  },
+
+  "verification": {
+    "configuration_created": true,
+
+    "service_created": false,
+    "deployment_success": false,
+    "health_passed": false,
+    "telegram_button_configured": false,
+
+    "openai_realtime_session_created": false,
+    "real_call_started": false,
+    "real_user_audio_received": false,
+    "real_openai_audio_response_received": false,
+    "real_audio_played_to_user": false,
+
+    "verified_provider": null,
+    "verified_model": null,
+    "verified": false
+  },
+
+  "rules": {
+    "never_share_kemo_memory": true,
+    "never_share_kemo_secrets": true,
+    "never_share_other_agent_secrets": true,
+    "never_store_tokens_in_git": true,
+
+    "never_use_gemini_for_reasoning": true,
+    "never_fallback_to_gemini_silently": true,
+
+    "never_mark_active_before_health_check": true,
+    "never_mark_verified_before_real_call": true,
+
+    "real_call_must_confirm_openai_provider": true,
+    "real_call_must_confirm_realtime_audio": true
+  }
+}

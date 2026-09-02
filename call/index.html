@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
+  <meta
+    name="theme-color"
+    content="#02060d"
+  />
+
+  <title>Kemo Call</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  />
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+
+<body>
+
+  <main class="call-app">
+
+    <!-- ===================================================
+         خلفية
+    ==================================================== -->
+
+    <div class="background-effects">
+
+      <div class="grid"></div>
+
+      <div class="glow glow-one"></div>
+
+      <div class="glow glow-two"></div>
+
+    </div>
+
+
+    <!-- ===================================================
+         أعلى الشاشة
+    ==================================================== -->
+
+    <header class="top-bar">
+
+      <div class="brand">
+
+        <div class="brand-dot"></div>
+
+        <span>
+          KEMO
+        </span>
+
+      </div>
+
+
+      <div
+        id="secureBadge"
+        class="secure-badge"
+      >
+
+        <span class="secure-dot"></span>
+
+        اتصال آمن
+
+      </div>
+
+    </header>
+
+
+    <!-- ===================================================
+         محتوى المكالمة
+    ==================================================== -->
+
+    <section class="call-content">
+
+
+      <!-- =================================================
+           الدائرة الرئيسية
+      ================================================== -->
+
+      <div
+        id="orb"
+        class="orb idle"
+      >
+
+        <div class="orb-ring ring-one"></div>
+
+        <div class="orb-ring ring-two"></div>
+
+        <div class="orb-ring ring-three"></div>
+
+
+        <div class="orb-core">
+
+          <div class="kemo-letter">
+            K
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =================================================
+           الاسم
+      ================================================== -->
+
+      <div class="identity">
+
+        <h1>
+          kemo
+        </h1>
+
+        <p id="callStatus">
+          جاهز للمكالمة
+        </p>
+
+      </div>
+
+
+      <!-- =================================================
+           المؤقت
+      ================================================== -->
+
+      <div
+        id="callTimer"
+        class="call-timer"
+      >
+        00:00
+      </div>
+
+
+      <!-- =================================================
+           الموجة الصوتية
+      ================================================== -->
+
+      <div
+        id="waveform"
+        class="waveform"
+        aria-hidden="true"
+      >
+
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+
+      </div>
+
+
+      <!-- =================================================
+           النص اللحظي
+      ================================================== -->
+
+      <div
+        id="liveCaption"
+        class="live-caption"
+      >
+        اضغط ابدأ، واحكي معه طبيعي.
+      </div>
+
+
+      <!-- =================================================
+           زر البداية
+      ================================================== -->
+
+      <button
+        id="startCallButton"
+        class="start-call-button"
+        type="button"
+      >
+
+        <span class="start-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <path
+              d="M6.62 10.79a15.46 15.46 0 0 0
+              6.59 6.59l2.2-2.2a1 1 0 0 1
+              1.02-.24 11.36 11.36 0 0 0
+              3.56.57 1 1 0 0 1 1.01 1v3.49
+              a1 1 0 0 1-1 1A17 17 0 0 1
+              3 4a1 1 0 0 1 1-1h3.5a1 1 0
+              0 1 1 .86 11.36 11.36 0 0 0
+              .57 3.56 1 1 0 0 1-.25 1.02
+              l-2.06 2.06Z"
+            />
+
+          </svg>
+
+        </span>
+
+        <span>
+          ابدأ المكالمة
+        </span>
+
+      </button>
+
+
+      <!-- =================================================
+           أدوات المكالمة
+      ================================================== -->
+
+      <div
+        id="callControls"
+        class="call-controls hidden"
+      >
+
+
+        <!-- كتم -->
+
+        <div class="control-wrapper">
+
+          <button
+            id="muteButton"
+            class="control-button"
+            type="button"
+          >
+
+            <svg
+              class="mic-on-icon"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+
+              <path
+                d="M12 14a3 3 0 0 0 3-3V5
+                a3 3 0 0 0-6 0v6a3 3 0
+                0 0 3 3Zm5-3a1 1 0 0 1
+                2 0 7 7 0 0 1-6 6.92V21
+                h3a1 1 0 0 1 0 2H8a1 1
+                0 0 1 0-2h3v-3.08A7 7 0
+                0 1 5 11a1 1 0 0 1 2 0
+                5 5 0 0 0 10 0Z"
+              />
+
+            </svg>
+
+
+            <svg
+              class="mic-off-icon"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+
+              <path
+                d="m4.27 3 16.73 16.73-1.27
+                1.27-3.2-3.2A7.7 7.7 0 0 1
+                13 19.93V23h3v2H8v-2h3v-3.08
+                A8 8 0 0 1 4 12h2a6 6 0 0 0
+                8.98 5.2l-1.5-1.5A4 4 0 0 1
+                8 12v-1.18L3 5.27 4.27 3ZM12
+                3a4 4 0 0 1 4 4v5c0 .37-.05.73
+                -.14 1.07L9 6.21A4 4 0 0 1
+                12 3Z"
+              />
+
+            </svg>
+
+          </button>
+
+          <span id="muteLabel">
+            كتم
+          </span>
+
+        </div>
+
+
+        <!-- إنهاء -->
+
+        <div class="control-wrapper">
+
+          <button
+            id="endCallButton"
+            class="control-button end-call"
+            type="button"
+          >
+
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+
+              <path
+                d="M21.5 15.6a16.4 16.4 0 0 0
+                -19 0 1.4 1.4 0 0 0-.5 1.8l1
+                2a1.4 1.4 0 0 0 1.7.7l3.2-1.2
+                a1.4 1.4 0 0 0 .9-1.3v-1.4
+                a11 11 0 0 1 6.4 0v1.4a1.4
+                1.4 0 0 0 .9 1.3l3.2 1.2a1.4
+                1.4 0 0 0 1.7-.7l1-2a1.4 1.4
+                0 0 0-.5-1.8Z"
+              />
+
+            </svg>
+
+          </button>
+
+          <span>
+            إنهاء
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- =================================================
+           رسالة خطأ
+      ================================================== -->
+
+      <div
+        id="errorBox"
+        class="error-box hidden"
+      >
+
+        <strong>
+          صار خلل بالاتصال
+        </strong>
+
+        <span id="errorMessage">
+          جرّب مرة ثانية.
+        </span>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         أسفل الشاشة
+    ==================================================== -->
+
+    <footer class="call-footer">
+
+      <div class="privacy-note">
+
+        <span class="privacy-icon">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
+            <path
+              d="M12 2 4 5v6c0 5.05 3.41
+              9.74 8 11 4.59-1.26 8-5.95
+              8-11V5l-8-3Zm0 2.18L18 6.4V11
+              c0 3.92-2.52 7.69-6 8.88C8.52
+              18.69 6 14.92 6 11V6.4l6-2.22Z"
+            />
+
+          </svg>
+
+        </span>
+
+        صوت مباشر ومشفّر أثناء النقل
+
+      </div>
+
+    </footer>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="/app.js"
+  ></script>
+
+</body>
+
+</html>
