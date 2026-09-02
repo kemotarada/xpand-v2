@@ -159,7 +159,7 @@
   "files": {
     "system_prompt": "agents/xpand/system_prompt.md",
     "capabilities": "agents/xpand/capabilities.json",
-    "config": "agents/xpand/config.json"
+    "config": "agents/xpand/agent.json"
   },
 
   "created_by": "KEMO Master Template",
