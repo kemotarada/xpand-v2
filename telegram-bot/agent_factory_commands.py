@@ -1,39 +1,59 @@
 # =========================================================
-# XPAND AGENT FACTORY NATURAL COMMANDS V1.1
+# XPAND AGENT FACTORY NATURAL COMMANDS V1.2
 #
-# Understand natural Karim commands such as:
+# Natural language control for XPAND Agent capabilities.
 #
-# كيمو ضيف لـ XPAND Agent ميزة الفويس
-# كيمو خلي XPAND يرد علي فويس
-# كيمو ركب الصوت على XPAND
-# كيمو بدي XPAND يستقبل ويرد فويس
+# Examples:
+#
+# ضيف لـ XPAND ميزة الفويس
+# خلي XPAND يرد علي فويس
+# ركب الصوت على XPAND
+# بدي XPAND يستقبل ويرد فويس
+#
+# PRIMARY USER:
+# - Ihab / إيهاب
 #
 # IMPORTANT:
 # - No fake "working"
 # - No fake "installing"
 # - Feature is considered INSTALLED only after DB persistence
 # - Feature is considered VERIFIED only after real use
+# - Internal legacy function names may remain for runtime compatibility
 # =========================================================
+
 
 import re
 
 import agent_factory_capabilities as capabilities
-import main as kemo
+import main as xpand_core
 
 
 # =========================================================
 # VERSION
 # =========================================================
 
-VERSION = "1.1"
+VERSION = "1.2"
+
+
+# =========================================================
+# IDENTITY
+# =========================================================
+
+AGENT_NAME = "XPAND"
+PRIMARY_USER_NAME = "إيهاب"
+COMPANY_NAME = "XPAND"
 
 
 # =========================================================
 # EXISTING STACK
 # =========================================================
 
-EXISTING_KEMO_ASK = (
-    kemo.ask_kemo
+# The runtime function may still be named ask_kemo internally.
+# Keep it for compatibility without exposing the old identity
+# in user-facing responses.
+
+EXISTING_XPAND_ASK = (
+    xpand_core.ask_kemo
 )
 
 
@@ -66,7 +86,7 @@ def normalized(
 
     try:
 
-        return kemo.normalize_text(
+        return xpand_core.normalize_text(
             value
         )
 
@@ -150,8 +170,10 @@ VOICE_MARKERS = [
 
 
 AGENT_CONTEXT_MARKERS = [
+    "xpand",
     "agent",
     "وكيل",
+    "الوكيل",
 ]
 
 
@@ -216,12 +238,13 @@ def detect_voice_feature_request(
     )
 
 
-    # Accept natural phrases like:
+    # Accept natural phrases such as:
     #
-    # "ضيف لـ XPAND Agent ميزة الفويس"
+    # "ضيف لـ XPAND ميزة الفويس"
     # "خلي XPAND يرد علي فويس"
     # "بدي XPAND يستقبل فويس ويرد فويس"
     #
+
     return bool(
         has_voice
         and
@@ -241,6 +264,10 @@ def handle_natural_voice_command(
     raw
 ):
 
+    # =====================================================
+    # OWNER AUTHORIZATION
+    # =====================================================
+
     if (
         user_id
         !=
@@ -248,9 +275,14 @@ def handle_natural_voice_command(
     ):
 
         return (
-            "تعديل ميزات الوكلاء متاح لصاحب Kemo فقط."
+            "تعديل قدرات XPAND متاح فقط "
+            "للمستخدم المصرّح له بإدارة الوكيل."
         )
 
+
+    # =====================================================
+    # FIND TARGET AGENT
+    # =====================================================
 
     agent = capabilities.find_agent_for_request(
         user_id,
@@ -261,8 +293,8 @@ def handle_natural_voice_command(
     if not agent:
 
         return (
-            "فهمت إنك بدك تضيف Voice لوكيل، "
-            "بس ما قدرت أحدد أي Agent تقصد."
+            "فهمت إنك بدك تضيف ميزة Voice لوكيل، "
+            "بس ما قدرت أحدد أي وكيل تقصد."
         )
 
 
@@ -279,7 +311,7 @@ def handle_natural_voice_command(
             "agent_name"
         )
         or
-        "Agent",
+        AGENT_NAME,
         150
     )
 
@@ -291,6 +323,10 @@ def handle_natural_voice_command(
         150
     )
 
+
+    # =====================================================
+    # CURRENT CAPABILITY STATE
+    # =====================================================
 
     existing = capabilities.capability_record(
         agent_id,
@@ -315,7 +351,7 @@ def handle_natural_voice_command(
     ):
 
         return (
-            "✅ ميزة Voice موجودة ومتحقق منها فعليًا على "
+            "ميزة Voice موجودة ومتحقق منها فعليًا على "
             +
             agent_name
             +
@@ -351,12 +387,12 @@ def handle_natural_voice_command(
     ):
 
         return (
-            "✅ ميزة Voice مركبة أصلًا على "
+            "ميزة Voice مركبة أصلًا على "
             +
             agent_name
             +
             ".\n\n"
-            "لكن لسه ما عندي اختبار Voice حقيقي ناجح "
+            "بس لسه ما في اختبار Voice حقيقي ناجح "
             "يثبتها 100%.\n\n"
             +
             (
@@ -364,16 +400,16 @@ def handle_natural_voice_command(
                 +
                 username
                 +
-                " وابعتله Voice الآن."
+                " وابعتله Voice للتجربة."
                 if username
                 else
-                "ابعث للوكيل Voice الآن."
+                "ابعث للوكيل Voice للتجربة."
             )
         )
 
 
     # =====================================================
-    # REAL INSTALLATION
+    # REAL INSTALLATION READINESS
     # =====================================================
 
     readiness = capabilities.voice_engine_readiness()
@@ -395,7 +431,7 @@ def handle_natural_voice_command(
 
 
         return (
-            "❌ ما قدرت أركب Voice على "
+            "ما قدرت أركب Voice على "
             +
             agent_name
             +
@@ -408,9 +444,13 @@ def handle_natural_voice_command(
         )
 
 
+    # =====================================================
+    # REAL INSTALLATION
+    # =====================================================
+
     try:
 
-        proof = capabilities.install_voice_for_agent(
+        capabilities.install_voice_for_agent(
             agent
         )
 
@@ -418,7 +458,7 @@ def handle_natural_voice_command(
     except Exception as error:
 
         return (
-            "❌ فشل تركيب Voice على "
+            "فشل تركيب Voice على "
             +
             agent_name
             +
@@ -451,21 +491,25 @@ def handle_natural_voice_command(
     ):
 
         return (
-            "❌ حاولت أركب Voice على "
+            "صار محاولة لتفعيل Voice على "
             +
             agent_name
             +
-            " لكن قاعدة البيانات ما أكدت التفعيل.\n\n"
-            "الحالة: غير مفعلة."
+            "، بس قاعدة البيانات ما أكدت التفعيل.\n\n"
+            "الحالة الحالية: غير مفعلة."
         )
 
 
+    # =====================================================
+    # INSTALLED — WAITING FOR REAL TEST
+    # =====================================================
+
     return (
-        "✅ ركبت ميزة Voice فعليًا على "
+        "ميزة Voice انحفظت كـ ENABLED على "
         +
         agent_name
         +
-        ".\n\n"
+        " بعد تأكيد قاعدة البيانات.\n\n"
         +
         (
             "🤖 @"
@@ -481,12 +525,11 @@ def handle_natural_voice_command(
         "🎙️ Voice Input: ENABLED\n"
         "🧠 Speech-to-Text: READY\n"
         "🔊 Voice Reply: ENABLED\n"
-        "💾 Capability Registry: VERIFIED\n\n"
-        "الحالة: الميزة مركبة فعليًا، "
-        "لكن مش رح أعتبرها VERIFIED 100% قبل تجربة حقيقية.\n\n"
-        "ابعث هسّا Voice للوكيل. "
-        "إذا استلمه ورد عليك Voice، "
-        "رح تتسجل الميزة تلقائيًا كـ VERIFIED."
+        "💾 Capability Registry: CONFIRMED\n\n"
+        "بس لسه ما رح أعتبرها VERIFIED 100% "
+        "قبل تجربة صوت حقيقية.\n\n"
+        "ابعث Voice للوكيل. "
+        "إذا استلمه ورد بصوت بنقدر نعتبر الاختبار ناجح."
     )
 
 
@@ -526,10 +569,10 @@ def handle_natural_agent_command(
 
 
 # =========================================================
-# KEMO WRAPPER
+# XPAND WRAPPER
 # =========================================================
 
-def ask_kemo_with_natural_agent_commands(
+def ask_xpand_with_natural_agent_commands(
     chat_id,
     user_id,
     user_message
@@ -559,29 +602,45 @@ def ask_kemo_with_natural_agent_commands(
 
         answer = (
             "صار خلل بتنفيذ أمر الوكيل. "
-            "ما رح أقول إن الميزة تركبت قبل ما أتأكد."
+            "ما رح أعتبر الميزة مفعلة قبل ما أتأكد فعليًا."
         )
 
+
+    # =====================================================
+    # NATURAL COMMAND HANDLED
+    # =====================================================
 
     if answer is not None:
 
         try:
 
-            kemo.save_message(
+            xpand_core.save_message(
                 chat_id,
                 "assistant",
                 answer
             )
 
-        except Exception:
+        except Exception as error:
 
-            pass
+            print(
+                (
+                    "⚠️ Failed to save command response: "
+                    +
+                    str(
+                        error
+                    )
+                )
+            )
 
 
         return answer
 
 
-    return EXISTING_KEMO_ASK(
+    # =====================================================
+    # NORMAL XPAND AI FLOW
+    # =====================================================
+
+    return EXISTING_XPAND_ASK(
         chat_id,
         user_id,
         user_message
@@ -592,8 +651,13 @@ def ask_kemo_with_natural_agent_commands(
 # INSTALL
 # =========================================================
 
-kemo.ask_kemo = (
-    ask_kemo_with_natural_agent_commands
+# Runtime compatibility:
+# main.py currently exposes the AI entrypoint as ask_kemo.
+# We replace its implementation without requiring a risky
+# rename across the rest of the production stack.
+
+xpand_core.ask_kemo = (
+    ask_xpand_with_natural_agent_commands
 )
 
 
@@ -604,22 +668,35 @@ kemo.ask_kemo = (
 def print_header():
 
     print("")
+
     print(
         "=============================================="
     )
+
     print(
-        " XPAND AGENT FACTORY COMMANDS V1.1"
+        " XPAND AGENT FACTORY COMMANDS V1.2"
     )
+
     print(
         " NATURAL LANGUAGE FEATURE CONTROL"
     )
+
     print(
         "=============================================="
     )
+
     print("")
 
     print(
-        "✅ Natural agent feature commands"
+        "✅ XPAND natural agent commands"
+    )
+
+    print(
+        "✅ Primary user: Ihab"
+    )
+
+    print(
+        "✅ Palestinian/Shami-friendly command detection"
     )
 
     print(
@@ -666,9 +743,11 @@ def main():
         "✅ NATURAL COMMAND ROUTER ONLINE"
     )
 
+
     print(
         "➡️ Starting Capability Engine..."
     )
+
 
     print("")
 
@@ -682,4 +761,34 @@ def main():
 
 if __name__ == "__main__":
 
-    main()
+    try:
+
+        main()
+
+
+    except KeyboardInterrupt:
+
+        print("")
+
+        print(
+            "👋 XPAND Agent Factory Commands stopped."
+        )
+
+
+    except Exception as error:
+
+        print("")
+
+        print(
+            (
+                "❌ XPAND Agent Factory Commands failed: "
+                +
+                str(
+                    error
+                )
+            )
+        )
+
+        print("")
+
+        raise
