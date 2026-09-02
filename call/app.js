@@ -5,16 +5,44 @@ import {
 
 
 // =========================================================
-// XPAND HUMAN CALL UI V4
+// XPAND UNIFIED CALL UI V5
 //
 // ONE XPAND
 //
-// - Ultra fast live audio
-// - Shared Telegram/call context
-// - 15 minute continuity
-// - Desktop tools
-// - No forced greeting on continuation
+// Unified:
+// - Telegram text
+// - Telegram voice
+// - Live call
+// - Same user: Ihab
+// - Same shared conversation
+// - Real-time call turn persistence
+// - Same server-provided XPAND voice
+// - Call -> Telegram tools
+//
+// Performance:
+// - Ultra-fast live audio
+// - Fast VAD
+// - Barge-in
+// - 15-minute continuity
+//
+// IMPORTANT:
+// The shared System Prompt comes from the call server.
+// This UI must not create a different XPAND personality.
 // =========================================================
+
+
+// =========================================================
+// VERSION / IDENTITY
+// =========================================================
+
+const UI_VERSION =
+  "5.0-unified-xpand";
+
+const AGENT_NAME =
+  "XPAND";
+
+const PRIMARY_USER_NAME =
+  "إيهاب";
 
 
 // =========================================================
@@ -32,13 +60,23 @@ if (tg) {
   try {
 
     tg.ready();
+
     tg.expand();
 
-    tg.setHeaderColor("#02060d");
-    tg.setBackgroundColor("#02060d");
+
+    tg.setHeaderColor(
+      "#02060d"
+    );
+
+
+    tg.setBackgroundColor(
+      "#02060d"
+    );
+
 
     if (
-      typeof tg.enableClosingConfirmation ===
+      typeof tg.enableClosingConfirmation
+      ===
       "function"
     ) {
 
@@ -60,40 +98,75 @@ if (tg) {
 // =========================================================
 
 const orb =
-  document.getElementById("orb");
+  document.getElementById(
+    "orb"
+  );
+
 
 const callStatus =
-  document.getElementById("callStatus");
+  document.getElementById(
+    "callStatus"
+  );
+
 
 const callTimer =
-  document.getElementById("callTimer");
+  document.getElementById(
+    "callTimer"
+  );
+
 
 const waveform =
-  document.getElementById("waveform");
+  document.getElementById(
+    "waveform"
+  );
+
 
 const liveCaption =
-  document.getElementById("liveCaption");
+  document.getElementById(
+    "liveCaption"
+  );
+
 
 const startCallButton =
-  document.getElementById("startCallButton");
+  document.getElementById(
+    "startCallButton"
+  );
+
 
 const callControls =
-  document.getElementById("callControls");
+  document.getElementById(
+    "callControls"
+  );
+
 
 const muteButton =
-  document.getElementById("muteButton");
+  document.getElementById(
+    "muteButton"
+  );
+
 
 const muteLabel =
-  document.getElementById("muteLabel");
+  document.getElementById(
+    "muteLabel"
+  );
+
 
 const endCallButton =
-  document.getElementById("endCallButton");
+  document.getElementById(
+    "endCallButton"
+  );
+
 
 const errorBox =
-  document.getElementById("errorBox");
+  document.getElementById(
+    "errorBox"
+  );
+
 
 const errorMessage =
-  document.getElementById("errorMessage");
+  document.getElementById(
+    "errorMessage"
+  );
 
 
 // =========================================================
@@ -103,8 +176,10 @@ const errorMessage =
 const FAST_VAD_PREFIX_MS =
   20;
 
+
 const FAST_VAD_SILENCE_MS =
   100;
+
 
 const PLAYBACK_LEAD_SECONDS =
   0.015;
@@ -112,23 +187,94 @@ const PLAYBACK_LEAD_SECONDS =
 
 // =========================================================
 // SESSION POLICY
+//
+// This is only a Live-call operational supplement.
+//
+// Identity, personality, memory rules and company behavior
+// come from the shared System Prompt returned by server.js.
 // =========================================================
 
 const LIVE_CONVERSATION_POLICY = `
-قواعد المكالمة السريعة:
+==================================================
+XPAND LIVE CALL — CHANNEL POLICY
+==================================================
 
-- هذه نفس محادثة XPAND الموجودة على Telegram.
-- لا تتعامل مع المكالمة كشخص أو مساعد مختلف.
-- ابدأ الرد بسرعة فور انتهاء كلام كريم.
-- لا تعمل مقدمة قبل الجواب.
-- السؤال البسيط يحتاج جواباً سريعاً وقصيراً.
-- لا تطوّل التفكير إلا إذا السؤال يحتاج فعلاً.
-- لا تعيد صياغة سؤال كريم.
-- لا تقل "خليني أفكر" إلا إذا ستستخدم أداة فعلاً.
-- لا تذكر الساعة أو التاريخ إلا إذا سأل كريم.
-- إذا قاطعك كريم توقف فوراً واستمع.
-- استخدم الأدوات الحقيقية عندما يطلب كريم تنفيذ شيء.
-- أوامر الكمبيوتر لازم تنفذ بأدوات desktop.
+هذه نفس محادثة XPAND الموجودة على Telegram.
+
+المستخدم هو إيهاب.
+
+المكالمة ليست جلسة منفصلة
+ولا شخصية منفصلة
+ولا ذاكرة منفصلة.
+
+المحادثة النصية والفويس والمكالمة
+كلها امتداد لنفس المحادثة.
+
+- لا تنادِ المستخدم باسم كريم.
+- لا تستخدم شخصية Kemo.
+- لا تبدأ تعارفاً جديداً إذا السياق مستمر.
+- استخدم سياق Telegram والذاكرة المشتركة.
+- ابدأ الجواب بسرعة بعد انتهاء كلام إيهاب.
+- لا تعمل مقدمة قبل الجواب بدون داعٍ.
+- السؤال البسيط يحتاج جواباً قصيراً وطبيعياً.
+- لا تعيد صياغة كلام إيهاب بلا داعٍ.
+- إذا قاطعك إيهاب، توقف واستمع.
+- لا تذكر الساعة أو التاريخ إلا إذا كان له علاقة بالطلب.
+- استخدم الأدوات الحقيقية عندما يطلب إيهاب تنفيذ شيء.
+- لا تؤكد التنفيذ قبل نجاح الأداة.
+
+==================================================
+إرسال روابط ورسائل إلى الشات
+==================================================
+
+إذا قال إيهاب:
+
+- ابعثلي الرابط
+- ابعثه على الشات
+- ابعثلي الموقع
+- حط الرابط بالمحادثة
+- ابعثلي التفاصيل عالتلغرام
+- بدي إياه مكتوب
+
+استخدم أداة:
+
+send_chat_message
+
+إذا كان الرابط ناتجاً عن search_web،
+خذ الرابط الصحيح من نتيجة البحث
+ثم أرسله باستخدام send_chat_message.
+
+لا تقرأ URL طويل بصوت مرتفع.
+
+أكد الإرسال صوتياً فقط
+بعد نجاح الأداة.
+
+==================================================
+طريقة الكلام
+==================================================
+
+احكي فلسطيني طبيعي.
+
+خليك:
+- واضح
+- هادي
+- واثق
+- سريع
+- عملي
+
+نفس شخصية XPAND الموجودة في الشات.
+
+لا تغيّر أسلوبك بسبب الانتقال للمكالمة.
+
+==================================================
+الكمبيوتر
+==================================================
+
+إذا طلب إيهاب تنفيذ شيء على الكمبيوتر،
+استخدم أدوات desktop/browser المناسبة.
+
+لا تدعي نجاح العملية
+قبل نجاح الأداة فعلياً.
 `;
 
 
@@ -136,95 +282,193 @@ const LIVE_CONVERSATION_POLICY = `
 // STATE
 // =========================================================
 
-let session = null;
+let session =
+  null;
 
-let callId = null;
-let callSecret = null;
 
-let callActive = false;
-let endingCall = false;
-let muted = false;
+let callId =
+  null;
 
-let micStream = null;
 
-let inputAudioContext = null;
-let outputAudioContext = null;
+let callSecret =
+  null;
 
-let micSource = null;
-let micProcessor = null;
-let silentGain = null;
 
-let timerInterval = null;
-let callStartedAt = null;
+let callActive =
+  false;
 
-let pendingUserText = "";
-let pendingModelText = "";
 
-let transcript = [];
+let endingCall =
+  false;
 
-let currentContinuity = null;
+
+let muted =
+  false;
+
+
+let micStream =
+  null;
+
+
+let inputAudioContext =
+  null;
+
+
+let outputAudioContext =
+  null;
+
+
+let micSource =
+  null;
+
+
+let micProcessor =
+  null;
+
+
+let silentGain =
+  null;
+
+
+let timerInterval =
+  null;
+
+
+let callStartedAt =
+  null;
+
+
+let pendingUserText =
+  "";
+
+
+let pendingModelText =
+  "";
+
+
+let transcript =
+  [];
+
+
+let currentContinuity =
+  null;
+
+
+// =========================================================
+// REAL-TIME TURN PERSISTENCE
+// =========================================================
+
+let turnSequence =
+  0;
+
+
+let turnPersistenceChain =
+  Promise.resolve();
+
+
+const persistedTurnIds =
+  new Set();
 
 
 // =========================================================
 // OUTPUT ROUTING
 // =========================================================
 
-let audioOutputButton = null;
-let audioOutputIcon = null;
-let audioOutputLabel = null;
+let audioOutputButton =
+  null;
 
-let audioRouteMode = "speaker";
 
-let selectedOutputDeviceId = "";
-let selectedEarpieceDeviceId = "";
-let selectedSpeakerDeviceId = "";
+let audioOutputIcon =
+  null;
+
+
+let audioOutputLabel =
+  null;
+
+
+let audioRouteMode =
+  "speaker";
+
+
+let selectedOutputDeviceId =
+  "";
+
+
+let selectedEarpieceDeviceId =
+  "";
+
+
+let selectedSpeakerDeviceId =
+  "";
 
 
 // =========================================================
 // PLAYBACK
 // =========================================================
 
-let playbackTime = 0;
+let playbackTime =
+  0;
+
 
 let playbackChain =
   Promise.resolve();
 
-let playbackGeneration = 0;
+
+let playbackGeneration =
+  0;
+
 
 const activeAudioSources =
   new Set();
 
-let modelSpeakingStartedAt = 0;
+
+let modelSpeakingStartedAt =
+  0;
 
 
 // =========================================================
 // BARGE-IN
 // =========================================================
 
-let localBargeInLatched = false;
+let localBargeInLatched =
+  false;
 
-let suppressModelAudio = false;
 
-let highConfidenceSpeechFrames = 0;
+let suppressModelAudio =
+  false;
 
-let micWasSpeaking = false;
 
-let silenceFrames = 0;
+let highConfidenceSpeechFrames =
+  0;
 
-let noiseFloor = 0.008;
+
+let micWasSpeaking =
+  false;
+
+
+let silenceFrames =
+  0;
+
+
+let noiseFloor =
+  0.008;
 
 
 const USER_SPEECH_RMS =
   0.022;
 
+
 const BARGE_IN_MIN_RMS =
   0.060;
+
 
 const BARGE_IN_NOISE_MULTIPLIER =
   5.5;
 
+
 const BARGE_IN_REQUIRED_FRAMES =
   2;
+
 
 const BARGE_IN_MODEL_GRACE_MS =
   100;
@@ -237,20 +481,25 @@ const BARGE_IN_MODEL_GRACE_MS =
 const processedToolCallIds =
   new Set();
 
+
 const toolPromises =
   new Map();
+
 
 const toolAbortControllers =
   new Map();
 
-let activeToolCount = 0;
+
+let activeToolCount =
+  0;
 
 
 // =========================================================
 // WAKE LOCK
 // =========================================================
 
-let wakeLock = null;
+let wakeLock =
+  null;
 
 
 // =========================================================
@@ -270,6 +519,7 @@ function setVisualState(
       "thinking",
       "speaking"
     );
+
 
     orb.classList.add(
       state
@@ -493,7 +743,9 @@ function stopTimer() {
       timerInterval
     );
 
-    timerInterval = null;
+
+    timerInterval =
+      null;
   }
 }
 
@@ -526,9 +778,11 @@ async function requestWakeLock() {
       "release",
       () => {
 
-        wakeLock = null;
+        wakeLock =
+          null;
       }
     );
+
 
   } catch (error) {
 
@@ -548,12 +802,16 @@ async function releaseWakeLock() {
 
       await wakeLock.release();
 
-      wakeLock = null;
+
+      wakeLock =
+        null;
     }
+
 
   } catch {
 
-    wakeLock = null;
+    wakeLock =
+      null;
   }
 }
 
@@ -678,6 +936,7 @@ function updateAudioOutputButton() {
     audioOutputIcon.textContent =
       "📞";
 
+
     audioOutputLabel.textContent =
       "سماعة";
 
@@ -685,6 +944,7 @@ function updateAudioOutputButton() {
 
     audioOutputIcon.textContent =
       "🔊";
+
 
     audioOutputLabel.textContent =
       "سبيكر";
@@ -767,9 +1027,7 @@ function createAudioOutputButton() {
   );
 
 
-  if (
-    endCallButton
-  ) {
+  if (endCallButton) {
 
     callControls.insertBefore(
       audioOutputButton,
@@ -819,9 +1077,7 @@ async function ensureOutputAudio() {
     window.webkitAudioContext;
 
 
-  if (
-    !AudioContextClass
-  ) {
+  if (!AudioContextClass) {
 
     throw new Error(
       "تشغيل الصوت غير مدعوم"
@@ -829,9 +1085,7 @@ async function ensureOutputAudio() {
   }
 
 
-  if (
-    !outputAudioContext
-  ) {
+  if (!outputAudioContext) {
 
     outputAudioContext =
       new AudioContextClass({
@@ -1021,7 +1275,8 @@ function bytesToBase64(
   bytes
 ) {
 
-  let binary = "";
+  let binary =
+    "";
 
 
   for (
@@ -1083,7 +1338,7 @@ function base64ToBytes(
 
 
 // =========================================================
-// TRANSCRIPT
+// TRANSCRIPT TEXT MERGE
 // =========================================================
 
 function mergeTranscriptText(
@@ -1190,6 +1445,246 @@ function mergeTranscriptText(
 }
 
 
+// =========================================================
+// TURN IDS
+// =========================================================
+
+function createTurnId(
+  role
+) {
+
+  turnSequence++;
+
+
+  let randomPart =
+    "";
+
+
+  try {
+
+    if (
+      typeof crypto
+        ?.randomUUID ===
+      "function"
+    ) {
+
+      randomPart =
+        crypto
+          .randomUUID()
+          .slice(
+            0,
+            12
+          );
+    }
+
+  } catch {}
+
+
+  if (!randomPart) {
+
+    randomPart =
+      Math.random()
+        .toString(36)
+        .slice(
+          2,
+          12
+        );
+  }
+
+
+  return (
+    String(
+      role || "turn"
+    )
+    +
+    "-"
+    +
+    String(
+      Date.now()
+    )
+    +
+    "-"
+    +
+    String(
+      turnSequence
+    )
+    +
+    "-"
+    +
+    randomPart
+  );
+}
+
+
+// =========================================================
+// REAL-TIME SERVER TURN SAVE
+// =========================================================
+
+async function persistTurnToServer(
+  turn
+) {
+
+  if (
+    !callId
+    ||
+    !callSecret
+    ||
+    !turn?.turnId
+    ||
+    !turn?.text
+  ) {
+
+    return {
+      ok: false,
+      skipped: true
+    };
+  }
+
+
+  if (
+    persistedTurnIds.has(
+      turn.turnId
+    )
+  ) {
+
+    return {
+      ok: true,
+      duplicate: true
+    };
+  }
+
+
+  const response =
+    await fetch(
+      "/api/call/turn",
+      {
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            callId,
+            callSecret,
+
+            turnId:
+              turn.turnId,
+
+            role:
+              turn.role,
+
+            text:
+              turn.text
+          })
+      }
+    );
+
+
+  const data =
+    await response.json();
+
+
+  if (
+    !response.ok
+    ||
+    !data?.ok
+  ) {
+
+    throw new Error(
+      data?.error
+      ||
+      "Call turn persistence failed"
+    );
+  }
+
+
+  persistedTurnIds.add(
+    turn.turnId
+  );
+
+
+  console.log(
+    (
+      "💾 CALL TURN SAVED | "
+      +
+      turn.role
+      +
+      " | "
+      +
+      turn.turnId
+    )
+  );
+
+
+  return data;
+}
+
+
+function queueTurnPersistence(
+  turn
+) {
+
+  if (
+    !turn
+    ||
+    !turn.turnId
+  ) {
+
+    return;
+  }
+
+
+  turnPersistenceChain =
+    turnPersistenceChain
+      .then(
+        async () => {
+
+          try {
+
+            await persistTurnToServer(
+              turn
+            );
+
+          } catch (error) {
+
+            //
+            // Do not break the live call.
+            //
+            // /api/call/end will retry every transcript
+            // turn as a final safety net.
+            //
+
+            console.log(
+              (
+                "⚠️ Live turn save: "
+                +
+                error.message
+              )
+            );
+          }
+        }
+      );
+}
+
+
+async function flushTurnPersistence() {
+
+  try {
+
+    await turnPersistenceChain;
+
+  } catch {}
+}
+
+
+// =========================================================
+// TRANSCRIPT
+// =========================================================
+
 function addTranscriptTurn(
   role,
   text
@@ -1203,8 +1698,16 @@ function addTranscriptTurn(
 
   if (!text) {
 
-    return;
+    return null;
   }
+
+
+  const normalizedRole =
+    role === "assistant"
+      ?
+      "assistant"
+      :
+      "user";
 
 
   const previous =
@@ -1217,20 +1720,32 @@ function addTranscriptTurn(
     previous
     &&
     previous.role ===
-      role
+      normalizedRole
     &&
     previous.text ===
       text
   ) {
 
-    return;
+    return previous;
   }
 
 
-  transcript.push({
-    role,
+  const turn = {
+    turnId:
+      createTurnId(
+        normalizedRole
+      ),
+
+    role:
+      normalizedRole,
+
     text
-  });
+  };
+
+
+  transcript.push(
+    turn
+  );
 
 
   if (
@@ -1243,6 +1758,19 @@ function addTranscriptTurn(
         -500
       );
   }
+
+
+  //
+  // Real-time shared memory:
+  // save completed call turns into the same Postgres
+  // conversation while the call is still happening.
+  //
+  queueTurnPersistence(
+    turn
+  );
+
+
+  return turn;
 }
 
 
@@ -1254,17 +1782,22 @@ function commitPendingUser() {
 
   if (!text) {
 
-    return;
+    return null;
   }
 
 
-  addTranscriptTurn(
-    "user",
-    text
-  );
+  const turn =
+    addTranscriptTurn(
+      "user",
+      text
+    );
 
 
-  pendingUserText = "";
+  pendingUserText =
+    "";
+
+
+  return turn;
 }
 
 
@@ -1276,23 +1809,29 @@ function commitPendingModel() {
 
   if (!text) {
 
-    return;
+    return null;
   }
 
 
-  addTranscriptTurn(
-    "assistant",
-    text
-  );
+  const turn =
+    addTranscriptTurn(
+      "assistant",
+      text
+    );
 
 
-  pendingModelText = "";
+  pendingModelText =
+    "";
+
+
+  return turn;
 }
 
 
 function commitAllPending() {
 
   commitPendingUser();
+
   commitPendingModel();
 }
 
@@ -1338,8 +1877,12 @@ function downsampleBuffer(
     );
 
 
-  let outputOffset = 0;
-  let inputOffset = 0;
+  let outputOffset =
+    0;
+
+
+  let inputOffset =
+    0;
 
 
   while (
@@ -1357,8 +1900,12 @@ function downsampleBuffer(
       );
 
 
-    let total = 0;
-    let count = 0;
+    let total =
+      0;
+
+
+    let count =
+      0;
 
 
     for (
@@ -1470,7 +2017,8 @@ function calculateRMS(
   }
 
 
-  let total = 0;
+  let total =
+    0;
 
 
   for (
@@ -1522,6 +2070,9 @@ function triggerLocalBargeIn(
     true;
 
 
+  //
+  // Save whatever XPAND actually said before interruption.
+  //
   commitPendingModel();
 
 
@@ -1581,12 +2132,14 @@ function handleLocalSpeechActivity(
     );
 
 
-  if (
-    userSpeaking
-  ) {
+  if (userSpeaking) {
 
-    silenceFrames = 0;
-    micWasSpeaking = true;
+    silenceFrames =
+      0;
+
+
+    micWasSpeaking =
+      true;
 
   } else {
 
@@ -1598,7 +2151,8 @@ function handleLocalSpeechActivity(
       2
     ) {
 
-      micWasSpeaking = false;
+      micWasSpeaking =
+        false;
 
 
       if (
@@ -1805,6 +2359,7 @@ async function startMicrophoneStreaming() {
           }
         });
 
+
       } catch (error) {
 
         console.log(
@@ -1859,16 +2414,40 @@ async function stopMicrophone() {
   } catch {}
 
 
-  micProcessor = null;
-  micSource = null;
-  silentGain = null;
-  micStream = null;
-  inputAudioContext = null;
+  micProcessor =
+    null;
 
-  micWasSpeaking = false;
-  silenceFrames = 0;
-  highConfidenceSpeechFrames = 0;
-  localBargeInLatched = false;
+
+  micSource =
+    null;
+
+
+  silentGain =
+    null;
+
+
+  micStream =
+    null;
+
+
+  inputAudioContext =
+    null;
+
+
+  micWasSpeaking =
+    false;
+
+
+  silenceFrames =
+    0;
+
+
+  highConfidenceSpeechFrames =
+    0;
+
+
+  localBargeInLatched =
+    false;
 }
 
 
@@ -2057,7 +2636,8 @@ async function playPCMChunk(
         0
       ) {
 
-        modelSpeakingStartedAt = 0;
+        modelSpeakingStartedAt =
+          0;
 
 
         if (
@@ -2150,7 +2730,8 @@ function stopCurrentPlayback() {
   activeAudioSources.clear();
 
 
-  modelSpeakingStartedAt = 0;
+  modelSpeakingStartedAt =
+    0;
 
 
   if (
@@ -2182,9 +2763,13 @@ async function closeOutputAudio() {
   } catch {}
 
 
-  outputAudioContext = null;
+  outputAudioContext =
+    null;
 
-  playbackTime = 0;
+
+  playbackTime =
+    0;
+
 
   playbackChain =
     Promise.resolve();
@@ -2213,6 +2798,9 @@ function getToolLabel(
     cancel_reminder:
       "بلغي التذكير...",
 
+    send_chat_message:
+      "ببعثلك عالشات...",
+
     send_telegram_message:
       "ببعثلك عالتلغرام...",
 
@@ -2220,31 +2808,67 @@ function getToolLabel(
       "بدورلك عالنت...",
 
     recall_memory:
-      "بتذكر آخر حكي...",
+      "برجع للذاكرة...",
 
     remember_information:
-      "بحفظها...",
+      "بحفظها بذاكرة XPAND...",
 
-    save_preference:
-      "بتعلمها...",
-
-    desktop_status:
-      "بشيّك الكمبيوتر...",
-
-    desktop_open_website:
-      "بفتح الموقع عالكمبيوتر...",
-
-    desktop_open_url:
-      "بفتح الرابط عالكمبيوتر...",
-
-    desktop_open_app:
+    desktop_open_program:
       "بفتح البرنامج...",
 
-    desktop_find_file:
-      "بدور عالملف...",
+    desktop_list_windows:
+      "براجع البرامج المفتوحة...",
+
+    desktop_focus_window:
+      "بجيب النافذة قدامك...",
+
+    desktop_read_app:
+      "بقرأ البرنامج...",
+
+    desktop_app_click:
+      "بضغط العنصر...",
+
+    desktop_app_type:
+      "بكتب...",
+
+    desktop_app_select:
+      "بختار العنصر...",
 
     desktop_screenshot:
-      "بصور الشاشة..."
+      "بشوف الشاشة...",
+
+    browser_status:
+      "بشيّك Chrome...",
+
+    browser_read_page:
+      "بقرأ الصفحة...",
+
+    browser_open_url:
+      "بفتح الرابط...",
+
+    browser_click:
+      "بضغط بالموقع...",
+
+    browser_search:
+      "ببحث بالموقع...",
+
+    browser_play_video:
+      "بشغل الفيديو...",
+
+    browser_pause_video:
+      "بوقف الفيديو...",
+
+    browser_scroll:
+      "بحرك الصفحة...",
+
+    browser_back:
+      "برجع صفحة...",
+
+    browser_forward:
+      "بتقدم صفحة...",
+
+    browser_reload:
+      "بحدث الصفحة..."
   };
 
 
@@ -2312,9 +2936,7 @@ async function callServerTool(
     await response.json();
 
 
-  if (
-    !response.ok
-  ) {
+  if (!response.ok) {
 
     throw new Error(
       data?.error
@@ -2459,6 +3081,7 @@ async function executeOneToolCall(
           }
     };
 
+
   } catch (error) {
 
     processedToolCallIds.add(
@@ -2479,6 +3102,7 @@ async function executeOneToolCall(
           "Tool failed"
       }
     };
+
 
   } finally {
 
@@ -2518,6 +3142,14 @@ async function handleToolCalls(
 
     return;
   }
+
+
+  //
+  // Save Ihab's request before executing the tool.
+  //
+  // This is important for shared live-call memory.
+  //
+  commitPendingUser();
 
 
   const responses =
@@ -2574,9 +3206,7 @@ function handleToolCancellation(
 
       toolAbortControllers
         .get(
-          String(
-            id
-          )
+          String(id)
         )
         ?.abort();
 
@@ -2616,10 +3246,12 @@ function handleUserTranscription(
   }
 
 
-  if (
-    !interim
-  ) {
+  if (!interim) {
 
+    //
+    // If XPAND had a previous completed response,
+    // commit it before accepting the next user turn.
+    //
     commitPendingModel();
 
 
@@ -2635,6 +3267,7 @@ function handleUserTranscription(
       +
       pendingUserText
     );
+
 
   } else {
 
@@ -2720,6 +3353,11 @@ function handleServerContent(
       ?.text
   ) {
 
+    //
+    // Model has started answering.
+    // Ihab's completed turn can now be safely committed
+    // to the unified Postgres conversation.
+    //
     commitPendingUser();
 
 
@@ -2769,6 +3407,10 @@ function handleServerContent(
       !suppressModelAudio
     ) {
 
+      //
+      // Audio response starting also means the user's
+      // current turn is complete.
+      //
       commitPendingUser();
 
 
@@ -2784,6 +3426,10 @@ function handleServerContent(
     content.turnComplete
   ) {
 
+    //
+    // Both sides of the completed turn become shared
+    // conversation turns immediately.
+    //
     commitAllPending();
 
 
@@ -2801,10 +3447,10 @@ function handleServerContent(
 
     if (
       activeAudioSources.size ===
-      0
+        0
       &&
       activeToolCount ===
-      0
+        0
       &&
       callActive
     ) {
@@ -2840,6 +3486,13 @@ function handleGeminiMessage(
     message?.toolCall
   ) {
 
+    //
+    // Persist the user's instruction before an external
+    // action is executed.
+    //
+    commitPendingUser();
+
+
     handleToolCalls(
       message
     ).catch(
@@ -2862,6 +3515,15 @@ function buildLiveConfig(
   callData
 ) {
 
+  const serverInstruction =
+    String(
+      callData
+        ?.systemInstruction
+      ||
+      ""
+    );
+
+
   return {
 
     responseModalities: [
@@ -2874,7 +3536,7 @@ function buildLiveConfig(
         {
           text:
             (
-              callData.systemInstruction
+              serverInstruction
               +
               "\n\n"
               +
@@ -2888,6 +3550,12 @@ function buildLiveConfig(
     speechConfig: {
       voiceConfig: {
         prebuiltVoiceConfig: {
+          //
+          // Voice identity is chosen by server.js.
+          //
+          // The same configured voice should be used
+          // by Telegram TTS and the live call.
+          //
           voiceName:
             callData.voice
         }
@@ -2979,15 +3647,27 @@ function cancelAllActiveTools() {
 
   toolAbortControllers.clear();
 
+
   toolPromises.clear();
 
-  activeToolCount = 0;
+
+  activeToolCount =
+    0;
 }
 
 
 async function cleanupAfterFailure() {
 
-  callActive = false;
+  const shouldSave =
+    Boolean(
+      callId
+      &&
+      callSecret
+    );
+
+
+  callActive =
+    false;
 
 
   stopTimer();
@@ -3003,14 +3683,37 @@ async function cleanupAfterFailure() {
   } catch {}
 
 
-  session = null;
+  session =
+    null;
+
+
+  try {
+
+    commitAllPending();
+
+
+    await flushTurnPersistence();
+
+  } catch {}
 
 
   await stopMicrophone();
 
+
   await closeOutputAudio();
 
+
   await releaseWakeLock();
+
+
+  if (shouldSave) {
+
+    try {
+
+      await saveCallTranscript();
+
+    } catch {}
+  }
 
 
   callControls
@@ -3077,25 +3780,55 @@ async function startCall() {
   );
 
 
-  transcript = [];
+  transcript =
+    [];
 
-  pendingUserText = "";
 
-  pendingModelText = "";
+  pendingUserText =
+    "";
 
-  callId = null;
 
-  callSecret = null;
+  pendingModelText =
+    "";
 
-  currentContinuity = null;
 
-  muted = false;
+  callId =
+    null;
 
-  suppressModelAudio = false;
 
-  playbackGeneration = 0;
+  callSecret =
+    null;
+
+
+  currentContinuity =
+    null;
+
+
+  muted =
+    false;
+
+
+  suppressModelAudio =
+    false;
+
+
+  playbackGeneration =
+    0;
+
+
+  turnSequence =
+    0;
+
+
+  turnPersistenceChain =
+    Promise.resolve();
+
+
+  persistedTurnIds.clear();
+
 
   processedToolCallIds.clear();
+
 
   cancelAllActiveTools();
 
@@ -3195,6 +3928,68 @@ async function startCall() {
       callData.continuity
       ||
       null;
+
+
+    console.log(
+      (
+        "✅ XPAND CALL START | "
+        +
+        "callId="
+        +
+        String(callId)
+      )
+    );
+
+
+    console.log(
+      (
+        "✅ Shared conversation: "
+        +
+        String(
+          callData
+            ?.sharedConversation
+        )
+      )
+    );
+
+
+    console.log(
+      (
+        "✅ Real-time call memory: "
+        +
+        String(
+          callData
+            ?.realtimeCallMemory
+        )
+      )
+    );
+
+
+    console.log(
+      (
+        "✅ Call -> chat tool: "
+        +
+        String(
+          callData
+            ?.sendChatMessage
+        )
+      )
+    );
+
+
+    console.log(
+      (
+        "✅ XPAND voice: "
+        +
+        String(
+          callData.voice
+          ||
+          callData.voiceId
+          ||
+          ""
+        )
+      )
+    );
 
 
     const ai =
@@ -3298,14 +4093,13 @@ async function startCall() {
 
 
     // =====================================================
-    // IMPORTANT:
+    // CONTINUITY
     //
-    // أقل من 15 دقيقة:
-    // لا نجبر XPAND يحكي أي شيء.
-    // ينتظر كريم ويكمل السياق.
+    // If this is a continuation:
+    // XPAND waits for Ihab and continues naturally.
     //
-    // أكثر من 15 دقيقة:
-    // نسمح بتحية قصيرة.
+    // If the gap is long:
+    // one short greeting is allowed.
     // =====================================================
 
     if (
@@ -3324,19 +4118,26 @@ async function startCall() {
           `
 ابدأ المكالمة الآن.
 
-سلّم على كريم بتحية فلسطينية قصيرة جداً مرة واحدة.
+المستخدم هو إيهاب.
 
-بعدها اسكت وخليه يحكي.
+سلّم على إيهاب بتحية فلسطينية قصيرة جداً مرة واحدة فقط.
+
+لا تعرّف نفسك من جديد.
+
+لا تذكر كريم أو Kemo.
+
+بعد التحية اسكت وخليه يحكي.
 
 لا تشرح النظام.
 `
       });
 
+
     } else {
 
       console.log(
         (
-          "↪️ Conversation continuation | gap="
+          "↪️ Unified conversation continuation | gap="
           +
           String(
             currentContinuity
@@ -3353,8 +4154,12 @@ async function startCall() {
       );
 
 
-      // لا نرسل prompt لبدء الكلام.
-      // XPAND ينتظر كريم ويكمل من آخر سياق.
+      //
+      // Do not force a greeting.
+      //
+      // XPAND waits for Ihab and continues the same
+      // shared Telegram/voice/call conversation.
+      //
     }
 
 
@@ -3405,9 +4210,7 @@ function toggleMute() {
     );
 
 
-  if (
-    muteLabel
-  ) {
+  if (muteLabel) {
 
     muteLabel.textContent =
       muted
@@ -3453,27 +4256,72 @@ async function saveCallTranscript() {
   commitAllPending();
 
 
+  //
+  // Wait for live /api/call/turn writes first.
+  //
+  // /api/call/end remains an idempotent safety net for
+  // anything that did not reach the server live.
+  //
+  await flushTurnPersistence();
+
+
   try {
 
-    await fetch(
-      "/api/call/end",
-      {
-        method:
-          "POST",
+    const response =
+      await fetch(
+        "/api/call/end",
+        {
+          method:
+            "POST",
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-        body:
-          JSON.stringify({
-            callId,
-            callSecret,
-            transcript
-          })
-      }
+          body:
+            JSON.stringify({
+              callId,
+              callSecret,
+              transcript
+            })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok
+      ||
+      !data?.ok
+    ) {
+
+      throw new Error(
+        data?.error
+        ||
+        "فشل حفظ المكالمة"
+      );
+    }
+
+
+    console.log(
+      (
+        "✅ CALL SAVED | turns="
+        +
+        String(
+          data.savedTurns
+          ??
+          transcript.length
+        )
+      )
     );
+
+
+    return data;
+
 
   } catch (error) {
 
@@ -3481,6 +4329,9 @@ async function saveCallTranscript() {
       "Call save:",
       error
     );
+
+
+    throw error;
   }
 }
 
@@ -3491,9 +4342,7 @@ async function saveCallTranscript() {
 
 async function endCall() {
 
-  if (
-    endingCall
-  ) {
+  if (endingCall) {
 
     return;
   }
@@ -3529,6 +4378,12 @@ async function endCall() {
   cancelAllActiveTools();
 
 
+  //
+  // Commit text while the Live session still exists.
+  //
+  commitAllPending();
+
+
   try {
 
     session?.close();
@@ -3536,16 +4391,37 @@ async function endCall() {
   } catch {}
 
 
-  session = null;
+  session =
+    null;
 
 
   await stopMicrophone();
 
+
   await closeOutputAudio();
+
 
   await releaseWakeLock();
 
-  await saveCallTranscript();
+
+  try {
+
+    await saveCallTranscript();
+
+
+    setCaption(
+      "المكالمة انحفظت بنفس محادثة XPAND.",
+      false
+    );
+
+
+  } catch {
+
+    setCaption(
+      "انتهت المكالمة، بس صار خلل بحفظ آخر جزء.",
+      false
+    );
+  }
 
 
   callControls
@@ -3577,19 +4453,20 @@ async function endCall() {
   );
 
 
-  setCaption(
-    "المكالمة انحفظت.",
-    false
-  );
+  callId =
+    null;
 
 
-  callId = null;
+  callSecret =
+    null;
 
-  callSecret = null;
 
-  currentContinuity = null;
+  currentContinuity =
+    null;
 
-  endingCall = false;
+
+  endingCall =
+    false;
 }
 
 
@@ -3634,6 +4511,7 @@ function saveBeforeClose() {
       "/api/call/end",
       blob
     );
+
 
   } catch {}
 }
@@ -3686,6 +4564,7 @@ if (
         tg.close();
       }
     );
+
 
   } catch {}
 }
@@ -3760,56 +4639,126 @@ setVisualState(
 
 
 setCaption(
-  "اضغط ابدأ، واحكي معه طبيعي.",
+  "اضغط ابدأ، واحكي مع XPAND طبيعي.",
   false
 );
 
 
 console.log(
-  "===================================="
+  ""
 );
 
-console.log(
-  " XPAND HUMAN CALL UI V4 - ONE XPAND"
-);
 
 console.log(
-  "===================================="
+  "=============================================="
 );
+
+
+console.log(
+  " XPAND UNIFIED CALL UI V5"
+);
+
+
+console.log(
+  " TEXT + VOICE + CALL = ONE XPAND"
+);
+
+
+console.log(
+  "=============================================="
+);
+
+
+console.log(
+  ""
+);
+
+
+console.log(
+  `✅ Version: ${UI_VERSION}`
+);
+
+
+console.log(
+  `✅ Agent: ${AGENT_NAME}`
+);
+
+
+console.log(
+  `✅ Primary user: ${PRIMARY_USER_NAME}`
+);
+
 
 console.log(
   "✅ Shared Telegram/call context"
 );
 
+
+console.log(
+  "✅ Real-time call turn persistence"
+);
+
+
+console.log(
+  "✅ Shared PostgreSQL conversation"
+);
+
+
+console.log(
+  "✅ Call -> Telegram tools"
+);
+
+
+console.log(
+  "✅ Server-controlled unified voice"
+);
+
+
 console.log(
   "✅ 15-minute continuity"
 );
+
 
 console.log(
   "✅ No forced greeting on continuation"
 );
 
+
+console.log(
+  "✅ No Karim identity"
+);
+
+
+console.log(
+  "✅ No Kemo call personality"
+);
+
+
 console.log(
   "✅ Desktop tools"
 );
 
-console.log(
-  "✅ Smart website opening"
-);
 
 console.log(
-  "✅ Screenshot"
+  "✅ Chrome direct tools"
 );
 
-console.log(
-  "✅ File search"
-);
 
 console.log(
   "✅ Ultra-fast VAD preserved"
 );
 
 
+console.log(
+  "✅ Barge-in preserved"
+);
+
+
+console.log(
+  ""
+);
+
+
 // =========================================================
-// XPAND HUMAN CALL UI V4
+// XPAND UNIFIED CALL UI V5
 // =========================================================
