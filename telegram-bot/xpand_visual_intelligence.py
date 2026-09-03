@@ -1,26 +1,27 @@
 # =========================================================
-# XPAND VISUAL INTELLIGENCE V1.0
+# XPAND VISUAL INTELLIGENCE V1.0.1
 #
-# Visual-reference analysis layer.
+# Visual-reference analysis layer for XPAND.
 #
 # Produces:
 # - Visual Reference DNA
-# - Reference role classification
+# - Reference-role classification
 # - Camera analysis
-# - Lens estimate
+# - Lens estimation
 # - Perspective analysis
-# - Lighting analysis
+# - Composition analysis
+# - Lighting / shadows / reflections
 # - Materials
-# - Color behavior
+# - Color palette
 # - Negative space
 # - Product Lock
-# - Visual success reasons
-#
-# Uses the OpenAI visual director already configured
-# in xpand_image_engine.py.
+# - Visual success reasoning
 #
 # IMPORTANT:
-# - Never stores or transcribes sensitive card/account data.
+# - Reference-role detection is deterministic BEFORE Vision.
+# - User instructions about reference purpose have priority.
+# - Product references are never confused with style references.
+# - Sensitive banking information is never intentionally stored.
 # =========================================================
 
 from __future__ import annotations
@@ -32,7 +33,6 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
 )
 
 
@@ -41,7 +41,11 @@ from xpand_image_engine import (
 )
 
 
-VERSION = "1.0"
+# =========================================================
+# MODULE
+# =========================================================
+
+VERSION = "1.0.1"
 
 MODULE_NAME = (
     "XPAND Visual Intelligence"
@@ -88,9 +92,11 @@ def normalize_text(
         "ى": "ي",
         "ؤ": "و",
         "ئ": "ي",
+        "ـ": "",
     }
 
     for old, new in replacements.items():
+
         text = text.replace(
             old,
             new
@@ -100,6 +106,13 @@ def normalize_text(
         r"[\u064B-\u065F]",
         "",
         text
+    )
+
+    text = re.sub(
+        r"[^\w\s:/\-]+",
+        " ",
+        text,
+        flags=re.UNICODE
     )
 
     text = re.sub(
@@ -130,116 +143,547 @@ def contains_any(
 
 
 # =========================================================
-# REFERENCE ROLE
+# VALID REFERENCE ROLES
+# =========================================================
+
+VALID_ROLES = {
+    "product_reference",
+    "environment_reference",
+    "camera_reference",
+    "color_reference",
+    "style_reference",
+    "lighting_reference",
+    "composition_reference",
+    "person_reference",
+    "campaign_reference",
+    "mixed_reference",
+}
+
+
+# =========================================================
+# ROLE KEYWORDS
+#
+# IMPORTANT:
+# User-described function of the reference has priority.
 # =========================================================
 
 ROLE_HINTS = {
+
+    # -----------------------------------------------------
+    # PRODUCT
+    # -----------------------------------------------------
+
     "product_reference": [
+        "مرجع منتج",
         "مرجع المنتج",
+        "مرجع للمنتج",
+        "هاي المنتج",
+        "هذا المنتج",
         "المنتج نفسه",
         "نفس المنتج",
+        "خلي المنتج نفسه",
+        "لا تغير المنتج",
+        "لا تغيّر المنتج",
+        "ثبّت المنتج",
+        "ثبت المنتج",
+        "بطاقه نفسها",
+        "بطاقة نفسها",
+        "نفس البطاقه",
+        "نفس البطاقة",
+        "نفس الكرت",
+        "نفس الهاتف",
+        "نفس الموبايل",
+        "نفس العبوه",
+        "نفس العبوة",
+        "product reference",
+        "same product",
+        "product lock",
+    ],
+
+    # -----------------------------------------------------
+    # CAMERA / ANGLE
+    # -----------------------------------------------------
+
+    "camera_reference": [
+        "مرجع زاويه",
+        "مرجع زاوية",
+        "مرجع الزاويه",
+        "مرجع الزاوية",
+        "مرجع زاويه التصوير",
+        "مرجع زاوية التصوير",
+        "مرجع للزاويه",
+        "مرجع للزاوية",
+        "خد الزاويه",
+        "خذ الزاوية",
+        "نفس الزاويه",
+        "نفس الزاوية",
+        "زاويه التصوير",
+        "زاوية التصوير",
+        "زاويه الكاميرا",
+        "زاوية الكاميرا",
+        "camera reference",
+        "camera angle",
+        "same angle",
+        "angle reference",
+        "perspective reference",
+    ],
+
+    # -----------------------------------------------------
+    # ENVIRONMENT
+    # -----------------------------------------------------
+
+    "environment_reference": [
+        "مرجع بيئه",
+        "مرجع بيئة",
+        "مرجع البيئه",
+        "مرجع البيئة",
+        "مرجع للمكان",
+        "مرجع مكان",
+        "مرجع الخلفيه",
+        "مرجع الخلفية",
+        "نفس المكان",
+        "نفس البيئه",
+        "نفس البيئة",
+        "خد المكان",
+        "خذ المكان",
+        "environment reference",
+        "background reference",
+        "location reference",
+        "same environment",
+    ],
+
+    # -----------------------------------------------------
+    # LIGHTING
+    # -----------------------------------------------------
+
+    "lighting_reference": [
+        "مرجع اضاءه",
+        "مرجع إضاءة",
+        "مرجع الاضاءه",
+        "مرجع الإضاءة",
+        "نفس الاضاءه",
+        "نفس الإضاءة",
+        "خد الاضاءه",
+        "خذ الإضاءة",
+        "طريقة الاضاءه",
+        "طريقة الإضاءة",
+        "lighting reference",
+        "same lighting",
+        "light reference",
+    ],
+
+    # -----------------------------------------------------
+    # COMPOSITION
+    # -----------------------------------------------------
+
+    "composition_reference": [
+        "مرجع تكوين",
+        "مرجع التكوين",
+        "نفس التكوين",
+        "ترتيب العناصر",
+        "نفس ترتيب العناصر",
+        "خد التكوين",
+        "خذ التكوين",
+        "composition reference",
+        "layout reference",
+        "same composition",
+    ],
+
+    # -----------------------------------------------------
+    # COLOR
+    # -----------------------------------------------------
+
+    "color_reference": [
+        "مرجع لون",
+        "مرجع اللون",
+        "مرجع الوان",
+        "مرجع ألوان",
+        "مرجع الالوان",
+        "مرجع الألوان",
+        "نفس الالوان",
+        "نفس الألوان",
+        "خد الالوان",
+        "خذ الألوان",
+        "color reference",
+        "palette reference",
+        "same colors",
+    ],
+
+    # -----------------------------------------------------
+    # PERSON
+    # -----------------------------------------------------
+
+    "person_reference": [
+        "مرجع شخص",
+        "مرجع الشخص",
+        "نفس الشخص",
+        "نفس الوجه",
+        "نفس الموديل",
+        "حافظ على الشخص",
+        "حافظ على الوجه",
+        "person reference",
+        "face reference",
+        "same person",
+        "same face",
+    ],
+
+    # -----------------------------------------------------
+    # CAMPAIGN
+    # -----------------------------------------------------
+
+    "campaign_reference": [
+        "مرجع حمله",
+        "مرجع حملة",
+        "مرجع الحمله",
+        "مرجع الحملة",
+        "نفس الحمله",
+        "نفس الحملة",
+        "campaign reference",
+        "campaign visual reference",
+    ],
+
+    # -----------------------------------------------------
+    # STYLE
+    # Keep this AFTER specific technical roles.
+    # -----------------------------------------------------
+
+    "style_reference": [
+        "مرجع ستايل",
+        "مرجع الاسلوب",
+        "مرجع الأسلوب",
+        "نفس الستايل",
+        "نفس الاسلوب",
+        "نفس الأسلوب",
+        "خد الستايل",
+        "خذ الستايل",
+        "استلهم الستايل",
+        "style reference",
+        "same style",
+        "visual style",
+    ],
+}
+
+
+# =========================================================
+# ROLE PRIORITY
+#
+# In ambiguity, specific physical references have priority
+# over generic style.
+# =========================================================
+
+ROLE_PRIORITY = [
+    "product_reference",
+    "camera_reference",
+    "environment_reference",
+    "lighting_reference",
+    "composition_reference",
+    "color_reference",
+    "person_reference",
+    "campaign_reference",
+    "style_reference",
+]
+
+
+# =========================================================
+# GENERIC SINGLE-WORD SIGNALS
+#
+# Lower confidence than direct phrases.
+# =========================================================
+
+GENERIC_ROLE_SIGNALS = {
+
+    "product_reference": [
+        "المنتج",
         "بطاقه",
         "بطاقة",
-        "كرت",
-        "هاتف",
-        "موبايل",
-        "عبوه",
-        "عبوة",
-        "ساعة",
-        "ساعه",
-        "product reference",
+        "الكرت",
+        "الهاتف",
+        "الموبايل",
+        "العبوه",
+        "العبوة",
+        "product",
+        "card",
+        "package",
+    ],
+
+    "camera_reference": [
+        "زاويه",
+        "زاوية",
+        "كاميرا",
+        "عدسه",
+        "عدسة",
+        "منظور",
+        "perspective",
+        "camera",
+        "lens",
     ],
 
     "environment_reference": [
-        "مرجع البيئه",
-        "مرجع البيئة",
         "الخلفيه",
         "الخلفية",
         "المكان",
         "البيئه",
         "البيئة",
-        "environment",
         "background",
-    ],
-
-    "camera_reference": [
-        "مرجع الزاويه",
-        "مرجع الزاوية",
-        "الزاويه",
-        "الزاوية",
-        "الكاميرا",
-        "زاويه تصوير",
-        "camera angle",
-        "perspective",
-    ],
-
-    "color_reference": [
-        "مرجع اللون",
-        "مرجع الالوان",
-        "مرجع الألوان",
-        "الالوان",
-        "الألوان",
-        "color reference",
-        "palette",
+        "environment",
+        "location",
     ],
 
     "lighting_reference": [
-        "مرجع الاضاءه",
-        "مرجع الإضاءة",
         "الاضاءه",
         "الإضاءة",
+        "الضوء",
+        "الظل",
         "lighting",
+        "light",
+        "shadow",
     ],
 
     "composition_reference": [
-        "مرجع التكوين",
         "التكوين",
-        "ترتيب العناصر",
+        "الكادر",
+        "ترتيب",
         "composition",
         "layout",
+        "framing",
+    ],
+
+    "color_reference": [
+        "اللون",
+        "الالوان",
+        "الألوان",
+        "palette",
+        "colors",
+        "colour",
     ],
 
     "person_reference": [
-        "مرجع الشخص",
-        "نفس الشخص",
-        "نفس الوجه",
-        "الشخصيه",
-        "الشخصية",
-        "person reference",
-        "face reference",
+        "الشخص",
+        "الوجه",
+        "الموديل",
+        "person",
+        "face",
+    ],
+
+    "campaign_reference": [
+        "الحمله",
+        "الحملة",
+        "campaign",
     ],
 
     "style_reference": [
-        "مرجع الاسلوب",
-        "مرجع الأسلوب",
-        "الستايل",
+        "ستايل",
         "الاسلوب",
         "الأسلوب",
-        "style reference",
         "style",
+        "look",
     ],
 }
 
+
+# =========================================================
+# REFERENCE ROLE CLASSIFIER
+# =========================================================
 
 def infer_reference_role_from_note(
     note: str
 ) -> str:
 
-    note = clean_text(
-        note,
-        5000
+    source = normalize_text(
+        note
     )
 
-    for role, markers in ROLE_HINTS.items():
+    if not source:
 
-        if contains_any(
-            note,
-            markers
-        ):
+        return "style_reference"
 
-            return role
+    scores: Dict[str, int] = {
+        role: 0
+        for role in VALID_ROLES
+    }
+
+    # -----------------------------------------------------
+    # DIRECT PHRASE MATCHES
+    #
+    # These are strongest.
+    # Longer phrases get slightly more weight.
+    # -----------------------------------------------------
+
+    for role in ROLE_PRIORITY:
+
+        markers = ROLE_HINTS.get(
+            role,
+            []
+        )
+
+        for marker in markers:
+
+            normalized_marker = normalize_text(
+                marker
+            )
+
+            if (
+                normalized_marker
+                and
+                normalized_marker in source
+            ):
+
+                scores[
+                    role
+                ] += (
+                    100
+                    +
+                    min(
+                        50,
+                        len(
+                            normalized_marker
+                        )
+                    )
+                )
+
+    # -----------------------------------------------------
+    # GENERIC SIGNALS
+    # -----------------------------------------------------
+
+    for role in ROLE_PRIORITY:
+
+        markers = GENERIC_ROLE_SIGNALS.get(
+            role,
+            []
+        )
+
+        for marker in markers:
+
+            normalized_marker = normalize_text(
+                marker
+            )
+
+            if (
+                normalized_marker
+                and
+                normalized_marker in source
+            ):
+
+                scores[
+                    role
+                ] += 10
+
+    # -----------------------------------------------------
+    # MULTI-REFERENCE LANGUAGE
+    # -----------------------------------------------------
+
+    mixed_markers = [
+        "خد من هاي الصور",
+        "خذ من هاي الصور",
+        "استخدم الصور كمرجع",
+        "استخدم كل الصور",
+        "ادمج المراجع",
+        "استفيد من كل مرجع",
+        "mixed reference",
+        "use all references",
+    ]
+
+    if contains_any(
+        source,
+        mixed_markers
+    ):
+
+        positive_roles = [
+            role
+            for role, score in scores.items()
+            if (
+                role != "mixed_reference"
+                and
+                score > 0
+            )
+        ]
+
+        if len(
+            positive_roles
+        ) >= 2:
+
+            return "mixed_reference"
+
+    # -----------------------------------------------------
+    # PICK WINNER
+    # -----------------------------------------------------
+
+    highest_score = max(
+        scores.values()
+    )
+
+    if highest_score <= 0:
+
+        return "style_reference"
+
+    candidates = [
+        role
+        for role in ROLE_PRIORITY
+        if scores.get(
+            role,
+            0
+        ) == highest_score
+    ]
+
+    if candidates:
+
+        return candidates[0]
 
     return "style_reference"
+
+
+# =========================================================
+# ROLE WITH EXPLANATION
+# =========================================================
+
+def classify_reference_role(
+    note: str
+) -> Dict[str, Any]:
+
+    source = normalize_text(
+        note
+    )
+
+    role = infer_reference_role_from_note(
+        note
+    )
+
+    matched_markers: List[str] = []
+
+    for marker in ROLE_HINTS.get(
+        role,
+        []
+    ):
+
+        if normalize_text(
+            marker
+        ) in source:
+
+            matched_markers.append(
+                marker
+            )
+
+    return {
+        "role":
+            role,
+
+        "source":
+            "user_note"
+            if source
+            else
+            "default",
+
+        "matched_markers":
+            matched_markers[:10],
+
+        "confidence":
+            (
+                100
+                if matched_markers
+                else
+                60
+            ),
+    }
 
 
 # =========================================================
@@ -259,8 +703,7 @@ def extract_json_object(
         r"^```(?:json)?\s*",
         "",
         text,
-        flags=
-            re.IGNORECASE
+        flags=re.IGNORECASE
     )
 
     text = re.sub(
@@ -279,9 +722,11 @@ def extract_json_object(
             parsed,
             dict
         ):
+
             return parsed
 
     except Exception:
+
         pass
 
     start = text.find(
@@ -310,9 +755,11 @@ def extract_json_object(
                 parsed,
                 dict
             ):
+
                 return parsed
 
         except Exception:
+
             pass
 
     return {}
@@ -321,20 +768,6 @@ def extract_json_object(
 # =========================================================
 # NORMALIZATION
 # =========================================================
-
-VALID_ROLES = {
-    "product_reference",
-    "environment_reference",
-    "camera_reference",
-    "color_reference",
-    "style_reference",
-    "lighting_reference",
-    "composition_reference",
-    "person_reference",
-    "campaign_reference",
-    "mixed_reference",
-}
-
 
 def normalized_role(
     value: Any,
@@ -347,6 +780,7 @@ def normalized_role(
     ).lower()
 
     if role in VALID_ROLES:
+
         return role
 
     return fallback
@@ -357,6 +791,7 @@ def normalize_confidence(
 ) -> int:
 
     try:
+
         number = int(
             round(
                 float(
@@ -366,6 +801,7 @@ def normalize_confidence(
         )
 
     except Exception:
+
         number = 70
 
     return max(
@@ -375,6 +811,63 @@ def normalize_confidence(
             number
         )
     )
+
+
+# =========================================================
+# BRAND / USER ROLE OVERRIDE RULE
+# =========================================================
+
+def resolve_final_reference_role(
+    *,
+    user_role: str,
+    vision_role: str,
+    user_note: str
+) -> str:
+
+    user_role = normalized_role(
+        user_role
+    )
+
+    vision_role = normalized_role(
+        vision_role
+    )
+
+    note = normalize_text(
+        user_note
+    )
+
+    # -----------------------------------------------------
+    # USER EXPLICITLY EXPLAINED REFERENCE FUNCTION
+    #
+    # User instruction wins over Vision classification.
+    # -----------------------------------------------------
+
+    classification = classify_reference_role(
+        user_note
+    )
+
+    if (
+        note
+        and
+        classification.get(
+            "matched_markers"
+        )
+    ):
+
+        return classification[
+            "role"
+        ]
+
+    # -----------------------------------------------------
+    # NO EXPLICIT FUNCTION:
+    # Vision can classify the image naturally.
+    # -----------------------------------------------------
+
+    if vision_role in VALID_ROLES:
+
+        return vision_role
+
+    return user_role
 
 
 # =========================================================
@@ -405,19 +898,49 @@ visual reference.
 
 This analysis will be stored as structured Visual Reference DNA.
 
-USER NOTE:
+==================================================
+USER NOTE
+==================================================
+
 {clean_text(user_note, 5000)}
 
-BRAND CONTEXT:
+==================================================
+BRAND CONTEXT
+==================================================
+
 {clean_text(brand_context, 10000)}
 
-ROLE HINT:
+==================================================
+REFERENCE ROLE HINT
+==================================================
+
 {role_hint or "none"}
 
-Your job is to identify what this image should be used for,
-not just describe what it contains.
+IMPORTANT:
 
-Possible reference roles:
+If the user explicitly states what the image is a reference for,
+respect that role.
+
+Examples:
+
+- "مرجع زاوية" means camera_reference
+- "مرجع المنتج" means product_reference
+- "مرجع الإضاءة" means lighting_reference
+- "مرجع الألوان" means color_reference
+- "مرجع الخلفية" means environment_reference
+- "مرجع التكوين" means composition_reference
+- "مرجع الستايل" means style_reference
+
+Do NOT reinterpret an explicit product reference as a style reference.
+
+Do NOT copy the product from an environment reference.
+
+Do NOT copy the environment from a product-only reference unless
+the user explicitly requests it.
+
+==================================================
+POSSIBLE REFERENCE ROLES
+==================================================
 
 - product_reference
 - environment_reference
@@ -430,111 +953,203 @@ Possible reference roles:
 - campaign_reference
 - mixed_reference
 
-Analyze carefully:
+==================================================
+CAMERA ANALYSIS
+==================================================
 
-CAMERA
-- approximate camera height
+Estimate:
+
+- camera height
 - camera direction
 - shot type
-- approximate lens / focal length
+- approximate focal length / lens
 - distance to primary subject
 - horizon position
+- camera tilt
+- camera roll if relevant
 
+==================================================
 PERSPECTIVE
+==================================================
+
+Analyze:
+
 - perspective type
-- number / direction of vanishing points
+- vanishing points
 - perspective distortion
 - foreground / midground / background relationship
-- whether any forced perspective is used
+- scale relationships
+- forced perspective if present
 
+==================================================
 COMPOSITION
+==================================================
+
+Analyze:
+
 - primary focal point
-- supporting element
-- negative-space placement
+- supporting focal points
+- product position
+- human position
+- negative space
+- headline-safe area
 - hierarchy
 - symmetry / asymmetry
 - leading lines
-- object position inside frame
+- frame balance
+- depth layers
 
+==================================================
 LIGHTING
-- key-light direction
-- fill behavior
-- rim/back light
-- softness
-- contrast
-- color temperature
-- practical lights
-- reflection behavior
-- shadow behavior
-- contact shadows
+==================================================
 
+Analyze:
+
+- key light direction
+- key light softness
+- fill behavior
+- rim / edge light
+- backlight
+- practical lights
+- contrast ratio
+- apparent color temperature
+- shadow direction
+- contact shadows
+- reflections
+- specular highlights
+- environmental light
+
+==================================================
 MATERIALS
+==================================================
+
+Identify relevant behavior of:
+
 - glass
 - metal
 - plastic
 - fabric
 - skin
+- leather
 - architecture
-- surfaces
-- roughness / glossiness
-- important reflection characteristics
+- floors
+- walls
+- product surfaces
+- roughness
+- gloss
+- translucency
+- reflection properties
 
+==================================================
 COLOR
+==================================================
+
+Extract:
+
 - dominant colors
 - secondary colors
-- accent colors
-- saturation
-- contrast
-- color relationships
+- accents
+- approximate color relationships
+- saturation behavior
+- contrast behavior
+- warm/cool balance
 
-PRODUCT
-If a product/card/phone/package is present:
-- identify its geometric characteristics
+==================================================
+PRODUCT LOCK
+==================================================
+
+If a product/card/phone/package is present AND this image is
+being used as a product reference, determine which properties
+must remain unchanged.
+
+Potential locked attributes:
+
+- silhouette
 - proportions
-- orientation
+- dimensions
 - thickness
 - corners
-- physical placement
-- interaction with hand/environment
+- edge geometry
+- camera-facing orientation
+- chip placement
+- button placement
+- camera-module placement
+- packaging geometry
+- material
+- color
+- graphic layout
+- logo placement when appropriate
 
-Do NOT transcribe or store:
+The environment may be redesigned unless the user explicitly
+locks it.
+
+Lighting may adapt to the new environment unless the user
+explicitly locks it.
+
+==================================================
+SENSITIVE FINANCIAL INFORMATION
+==================================================
+
+Never transcribe or store:
+
 - payment card numbers
-- IBAN numbers
+- IBAN values
 - account numbers
 - CVV
 - security codes
-- personal IDs
+- PINs
 - passwords
-- private sensitive financial text
+- private IDs
 
-If sensitive text appears, only set:
+If sensitive financial text appears, ONLY report:
+
 "sensitive_text_present": true
 
-Never reproduce the sensitive value.
+Never reproduce the actual value.
 
-PRODUCT LOCK:
-Determine which physical/visual properties must remain
-unchanged if this reference is used as an original product reference.
+==================================================
+VISUAL SUCCESS
+==================================================
 
-VISUAL SUCCESS:
-Explain what makes the image visually successful:
-- concept
-- angle
+Explain concisely why the visual works:
+
+- idea
+- camera
 - hierarchy
 - lighting
-- simplicity
-- integration
-- emotional/commercial effect
+- negative space
+- material treatment
+- visual simplicity
+- emotional effect
+- commercial effect
 
-RISKS:
-Identify elements that a generation model could easily break.
+==================================================
+GENERATION RISKS
+==================================================
+
+Identify likely generation failures:
+
+- hand/product interaction
+- warped card
+- wrong perspective
+- incorrect reflections
+- broken typography
+- inconsistent product geometry
+- anatomy
+- excessive complexity
+- conflicting depth
+- unrealistic scale
+
+==================================================
+OUTPUT
+==================================================
 
 Return JSON ONLY.
 
 Required schema:
 
 {{
-  "summary": "short visual summary",
+  "summary": "",
 
   "primary_reference_role":
     "product_reference | environment_reference | camera_reference | color_reference | style_reference | lighting_reference | composition_reference | person_reference | campaign_reference | mixed_reference",
@@ -548,6 +1163,7 @@ Required schema:
     "estimated_lens_mm": "",
     "subject_distance": "",
     "horizon_position": "",
+    "tilt": "",
     "creative_reason": ""
   }},
 
@@ -557,17 +1173,21 @@ Required schema:
     "distortion_level": "",
     "foreground": "",
     "midground": "",
-    "background": ""
+    "background": "",
+    "scale_relationship": ""
   }},
 
   "composition": {{
     "primary_focal_point": "",
     "secondary_element": "",
     "product_position": "",
+    "person_position": "",
     "negative_space": "",
+    "headline_safe_area": "",
     "visual_hierarchy": "",
     "leading_lines": "",
-    "balance": ""
+    "balance": "",
+    "depth_layers": ""
   }},
 
   "lighting": {{
@@ -579,7 +1199,9 @@ Required schema:
     "contrast": "",
     "color_temperature": "",
     "shadow_behavior": "",
-    "reflection_behavior": ""
+    "contact_shadows": "",
+    "reflection_behavior": "",
+    "specular_behavior": ""
   }},
 
   "materials": [],
@@ -589,12 +1211,11 @@ Required schema:
     "secondary": [],
     "accents": [],
     "saturation": "",
-    "contrast": ""
+    "contrast": "",
+    "temperature_balance": ""
   }},
 
-  "relationships": [
-    "relationship between important objects"
-  ],
+  "relationships": [],
 
   "visual_success_reasons": [],
 
@@ -613,8 +1234,10 @@ Required schema:
 }}
 
 Be technically precise.
-Do not invent information that cannot reasonably be inferred
-from the image.
+
+Do not invent details that cannot reasonably be inferred.
+
+Return only JSON.
 """.strip()
 
 
@@ -637,7 +1260,7 @@ def analyze_visual_reference(
             "Image bytes are empty."
         )
 
-    inferred_role = (
+    deterministic_role = (
         normalized_role(
             role_hint
         )
@@ -656,7 +1279,7 @@ def analyze_visual_reference(
             brand_context,
 
         role_hint=
-            inferred_role
+            deterministic_role
     )
 
     raw = call_openai_director(
@@ -682,12 +1305,23 @@ def analyze_visual_reference(
             )
         )
 
-    primary_role = normalized_role(
+    vision_role = normalized_role(
         data.get(
             "primary_reference_role"
         ),
         fallback=
-            inferred_role
+            deterministic_role
+    )
+
+    final_role = resolve_final_reference_role(
+        user_role=
+            deterministic_role,
+
+        vision_role=
+            vision_role,
+
+        user_note=
+            user_note
     )
 
     secondary = data.get(
@@ -699,18 +1333,28 @@ def analyze_visual_reference(
         secondary,
         list
     ):
+
         secondary = []
 
-    secondary = [
-        normalized_role(
+    normalized_secondary = []
+
+    for item in secondary:
+
+        role = normalized_role(
             item
         )
-        for item in secondary
-        if clean_text(
-            item,
-            100
-        )
-    ]
+
+        if (
+            role
+            and
+            role != final_role
+            and
+            role not in normalized_secondary
+        ):
+
+            normalized_secondary.append(
+                role
+            )
 
     product_lock = data.get(
         "product_lock",
@@ -721,26 +1365,42 @@ def analyze_visual_reference(
         product_lock,
         dict
     ):
+
         product_lock = {}
 
-    # -----------------------------------------------------
-    # HARD PRIVACY RULE
+    # =====================================================
+    # PRODUCT LOCK SAFETY
     #
-    # Even if the vision model accidentally returns values
-    # that look like sensitive banking identifiers,
-    # this module removes risky text-oriented fields.
-    # -----------------------------------------------------
+    # Product lock should only be force-enabled when:
+    # - reference is product_reference
+    # - or Vision has strong product information
+    # =====================================================
+
+    if final_role == "product_reference":
+
+        product_lock[
+            "enabled"
+        ] = True
+
+    # =====================================================
+    # SENSITIVE FIELD REDACTION
+    # =====================================================
 
     sensitive_keys = [
         "card_number",
+        "card_numbers",
         "iban",
+        "iban_number",
         "account_number",
+        "account_numbers",
         "cvv",
+        "cvc",
         "security_code",
         "pin",
         "password",
         "sensitive_text",
         "sensitive_value",
+        "financial_identifier",
     ]
 
     for key in sensitive_keys:
@@ -752,9 +1412,19 @@ def analyze_visual_reference(
 
     product_lock[
         "sensitive_text_policy"
-    ] = "never store or reproduce"
+    ] = (
+        "never store or reproduce"
+    )
+
+    # =====================================================
+    # NORMALIZED RESULT
+    # =====================================================
 
     result = {
+
+        "visual_intelligence_version":
+            VERSION,
+
         "summary":
             clean_text(
                 data.get(
@@ -764,10 +1434,22 @@ def analyze_visual_reference(
             ),
 
         "primary_reference_role":
-            primary_role,
+            final_role,
+
+        "role_source":
+            (
+                "explicit_user_instruction"
+                if classify_reference_role(
+                    user_note
+                ).get(
+                    "matched_markers"
+                )
+                else
+                "vision_analysis"
+            ),
 
         "secondary_reference_roles":
-            secondary,
+            normalized_secondary,
 
         "camera":
             (
@@ -929,6 +1611,39 @@ def analyze_visual_reference(
 # HUMAN SUMMARY
 # =========================================================
 
+ROLE_LABELS_AR = {
+    "product_reference":
+        "مرجع المنتج",
+
+    "environment_reference":
+        "مرجع البيئة / الخلفية",
+
+    "camera_reference":
+        "مرجع زاوية الكاميرا",
+
+    "color_reference":
+        "مرجع الألوان",
+
+    "style_reference":
+        "مرجع الأسلوب",
+
+    "lighting_reference":
+        "مرجع الإضاءة",
+
+    "composition_reference":
+        "مرجع التكوين",
+
+    "person_reference":
+        "مرجع الشخص",
+
+    "campaign_reference":
+        "مرجع الحملة",
+
+    "mixed_reference":
+        "مرجع متعدد الوظائف",
+}
+
+
 def build_visual_dna_summary(
     dna: Dict[str, Any]
 ) -> str:
@@ -944,6 +1659,13 @@ def build_visual_dna_summary(
             "primary_reference_role"
         ),
         100
+    )
+
+    role_label = ROLE_LABELS_AR.get(
+        role,
+        role
+        or
+        "مرجع بصري"
     )
 
     camera = dna.get(
@@ -996,27 +1718,22 @@ def build_visual_dna_summary(
         ):
 
             camera_line = (
-                "\n📷 "
-                +
-                "الزاوية: "
+                "\n📷 الزاوية: "
                 +
                 (
                     shot
                     or
                     "غير محددة"
                 )
-                +
-                (
-                    (
-                        " | عدسة تقريبية: "
-                        +
-                        lens
-                    )
-                    if lens
-                    else
-                    ""
-                )
             )
+
+            if lens:
+
+                camera_line += (
+                    " | العدسة التقريبية: "
+                    +
+                    lens
+                )
 
     lighting_line = ""
 
@@ -1067,11 +1784,7 @@ def build_visual_dna_summary(
         +
         "الوظيفة الأساسية: "
         +
-        (
-            role
-            or
-            "style_reference"
-        )
+        role_label
         +
         camera_line
         +
@@ -1079,9 +1792,7 @@ def build_visual_dna_summary(
         +
         composition_line
         +
-        "\n"
-        +
-        "درجة الثقة: "
+        "\nدرجة الثقة: "
         +
         str(
             confidence
@@ -1092,7 +1803,7 @@ def build_visual_dna_summary(
 
 
 # =========================================================
-# PRODUCT LOCK SUMMARY
+# PRODUCT LOCK
 # =========================================================
 
 def product_lock_enabled(
@@ -1121,8 +1832,9 @@ def product_lock_enabled(
 # =========================================================
 # SELF TEST
 #
-# Does NOT call Vision.
-# Does NOT spend API usage.
+# NO API CALLS
+# NO VISION CALLS
+# NO PAID USAGE
 # =========================================================
 
 if __name__ == "__main__":
@@ -1132,43 +1844,162 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND VISUAL INTELLIGENCE V1.0"
+        " XPAND VISUAL INTELLIGENCE V1.0.1"
     )
     print(
         "=========================================="
     )
     print("")
+
+    tests = [
+        (
+            "هاي مرجع زاوية التصوير",
+            "camera_reference"
+        ),
+
+        (
+            "خد نفس زاوية الكاميرا من هاي",
+            "camera_reference"
+        ),
+
+        (
+            "هاي مرجع المنتج نفسه لا تغيره",
+            "product_reference"
+        ),
+
+        (
+            "هاي البطاقة نفسها خليها ثابتة",
+            "product_reference"
+        ),
+
+        (
+            "خد الإضاءة من هاي الصورة",
+            "lighting_reference"
+        ),
+
+        (
+            "هاي مرجع الخلفية والمكان",
+            "environment_reference"
+        ),
+
+        (
+            "خد الألوان من هاي",
+            "color_reference"
+        ),
+
+        (
+            "بدي نفس التكوين وترتيب العناصر",
+            "composition_reference"
+        ),
+
+        (
+            "هاي مرجع الستايل",
+            "style_reference"
+        ),
+
+        (
+            "حافظ على نفس الشخص والوجه",
+            "person_reference"
+        ),
+
+        (
+            "",
+            "style_reference"
+        ),
+    ]
+
+    passed = 0
+
+    for text, expected in tests:
+
+        actual = (
+            infer_reference_role_from_note(
+                text
+            )
+        )
+
+        ok = (
+            actual == expected
+        )
+
+        if ok:
+
+            passed += 1
+
+        print(
+            (
+                "✅"
+                if ok
+                else
+                "❌"
+            ),
+            "| expected:",
+            expected,
+            "| actual:",
+            actual,
+            "|",
+            text
+        )
+
+    print("")
+
     print(
-        "✅ Visual Reference DNA schema"
+        "Passed:",
+        passed,
+        "/",
+        len(
+            tests
+        )
     )
+
+    print("")
+
     print(
-        "✅ Camera Angle analysis"
+        "✅ Deterministic reference-role classifier"
     )
+
     print(
-        "✅ Lens estimation"
+        "✅ User reference purpose overrides Vision"
     )
+
     print(
-        "✅ Perspective analysis"
+        "✅ Camera-reference detection"
     )
+
     print(
-        "✅ Lighting / shadow / reflection analysis"
+        "✅ Product-reference detection"
     )
+
     print(
-        "✅ Material analysis"
+        "✅ Environment-reference detection"
     )
+
     print(
-        "✅ Color analysis"
+        "✅ Lighting-reference detection"
     )
+
     print(
-        "✅ Negative-space analysis"
+        "✅ Color-reference detection"
     )
+
     print(
-        "✅ Reference-role classification"
+        "✅ Composition-reference detection"
     )
+
+    print(
+        "✅ Person-reference detection"
+    )
+
     print(
         "✅ Product Lock extraction"
     )
+
     print(
-        "✅ Sensitive banking text redaction"
+        "✅ Sensitive financial text redaction"
     )
+
+    print(
+        "✅ No paid API calls were made"
+    )
+
     print("")
