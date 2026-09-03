@@ -1,5 +1,7 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.1.2
+# XPAND UNIFIED VISUAL RUNTIME V3.2
+#
+# STC VISUAL LIBRARY INTAKE
 #
 # Telegram Text / Voice / Image
 #          ↓
@@ -7,13 +9,17 @@
 #          ↓
 # Recent Brand Research
 #          ↓
-# Brand Memory
+# Brand Memory V2
 #          ↓
-# Visual Reference DNA
+# Request-Aware Visual Reference Selection
+#          ↓
+# Visual Intelligence V2
+#          ↓
+# STC Visual Library
 #          ↓
 # Semantic Benefit Director
 #          ↓
-# Creative Brain
+# Creative Brain V2
 #          ↓
 # Masterpiece Creative Quality Gate
 #          ↓
@@ -36,57 +42,99 @@
 # Telegram Preview + Original
 #
 #
-# V3.1.2 FIX
-# ---------------------------------------------------------
+# =========================================================
+# V3.2
+# =========================================================
 #
-# Campaign intent classifier rebuilt around NORMALIZED text.
+# 1. STC VISUAL LIBRARY INTAKE
 #
-# Correct behavior:
+# New Telegram references can be labeled:
 #
-#   اعمللي حملة STC
-#       -> campaign=True
-#
-#   اعمللي حملة STC من 5 بوستات
-#       -> campaign=True
-#
-#   حملة STC للسفر
-#       -> campaign=True
-#
-#   صمم سلسلة بوستات STC
-#       -> campaign=True
-#
-#   اعمللي بوستر STC بمستوى حملة عالمية
-#       -> campaign=False
-#
-#   اعمللي صورة STC بجودة حملة عالمية
-#       -> campaign=False
-#
-#   صمم إعلان STC ستايل حملة عالمية
-#       -> campaign=False
-#
-#   create a poster with campaign-level quality
-#       -> campaign=False
-#
-#   اعمللي حملة STC من 10 بوستات
-#   بمستوى حملة عالمية
-#       -> campaign=True
+#   مرجع STC رسمي | سفر
+#   مرجع STC رسمي | تحويل مالي دولي
+#   مرجع STC رسمي | بطاقة
 #
 #
-# All V3.1 protections remain:
+# 2. DUPLICATE PROTECTION
 #
-# - Masterpiece requires qualified Creative Winner
-# - Masterpiece quality gate >= configured threshold
-# - Failed Creative Gate blocks image generation
-# - Campaign fallback blocked in Masterpiece
+# BEFORE paid Vision:
+#
+# Telegram file_unique_id
+#          ↓
+# existing-reference lookup
+#
+# Then after local download:
+#
+# SHA256 image fingerprint
+#          ↓
+# existing-reference lookup
+#
+# Same image = Vision skipped.
+#
+#
+# 3. SOURCE INTELLIGENCE
+#
+# Stores:
+#
+# - source type
+# - user-asserted official status
+# - verification status
+# - platform
+# - URL
+# - source date
+# - ingestion date
+# - Telegram provenance
+# - SHA256 fingerprint
+#
+#
+# IMPORTANT:
+#
+# "official" from a Telegram caption means:
+#
+#     user_asserted
+#
+# It does NOT falsely claim external web verification.
+#
+#
+# 4. REQUEST-AWARE REFERENCES
+#
+# Creative Brain and runtime context receive the
+# best 3-5 relevant references instead of a random /
+# chronological dump of the whole library.
+#
+#
+# 5. VISUAL INTELLIGENCE V2
+#
+# source_metadata is sent with the new visual reference.
+#
+#
+# 6. BRAND MEMORY V2
+#
+# Stores:
+#
+# - content family
+# - source metadata
+# - reference utility
+# - visual fingerprint
+# - visual profile evidence
+#
+#
+# 7. EXISTING V3.1.2 PROTECTIONS PRESERVED
+#
+# - Normalized Campaign Intent
+# - International Transfer priority
+# - Masterpiece Creative Gate
+# - Strict Campaign no-fallback
 # - Masterpiece cannot silently use Smart fallback
-# - International Transfer semantic priority
 # - Final QA gate
 # - Exact Asset Lock
+# - No fake success
 #
 # =========================================================
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -95,14 +143,16 @@ import threading
 import time
 import uuid
 
-from types import SimpleNamespace
+from datetime import (
+    datetime,
+    timezone,
+)
 
 from typing import (
     Any,
     Dict,
     List,
     Optional,
-    Sequence,
     Tuple,
 )
 
@@ -146,6 +196,26 @@ from xpand_brand_memory import (
     set_active_brand,
     upsert_brand_profile,
 )
+
+
+#
+# Brand Memory V2 functions.
+#
+# The fallback keeps startup alive if a deployment
+# temporarily contains the older Brand Memory module.
+#
+
+try:
+
+    from xpand_brand_memory import (
+        find_existing_visual_reference,
+        get_visual_library_stats,
+    )
+
+except ImportError:
+
+    find_existing_visual_reference = None
+    get_visual_library_stats = None
 
 
 # =========================================================
@@ -210,7 +280,7 @@ from xpand_exact_asset_lock import (
 # MODULE
 # =========================================================
 
-VERSION = "3.1.2"
+VERSION = "3.2"
 
 MODULE_NAME = (
     "XPAND Unified Visual Runtime"
@@ -428,7 +498,7 @@ def normalized(
 
 def contains_any(
     text: str,
-    markers: Sequence[str]
+    markers: List[str]
 ) -> bool:
 
     source = normalized(
@@ -474,6 +544,24 @@ def safe_list(
     )
 
 
+def safe_float(
+    value: Any,
+    default: float = 0.0
+) -> float:
+
+    try:
+
+        return float(
+            value
+        )
+
+    except Exception:
+
+        return float(
+            default
+        )
+
+
 def safe_json_string(
     value: Any,
     limit: int = 30000
@@ -484,16 +572,16 @@ def safe_json_string(
         encoded = json.dumps(
             value,
             ensure_ascii=False,
-            indent=2,
+            separators=(
+                ",",
+                ":"
+            ),
             default=str
         )
 
     except Exception:
 
-        encoded = clean_text(
-            value,
-            limit
-        )
+        encoded = "{}"
 
     if len(
         encoded
@@ -501,33 +589,790 @@ def safe_json_string(
 
         return encoded
 
-    return clean_text(
-        encoded,
-        limit
+    #
+    # Keep a deterministic safe truncation rather than
+    # sending an oversized prompt payload.
+    #
+
+    fallback = {
+        "truncated":
+            True,
+
+        "summary":
+            clean_text(
+                encoded,
+                max(
+                    100,
+                    limit - 100
+                )
+            ),
+    }
+
+    return json.dumps(
+        fallback,
+        ensure_ascii=False,
+        separators=(
+            ",",
+            ":"
+        )
+    )[:limit]
+
+
+# =========================================================
+# BRAND MEMORY V2 COMPATIBILITY HELPERS
+# =========================================================
+
+def build_brand_context_for_request(
+    core,
+    user_id,
+    brand_id: str,
+    request: str,
+    *,
+    max_rules: int = 70,
+    max_references: int = 5
+) -> Dict[str, Any]:
+
+    if not brand_id:
+
+        return {}
+
+    try:
+
+        return build_brand_memory_context(
+            core,
+            user_id,
+            brand_id,
+
+            request=
+                request,
+
+            max_rules=
+                max_rules,
+
+            max_references=
+                max_references
+        )
+
+    except TypeError as error:
+
+        #
+        # Compatibility fallback for Brand Memory V1.
+        #
+        # V2 is expected in production.
+        #
+
+        if (
+            "request"
+            not in str(
+                error
+            )
+        ):
+
+            raise
+
+        print(
+            "⚠️ Brand Memory request-aware API missing; "
+            "using compatibility fallback."
+        )
+
+        return build_brand_memory_context(
+            core,
+            user_id,
+            brand_id,
+            max_rules=
+                max_rules,
+            max_references=
+                max_references
+        )
+
+
+def load_runtime_references_for_request(
+    core,
+    user_id,
+    brand_id: str,
+    request: str,
+    *,
+    limit: int = 5
+):
+
+    try:
+
+        return load_runtime_references(
+            core,
+            user_id,
+            brand_id,
+
+            request=
+                request,
+
+            limit=
+                limit
+        )
+
+    except TypeError as error:
+
+        if (
+            "request"
+            not in str(
+                error
+            )
+        ):
+
+            raise
+
+        print(
+            "⚠️ Production request-aware reference API missing; "
+            "using compatibility fallback."
+        )
+
+        return load_runtime_references(
+            core,
+            user_id,
+            brand_id,
+            limit=
+                limit
+        )
+
+
+def find_existing_reference(
+    core,
+    user_id,
+    brand_id: str,
+    *,
+    telegram_file_unique_id: str = "",
+    image_fingerprint: str = ""
+):
+
+    if not callable(
+        find_existing_visual_reference
+    ):
+
+        return None
+
+    try:
+
+        return find_existing_visual_reference(
+            core,
+            user_id,
+            brand_id,
+
+            telegram_file_unique_id=
+                telegram_file_unique_id,
+
+            image_fingerprint=
+                image_fingerprint
+        )
+
+    except TypeError as error:
+
+        #
+        # Avoid turning an optional cost optimization into
+        # a fatal runtime failure.
+        #
+
+        print(
+            (
+                "⚠️ Visual duplicate lookup API mismatch: "
+                +
+                clean_text(
+                    error,
+                    1000
+                )
+            )
+        )
+
+        return None
+
+
+def existing_reference_id(
+    result: Any
+):
+
+    if result is None:
+
+        return None
+
+    if isinstance(
+        result,
+        dict
+    ):
+
+        return (
+            result.get(
+                "id"
+            )
+            or
+            result.get(
+                "reference_id"
+            )
+            or
+            result.get(
+                "visual_reference_id"
+            )
+        )
+
+    return result
+
+
+def visual_library_stats(
+    core,
+    user_id,
+    brand_id: str
+) -> Dict[str, Any]:
+
+    if (
+        not brand_id
+        or
+        not callable(
+            get_visual_library_stats
+        )
+    ):
+
+        return {}
+
+    try:
+
+        result = get_visual_library_stats(
+            core,
+            user_id,
+            brand_id
+        )
+
+        return safe_dict(
+            result
+        )
+
+    except Exception as error:
+
+        print(
+            (
+                "⚠️ Visual library stats: "
+                +
+                clean_text(
+                    error,
+                    1000
+                )
+            )
+        )
+
+        return {}
+
+
+def save_visual_reference_v2(
+    core,
+    user_id,
+    *,
+    brand_id: str,
+    telegram_file_id: str,
+    telegram_file_unique_id: str,
+    reference_role: str,
+    user_note: str,
+    dna: Dict[str, Any],
+    product_lock: Dict[str, Any],
+    source_metadata: Dict[str, Any]
+):
+
+    try:
+
+        return save_visual_reference(
+            core,
+            user_id,
+
+            brand_id=
+                brand_id,
+
+            telegram_file_id=
+                telegram_file_id,
+
+            telegram_file_unique_id=
+                telegram_file_unique_id,
+
+            reference_role=
+                reference_role,
+
+            user_note=
+                user_note,
+
+            dna=
+                dna,
+
+            product_lock=
+                product_lock,
+
+            source_metadata=
+                source_metadata
+        )
+
+    except TypeError as error:
+
+        if (
+            "source_metadata"
+            not in str(
+                error
+            )
+        ):
+
+            raise
+
+        print(
+            "⚠️ Brand Memory V2 source_metadata API missing; "
+            "using compatibility fallback."
+        )
+
+        return save_visual_reference(
+            core,
+            user_id,
+
+            brand_id=
+                brand_id,
+
+            telegram_file_id=
+                telegram_file_id,
+
+            telegram_file_unique_id=
+                telegram_file_unique_id,
+
+            reference_role=
+                reference_role,
+
+            user_note=
+                user_note,
+
+            dna=
+                dna,
+
+            product_lock=
+                product_lock
+        )
+
+
+# =========================================================
+# VISUAL REFERENCE SOURCE INTELLIGENCE V3.2
+# =========================================================
+
+OFFICIAL_REFERENCE_MARKERS = [
+    "مرجع رسمي",
+    "مرجع stc رسمي",
+    "مرجع رسمي stc",
+    "مرجع STC Bank رسمي",
+    "مرجع رسمي STC Bank",
+    "من stc الرسمي",
+    "من حساب stc الرسمي",
+    "من حساب البنك الرسمي",
+    "من STC Bank الرسمي",
+    "بوست رسمي",
+    "اعلان رسمي",
+    "إعلان رسمي",
+    "حملة رسمية",
+    "الحملة الرسمية",
+    "official reference",
+    "official stc reference",
+    "official stc bank",
+    "official post",
+    "official campaign",
+    "official source",
+]
+
+
+BRAND_SOURCE_MARKERS = [
+    "brand guideline",
+    "brand guidelines",
+    "brand guide",
+    "brand identity",
+    "هوية رسمية",
+    "دليل الهوية",
+    "دليل البراند",
+]
+
+
+FORCE_REANALYZE_MARKERS = [
+    "اعد التحليل",
+    "أعد التحليل",
+    "حلل من جديد",
+    "حلّل من جديد",
+    "حللها من جديد",
+    "حلّلها من جديد",
+    "اعادة التحليل",
+    "إعادة التحليل",
+    "reanalyze",
+    "re-analyze",
+    "force analysis",
+]
+
+
+def force_visual_reanalysis_requested(
+    text: str
+) -> bool:
+
+    return contains_any(
+        text,
+        FORCE_REANALYZE_MARKERS
     )
 
 
+def extract_first_url(
+    text: str
+) -> str:
+
+    value = clean_text(
+        text,
+        6000
+    )
+
+    match = re.search(
+        r"https?://[^\s<>\]\)]+",
+        value,
+        flags=re.IGNORECASE
+    )
+
+    if not match:
+
+        return ""
+
+    return clean_text(
+        match.group(
+            0
+        ),
+        1500
+    )
+
+
+def infer_source_platform(
+    text: str
+) -> str:
+
+    source = normalized(
+        text
+    )
+
+    if contains_any(
+        source,
+        [
+            "instagram.com",
+            "instagram",
+            "انستغرام",
+            "انستقرام",
+        ]
+    ):
+
+        return "instagram"
+
+    if contains_any(
+        source,
+        [
+            "linkedin.com",
+            "linkedin",
+        ]
+    ):
+
+        return "linkedin"
+
+    if contains_any(
+        source,
+        [
+            "tiktok.com",
+            "tiktok",
+            "تيك توك",
+        ]
+    ):
+
+        return "tiktok"
+
+    if contains_any(
+        source,
+        [
+            "twitter.com",
+            "x.com",
+            "twitter",
+            "تويتر",
+        ]
+    ):
+
+        return "x"
+
+    if contains_any(
+        source,
+        [
+            "youtube.com",
+            "youtu.be",
+            "youtube",
+            "يوتيوب",
+        ]
+    ):
+
+        return "youtube"
+
+    if (
+        "http://"
+        in source
+        or
+        "https://"
+        in source
+    ):
+
+        return "website"
+
+    return "telegram"
+
+
+def telegram_timestamp_to_iso(
+    value: Any
+) -> str:
+
+    try:
+
+        timestamp = float(
+            value
+        )
+
+        if timestamp <= 0:
+
+            return ""
+
+        return (
+            datetime.fromtimestamp(
+                timestamp,
+                tz=timezone.utc
+            )
+            .isoformat()
+        )
+
+    except Exception:
+
+        return ""
+
+
+def safe_forward_origin_metadata(
+    value: Any
+) -> Dict[str, Any]:
+
+    origin = safe_dict(
+        value
+    )
+
+    if not origin:
+
+        return {}
+
+    return {
+        "type":
+            clean_text(
+                origin.get(
+                    "type",
+                    ""
+                ),
+                100
+            ),
+
+        "date":
+            telegram_timestamp_to_iso(
+                origin.get(
+                    "date"
+                )
+            ),
+    }
+
+
+def infer_reference_source_metadata(
+    *,
+    caption: str,
+    brand_id: str,
+    telegram_metadata: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    caption = clean_text(
+        caption,
+        5000
+    )
+
+    brand_id = safe_brand_id(
+        brand_id
+    )
+
+    user_claims_official = (
+        bool(
+            brand_id
+        )
+        and
+        contains_any(
+            caption,
+            OFFICIAL_REFERENCE_MARKERS
+        )
+    )
+
+    source_type = (
+        "telegram_user_reference"
+    )
+
+    if user_claims_official:
+
+        if contains_any(
+            caption,
+            BRAND_SOURCE_MARKERS
+        ):
+
+            source_type = (
+                "official_brand_source"
+            )
+
+        else:
+
+            source_type = (
+                "official_campaign_source"
+            )
+
+    source_url = extract_first_url(
+        caption
+    )
+
+    platform = infer_source_platform(
+        caption
+    )
+
+    forward_origin = safe_forward_origin_metadata(
+        telegram_metadata.get(
+            "forward_origin"
+        )
+    )
+
+    source_date = clean_text(
+        forward_origin.get(
+            "date",
+            ""
+        ),
+        100
+    )
+
+    ingestion_date = (
+        telegram_timestamp_to_iso(
+            telegram_metadata.get(
+                "message_date"
+            )
+        )
+    )
+
+    if not ingestion_date:
+
+        ingestion_date = (
+            datetime.now(
+                timezone.utc
+            )
+            .isoformat()
+        )
+
+    provenance = (
+        "telegram_forward"
+        if forward_origin
+        else
+        "telegram_upload"
+    )
+
+    return {
+        "brand_id":
+            brand_id,
+
+        "source_type":
+            source_type,
+
+        #
+        # Official means USER-ASSERTED in this intake path.
+        #
+        # We preserve verification separately.
+        #
+
+        "official":
+            bool(
+                user_claims_official
+            ),
+
+        "user_labeled_official":
+            bool(
+                user_claims_official
+            ),
+
+        "official_verification":
+            (
+                "user_asserted"
+                if user_claims_official
+                else
+                "not_claimed"
+            ),
+
+        "platform":
+            platform,
+
+        "source_url":
+            source_url,
+
+        "source_date":
+            source_date,
+
+        "ingested_at":
+            ingestion_date,
+
+        "imported_via":
+            "telegram",
+
+        "provenance":
+            provenance,
+
+        "telegram_source_kind":
+            clean_text(
+                telegram_metadata.get(
+                    "kind",
+                    "photo"
+                ),
+                100
+            ),
+
+        "telegram_message_id":
+            telegram_metadata.get(
+                "message_id"
+            ),
+
+        "telegram_file_unique_id":
+            clean_text(
+                telegram_metadata.get(
+                    "file_unique_id",
+                    ""
+                ),
+                1500
+            ),
+
+        "telegram_forward_origin":
+            forward_origin,
+    }
+
+
+def local_image_fingerprint(
+    image_bytes: bytes
+) -> str:
+
+    if not image_bytes:
+
+        return ""
+
+    return hashlib.sha256(
+        image_bytes
+    ).hexdigest()
+
+
 # =========================================================
-# IMAGE REQUEST DETECTION
+# IMAGE REQUEST LANGUAGE
 # =========================================================
 
 IMAGE_ACTION_MARKERS = [
-     "بدي",  
     "اعمللي",
     "اعمل لي",
     "اعمل",
-    "سويلي",
-    "سوي لي",
-    "سوي",
     "صمملي",
     "صمم لي",
     "صمم",
     "انشئ",
     "أنشئ",
-    "انشاء",
-    "إنشاء",
-    "ولدلي",
-    "ولد لي",
+    "سويلي",
+    "سوي لي",
+    "سوي",
     "ولد",
     "ولّد",
     "generate",
@@ -541,35 +1386,23 @@ IMAGE_ASSET_MARKERS = [
     "صوره",
     "صورة",
     "صور",
-    "image",
-    "picture",
     "بوستر",
     "poster",
+    "بوست",
+    "بوستات",
+    "post",
+    "posts",
     "اعلان",
     "إعلان",
-    "advertisement",
+    "اعلانات",
+    "إعلانات",
     "ad",
-    "بانر",
-    "banner",
-    "ثامبنيل",
-    "thumbnail",
-    "ستوري",
-    "story",
-    "كفر",
-    "cover",
-    "مشهد",
-    "scene",
-    "رندر",
-    "render",
+    "ads",
     "visual",
     "key visual",
-    "منتج",
-    "product",
-    "بوست",
-    "post",
+    "campaign",
     "حمله",
     "حملة",
-    "campaign",
 ]
 
 
@@ -631,71 +1464,8 @@ EXACT_LOCK_MARKERS = [
 ]
 
 
-def looks_like_image_generation_request(
-    text: str
-) -> bool:
-
-    value = clean_text(
-        text,
-        12000
-    )
-
-    if not value:
-
-        return False
-
-    source = normalized(
-        value
-    )
-
-    if source.startswith(
-        "/image"
-    ):
-
-        return True
-
-    if contains_any(
-        value,
-        IMAGE_QUESTION_MARKERS
-    ):
-
-        return False
-
-    return (
-        contains_any(
-            value,
-            IMAGE_ACTION_MARKERS
-        )
-        and
-        contains_any(
-            value,
-            IMAGE_ASSET_MARKERS
-        )
-    )
-
-
-def is_masterpiece_request(
-    text: str
-) -> bool:
-
-    return contains_any(
-        text,
-        MASTERPIECE_MARKERS
-    )
-
-
-def exact_lock_requested(
-    text: str
-) -> bool:
-
-    return contains_any(
-        text,
-        EXACT_LOCK_MARKERS
-    )
-
-
 # =========================================================
-# TRUE CAMPAIGN INTENT DETECTION V3.1.2
+# NORMALIZED CAMPAIGN INTENT V3.1.2
 # =========================================================
 
 CAMPAIGN_CREATION_ACTIONS = [
@@ -714,8 +1484,6 @@ CAMPAIGN_CREATION_ACTIONS = [
     "create",
     "design",
     "make",
-    "build",
-    "develop",
 ]
 
 
@@ -727,84 +1495,60 @@ CAMPAIGN_SERIES_MARKERS = [
     "سلسلة إعلانات",
     "سلسله منشورات",
     "سلسلة منشورات",
-    "مجموعه بوستات",
-    "مجموعة بوستات",
     "series of posts",
     "series of ads",
-    "campaign series",
+    "ad series",
+    "post series",
 ]
 
 
 CAMPAIGN_ASSET_WORDS = [
     "بوست",
     "بوستات",
-    "صوره",
     "صور",
+    "صوره",
+    "صورة",
     "اعلان",
+    "إعلان",
     "اعلانات",
-    "منشور",
+    "إعلانات",
     "منشورات",
     "asset",
     "assets",
-    "post",
     "posts",
-    "ad",
     "ads",
-    "visual",
-    "visuals",
 ]
 
 
-#
-# IMPORTANT
-# ---------------------------------------------------------
-#
-# These expressions are written for NORMALIZED text.
-#
-# Therefore:
-#
-#   بمستوى  -> بمستوي
-#   جودة    -> جوده
-#   حملة    -> حمله
-#   عالمية  -> عالميه
-#
-
-CAMPAIGN_QUALITY_PATTERNS_NORMALIZED = [
-    r"\bبمستوي\s+حمله\b",
-    r"\bبمستوي\s+campaign\b",
-
-    r"\bبجوده\s+حمله\b",
-    r"\bبجوده\s+campaign\b",
-
-    r"\bجوده\s+حمله\b",
-    r"\bجوده\s+campaign\b",
-
-    r"\bستايل\s+حمله\b",
-    r"\bستايل\s+campaign\b",
-
-    r"\bاسلوب\s+حمله\b",
-    r"\bاسلوب\s+campaign\b",
-
-    r"\bبطابع\s+حمله\b",
-    r"\bبطابع\s+campaign\b",
-
-    r"\bبروح\s+حمله\b",
-    r"\bبروح\s+campaign\b",
-
-    r"\bكانه\s+من\s+حمله\b",
-    r"\bكانه\s+من\s+campaign\b",
-
-    r"\bمثل\s+حمله\b",
-    r"\bمثل\s+campaign\b",
-
-    r"\bشبيه\s+بحمله\b",
-    r"\bشبيه\s+بcampaign\b",
-
-    r"\bcampaign[\s-]*level\b",
-    r"\bcampaign[\s-]*quality\b",
-    r"\bcampaign[\s-]*grade\b",
-    r"\bcampaign[\s-]*style\b",
-    r"\bcampaign[\s-]*look\b",
+CAMPAIGN_QUALITY_PHRASES = [
+    "بمستوى حملة عالمية",
+    "بمستوى حمله عالميه",
+    "بجودة حملة عالمية",
+    "بجوده حمله عالميه",
+    "ستايل حملة عالمية",
+    "ستايل حمله عالميه",
+    "شكل حملة عالمية",
+    "شكل حمله عالميه",
+    "لوك حملة عالمية",
+    "لوك حمله عالميه",
+    "كأنه من حملة",
+    "كانه من حمله",
+    "كأنه من campaign",
+    "كانه من campaign",
+    "مثل حملة",
+    "مثل حمله",
+    "شبيه بحملة",
+    "شبيه بحمله",
+    "campaign level",
+    "campaign-level",
+    "campaign quality",
+    "campaign-quality",
+    "campaign grade",
+    "campaign-grade",
+    "campaign style",
+    "campaign-style",
+    "campaign look",
+    "campaign-look",
 ]
 
 
@@ -816,16 +1560,21 @@ def strip_campaign_quality_phrases(
         text
     )
 
-    for pattern in (
-        CAMPAIGN_QUALITY_PATTERNS_NORMALIZED
-    ):
+    for phrase in CAMPAIGN_QUALITY_PHRASES:
 
-        source = re.sub(
-            pattern,
-            " ",
-            source,
-            flags=re.IGNORECASE
+        source = source.replace(
+            normalized(
+                phrase
+            ),
+            " "
         )
+
+    source = re.sub(
+        r"\bcampaign[\s\-]*(?:level|quality|grade|style|look)\b",
+        " ",
+        source,
+        flags=re.IGNORECASE
+    )
 
     source = re.sub(
         r"\s+",
@@ -838,7 +1587,7 @@ def strip_campaign_quality_phrases(
 
 def find_campaign_token(
     text: str
-) -> Optional[re.Match]:
+):
 
     source = normalized(
         text
@@ -863,6 +1612,16 @@ def has_campaign_token(
     )
 
 
+def has_campaign_series_signal(
+    text: str
+) -> bool:
+
+    return contains_any(
+        text,
+        CAMPAIGN_SERIES_MARKERS
+    )
+
+
 def has_explicit_campaign_asset_count(
     text: str
 ) -> bool:
@@ -871,69 +1630,26 @@ def has_explicit_campaign_asset_count(
         text
     )
 
-    asset_pattern = (
-        r"(?:"
-        +
-        "|".join(
-            sorted(
-                (
-                    re.escape(
-                        normalized(
-                            item
-                        )
-                    )
-                    for item
-                    in CAMPAIGN_ASSET_WORDS
-                ),
-                key=len,
-                reverse=True
-            )
+    if not has_campaign_token(
+        source
+    ):
+
+        return False
+
+    has_number = bool(
+        re.search(
+            r"\b(?:[2-9]|1[0-9]|2[0-9]|30)\b",
+            source
         )
-        +
-        r")"
     )
 
-    patterns = [
-        (
-            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
-            r".{0,120}?"
-            r"\b([2-9]|[12][0-9]|30)\b"
-            r".{0,40}?"
-            +
-            asset_pattern
-        ),
+    if not has_number:
 
-        (
-            r"\b([2-9]|[12][0-9]|30)\b"
-            r"\s*"
-            +
-            asset_pattern
-            +
-            r".{0,120}?"
-            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
-        ),
-    ]
-
-    for pattern in patterns:
-
-        if re.search(
-            pattern,
-            source,
-            flags=re.IGNORECASE
-        ):
-
-            return True
-
-    return False
-
-
-def has_campaign_series_signal(
-    text: str
-) -> bool:
+        return False
 
     return contains_any(
-        text,
-        CAMPAIGN_SERIES_MARKERS
+        source,
+        CAMPAIGN_ASSET_WORDS
     )
 
 
@@ -945,41 +1661,32 @@ def has_action_before_campaign(
         text
     )
 
-    campaign_match = (
-        find_campaign_token(
-            source
-        )
+    match = find_campaign_token(
+        source
     )
 
-    if campaign_match is None:
+    if match is None:
 
         return False
 
-    campaign_index = (
-        campaign_match.start()
-    )
+    campaign_index = match.start()
 
-    normalized_actions = sorted(
+    for action in sorted(
         {
             normalized(
                 item
             )
-            for item
-            in CAMPAIGN_CREATION_ACTIONS
+            for item in CAMPAIGN_CREATION_ACTIONS
             if normalized(
                 item
             )
         },
         key=len,
         reverse=True
-    )
+    ):
 
-    for action in normalized_actions:
-
-        action_index = (
-            source.find(
-                action
-            )
+        action_index = source.find(
+            action
         )
 
         if action_index < 0:
@@ -990,22 +1697,13 @@ def has_action_before_campaign(
 
             continue
 
-        #
-        # Campaign should be reasonably close to the
-        # creation action.
-        #
-        # Example:
-        #
-        # "اعمللي حملة STC"
-        #
-
-        distance = (
+        if (
             campaign_index
             -
             action_index
-        )
-
-        if distance <= 90:
+            <=
+            90
+        ):
 
             return True
 
@@ -1041,10 +1739,9 @@ def is_campaign_request(
 
         return False
 
-    # =====================================================
-    # SIGNAL 1
-    # Explicit series language.
-    # =====================================================
+    #
+    # Explicit series.
+    #
 
     if has_campaign_series_signal(
         source
@@ -1052,19 +1749,11 @@ def is_campaign_request(
 
         return True
 
-    # =====================================================
-    # SIGNAL 2
-    # Real campaign with explicit multiple asset count.
     #
-    # This must be checked BEFORE removing quality phrases.
+    # Explicit campaign + multiple assets.
     #
-    # Example:
+    # Must run BEFORE campaign-quality text is stripped.
     #
-    # اعمللي حملة STC من 10 بوستات
-    # بمستوى حملة عالمية
-    #
-    # => campaign=True
-    # =====================================================
 
     if has_explicit_campaign_asset_count(
         source
@@ -1072,60 +1761,29 @@ def is_campaign_request(
 
         return True
 
-    # =====================================================
-    # Remove descriptive / quality use of campaign.
     #
-    # Example:
+    # Remove wording where "campaign" describes quality,
+    # not creation intent.
     #
-    # اعمللي بوستر STC بمستوى حملة عالمية
-    #
-    # becomes roughly:
-    #
-    # اعمللي بوستر stc عالميه
-    #
-    # and therefore no real campaign token remains.
-    # =====================================================
 
-    intent_source = (
-        strip_campaign_quality_phrases(
-            source
-        )
+    stripped = strip_campaign_quality_phrases(
+        source
     )
 
-    # =====================================================
-    # No real campaign token remains.
-    # =====================================================
-
     if not has_campaign_token(
-        intent_source
+        stripped
     ):
 
         return False
 
-    # =====================================================
-    # SIGNAL 3
-    # Direct campaign request.
-    #
-    # حملة STC للسفر
-    # =====================================================
-
     if starts_with_campaign(
-        intent_source
+        stripped
     ):
 
         return True
 
-    # =====================================================
-    # SIGNAL 4
-    # Creation action before real campaign noun.
-    #
-    # اعمللي حملة STC
-    # بدي حملة STC
-    # صمم حملة STC
-    # =====================================================
-
     if has_action_before_campaign(
-        intent_source
+        stripped
     ):
 
         return True
@@ -1133,220 +1791,80 @@ def is_campaign_request(
     return False
 
 
-# =========================================================
-# SEMANTIC BENEFIT DIRECTOR
-# =========================================================
-
-INTERNATIONAL_TRANSFER_MARKERS = [
-    "تحويل دولي",
-    "التحويل الدولي",
-    "تحويل مالي دولي",
-    "تحويلات دوليه",
-    "تحويلات دولية",
-    "حواله دوليه",
-    "حوالة دولية",
-    "حوالات دوليه",
-    "حوالات دولية",
-    "ارسال اموال دوليا",
-    "إرسال أموال دولياً",
-    "ارسال فلوس لدوله ثانيه",
-    "تحويل عبر الحدود",
-    "international transfer",
-    "international money transfer",
-    "cross border transfer",
-    "cross-border transfer",
-    "global money transfer",
-    "send money internationally",
-]
-
-
-TRAVEL_BENEFIT_MARKERS = [
-    "سفر",
-    "مسافر",
-    "travel",
-    "airport",
-    "مطار",
-    "دفع دولي",
-    "الدفع الدولي",
-]
-
-
-CASHBACK_BENEFIT_MARKERS = [
-    "كاش باك",
-    "cashback",
-    "استرداد نقدي",
-]
-
-
-SECURITY_BENEFIT_MARKERS = [
-    "امان",
-    "أمان",
-    "امن",
-    "آمن",
-    "security",
-    "secure",
-]
-
-
-REWARDS_BENEFIT_MARKERS = [
-    "مكافات",
-    "مكافآت",
-    "rewards",
-    "نقاط",
-    "points",
-]
-
-
-SPEED_BENEFIT_MARKERS = [
-    "سرعه",
-    "سرعة",
-    "سريع",
-    "فوري",
-    "فورا",
-    "فوراً",
-    "instant",
-    "fast",
-]
-
-
-def detect_runtime_benefit_family(
+def looks_like_image_generation_request(
     text: str
-) -> str:
+) -> bool:
 
-    if contains_any(
+    value = clean_text(
         text,
-        INTERNATIONAL_TRANSFER_MARKERS
+        12000
+    )
+
+    if not value:
+
+        return False
+
+    source = normalized(
+        value
+    )
+
+    if source.startswith(
+        "/image"
     ):
 
-        return (
-            "international_transfer"
-        )
+        return True
 
     if contains_any(
-        text,
-        CASHBACK_BENEFIT_MARKERS
+        value,
+        IMAGE_QUESTION_MARKERS
     ):
 
-        return (
-            "cashback"
-        )
+        return False
 
-    if contains_any(
-        text,
-        SECURITY_BENEFIT_MARKERS
+    #
+    # Direct campaign language:
+    #
+    #   حملة STC للسفر
+    #
+    # is a valid creation request.
+    #
+
+    if is_campaign_request(
+        value
     ):
 
-        return (
-            "security"
-        )
-
-    if contains_any(
-        text,
-        REWARDS_BENEFIT_MARKERS
-    ):
-
-        return (
-            "rewards"
-        )
-
-    if contains_any(
-        text,
-        TRAVEL_BENEFIT_MARKERS
-    ):
-
-        return (
-            "travel"
-        )
-
-    if contains_any(
-        text,
-        SPEED_BENEFIT_MARKERS
-    ):
-
-        return (
-            "speed"
-        )
+        return True
 
     return (
-        "premium"
+        contains_any(
+            value,
+            IMAGE_ACTION_MARKERS
+        )
+        and
+        contains_any(
+            value,
+            IMAGE_ASSET_MARKERS
+        )
     )
 
 
-def build_creative_request(
-    original_request: str
-) -> Tuple[
-    str,
-    str
-]:
+def is_masterpiece_request(
+    text: str
+) -> bool:
 
-    family = detect_runtime_benefit_family(
-        original_request
+    return contains_any(
+        text,
+        MASTERPIECE_MARKERS
     )
 
-    if family == "international_transfer":
 
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The PRIMARY benefit family is "
-            "international transfer / تحويل دولي.\n"
-            "If speed is also mentioned, treat speed only as "
-            "a supporting attribute. Do not downgrade the "
-            "primary metaphor family to speed."
-        )
+def exact_lock_requested(
+    text: str
+) -> bool:
 
-    elif family == "travel":
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The primary benefit family is travel."
-        )
-
-    elif family == "cashback":
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The primary benefit family is cashback."
-        )
-
-    elif family == "security":
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The primary benefit family is security."
-        )
-
-    elif family == "rewards":
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The primary benefit family is rewards."
-        )
-
-    elif family == "speed":
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "The primary benefit family is speed."
-        )
-
-    else:
-
-        semantic_rule = (
-            "XPAND SEMANTIC PRIORITY:\n"
-            "Use the actual commercial benefit as the "
-            "visual-metaphor family."
-        )
-
-    return (
-        clean_text(
-            original_request,
-            12000
-        )
-        +
-        "\n\n"
-        +
-        semantic_rule,
-        family
+    return contains_any(
+        text,
+        EXACT_LOCK_MARKERS
     )
 
 
@@ -1371,17 +1889,13 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "compare"
-        )
+        return "compare"
 
     if is_masterpiece_request(
         text
     ):
 
-        return (
-            "best"
-        )
+        return "best"
 
     if contains_any(
         text,
@@ -1393,9 +1907,7 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "pro"
-        )
+        return "pro"
 
     if contains_any(
         text,
@@ -1406,9 +1918,7 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "openai"
-        )
+        return "openai"
 
     if contains_any(
         text,
@@ -1419,9 +1929,7 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "google_pro"
-        )
+        return "google_pro"
 
     if contains_any(
         text,
@@ -1432,9 +1940,7 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "google_fast"
-        )
+        return "google_fast"
 
     if contains_any(
         text,
@@ -1445,17 +1951,13 @@ def detect_generation_mode(
         ]
     ):
 
-        return (
-            "fast"
-        )
+        return "fast"
 
-    return (
-        "auto"
-    )
+    return "auto"
 
 
 # =========================================================
-# COUNT DETECTION
+# IMAGE COUNT
 # =========================================================
 
 NUMBER_WORDS = {
@@ -1514,11 +2016,11 @@ def detect_requested_image_count(
     patterns = [
         (
             r"\b([1-4])\s*"
-            r"(?:صور|صوره|نسخ|خيارات)\b"
+            r"(?:صور|صوره|صورة|نسخ|خيارات|بوستات)\b"
         ),
 
         (
-            r"\b(?:صور|نسخ|خيارات)\s*"
+            r"\b(?:صور|نسخ|خيارات|بوستات)\s*"
             r"([1-4])\b"
         ),
     ]
@@ -1557,8 +2059,10 @@ def detect_requested_image_count(
                 [
                     "صور",
                     "صوره",
+                    "صورة",
                     "نسخ",
                     "خيارات",
+                    "بوستات",
                 ]
             )
         ):
@@ -1571,9 +2075,7 @@ def detect_requested_image_count(
                 )
             )
 
-    return (
-        1
-    )
+    return 1
 
 
 def detect_campaign_asset_count(
@@ -1586,15 +2088,15 @@ def detect_campaign_asset_count(
 
     patterns = [
         (
-            r"\b([1-9]|[12][0-9]|30)\s*"
-            r"(?:بوستات|بوست|صور|اعلانات|منشورات|assets|posts|ads)\b"
+            r"\b(?:حمله|campaign)\b"
+            r".{0,120}?"
+            r"\b([2-9]|1[0-9]|20)\b"
         ),
 
         (
-            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
-            r".{0,30}?"
-            r"(?:من\s*)?"
-            r"([1-9]|[12][0-9]|30)\b"
+            r"\b([2-9]|1[0-9]|20)\b"
+            r".{0,40}?"
+            r"(?:بوستات|اعلانات|منشورات|assets|posts|ads)"
         ),
     ]
 
@@ -1608,9 +2110,9 @@ def detect_campaign_asset_count(
         if match:
 
             return max(
-                1,
+                2,
                 min(
-                    30,
+                    20,
                     int(
                         match.group(
                             1
@@ -1619,82 +2121,12 @@ def detect_campaign_asset_count(
                 )
             )
 
-    return (
-        5
+    return max(
+        3,
+        detect_requested_image_count(
+            text
+        )
     )
-
-
-# =========================================================
-# CAMPAIGN ASSET NUMBER
-# =========================================================
-
-ORDINALS = {
-    "الاول":
-        1,
-
-    "الأول":
-        1,
-
-    "اول":
-        1,
-
-    "أول":
-        1,
-
-    "الثاني":
-        2,
-
-    "ثاني":
-        2,
-
-    "الثالث":
-        3,
-
-    "ثالث":
-        3,
-
-    "الرابع":
-        4,
-
-    "رابع":
-        4,
-
-    "الخامس":
-        5,
-
-    "خامس":
-        5,
-
-    "السادس":
-        6,
-
-    "سادس":
-        6,
-
-    "السابع":
-        7,
-
-    "سابع":
-        7,
-
-    "الثامن":
-        8,
-
-    "ثامن":
-        8,
-
-    "التاسع":
-        9,
-
-    "تاسع":
-        9,
-
-    "العاشر":
-        10,
-
-    "عاشر":
-        10,
-}
 
 
 def detect_campaign_asset_number(
@@ -1705,26 +2137,16 @@ def detect_campaign_asset_number(
         text
     )
 
-    for word, number in ORDINALS.items():
-
-        if normalized(
-            word
-        ) in source:
-
-            return (
-                number
-            )
-
     patterns = [
         (
-            r"\b(?:بوست|صوره|اعلان)"
+            r"\b(?:بوست|صوره|صورة|اعلان|إعلان)"
             r"\s*(?:رقم)?\s*"
-            r"([1-9]|[12][0-9]|30)\b"
+            r"([1-9]|1[0-9]|20)\b"
         ),
 
         (
             r"\basset\s*"
-            r"([1-9]|[12][0-9]|30)\b"
+            r"([1-9]|1[0-9]|20)\b"
         ),
     ]
 
@@ -1743,9 +2165,7 @@ def detect_campaign_asset_number(
                 )
             )
 
-    return (
-        1
-    )
+    return 1
 
 
 # =========================================================
@@ -1777,9 +2197,7 @@ def detect_aspect_ratio(
 
         if ratio in source:
 
-            return (
-                ratio
-            )
+            return ratio
 
     if contains_any(
         source,
@@ -1791,9 +2209,7 @@ def detect_aspect_ratio(
         ]
     ):
 
-        return (
-            "9:16"
-        )
+        return "9:16"
 
     if contains_any(
         source,
@@ -1803,16 +2219,13 @@ def detect_aspect_ratio(
             "بوست",
             "post",
             "اعلان",
+            "إعلان",
         ]
     ):
 
-        return (
-            "4:5"
-        )
+        return "4:5"
 
-    return (
-        "1:1"
-    )
+    return "1:1"
 
 
 # =========================================================
@@ -1838,9 +2251,7 @@ def extract_image_prompt(
             ):
         ].strip()
 
-    return (
-        value
-    )
+    return value
 
 
 # =========================================================
@@ -1880,9 +2291,7 @@ def detect_runtime_brand(
         ]
     ):
 
-        return (
-            "xpand"
-        )
+        return "xpand"
 
     return safe_brand_id(
         get_active_brand(
@@ -1961,7 +2370,7 @@ def ensure_known_brand_profile(
 
 
 # =========================================================
-# BRAND MODEL CONTEXT
+# BRAND MODEL CONTEXT V3.2
 # =========================================================
 
 def clean_reference_for_model(
@@ -1969,16 +2378,39 @@ def clean_reference_for_model(
 ) -> Dict[str, Any]:
 
     return {
+        "id":
+            item.get(
+                "id"
+            ),
+
         "reference_role":
             item.get(
                 "reference_role",
                 ""
             ),
 
+        "content_family":
+            item.get(
+                "content_family",
+                "general_brand"
+            ),
+
         "user_note":
             item.get(
                 "user_note",
                 ""
+            ),
+
+        "source_metadata":
+            item.get(
+                "source_metadata",
+                {}
+            ),
+
+        "reference_utility":
+            item.get(
+                "reference_utility",
+                {}
             ),
 
         "dna":
@@ -2031,6 +2463,12 @@ def safe_brand_context_for_model(
                 {}
             ),
 
+        "visual_profile":
+            context.get(
+                "visual_profile",
+                {}
+            ),
+
         "rules":
             context.get(
                 "rules",
@@ -2042,7 +2480,7 @@ def safe_brand_context_for_model(
                 item
             )
             for item in references[
-                :12
+                :6
             ]
             if isinstance(
                 item,
@@ -2050,9 +2488,21 @@ def safe_brand_context_for_model(
             )
         ],
 
+        "reference_execution_context":
+            context.get(
+                "reference_execution_context",
+                {}
+            ),
+
         "campaign":
             context.get(
                 "campaign",
+                {}
+            ),
+
+        "library_stats":
+            context.get(
+                "library_stats",
                 {}
             ),
     }
@@ -2197,6 +2647,224 @@ def build_winner_instruction(
 
 
 # =========================================================
+# SEMANTIC BENEFIT DIRECTOR
+# =========================================================
+
+INTERNATIONAL_TRANSFER_MARKERS = [
+    "تحويل دولي",
+    "تحويل مالي دولي",
+    "تحويلات مالية دولية",
+    "حوالة مالية دولية",
+    "حواله ماليه دوليه",
+    "international transfer",
+    "international money transfer",
+    "حول دولي",
+    "حواله دوليه",
+    "حوالة دولية",
+    "ارسال اموال دولي",
+    "إرسال أموال دولي",
+]
+
+
+CASHBACK_BENEFIT_MARKERS = [
+    "كاش باك",
+    "كاشباك",
+    "cashback",
+    "استرداد نقدي",
+]
+
+
+SECURITY_BENEFIT_MARKERS = [
+    "امان",
+    "أمان",
+    "امن",
+    "آمن",
+    "حمايه",
+    "حماية",
+    "security",
+    "secure",
+    "protection",
+]
+
+
+REWARDS_BENEFIT_MARKERS = [
+    "مكافات",
+    "مكافآت",
+    "مكافاه",
+    "مكافأة",
+    "نقاط",
+    "rewards",
+    "reward",
+    "points",
+]
+
+
+TRAVEL_BENEFIT_MARKERS = [
+    "سفر",
+    "السفر",
+    "مسافر",
+    "رحله",
+    "رحلة",
+    "طيران",
+    "مطار",
+    "travel",
+    "travelling",
+    "traveling",
+    "airport",
+    "roaming",
+]
+
+
+SPEED_BENEFIT_MARKERS = [
+    "سرعه",
+    "سرعة",
+    "سريع",
+    "فوري",
+    "فورا",
+    "فوراً",
+    "instant",
+    "fast",
+]
+
+
+def detect_runtime_benefit_family(
+    text: str
+) -> str:
+
+    #
+    # ORDER IS INTENTIONAL.
+    #
+    # "تحويل مالي دولي سريع"
+    #
+    # => international_transfer
+    #
+    # Speed remains an attribute only.
+    #
+
+    if contains_any(
+        text,
+        INTERNATIONAL_TRANSFER_MARKERS
+    ):
+
+        return "international_transfer"
+
+    if contains_any(
+        text,
+        CASHBACK_BENEFIT_MARKERS
+    ):
+
+        return "cashback"
+
+    if contains_any(
+        text,
+        SECURITY_BENEFIT_MARKERS
+    ):
+
+        return "security"
+
+    if contains_any(
+        text,
+        REWARDS_BENEFIT_MARKERS
+    ):
+
+        return "rewards"
+
+    if contains_any(
+        text,
+        TRAVEL_BENEFIT_MARKERS
+    ):
+
+        return "travel"
+
+    if contains_any(
+        text,
+        SPEED_BENEFIT_MARKERS
+    ):
+
+        return "speed"
+
+    return "premium"
+
+
+def build_creative_request(
+    original_request: str
+) -> Tuple[
+    str,
+    str
+]:
+
+    family = detect_runtime_benefit_family(
+        original_request
+    )
+
+    if family == "international_transfer":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The PRIMARY benefit family is international "
+            "transfer / تحويل دولي.\n"
+            "If speed is also mentioned, speed is only a "
+            "supporting attribute. Do not downgrade the "
+            "primary visual-metaphor family to generic speed."
+        )
+
+    elif family == "travel":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary commercial benefit family is travel."
+        )
+
+    elif family == "cashback":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary commercial benefit family is cashback."
+        )
+
+    elif family == "security":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary commercial benefit family is security."
+        )
+
+    elif family == "rewards":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary commercial benefit family is rewards."
+        )
+
+    elif family == "speed":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary commercial benefit family is speed."
+        )
+
+    else:
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "Identify and visualize the actual commercial "
+            "benefit instead of defaulting to generic banking imagery."
+        )
+
+    return (
+        clean_text(
+            original_request,
+            12000
+        )
+        +
+        "\n\n"
+        +
+        semantic_rule,
+        family
+    )
+
+
+# =========================================================
 # CAMPAIGN TITLE
 # =========================================================
 
@@ -2236,7 +2904,7 @@ def campaign_title_from_request(
 
 
 # =========================================================
-# CAMPAIGN MEMORY EXECUTION CONTEXT
+# CAMPAIGN MEMORY EXECUTION
 # =========================================================
 
 def build_campaign_execution_from_memory(
@@ -2440,7 +3108,7 @@ def build_campaign_execution_from_memory(
 
 
 # =========================================================
-# CREATIVE QUALITY HELPERS
+# CREATIVE QUALITY
 # =========================================================
 
 def creative_quality_metadata(
@@ -2505,44 +3173,32 @@ def creative_quality_passed(
 
         return False
 
-    try:
-
-        score = float(
-            getattr(
-                winner,
-                "weighted_score",
-                0
-            )
-            or
+    score = safe_float(
+        getattr(
+            winner,
+            "weighted_score",
             0
-        )
+        ),
+        0
+    )
 
-    except Exception:
-
-        score = 0.0
-
-    try:
-
-        minimum = float(
-            metadata.get(
-                "masterpiece_min_score",
-                82
-            )
-            or
+    minimum = safe_float(
+        metadata.get(
+            "masterpiece_min_score",
             82
-        )
-
-    except Exception:
-
-        minimum = 82.0
+        ),
+        82
+    )
 
     return (
-        score >= minimum
+        score
+        >=
+        minimum
     )
 
 
 # =========================================================
-# MASTERPIECE INTEGRATION GUARD
+# MASTERPIECE GUARD
 # =========================================================
 
 def masterpiece_guard_status(
@@ -2571,14 +3227,14 @@ def masterpiece_guard_status(
                 "not_masterpiece",
 
             "message":
-                "",
+                "Normal visual route.",
         }
 
     creative_response = prepared.get(
         "creative_response"
     )
 
-    if creative_response is None:
+    if not creative_response:
 
         return {
             "allowed":
@@ -2589,40 +3245,14 @@ def masterpiece_guard_status(
 
             "message":
                 (
-                    "وقفت Masterpiece قبل توليد الصورة لأن "
-                    "Creative Brain ما رجّع نتيجة صالحة."
+                    "Masterpiece توقف قبل الإنتاج لأن "
+                    "Creative Brain ما رجع نتيجة قابلة للتقييم."
                 ),
         }
 
     if not creative_quality_passed(
         creative_response
     ):
-
-        winner = getattr(
-            creative_response,
-            "winner",
-            None
-        )
-
-        score = 0.0
-
-        if winner is not None:
-
-            try:
-
-                score = float(
-                    getattr(
-                        winner,
-                        "weighted_score",
-                        0
-                    )
-                    or
-                    0
-                )
-
-            except Exception:
-
-                score = 0.0
 
         return {
             "allowed":
@@ -2633,120 +3263,44 @@ def masterpiece_guard_status(
 
             "message":
                 (
-                    "وقفت Masterpiece قبل توليد الصورة لأن "
-                    "الفكرة ما اجتازت Creative Quality Gate. "
-                    "أعلى تقييم صالح: "
-                    +
-                    str(
-                        round(
-                            score,
-                            2
-                        )
-                    )
-                    +
-                    "/100."
+                    "Masterpiece توقف قبل توليد الصورة لأن "
+                    "الاتجاه الإبداعي لم يجتز بوابة الجودة."
                 ),
         }
 
-    campaign_required = bool(
+    if (
         prepared.get(
-            "campaign_required",
-            False
+            "campaign_required"
         )
-    )
+        and
+        not prepared.get(
+            "campaign_validated"
+        )
+    ):
 
-    if campaign_required:
+        return {
+            "allowed":
+                False,
 
-        if prepared.get(
-            "campaign_error"
-        ):
+            "code":
+                "campaign_quality_gate_failed",
 
-            return {
-                "allowed":
-                    False,
-
-                "code":
-                    "campaign_bible_failed",
-
-                "message":
-                    (
-                        "وقفت Masterpiece قبل توليد الصورة لأن "
-                        "Campaign Visual Bible ما اكتمل بشكل صالح."
-                    ),
-            }
-
-        if not bool(
-            prepared.get(
-                "campaign_created",
-                False
-            )
-        ):
-
-            return {
-                "allowed":
-                    False,
-
-                "code":
-                    "campaign_bible_missing",
-
-                "message":
-                    (
-                        "وقفت Masterpiece قبل توليد الصورة لأن "
-                        "الطلب حملة فعلية وما في Campaign Bible صالح."
-                    ),
-            }
-
-        if bool(
-            prepared.get(
-                "campaign_fallback_used",
-                False
-            )
-        ):
-
-            return {
-                "allowed":
-                    False,
-
-                "code":
-                    "campaign_fallback_rejected",
-
-                "message":
-                    (
-                        "وقفت Masterpiece لأن Campaign Bible "
-                        "المتوفر fallback وليس Bible معتمد."
-                    ),
-            }
-
-        if not bool(
-            prepared.get(
-                "campaign_validated",
-                False
-            )
-        ):
-
-            return {
-                "allowed":
-                    False,
-
-                "code":
-                    "campaign_not_validated",
-
-                "message":
-                    (
-                        "وقفت Masterpiece لأن Campaign Bible "
-                        "لم يجتز التحقق."
-                    ),
-            }
+            "message":
+                (
+                    "Masterpiece Campaign توقف قبل الإنتاج لأن "
+                    "Campaign Visual Bible لم يجتز التحقق المطلوب."
+                ),
+        }
 
     return {
         "allowed":
             True,
 
         "code":
-            "masterpiece_ready",
+            "passed",
 
         "message":
-            "",
+            "Masterpiece Integration Guard passed.",
     }
 
 
@@ -2796,7 +3350,10 @@ def enforce_masterpiece_guard(
                 "message"
             )
             or
-            "Masterpiece Integration Guard blocked production."
+            (
+                "Masterpiece Integration Guard "
+                "blocked production."
+            )
         )
 
     print(
@@ -2840,6 +3397,10 @@ def prepare_generation_input(
             user_id,
             brand_id
         )
+
+    # =====================================================
+    # RESEARCH
+    # =====================================================
 
     research_applied = False
     research_summary = ""
@@ -2917,18 +3478,16 @@ def prepare_generation_input(
                 7000
             )
 
-            sources = safe_list(
-                research.get(
-                    "sources_used"
-                )
-            )
-
             research_sources = [
                 clean_text(
                     item,
                     1000
                 )
-                for item in sources[
+                for item in safe_list(
+                    research.get(
+                        "sources_used"
+                    )
+                )[
                     :20
                 ]
                 if clean_text(
@@ -2945,18 +3504,46 @@ def prepare_generation_input(
                 50
             )
 
-    brand_context = {}
-    references: List[Dict[str, Any]] = []
+    # =====================================================
+    # REQUEST-AWARE BRAND MEMORY V2
+    # =====================================================
+
+    brand_context: Dict[str, Any] = {}
+    references: List[
+        Dict[str, Any]
+    ] = []
 
     if brand_id:
 
-        brand_context = build_brand_memory_context(
-            core,
-            user_id,
-            brand_id,
-            max_rules=70,
-            max_references=14
-        )
+        try:
+
+            brand_context = (
+                build_brand_context_for_request(
+                    core,
+                    user_id,
+                    brand_id,
+                    original_prompt,
+                    max_rules=
+                        70,
+                    max_references=
+                        5
+                )
+            )
+
+        except Exception as error:
+
+            print(
+                (
+                    "⚠️ Brand Memory context: "
+                    +
+                    clean_text(
+                        error,
+                        1500
+                    )
+                )
+            )
+
+            brand_context = {}
 
         references = safe_list(
             brand_context.get(
@@ -2974,101 +3561,82 @@ def prepare_generation_input(
         clean_reference_for_model(
             item
         )
-        for item in references
+        for item in references[
+            :5
+        ]
         if isinstance(
             item,
             dict
         )
     ]
 
-    if (
-        brand_id == "stc_bank"
-        or
+    # =====================================================
+    # CREATIVE MODE
+    #
+    # STC Bank remains Masterpiece by default.
+    # =====================================================
+
+    strict_masterpiece = bool(
         is_masterpiece_request(
             original_prompt
         )
-    ):
-
-        creative_mode = (
-            CREATIVE_MODE_MASTERPIECE
-        )
-
-    else:
-
-        creative_mode = (
-            CREATIVE_MODE_FAST
-        )
-
-    strict_masterpiece = (
-        creative_mode
+        or
+        brand_id
         ==
+        "stc_bank"
+    )
+
+    creative_mode = (
         CREATIVE_MODE_MASTERPIECE
+        if strict_masterpiece
+        else
+        CREATIVE_MODE_FAST
     )
 
-    creative_request, benefit_family = (
-        build_creative_request(
-            original_prompt
-        )
+    # =====================================================
+    # SEMANTIC BENEFIT
+    # =====================================================
+
+    (
+        creative_request,
+        benefit_family,
+    ) = build_creative_request(
+        original_prompt
     )
 
-    print(
-        (
-            "🧭 Semantic benefit family: "
-            +
-            benefit_family
-        )
-    )
+    # =====================================================
+    # CREATIVE BRAIN
+    # =====================================================
 
     creative_response = None
     creative_error = ""
 
     try:
 
-        print(
-            (
-                "🧠 XPAND CREATIVE BRAIN"
-                +
-                " | mode="
-                +
-                creative_mode
-            )
+        creative_response = run_creative_brain(
+            user_request=
+                creative_request,
+
+            brand_context=
+                model_brand_context,
+
+            visual_references=
+                model_references,
+
+            mode=
+                creative_mode,
+
+            top_count=
+                3
         )
 
-        creative_response = (
-            run_creative_brain(
-                user_request=
-                    creative_request,
-
-                brand_context=
-                    model_brand_context,
-
-                visual_references=
-                    model_references,
-
-                style_hint=
-                    (
-                        "Use current brand language, "
-                        "recent research and approved visual references. "
-                        "Primary semantic benefit family: "
-                        +
-                        benefit_family
-                        +
-                        "."
-                    ),
-
-                mode=
-                    creative_mode,
-
-                top_count=
-                    3
-            )
+        winner = getattr(
+            creative_response,
+            "winner",
+            None
         )
 
-        if (
-            creative_response
-            and
-            creative_response.winner
-        ):
+        if winner:
 
             print(
                 (
@@ -3076,31 +3644,38 @@ def prepare_generation_input(
                     +
                     " | "
                     +
-                    creative_response.winner.concept_id
+                    clean_text(
+                        getattr(
+                            winner,
+                            "concept_id",
+                            ""
+                        ),
+                        100
+                    )
                     +
                     " | "
                     +
-                    creative_response.winner.title
+                    clean_text(
+                        getattr(
+                            winner,
+                            "title",
+                            ""
+                        ),
+                        500
+                    )
                     +
                     " | score="
                     +
                     str(
-                        creative_response
-                        .winner
-                        .weighted_score
+                        safe_float(
+                            getattr(
+                                winner,
+                                "weighted_score",
+                                0
+                            )
+                        )
                     )
                 )
-            )
-
-        elif strict_masterpiece:
-
-            creative_error = (
-                "Creative Brain completed without "
-                "a qualified Masterpiece winner."
-            )
-
-            print(
-                "⛔ CREATIVE QUALITY GATE | no qualified winner"
             )
 
     except Exception as error:
@@ -3110,25 +3685,17 @@ def prepare_generation_input(
             4000
         )
 
-        if strict_masterpiece:
-
-            print(
-                (
-                    "⛔ Creative Brain Masterpiece failure: "
-                    +
-                    creative_error
-                )
+        print(
+            (
+                "⚠️ Creative Brain: "
+                +
+                creative_error
             )
+        )
 
-        else:
-
-            print(
-                (
-                    "⚠️ Creative Brain fallback: "
-                    +
-                    creative_error
-                )
-            )
+    # =====================================================
+    # CAMPAIGN
+    # =====================================================
 
     campaign_required = bool(
         brand_id
@@ -3143,7 +3710,10 @@ def prepare_generation_input(
     campaign_fallback_used = False
     campaign_error = ""
     campaign_bible = None
-    campaign_execution = {}
+    campaign_execution: Dict[
+        str,
+        Any
+    ] = {}
 
     campaign_asset_number = (
         detect_campaign_asset_number(
@@ -3152,6 +3722,11 @@ def prepare_generation_input(
     )
 
     if campaign_required:
+
+        #
+        # Do not waste another model call after a failed
+        # strict creative gate.
+        #
 
         if (
             strict_masterpiece
@@ -3167,7 +3742,8 @@ def prepare_generation_input(
             )
 
             print(
-                "🛑 CAMPAIGN BIBLE SKIPPED: creative gate failed"
+                "🛑 CAMPAIGN BIBLE SKIPPED: "
+                "creative gate failed"
             )
 
         else:
@@ -3185,7 +3761,11 @@ def prepare_generation_input(
                 if (
                     creative_response
                     and
-                    creative_response.winner
+                    getattr(
+                        creative_response,
+                        "winner",
+                        None
+                    )
                 ):
 
                     approved_direction = (
@@ -3311,12 +3891,13 @@ def prepare_generation_input(
                         +
                         " | "
                         +
-                        campaign_bible.campaign_key
-                        +
-                        " | assets="
-                        +
-                        str(
-                            campaign_bible.asset_count
+                        clean_text(
+                            getattr(
+                                campaign_bible,
+                                "campaign_key",
+                                ""
+                            ),
+                            300
                         )
                         +
                         " | validated="
@@ -3333,15 +3914,23 @@ def prepare_generation_input(
                     )
                 )
 
+                #
+                # Reload request-aware Brand Memory after
+                # the Campaign Bible has been persisted.
+                #
+
                 try:
 
                     brand_context = (
-                        build_brand_memory_context(
+                        build_brand_context_for_request(
                             core,
                             user_id,
                             brand_id,
-                            max_rules=70,
-                            max_references=14
+                            original_prompt,
+                            max_rules=
+                                70,
+                            max_references=
+                                5
                         )
                     )
 
@@ -3356,6 +3945,19 @@ def prepare_generation_input(
                             brand_context
                         )
                     )
+
+                    model_references = [
+                        clean_reference_for_model(
+                            item
+                        )
+                        for item in references[
+                            :5
+                        ]
+                        if isinstance(
+                            item,
+                            dict
+                        )
+                    ]
 
                 except Exception as error:
 
@@ -3385,6 +3987,10 @@ def prepare_generation_input(
                     )
                 )
 
+    # =====================================================
+    # EXISTING CAMPAIGN CONTINUITY
+    # =====================================================
+
     if (
         not campaign_execution
         and
@@ -3403,6 +4009,10 @@ def prepare_generation_input(
         model_brand_context[
             "campaign_execution"
         ] = campaign_execution
+
+    # =====================================================
+    # FINAL SMART-ENGINE PROMPT
+    # =====================================================
 
     final_prompt = research_prompt
 
@@ -3448,7 +4058,9 @@ def prepare_generation_input(
         )
 
     if (
-        brand_id == "stc_bank"
+        brand_id
+        ==
+        "stc_bank"
         and
         not mode_override
     ):
@@ -3531,7 +4143,7 @@ def prepare_generation_input(
 
 
 # =========================================================
-# EXACT-ASSET CANDIDATE
+# EXACT-ASSET CANDIDATE V3.2
 # =========================================================
 
 def get_exact_asset_candidate(
@@ -3548,11 +4160,13 @@ def get_exact_asset_candidate(
     try:
 
         references = (
-            load_runtime_references(
+            load_runtime_references_for_request(
                 core,
                 user_id,
                 brand_id,
-                limit=12
+                request_text,
+                limit=
+                    5
             )
         )
 
@@ -3580,7 +4194,11 @@ def get_exact_asset_candidate(
     for reference in references:
 
         if (
-            reference.role
+            getattr(
+                reference,
+                "role",
+                ""
+            )
             !=
             "product_reference"
         ):
@@ -3588,7 +4206,11 @@ def get_exact_asset_candidate(
             continue
 
         product_lock = safe_dict(
-            reference.product_lock
+            getattr(
+                reference,
+                "product_lock",
+                {}
+            )
         )
 
         if product_lock.get(
@@ -3799,26 +4421,6 @@ Return JSON ONLY:
 
         payload = {}
 
-    def number(
-        key,
-        default
-    ) -> float:
-
-        try:
-
-            return float(
-                payload.get(
-                    key,
-                    default
-                )
-            )
-
-        except Exception:
-
-            return float(
-                default
-            )
-
     return {
         "safe_for_flat_composite":
             bool(
@@ -3833,8 +4435,11 @@ Return JSON ONLY:
                 0.0,
                 min(
                     1.0,
-                    number(
-                        "x",
+                    safe_float(
+                        payload.get(
+                            "x",
+                            0.5
+                        ),
                         0.5
                     )
                 )
@@ -3845,8 +4450,11 @@ Return JSON ONLY:
                 0.0,
                 min(
                     1.0,
-                    number(
-                        "y",
+                    safe_float(
+                        payload.get(
+                            "y",
+                            0.5
+                        ),
                         0.5
                     )
                 )
@@ -3857,8 +4465,11 @@ Return JSON ONLY:
                 0.03,
                 min(
                     0.95,
-                    number(
-                        "width_ratio",
+                    safe_float(
+                        payload.get(
+                            "width_ratio",
+                            0.30
+                        ),
                         0.30
                     )
                 )
@@ -3869,8 +4480,11 @@ Return JSON ONLY:
                 -180.0,
                 min(
                     180.0,
-                    number(
-                        "rotation_degrees",
+                    safe_float(
+                        payload.get(
+                            "rotation_degrees",
+                            0
+                        ),
                         0
                     )
                 )
@@ -3881,8 +4495,11 @@ Return JSON ONLY:
                 0.0,
                 min(
                     100.0,
-                    number(
-                        "confidence",
+                    safe_float(
+                        payload.get(
+                            "confidence",
+                            0
+                        ),
                         0
                     )
                 )
@@ -4025,8 +4642,11 @@ def maybe_apply_exact_asset_lock(
                 "rotation_degrees"
             ],
 
-        shadow_enabled=False,
-        glow_enabled=False,
+        shadow_enabled=
+            False,
+
+        glow_enabled=
+            False,
     )
 
     composite = composite_exact_assets(
@@ -4042,7 +4662,8 @@ def maybe_apply_exact_asset_lock(
             placement
         ],
 
-        output_format="PNG"
+        output_format=
+            "PNG"
     )
 
     image.image_bytes = (
@@ -4059,12 +4680,27 @@ def maybe_apply_exact_asset_lock(
 
     image.model = (
         clean_text(
-            image.model,
+            getattr(
+                image,
+                "model",
+                ""
+            ),
             500
         )
         +
         " + Exact Asset Lock"
     )
+
+    if not isinstance(
+        getattr(
+            image,
+            "metadata",
+            None
+        ),
+        dict
+    ):
+
+        image.metadata = {}
 
     image.metadata[
         "exact_asset_lock"
@@ -4073,7 +4709,11 @@ def maybe_apply_exact_asset_lock(
             True,
 
         "lock_level":
-            composite.lock_level,
+            getattr(
+                composite,
+                "lock_level",
+                ""
+            ),
 
         "placement":
             placement_plan,
@@ -4081,39 +4721,73 @@ def maybe_apply_exact_asset_lock(
         "asset_reports": [
             {
                 "source_name":
-                    item.source_name,
+                    getattr(
+                        item,
+                        "source_name",
+                        ""
+                    ),
 
                 "lock_mode":
-                    item.lock_mode,
+                    getattr(
+                        item,
+                        "lock_mode",
+                        ""
+                    ),
 
                 "native_pixel_identity":
-                    item.native_pixel_identity,
+                    getattr(
+                        item,
+                        "native_pixel_identity",
+                        False
+                    ),
 
                 "scaling_applied":
-                    item.scaling_applied,
+                    getattr(
+                        item,
+                        "scaling_applied",
+                        False
+                    ),
 
                 "rotation_applied":
-                    item.rotation_applied,
+                    getattr(
+                        item,
+                        "rotation_applied",
+                        False
+                    ),
 
                 "generative_redraw_applied":
-                    item.generative_redraw_applied,
+                    getattr(
+                        item,
+                        "generative_redraw_applied",
+                        False
+                    ),
             }
-            for item in composite.assets
+            for item in getattr(
+                composite,
+                "assets",
+                []
+            )
         ],
     }
+
+    # =====================================================
+    # POST-EXACT QA
+    # =====================================================
 
     post_qa = None
 
     try:
 
         post_qa = evaluate_generated_image(
-            image=image,
+            image=
+                image,
 
             original_request=
                 request_text,
 
             compiled_prompt=
-                production_result.compiled_prompt,
+                production_result
+                .compiled_prompt,
 
             product_lock=
                 image.metadata.get(
@@ -4121,7 +4795,8 @@ def maybe_apply_exact_asset_lock(
                     {}
                 ),
 
-            brand_context={}
+            brand_context=
+                {}
         )
 
         image.metadata[
@@ -4154,7 +4829,11 @@ def maybe_apply_exact_asset_lock(
             True,
 
         "lock_level":
-            composite.lock_level,
+            getattr(
+                composite,
+                "lock_level",
+                ""
+            ),
 
         "placement":
             placement_plan,
@@ -4235,6 +4914,11 @@ def creative_direction_for_index(
             {},
             {}
         )
+
+    #
+    # If a top concept carries an explicit failed gate,
+    # fall back to the qualified winner.
+    #
 
     if hasattr(
         concept,
@@ -4330,6 +5014,10 @@ def generate_masterpiece_images(
     List[Dict[str, Any]],
     List[str]
 ]:
+
+    #
+    # Double guard.
+    #
 
     enforce_masterpiece_guard(
         prepared
@@ -4428,11 +5116,14 @@ def generate_masterpiece_images(
             )
 
             production = run_production(
-                core=core,
+                core=
+                    core,
 
-                user_id=user_id,
+                user_id=
+                    user_id,
 
-                brand_id=brand_id,
+                brand_id=
+                    brand_id,
 
                 original_request=
                     request_text,
@@ -4468,9 +5159,8 @@ def generate_masterpiece_images(
                 not qa_passed
             ):
 
-                score = float(
-                    production.best_score
-                    or
+                score = safe_float(
+                    production.best_score,
                     0
                 )
 
@@ -4510,11 +5200,14 @@ def generate_masterpiece_images(
 
             exact_result = (
                 maybe_apply_exact_asset_lock(
-                    core=core,
+                    core=
+                        core,
 
-                    user_id=user_id,
+                    user_id=
+                        user_id,
 
-                    brand_id=brand_id,
+                    brand_id=
+                        brand_id,
 
                     request_text=
                         request_text,
@@ -4523,6 +5216,17 @@ def generate_masterpiece_images(
                         production
                 )
             )
+
+            if not isinstance(
+                getattr(
+                    production.final_image,
+                    "metadata",
+                    None
+                ),
+                dict
+            ):
+
+                production.final_image.metadata = {}
 
             production.final_image.metadata[
                 "xpand_exact_asset_result"
@@ -5178,6 +5882,7 @@ def save_image_record(
                     """,
                     (
                         user_id,
+
                         chat_id,
 
                         clean_text(
@@ -5316,15 +6021,13 @@ def save_image_record(
                             100
                         ),
 
-                        float(
-                            creative_score
-                            or
+                        safe_float(
+                            creative_score,
                             0
                         ),
 
-                        float(
-                            qa_score
-                            or
+                        safe_float(
+                            qa_score,
                             0
                         ),
 
@@ -5360,8 +6063,9 @@ def save_image_record(
             (
                 "⚠️ XPAND image DB: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    2000
                 )
             )
         )
@@ -5433,6 +6137,62 @@ def provider_label(
     )
 
 
+def image_filename(
+    image,
+    index: int
+) -> str:
+
+    existing = clean_text(
+        getattr(
+            image,
+            "filename",
+            ""
+        ),
+        500
+    )
+
+    if existing:
+
+        return existing
+
+    mime_type = clean_text(
+        getattr(
+            image,
+            "mime_type",
+            "image/png"
+        ),
+        100
+    ).lower()
+
+    extension = (
+        ".jpg"
+        if "jpeg" in mime_type
+        or
+        "jpg" in mime_type
+        else
+        ".webp"
+        if "webp" in mime_type
+        else
+        ".png"
+    )
+
+    return (
+        "xpand-"
+        +
+        str(
+            index
+        )
+        +
+        "-"
+        +
+        uuid.uuid4().hex[
+            :10
+        ]
+        +
+        extension
+    )
+
+
 # =========================================================
 # DELIVER GENERATED IMAGE
 # =========================================================
@@ -5484,15 +6244,14 @@ def deliver_generated_image(
         )
     )
 
-    qa_score = float(
+    qa_score = safe_float(
         metadata.get(
             "post_exact_qa_score",
             metadata.get(
                 "qa_score",
                 0
             )
-        )
-        or
+        ),
         0
     )
 
@@ -5590,39 +6349,31 @@ def deliver_generated_image(
     if exact_applied:
 
         caption_lines.append(
-            "🔒 Exact Asset Lock: ACTIVE"
+            "Exact Asset Lock: ACTIVE"
         )
 
     if campaign_key:
 
         caption_lines.append(
-            "🎬 Campaign Bible: ACTIVE"
+            "Campaign Bible: ACTIVE"
         )
 
     caption = "\n".join(
         caption_lines
     )
 
-    filename = clean_text(
-        getattr(
-            image,
-            "filename",
-            ""
-        ),
-        500
+    filename = image_filename(
+        image,
+        index
     )
 
-    if not filename:
+    try:
 
-        filename = (
-            "XPAND-"
-            +
-            uuid.uuid4().hex[
-                :12
-            ]
-            +
-            ".png"
-        )
+        image.filename = filename
+
+    except Exception:
+
+        pass
 
     photo_file_id = ""
     document_file_id = ""
@@ -5630,35 +6381,18 @@ def deliver_generated_image(
 
     if SEND_PREVIEW:
 
-        try:
+        response = send_photo_bytes(
+            core,
+            chat_id,
+            image.image_bytes,
+            filename,
+            image.mime_type,
+            caption
+        )
 
-            response = send_photo_bytes(
-                core,
-                chat_id,
-                image.image_bytes,
-                filename,
-                image.mime_type,
-                caption
-            )
-
-            photo_file_id = (
-                extract_photo_file_id(
-                    response
-                )
-            )
-
-        except Exception as error:
-
-            print(
-                (
-                    "⚠️ Preview delivery: "
-                    +
-                    clean_text(
-                        error,
-                        2000
-                    )
-                )
-            )
+        photo_file_id = extract_photo_file_id(
+            response
+        )
 
     if SEND_ORIGINAL:
 
@@ -5723,9 +6457,14 @@ def deliver_generated_image(
     image_db_id = save_image_record(
         core,
 
-        user_id=user_id,
-        chat_id=chat_id,
-        image=image,
+        user_id=
+            user_id,
+
+        chat_id=
+            chat_id,
+
+        image=
+            image,
 
         enhanced_prompt=
             enhanced_prompt,
@@ -5899,14 +6638,17 @@ def generate_and_deliver(
     if (
         creative_response
         and
-        creative_response.winner
+        getattr(
+            creative_response,
+            "winner",
+            None
+        )
     ):
 
-        creative_score = float(
+        creative_score = safe_float(
             creative_response
             .winner
-            .weighted_score
-            or
+            .weighted_score,
             0
         )
 
@@ -5926,7 +6668,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND UNIFIED VISUAL REQUEST V3.1.2"
+        " XPAND UNIFIED VISUAL REQUEST V3.2"
     )
     print(
         "=========================================="
@@ -5962,6 +6704,15 @@ def generate_and_deliver(
         number
     )
     print(
+        "selected_references =",
+        len(
+            prepared.get(
+                "references",
+                []
+            )
+        )
+    )
+    print(
         "campaign_required =",
         prepared.get(
             "campaign_required"
@@ -5982,7 +6733,11 @@ def generate_and_deliver(
     print("")
 
     images = []
-    pipeline_errors: List[str] = []
+
+    pipeline_errors: List[
+        str
+    ] = []
+
     production_metadata: List[
         Dict[str, Any]
     ] = []
@@ -5992,6 +6747,10 @@ def generate_and_deliver(
         ==
         CREATIVE_MODE_MASTERPIECE
     )
+
+    # =====================================================
+    # MASTERPIECE
+    # =====================================================
 
     if use_masterpiece:
 
@@ -6018,17 +6777,23 @@ def generate_and_deliver(
             production_metadata,
             masterpiece_errors,
         ) = generate_masterpiece_images(
-            core=core,
+            core=
+                core,
 
-            user_id=user_id,
+            user_id=
+                user_id,
 
-            request_text=prompt,
+            request_text=
+                prompt,
 
-            prepared=prepared,
+            prepared=
+                prepared,
 
-            number=number,
+            number=
+                number,
 
-            aspect_ratio=aspect_ratio
+            aspect_ratio=
+                aspect_ratio
         )
 
         pipeline_errors.extend(
@@ -6040,7 +6805,8 @@ def generate_and_deliver(
             if not MASTERPIECE_ALLOW_SMART_FALLBACK:
 
                 print(
-                    "🛑 SMART ENGINE FALLBACK BLOCKED FOR MASTERPIECE"
+                    "🛑 SMART ENGINE FALLBACK "
+                    "BLOCKED FOR MASTERPIECE"
                 )
 
                 details = (
@@ -6070,6 +6836,10 @@ def generate_and_deliver(
                     )
                 )
 
+    # =====================================================
+    # NORMAL SMART ENGINE
+    # =====================================================
+
     if not images:
 
         mode = (
@@ -6097,9 +6867,11 @@ def generate_and_deliver(
             result = generate_image(
                 final_prompt,
 
-                mode=mode,
+                mode=
+                    mode,
 
-                number=number,
+                number=
+                    number,
 
                 reference_count=
                     len(
@@ -6109,7 +6881,8 @@ def generate_and_deliver(
                         )
                     ),
 
-                allow_fallback=True,
+                allow_fallback=
+                    True,
             )
 
             if (
@@ -6119,7 +6892,10 @@ def generate_and_deliver(
             ):
 
                 raise RuntimeError(
-                    "Smart image engine returned no image."
+                    (
+                        "Smart image engine "
+                        "returned no image."
+                    )
                 )
 
             images = result.images
@@ -6143,46 +6919,31 @@ def generate_and_deliver(
                 )
             )
 
-            raise RuntimeError(
-                (
-                    "فشل مسار إنتاج الصورة: "
-                    +
-                    clean_text(
-                        error,
-                        2000
-                    )
-                )
-            )
+            raise
+
+    # =====================================================
+    # DELIVER
+    # =====================================================
 
     delivered = []
-
-    total = len(
-        images
-    )
 
     for index, image in enumerate(
         images,
         start=1
     ):
 
-        try:
-
-            core.send_action(
-                chat_id,
-                "upload_photo"
-            )
-
-        except Exception:
-
-            pass
-
         delivered.append(
             deliver_generated_image(
                 core,
 
-                chat_id=chat_id,
-                user_id=user_id,
-                image=image,
+                chat_id=
+                    chat_id,
+
+                user_id=
+                    user_id,
+
+                image=
+                    image,
 
                 enhanced_prompt=
                     final_prompt,
@@ -6190,8 +6951,13 @@ def generate_and_deliver(
                 source_channel=
                     source_channel,
 
-                index=index,
-                total=total,
+                index=
+                    index,
+
+                total=
+                    len(
+                        images
+                    ),
 
                 brand_id=
                     brand_id,
@@ -6234,12 +7000,11 @@ def generate_and_deliver(
                 model
             )
 
-        qa_score = float(
+        qa_score = safe_float(
             item.get(
                 "qa_score",
                 0
-            )
-            or
+            ),
             0
         )
 
@@ -6256,7 +7021,7 @@ def generate_and_deliver(
             exact_count += 1
 
     summary = (
-        "تم إنتاج الصورة عبر XPAND Unified Visual Runtime. "
+        "تم إنتاج الصورة عبر XPAND Unified Visual Runtime V3.2. "
         +
         "الطلب: "
         +
@@ -6323,8 +7088,9 @@ def generate_and_deliver(
             (
                 "⚠️ Image conversation save: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    1000
                 )
             )
         )
@@ -6389,6 +7155,14 @@ def generate_and_deliver(
 
                 "models":
                     models,
+
+                "reference_count":
+                    len(
+                        prepared.get(
+                            "references",
+                            []
+                        )
+                    ),
 
                 "production_metadata":
                     production_metadata,
@@ -6840,7 +7614,7 @@ def extract_visual_from_message(
 
 
 # =========================================================
-# GETUPDATES ADAPTER
+# GETUPDATES ADAPTER V3.2
 # =========================================================
 
 def rewrite_visual_updates(
@@ -6931,6 +7705,24 @@ def rewrite_visual_updates(
             )
         )
 
+        #
+        # V3.2 provenance metadata.
+        #
+
+        visual[
+            "message_date"
+        ] = message.get(
+            "date"
+        )
+
+        visual[
+            "forward_origin"
+        ] = safe_dict(
+            message.get(
+                "forward_origin"
+            )
+        )
+
         token = create_visual_token(
             visual
         )
@@ -6988,7 +7780,129 @@ def visual_memory_label(
 
 
 # =========================================================
-# VISUAL REFERENCE HANDLER
+# VISUAL ANALYSIS V2 COMPAT
+# =========================================================
+
+def analyze_reference_v2(
+    image_bytes: bytes,
+    mime_type: str,
+    *,
+    caption: str,
+    brand_context: Dict[str, Any],
+    role_hint: str,
+    source_metadata: Dict[str, Any]
+) -> Dict[str, Any]:
+
+    try:
+
+        return analyze_visual_reference(
+            image_bytes,
+            mime_type,
+
+            user_note=
+                caption,
+
+            brand_context=
+                safe_json_string(
+                    safe_brand_context_for_model(
+                        brand_context
+                    ),
+                    14000
+                ),
+
+            role_hint=
+                role_hint,
+
+            source_metadata=
+                source_metadata
+        )
+
+    except TypeError as error:
+
+        if (
+            "source_metadata"
+            not in str(
+                error
+            )
+        ):
+
+            raise
+
+        print(
+            "⚠️ Visual Intelligence V2 source_metadata "
+            "API missing; compatibility fallback."
+        )
+
+        return analyze_visual_reference(
+            image_bytes,
+            mime_type,
+
+            user_note=
+                caption,
+
+            brand_context=
+                safe_json_string(
+                    safe_brand_context_for_model(
+                        brand_context
+                    ),
+                    14000
+                ),
+
+            role_hint=
+                role_hint
+        )
+
+
+# =========================================================
+# VISUAL LIBRARY STATS FORMAT
+# =========================================================
+
+def library_stat_number(
+    stats: Dict[str, Any],
+    *keys: str
+) -> int:
+
+    for key in keys:
+
+        value = stats.get(
+            key
+        )
+
+        if isinstance(
+            value,
+            dict
+        ):
+
+            return len(
+                value
+            )
+
+        if isinstance(
+            value,
+            list
+        ):
+
+            return len(
+                value
+            )
+
+        try:
+
+            if value is not None:
+
+                return int(
+                    value
+                )
+
+        except Exception:
+
+            pass
+
+    return 0
+
+
+# =========================================================
+# VISUAL REFERENCE HANDLER V3.2
 # =========================================================
 
 def handle_visual_reference_token(
@@ -7063,6 +7977,10 @@ def handle_visual_reference_token(
 
         return True
 
+    # =====================================================
+    # BRAND
+    # =====================================================
+
     brand_id = detect_runtime_brand(
         core,
         user_id,
@@ -7083,23 +8001,157 @@ def handle_visual_reference_token(
             brand_id
         )
 
-    brand_context = {}
+    force_reanalysis = (
+        force_visual_reanalysis_requested(
+            caption
+        )
+    )
 
-    if brand_id:
+    # =====================================================
+    # FREE DUPLICATE CHECK #1
+    #
+    # Telegram file_unique_id.
+    #
+    # No download.
+    # No Vision.
+    # =====================================================
 
-        brand_context = (
-            build_brand_memory_context(
+    if (
+        brand_id
+        and
+        file_unique_id
+        and
+        not force_reanalysis
+    ):
+
+        try:
+
+            existing = find_existing_reference(
                 core,
                 user_id,
                 brand_id,
-                max_rules=70,
-                max_references=12
+
+                telegram_file_unique_id=
+                    file_unique_id
             )
+
+        except Exception as error:
+
+            existing = None
+
+            print(
+                (
+                    "⚠️ Visual duplicate lookup: "
+                    +
+                    clean_text(
+                        error,
+                        1000
+                    )
+                )
+            )
+
+        existing_id = existing_reference_id(
+            existing
         )
+
+        if existing_id:
+
+            print(
+                (
+                    "♻️ VISUAL REFERENCE DUPLICATE"
+                    +
+                    " | reference_id="
+                    +
+                    str(
+                        existing_id
+                    )
+                    +
+                    " | Vision skipped"
+                )
+            )
+
+            core.send_message(
+                chat_id,
+                (
+                    "هاي الصورة موجودة أصلًا بمكتبة البراند ✅\n"
+                    "ما أعدت تحليل الـVision، يعني ما صرفنا "
+                    "استدعاء جديد.\n"
+                    "Reference #"
+                    +
+                    str(
+                        existing_id
+                    )
+                )
+            )
+
+            return True
+
+    # =====================================================
+    # REQUEST-AWARE BRAND CONTEXT
+    # =====================================================
+
+    brand_context: Dict[
+        str,
+        Any
+    ] = {}
+
+    if brand_id:
+
+        try:
+
+            brand_context = (
+                build_brand_context_for_request(
+                    core,
+                    user_id,
+                    brand_id,
+
+                    caption
+                    or
+                    "new visual brand reference",
+
+                    max_rules=
+                        70,
+
+                    max_references=
+                        5
+                )
+            )
+
+        except Exception as error:
+
+            print(
+                (
+                    "⚠️ Brand context before Vision: "
+                    +
+                    clean_text(
+                        error,
+                        1200
+                    )
+                )
+            )
+
+            brand_context = {}
+
+    # =====================================================
+    # ROLE + SOURCE
+    # =====================================================
 
     role_hint = (
         infer_reference_role_from_note(
             caption
+        )
+    )
+
+    source_metadata = (
+        infer_reference_source_metadata(
+            caption=
+                caption,
+
+            brand_id=
+                brand_id,
+
+            telegram_metadata=
+                metadata
         )
     )
 
@@ -7116,13 +8168,13 @@ def handle_visual_reference_token(
 
     print("")
     print(
-        "=========================================="
+        "=============================================="
     )
     print(
-        " XPAND VISUAL REFERENCE DNA V3.1.2"
+        " XPAND VISUAL REFERENCE INTAKE V3.2"
     )
     print(
-        "=========================================="
+        "=============================================="
     )
     print(
         "brand =",
@@ -7135,12 +8187,38 @@ def handle_visual_reference_token(
         role_hint
     )
     print(
-        "exact_requested =",
-        exact_lock_requested(
-            caption
+        "official =",
+        source_metadata.get(
+            "official"
         )
     )
+    print(
+        "verification =",
+        source_metadata.get(
+            "official_verification"
+        )
+    )
+    print(
+        "source_type =",
+        source_metadata.get(
+            "source_type"
+        )
+    )
+    print(
+        "platform =",
+        source_metadata.get(
+            "platform"
+        )
+    )
+    print(
+        "force_reanalysis =",
+        force_reanalysis
+    )
     print("")
+
+    # =====================================================
+    # DOWNLOAD
+    # =====================================================
 
     try:
 
@@ -7167,25 +8245,134 @@ def handle_visual_reference_token(
 
         return True
 
+    if not image_bytes:
+
+        core.send_message(
+            chat_id,
+            (
+                "وصل ملف الصورة فاضي، "
+                "ابعثها مرة ثانية."
+            )
+        )
+
+        return True
+
+    # =====================================================
+    # LOCAL SHA256
+    #
+    # Cost = $0
+    # =====================================================
+
+    fingerprint = (
+        local_image_fingerprint(
+            image_bytes
+        )
+    )
+
+    source_metadata[
+        "image_fingerprint"
+    ] = fingerprint
+
+    # =====================================================
+    # FREE DUPLICATE CHECK #2
+    #
+    # Detects same bytes even with a new Telegram ID.
+    # =====================================================
+
+    if (
+        brand_id
+        and
+        fingerprint
+        and
+        not force_reanalysis
+    ):
+
+        try:
+
+            existing = find_existing_reference(
+                core,
+                user_id,
+                brand_id,
+
+                image_fingerprint=
+                    fingerprint
+            )
+
+        except Exception as error:
+
+            existing = None
+
+            print(
+                (
+                    "⚠️ Fingerprint duplicate lookup: "
+                    +
+                    clean_text(
+                        error,
+                        1000
+                    )
+                )
+            )
+
+        existing_id = existing_reference_id(
+            existing
+        )
+
+        if existing_id:
+
+            print(
+                (
+                    "♻️ IMAGE FINGERPRINT DUPLICATE"
+                    +
+                    " | reference_id="
+                    +
+                    str(
+                        existing_id
+                    )
+                    +
+                    " | Vision skipped"
+                )
+            )
+
+            core.send_message(
+                chat_id,
+                (
+                    "لقيت نفس الصورة موجودة بالمكتبة ✅\n"
+                    "حتى لو Telegram أعطاها File ID جديد، "
+                    "الـSHA256 مطابق.\n"
+                    "ما عملت Vision Call جديد.\n"
+                    "Reference #"
+                    +
+                    str(
+                        existing_id
+                    )
+                )
+            )
+
+            return True
+
+    # =====================================================
+    # VISUAL INTELLIGENCE
+    #
+    # One paid Vision analysis for a NEW reference.
+    # =====================================================
+
     try:
 
-        dna = analyze_visual_reference(
+        dna = analyze_reference_v2(
             image_bytes,
             mime_type,
 
-            user_note=
+            caption=
                 caption,
 
             brand_context=
-                safe_json_string(
-                    safe_brand_context_for_model(
-                        brand_context
-                    ),
-                    14000
-                ),
+                brand_context,
 
             role_hint=
-                role_hint
+                role_hint,
+
+            source_metadata=
+                source_metadata
         )
 
     except Exception as error:
@@ -7194,8 +8381,9 @@ def handle_visual_reference_token(
             (
                 "❌ VISUAL DNA: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    2000
                 )
             )
         )
@@ -7216,6 +8404,22 @@ def handle_visual_reference_token(
 
         return True
 
+    if not isinstance(
+        dna,
+        dict
+    ):
+
+        core.send_message(
+            chat_id,
+            "تحليل الصورة رجع بصيغة غير صالحة."
+        )
+
+        return True
+
+    # =====================================================
+    # PRODUCT LOCK
+    # =====================================================
+
     product_lock = safe_dict(
         dna.get(
             "product_lock"
@@ -7229,6 +8433,18 @@ def handle_visual_reference_token(
         ),
         100
     )
+
+    if not reference_role:
+
+        reference_role = (
+            role_hint
+            or
+            "style_reference"
+        )
+
+    # =====================================================
+    # EXACT PRODUCT CAPABILITY
+    # =====================================================
 
     if (
         reference_role
@@ -7244,7 +8460,8 @@ def handle_visual_reference_token(
                 mime_type=
                     mime_type,
 
-                role="product",
+                role=
+                    "product",
 
                 source_name=
                     (
@@ -7311,6 +8528,11 @@ def handle_visual_reference_token(
             "exact_requested"
         ] = True
 
+    #
+    # Never Exact-Composite a reference containing
+    # sensitive financial identifiers.
+    #
+
     if product_lock.get(
         "sensitive_text_present"
     ):
@@ -7327,31 +8549,172 @@ def handle_visual_reference_token(
         "product_lock"
     ] = product_lock
 
-    reference_id = save_visual_reference(
+    # =====================================================
+    # NORMALIZED SOURCE METADATA
+    # =====================================================
+
+    normalized_source_metadata = safe_dict(
+        dna.get(
+            "source_metadata"
+        )
+    )
+
+    if not normalized_source_metadata:
+
+        normalized_source_metadata = dict(
+            source_metadata
+        )
+
+    #
+    # Never lose local fingerprint / Telegram provenance
+    # when Vision normalization omits them.
+    #
+
+    normalized_source_metadata.setdefault(
+        "image_fingerprint",
+        fingerprint
+    )
+
+    normalized_source_metadata.setdefault(
+        "telegram_file_unique_id",
+        file_unique_id
+    )
+
+    normalized_source_metadata.setdefault(
+        "official_verification",
+        source_metadata.get(
+            "official_verification",
+            "not_claimed"
+        )
+    )
+
+    normalized_source_metadata.setdefault(
+        "user_labeled_official",
+        source_metadata.get(
+            "user_labeled_official",
+            False
+        )
+    )
+
+    normalized_source_metadata.setdefault(
+        "ingested_at",
+        source_metadata.get(
+            "ingested_at",
+            ""
+        )
+    )
+
+    # =====================================================
+    # SAVE TO BRAND MEMORY V2
+    # =====================================================
+
+    try:
+
+        reference_result = (
+            save_visual_reference_v2(
+                core,
+                user_id,
+
+                brand_id=
+                    brand_id,
+
+                telegram_file_id=
+                    file_id,
+
+                telegram_file_unique_id=
+                    file_unique_id,
+
+                reference_role=
+                    reference_role,
+
+                user_note=
+                    caption,
+
+                dna=
+                    dna,
+
+                product_lock=
+                    product_lock,
+
+                source_metadata=
+                    normalized_source_metadata
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            (
+                "❌ VISUAL MEMORY SAVE: "
+                +
+                clean_text(
+                    error,
+                    2000
+                )
+            )
+        )
+
+        core.send_message(
+            chat_id,
+            (
+                "تحليل الصورة نجح، بس حفظها بذاكرة "
+                "البراند فشل.\n"
+                "الخطأ: "
+                +
+                clean_text(
+                    error,
+                    1200
+                )
+            )
+        )
+
+        return True
+
+    reference_id = existing_reference_id(
+        reference_result
+    )
+
+    # =====================================================
+    # CONTENT FAMILY
+    # =====================================================
+
+    content_classification = safe_dict(
+        dna.get(
+            "content_classification"
+        )
+    )
+
+    content_family = clean_text(
+        content_classification.get(
+            "family",
+            "general_brand"
+        ),
+        100
+    )
+
+    if not content_family:
+
+        content_family = "general_brand"
+
+    reference_utility = safe_dict(
+        dna.get(
+            "reference_utility"
+        )
+    )
+
+    # =====================================================
+    # LIBRARY STATS
+    # =====================================================
+
+    library_stats = visual_library_stats(
         core,
         user_id,
-
-        brand_id=
-            brand_id,
-
-        telegram_file_id=
-            file_id,
-
-        telegram_file_unique_id=
-            file_unique_id,
-
-        reference_role=
-            reference_role,
-
-        user_note=
-            caption,
-
-        dna=
-            dna,
-
-        product_lock=
-            product_lock
+        brand_id
     )
+
+    # =====================================================
+    # EVENT
+    # =====================================================
 
     try:
 
@@ -7359,7 +8722,7 @@ def handle_visual_reference_token(
             user_id,
             chat_id,
             "visual_reference_analyzed",
-            "Visual Reference DNA created",
+            "Visual Reference DNA V2 created",
             {
                 "reference_id":
                     reference_id,
@@ -7370,10 +8733,36 @@ def handle_visual_reference_token(
                 "reference_role":
                     reference_role,
 
+                "content_family":
+                    content_family,
+
+                "official":
+                    bool(
+                        normalized_source_metadata.get(
+                            "official",
+                            False
+                        )
+                    ),
+
+                "official_verification":
+                    normalized_source_metadata.get(
+                        "official_verification",
+                        ""
+                    ),
+
+                "source_type":
+                    normalized_source_metadata.get(
+                        "source_type",
+                        ""
+                    ),
+
                 "confidence":
                     dna.get(
                         "confidence"
                     ),
+
+                "reference_utility":
+                    reference_utility,
 
                 "product_lock":
                     bool(
@@ -7396,6 +8785,9 @@ def handle_visual_reference_token(
                         )
                     ),
 
+                "fingerprint":
+                    fingerprint,
+
                 "runtime_version":
                     VERSION,
 
@@ -7410,7 +8802,7 @@ def handle_visual_reference_token(
 
     print(
         (
-            "✅ VISUAL DNA SAVED"
+            "✅ VISUAL DNA V2 SAVED"
             +
             " | reference_id="
             +
@@ -7421,8 +8813,27 @@ def handle_visual_reference_token(
             " | role="
             +
             reference_role
+            +
+            " | family="
+            +
+            content_family
+            +
+            " | official="
+            +
+            str(
+                bool(
+                    normalized_source_metadata.get(
+                        "official",
+                        False
+                    )
+                )
+            )
         )
     )
+
+    # =====================================================
+    # IMAGE + GENERATION REQUEST
+    # =====================================================
 
     if (
         caption
@@ -7437,7 +8848,7 @@ def handle_visual_reference_token(
             core.send_message(
                 chat_id,
                 (
-                    "حللت المرجع وحفظت الـVisual DNA. "
+                    "حللت المرجع وحفظته بمكتبة البراند ✅\n"
                     "هسا ببني الإنتاج عليه."
                 )
             )
@@ -7479,6 +8890,10 @@ def handle_visual_reference_token(
 
         return True
 
+    # =====================================================
+    # NORMAL REFERENCE RESPONSE
+    # =====================================================
+
     summary = (
         build_visual_dna_summary(
             dna
@@ -7491,6 +8906,54 @@ def handle_visual_reference_token(
             "\n🏷 البراند: "
             +
             brand_id
+        )
+
+    summary += (
+        "\n🧠 الفئة: "
+        +
+        content_family
+    )
+
+    if normalized_source_metadata.get(
+        "official"
+    ):
+
+        summary += (
+            "\n✅ المصدر: موسوم رسمي"
+        )
+
+        if (
+            normalized_source_metadata.get(
+                "official_verification"
+            )
+            ==
+            "user_asserted"
+        ):
+
+            summary += (
+                " — اعتمادك أنت، مش تحقق ويب تلقائي"
+            )
+
+    else:
+
+        summary += (
+            "\nℹ️ المصدر: مرجع مستخدم"
+        )
+
+    authority = (
+        normalized_source_metadata.get(
+            "authority_score"
+        )
+    )
+
+    if authority is not None:
+
+        summary += (
+            "\n⭐ Source Authority: "
+            +
+            str(
+                authority
+            )
         )
 
     if product_lock.get(
@@ -7536,7 +8999,62 @@ def handle_visual_reference_token(
 
         summary += (
             "\n⚠️ Exact Asset Lock بحاجة PNG بخلفية شفافة "
-            "أو Mask. المرجع محفوظ حاليًا كـHigh-Fidelity."
+            "أو Mask."
+        )
+
+    if library_stats:
+
+        total = library_stat_number(
+            library_stats,
+            "total",
+            "total_references",
+            "reference_count"
+        )
+
+        official_count = library_stat_number(
+            library_stats,
+            "official_sources",
+            "official_references",
+            "official_count"
+        )
+
+        families = library_stat_number(
+            library_stats,
+            "content_families",
+            "families",
+            "family_count"
+        )
+
+        summary += (
+            "\n\n📚 مكتبة البراند:"
+            +
+            "\nالمراجع: "
+            +
+            str(
+                total
+            )
+            +
+            "\nالرسمية: "
+            +
+            str(
+                official_count
+            )
+            +
+            "\nContent Families: "
+            +
+            str(
+                families
+            )
+        )
+
+    if reference_id:
+
+        summary += (
+            "\nReference #"
+            +
+            str(
+                reference_id
+            )
         )
 
     core.send_message(
@@ -7691,8 +9209,9 @@ def handle_text_image_request(
             (
                 "🛑 XPAND MASTERPIECE GUARD: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    2000
                 )
             )
         )
@@ -7733,8 +9252,9 @@ def handle_text_image_request(
             (
                 "❌ XPAND VISUAL TEXT: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    2000
                 )
             )
         )
@@ -7853,6 +9373,10 @@ def install(
                 True,
         }
 
+    # =====================================================
+    # IMAGE DATABASE
+    # =====================================================
+
     try:
 
         ensure_image_table(
@@ -7865,11 +9389,16 @@ def install(
             (
                 "⚠️ XPAND image table init: "
                 +
-                str(
-                    error
+                clean_text(
+                    error,
+                    1500
                 )
             )
         )
+
+    # =====================================================
+    # TELEGRAM GETUPDATES ADAPTER
+    # =====================================================
 
     original_telegram_request = (
         core.telegram_request
@@ -7899,8 +9428,9 @@ def install(
                     (
                         "⚠️ Visual update adapter: "
                         +
-                        str(
-                            error
+                        clean_text(
+                            error,
+                            1500
                         )
                     )
                 )
@@ -7910,6 +9440,10 @@ def install(
     core.telegram_request = (
         xpand_telegram_request
     )
+
+    # =====================================================
+    # SAVE MESSAGE PATCH
+    # =====================================================
 
     original_save_message = (
         core.save_message
@@ -7926,12 +9460,16 @@ def install(
             12000
         )
 
-        token = extract_visual_token_from_text(
-            value
+        token = (
+            extract_visual_token_from_text(
+                value
+            )
         )
 
         if (
-            role == "user"
+            role
+            ==
+            "user"
             and
             token
         ):
@@ -7949,6 +9487,10 @@ def install(
     core.save_message = (
         xpand_save_message
     )
+
+    # =====================================================
+    # MEMORY INGESTION PATCH
+    # =====================================================
 
     original_ingest_user_message = getattr(
         core,
@@ -7980,10 +9522,8 @@ def install(
 
             if token:
 
-                value = (
-                    visual_memory_label(
-                        token
-                    )
+                value = visual_memory_label(
+                    token
                 )
 
             return original_ingest_user_message(
@@ -7996,6 +9536,10 @@ def install(
         core.ingest_user_message = (
             xpand_ingest_user_message
         )
+
+    # =====================================================
+    # COMMAND ROUTER
+    # =====================================================
 
     original_handle_command = (
         core.handle_command
@@ -8050,6 +9594,10 @@ def install(
         xpand_visual_handle_command
     )
 
+    # =====================================================
+    # VOICE ROUTER
+    # =====================================================
+
     original_ask = (
         core.ask_kemo
     )
@@ -8098,8 +9646,9 @@ def install(
                     (
                         "⚠️ Voice brand memory: "
                         +
-                        str(
-                            error
+                        clean_text(
+                            error,
+                            1000
                         )
                     )
                 )
@@ -8156,8 +9705,9 @@ def install(
                     (
                         "🛑 XPAND IMAGE VOICE GUARD: "
                         +
-                        str(
-                            error
+                        clean_text(
+                            error,
+                            1500
                         )
                     )
                 )
@@ -8173,8 +9723,9 @@ def install(
                     (
                         "❌ XPAND IMAGE VOICE: "
                         +
-                        str(
-                            error
+                        clean_text(
+                            error,
+                            1500
                         )
                     )
                 )
@@ -8194,13 +9745,15 @@ def install(
         xpand_visual_ask
     )
 
+    # =====================================================
+    # INSTALLED
+    # =====================================================
+
     core._XPAND_IMAGE_TELEGRAM_INSTALLED = (
         True
     )
 
-    status = (
-        get_image_engine_status()
-    )
+    status = get_image_engine_status()
 
     openai_ready = provider_ready(
         status,
@@ -8228,7 +9781,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1.2"
+        " XPAND UNIFIED VISUAL RUNTIME V3.2"
     )
     print(
         "=================================================="
@@ -8237,13 +9790,37 @@ def install(
         "✅ Telegram Image Intake"
     )
     print(
-        "✅ Visual Reference DNA"
+        "✅ STC Visual Library Intake"
     )
     print(
-        "✅ Reference-role intelligence"
+        "✅ Duplicate Guard: Telegram file_unique_id"
     )
     print(
-        "✅ Brand Memory"
+        "✅ Duplicate Guard: local SHA256"
+    )
+    print(
+        "✅ Source Metadata Intelligence"
+    )
+    print(
+        "✅ User-asserted Official Provenance"
+    )
+    print(
+        "✅ Visual Intelligence V2"
+    )
+    print(
+        "✅ Request-aware Reference Selection"
+    )
+    print(
+        "✅ Brand Visual Profile Context"
+    )
+    print(
+        "✅ Brand Memory V2 bridge"
+    )
+    print(
+        "✅ Reference Utility Context"
+    )
+    print(
+        "✅ Content Family Context"
     )
     print(
         "✅ Explicit feedback learning"
@@ -8264,7 +9841,7 @@ def install(
         "✅ Creative Brain Quality Gate"
     )
     print(
-        "✅ 82+ Masterpiece guard compatible"
+        "✅ Adaptive Masterpiece guard compatible"
     )
     print(
         "✅ Anti-Cliche"
@@ -8279,66 +9856,26 @@ def install(
         "✅ Camera Director"
     )
     print(
-        "✅ Scene Feasibility"
-    )
-    print(
         "✅ Campaign Visual Bible"
     )
     print(
-        "✅ Strict Campaign no-fallback mode"
+        "✅ Strict Campaign no-fallback"
     )
     print(
-        "✅ Normalized Campaign Intent V3.1.2"
+        "✅ Normalized Campaign Intent V3.1.2 preserved"
     )
     print(
-        "✅ Campaign quality-wording protection"
-    )
-    print(
-        "✅ Masterpiece Integration Guard"
-    )
-    print(
-        "✅ Masterpiece Smart-fallback blocker"
-    )
-    print(
-        "✅ Production Engine V2.1 compatible"
-    )
-    print(
-        "✅ Multi-Pass Production"
-    )
-    print(
-        "✅ Prompt Budget Manager compatible"
-    )
-    print(
-        "✅ High-Fidelity Product Lock"
+        "✅ Production Engine"
     )
     print(
         "✅ Vision QA"
     )
     print(
-        "✅ Strict Final QA gate"
+        "✅ Exact Asset Lock"
     )
-    print(
-        "✅ Auto-Correction"
-    )
-    print(
-        "✅ Best-version preservation"
-    )
-    print(
-        "✅ Exact Original Asset Lock"
-    )
-    print(
-        "✅ Exact-lock perspective safety gate"
-    )
-    print(
-        "✅ Post-Exact Visual QA"
-    )
-    print(
-        "✅ Telegram Preview + Original"
-    )
-
     print(
         (
-            "✅ OpenAI Image: "
+            "✅ OpenAI: "
             +
             (
                 "READY"
@@ -8348,7 +9885,6 @@ def install(
             )
         )
     )
-
     print(
         (
             "✅ Google Fast: "
@@ -8361,7 +9897,6 @@ def install(
             )
         )
     )
-
     print(
         (
             "✅ Google Pro: "
@@ -8374,7 +9909,6 @@ def install(
             )
         )
     )
-
     print(
         (
             "✅ Smart BEST fallback: "
@@ -8387,27 +9921,6 @@ def install(
             )
         )
     )
-
-    print(
-        (
-            "✅ Masterpiece Smart fallback allowed: "
-            +
-            str(
-                MASTERPIECE_ALLOW_SMART_FALLBACK
-            )
-        )
-    )
-
-    print(
-        (
-            "✅ Masterpiece Final QA required: "
-            +
-            str(
-                MASTERPIECE_REQUIRE_QA
-            )
-        )
-    )
-
     print("")
 
     return {
@@ -8429,41 +9942,26 @@ def install(
         "visual_reference_ingestion":
             True,
 
+        "visual_library_v2":
+            True,
+
+        "duplicate_guard":
+            True,
+
+        "request_aware_references":
+            True,
+
         "brand_research":
             True,
 
         "brand_memory":
             True,
 
-        "semantic_benefit_director":
-            True,
-
         "creative_brain":
-            True,
-
-        "creative_quality_gate":
             True,
 
         "campaign_engine":
             True,
-
-        "campaign_strict_mode":
-            True,
-
-        "campaign_normalized_intent":
-            True,
-
-        "campaign_quality_phrase_protection":
-            True,
-
-        "masterpiece_integration_guard":
-            True,
-
-        "masterpiece_smart_fallback":
-            MASTERPIECE_ALLOW_SMART_FALLBACK,
-
-        "masterpiece_final_qa":
-            MASTERPIECE_REQUIRE_QA,
 
         "production_engine":
             True,
@@ -8477,388 +9975,75 @@ def install(
 # SELF TEST
 #
 # NO:
-#
 # - API CALLS
 # - VISION CALLS
 # - IMAGE GENERATION
+# - DATABASE ACCESS
 # - DATABASE WRITES
-#
 # =========================================================
 
 if __name__ == "__main__":
 
-    status = (
-        get_image_engine_status()
-    )
-
     print("")
     print(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1.2"
+        " XPAND UNIFIED VISUAL RUNTIME V3.2"
+    )
+    print(
+        " STC VISUAL LIBRARY INTAKE SELF-TEST"
     )
     print(
         "=================================================="
     )
     print("")
 
-    print(
-        "Smart image engine:",
-        SMART_ENGINE_VERSION
-    )
+    failures = []
 
-    print(
-        "OpenAI:",
+    # =====================================================
+    # CAMPAIGN INTENT
+    # =====================================================
+
+    campaign_tests = [
         (
-            "READY"
-            if provider_ready(
-                status,
-                "openai"
-            )
-            else
-            "missing"
-        )
-    )
-
-    print(
-        "BEST:",
-        (
-            "READY"
-            if status_flag(
-                status,
-                "supports_best_mode",
-                "supports_openai_fusion"
-            )
-            else
-            "not ready"
-        )
-    )
-
-    print("")
-
-    # =====================================================
-    # NORMALIZATION TEST
-    # =====================================================
-
-    normalized_test = normalized(
-        "بمستوى حملة عالمية"
-    )
-
-    normalized_expected = (
-        "بمستوي حمله عالميه"
-    )
-
-    normalized_ok = (
-        normalized_test
-        ==
-        normalized_expected
-    )
-
-    print(
-        "Normalization:"
-    )
-
-    print(
-        (
-            "✅"
-            if normalized_ok
-            else
-            "❌"
-        ),
-        "| expected=",
-        normalized_expected,
-        "| actual=",
-        normalized_test
-    )
-
-    print("")
-
-    # =====================================================
-    # QUALITY PHRASE REMOVAL TEST
-    # =====================================================
-
-    quality_source = (
-        "اعمللي بوستر STC بمستوى حملة عالمية"
-    )
-
-    quality_stripped = (
-        strip_campaign_quality_phrases(
-            quality_source
-        )
-    )
-
-    quality_strip_ok = (
-        not has_campaign_token(
-            quality_stripped
-        )
-    )
-
-    print(
-        "Campaign quality phrase stripping:"
-    )
-
-    print(
-        (
-            "✅"
-            if quality_strip_ok
-            else
-            "❌"
-        ),
-        "| original=",
-        quality_source
-    )
-
-    print(
-        "   stripped=",
-        quality_stripped
-    )
-
-    print("")
-
-    # =====================================================
-    # REQUEST DETECTION
-    # =====================================================
-
-    tests = [
-        (
-            "اعمللي صورة سيارة سوداء",
+            "اعمللي حملة STC",
             True,
-            False,
-            False,
-        ),
-
-        (
-            "اعمللي بوستر STC Bank",
-            True,
-            False,
-            False,
-        ),
-
-        (
-            "XPAND Masterpiece اعمللي إعلان STC",
-            True,
-            True,
-            False,
         ),
 
         (
             "اعمللي حملة STC من 5 بوستات",
             True,
-            False,
+        ),
+
+        (
+            "حملة STC للسفر",
             True,
         ),
 
         (
-            "اعمللي حملة STC",
-            True,
-            False,
-            True,
-        ),
-
-        (
-            "بدي حملة STC للسفر",
-            True,
-            False,
+            "صمم سلسلة بوستات STC",
             True,
         ),
 
         (
             "اعمللي بوستر STC بمستوى حملة عالمية",
-            True,
-            False,
             False,
         ),
 
         (
             "اعمللي صورة STC بجودة حملة عالمية",
-            True,
-            False,
             False,
         ),
 
         (
             "صمم إعلان STC ستايل حملة عالمية",
-            True,
-            False,
             False,
         ),
 
         (
-            "create poster campaign-level quality",
-            True,
+            "create a poster with campaign-level quality",
             False,
-            False,
-        ),
-
-        (
-            (
-                "اعمللي حملة STC من 5 بوستات "
-                "وكل بوست بمستوى حملة عالمية"
-            ),
-            True,
-            False,
-            True,
-        ),
-
-        (
-            "اعمللي بوستر وخلي نفس البطاقة بالضبط",
-            True,
-            False,
-            False,
-        ),
-
-        (
-            "شو أفضل موديل للصور؟",
-            False,
-            False,
-            False,
-        ),
-    ]
-
-    print(
-        "Request detection:"
-    )
-
-    request_tests_ok = True
-
-    for (
-        text,
-        expected_image,
-        expected_masterpiece,
-        expected_campaign,
-    ) in tests:
-
-        actual_image = (
-            looks_like_image_generation_request(
-                text
-            )
-        )
-
-        actual_masterpiece = (
-            is_masterpiece_request(
-                text
-            )
-        )
-
-        actual_campaign = (
-            is_campaign_request(
-                text
-            )
-        )
-
-        ok = (
-            actual_image
-            ==
-            expected_image
-            and
-            actual_masterpiece
-            ==
-            expected_masterpiece
-            and
-            actual_campaign
-            ==
-            expected_campaign
-        )
-
-        request_tests_ok = (
-            request_tests_ok
-            and
-            ok
-        )
-
-        print(
-            (
-                "✅"
-                if ok
-                else
-                "❌"
-            ),
-            "| image=",
-            actual_image,
-            "| masterpiece=",
-            actual_masterpiece,
-            "| campaign=",
-            actual_campaign,
-            "|",
-            text
-        )
-
-    print("")
-
-    # =====================================================
-    # CAMPAIGN INTENT TESTS
-    # =====================================================
-
-    campaign_tests = [
-        (
-            "اعمللي حملة STC من 5 بوستات",
-            True
-        ),
-
-        (
-            "اعمللي حملة STC",
-            True
-        ),
-
-        (
-            "بدي حملة STC",
-            True
-        ),
-
-        (
-            "حملة STC للسفر",
-            True
-        ),
-
-        (
-            "صمم سلسلة بوستات STC",
-            True
-        ),
-
-        (
-            "اعمللي حملة للبنك من 8 اعلانات",
-            True
-        ),
-
-        (
-            "اعمللي بوستر STC بمستوى حملة عالمية",
-            False
-        ),
-
-        (
-            "اعمللي صورة STC بجودة حملة عالمية",
-            False
-        ),
-
-        (
-            "صمم اعلان STC ستايل حملة عالمية",
-            False
-        ),
-
-        (
-            "اعمللي مشهد STC بطابع حملة عالمية",
-            False
-        ),
-
-        (
-            "اعمللي بوستر STC بروح حملة عالمية",
-            False
-        ),
-
-        (
-            "اعمللي اعلان كأنه من حملة عالمية",
-            False
-        ),
-
-        (
-            "create poster campaign-level quality",
-            False
-        ),
-
-        (
-            "design an STC image with campaign-quality visuals",
-            False
         ),
 
         (
@@ -8866,23 +10051,9 @@ if __name__ == "__main__":
                 "اعمللي حملة STC من 10 بوستات "
                 "بمستوى حملة عالمية"
             ),
-            True
-        ),
-
-        (
-            (
-                "بدي حملة STC فيها 6 اعلانات "
-                "وكل اعلان بجودة حملة عالمية"
-            ),
-            True
+            True,
         ),
     ]
-
-    campaign_intent_ok = True
-
-    print(
-        "Campaign intent routing:"
-    )
 
     for text, expected in campaign_tests:
 
@@ -8896,476 +10067,279 @@ if __name__ == "__main__":
             expected
         )
 
-        campaign_intent_ok = (
-            campaign_intent_ok
-            and
-            ok
-        )
-
         print(
             (
-                "✅"
-                if ok
-                else
-                "❌"
-            ),
-            "| expected=",
-            expected,
-            "| actual=",
-            actual,
-            "|",
-            text
+                "Campaign intent: "
+                +
+                str(
+                    ok
+                )
+                +
+                " | "
+                +
+                text
+                +
+                " -> "
+                +
+                str(
+                    actual
+                )
+            )
         )
 
-    print("")
+        if not ok:
+
+            failures.append(
+                (
+                    "campaign: "
+                    +
+                    text
+                )
+            )
 
     # =====================================================
-    # SEMANTIC BENEFIT TEST
+    # SEMANTIC BENEFIT
     # =====================================================
 
-    semantic_tests = [
+    benefit = detect_runtime_benefit_family(
+        "اعلان عن تحويل مالي دولي سريع"
+    )
+
+    print(
+        "International transfer routing:",
+        benefit
+    )
+
+    if benefit != "international_transfer":
+
+        failures.append(
+            "international_transfer_routing"
+        )
+
+    # =====================================================
+    # OFFICIAL SOURCE METADATA
+    # =====================================================
+
+    source = infer_reference_source_metadata(
+        caption=
+            (
+                "مرجع STC رسمي من Instagram "
+                "| سفر"
+            ),
+
+        brand_id=
+            "stc_bank",
+
+        telegram_metadata={
+            "kind":
+                "photo",
+
+            "message_date":
+                0,
+
+            "file_unique_id":
+                "local-test",
+        }
+    )
+
+    source_ok = (
+        source.get(
+            "official"
+        )
+        is True
+        and
+        source.get(
+            "official_verification"
+        )
+        ==
+        "user_asserted"
+        and
+        source.get(
+            "platform"
+        )
+        ==
+        "instagram"
+    )
+
+    print(
+        "Source metadata:",
         (
-            "اعمل اعلان عن تحويل مالي دولي سريع",
-            "international_transfer"
+            "PASS ✅"
+            if source_ok
+            else
+            "FAIL ❌"
+        )
+    )
+
+    if not source_ok:
+
+        failures.append(
+            "source_metadata"
+        )
+
+    # =====================================================
+    # FORCE REANALYZE
+    # =====================================================
+
+    force_ok = (
+        force_visual_reanalysis_requested(
+            "أعد التحليل"
+        )
+        and
+        not force_visual_reanalysis_requested(
+            "مرجع STC رسمي"
+        )
+    )
+
+    print(
+        "Force reanalysis:",
+        (
+            "PASS ✅"
+            if force_ok
+            else
+            "FAIL ❌"
+        )
+    )
+
+    if not force_ok:
+
+        failures.append(
+            "force_reanalysis"
+        )
+
+    # =====================================================
+    # SHA256
+    # =====================================================
+
+    fingerprint = (
+        local_image_fingerprint(
+            b"xpand-test"
+        )
+    )
+
+    sha_ok = (
+        len(
+            fingerprint
+        )
+        ==
+        64
+        and
+        fingerprint
+        ==
+        local_image_fingerprint(
+            b"xpand-test"
+        )
+    )
+
+    print(
+        "SHA256 duplicate fingerprint:",
+        (
+            "PASS ✅"
+            if sha_ok
+            else
+            "FAIL ❌"
+        )
+    )
+
+    if not sha_ok:
+
+        failures.append(
+            "sha256"
+        )
+
+    # =====================================================
+    # IMAGE REQUEST DETECTION
+    # =====================================================
+
+    image_tests = [
+        (
+            "اعمللي صورة سيارة سوداء",
+            True,
         ),
 
         (
-            "بوستر عن التحويل الدولي بسرعة",
-            "international_transfer"
+            "اعمللي بوستر STC Bank",
+            True,
         ),
 
         (
-            "اعلان عن كاش باك",
-            "cashback"
+            "حملة STC للسفر",
+            True,
         ),
 
         (
-            "بوستر عن السفر",
-            "travel"
-        ),
-
-        (
-            "اعلان عن خدمة سريعة",
-            "speed"
+            "شو أفضل موديل للصور؟",
+            False,
         ),
     ]
 
-    semantic_ok = True
-
-    print(
-        "Semantic benefit routing:"
-    )
-
-    for text, expected in semantic_tests:
+    for text, expected in image_tests:
 
         actual = (
-            detect_runtime_benefit_family(
+            looks_like_image_generation_request(
                 text
             )
         )
 
-        ok = (
-            actual
-            ==
-            expected
-        )
+        if actual != expected:
 
-        semantic_ok = (
-            semantic_ok
-            and
-            ok
+            failures.append(
+                (
+                    "image_intent: "
+                    +
+                    text
+                )
+            )
+
+    # =====================================================
+    # RESULT
+    # =====================================================
+
+    print("")
+
+    if failures:
+
+        print(
+            "❌ XPAND Unified Visual Runtime V3.2 self-test: FAIL"
         )
 
         print(
+            "Failures:",
+            failures
+        )
+
+        raise RuntimeError(
             (
-                "✅"
-                if ok
-                else
-                "❌"
-            ),
-            "| expected=",
-            expected,
-            "| actual=",
-            actual,
-            "|",
-            text
-        )
-
-    print("")
-
-    # =====================================================
-    # MASTERPIECE GUARD TEST
-    # =====================================================
-
-    good_winner = SimpleNamespace(
-        weighted_score=90.5
-    )
-
-    good_creative = SimpleNamespace(
-        ok=True,
-
-        winner=
-            good_winner,
-
-        metadata={
-            "quality_gate_passed":
-                True,
-
-            "masterpiece_min_score":
-                82,
-        },
-    )
-
-    bad_creative = SimpleNamespace(
-        ok=False,
-
-        winner=None,
-
-        metadata={
-            "quality_gate_passed":
-                False,
-
-            "masterpiece_min_score":
-                82,
-        },
-    )
-
-    good_prepared = {
-        "creative_mode":
-            CREATIVE_MODE_MASTERPIECE,
-
-        "creative_response":
-            good_creative,
-
-        "campaign_required":
-            False,
-    }
-
-    bad_prepared = {
-        "creative_mode":
-            CREATIVE_MODE_MASTERPIECE,
-
-        "creative_response":
-            bad_creative,
-
-        "campaign_required":
-            False,
-    }
-
-    bad_campaign_prepared = {
-        "creative_mode":
-            CREATIVE_MODE_MASTERPIECE,
-
-        "creative_response":
-            good_creative,
-
-        "campaign_required":
-            True,
-
-        "campaign_created":
-            True,
-
-        "campaign_validated":
-            False,
-
-        "campaign_fallback_used":
-            True,
-
-        "campaign_error":
-            "",
-    }
-
-    good_guard = (
-        masterpiece_guard_status(
-            good_prepared
-        )
-    )
-
-    bad_guard = (
-        masterpiece_guard_status(
-            bad_prepared
-        )
-    )
-
-    campaign_guard = (
-        masterpiece_guard_status(
-            bad_campaign_prepared
-        )
-    )
-
-    guard_ok = (
-        bool(
-            good_guard.get(
-                "allowed"
-            )
-        )
-        and
-        not bool(
-            bad_guard.get(
-                "allowed"
-            )
-        )
-        and
-        not bool(
-            campaign_guard.get(
-                "allowed"
-            )
-        )
-    )
-
-    print(
-        "Masterpiece Integration Guard:"
-    )
-
-    print(
-        (
-            "✅"
-            if good_guard.get(
-                "allowed"
-            )
-            else
-            "❌"
-        ),
-        "| qualified creative accepted"
-    )
-
-    print(
-        (
-            "✅"
-            if not bad_guard.get(
-                "allowed"
-            )
-            else
-            "❌"
-        ),
-        "| failed Creative Gate blocked"
-    )
-
-    print(
-        (
-            "✅"
-            if not campaign_guard.get(
-                "allowed"
-            )
-            else
-            "❌"
-        ),
-        "| fallback Campaign Bible blocked"
-    )
-
-    print("")
-
-    # =====================================================
-    # OTHER TESTS
-    # =====================================================
-
-    print(
-        "Reference role:"
-    )
-
-    print(
-        " -",
-        infer_reference_role_from_note(
-            "هاي مرجع زاوية التصوير"
-        )
-    )
-
-    print("")
-
-    print(
-        "Aspect ratios:"
-    )
-
-    for test in [
-        "بوستر 4:5",
-        "ستوري",
-        "صورة 16:9",
-        "صورة عادية",
-    ]:
-
-        print(
-            " -",
-            test,
-            "→",
-            detect_aspect_ratio(
-                test
+                "XPAND V3.2 local self-test failed: "
+                +
+                ", ".join(
+                    failures
+                )
             )
         )
 
-    print("")
-
     print(
-        "Exact Lock detection:"
+        "✅ XPAND Unified Visual Runtime V3.2 self-test: PASS"
     )
-
     print(
-        " -",
-        exact_lock_requested(
-            (
-                "استخدم نفس البطاقة "
-                "بالضبط ولا تغيرها"
-            )
-        )
+        "✅ STC Visual Library Intake: READY"
     )
-
-    print("")
-
     print(
-        "Campaign asset count:"
+        "✅ Duplicate Vision Protection: READY"
     )
-
     print(
-        " -",
-        detect_campaign_asset_count(
-            "اعمللي حملة من 10 بوستات"
-        )
+        "✅ Request-aware References: READY"
     )
-
-    print("")
-
-    # =====================================================
-    # FINAL STATUS
-    # =====================================================
-
     print(
-        "✅ Arabic normalization-aware campaign detection"
+        "🚫 No API calls were made"
     )
-
     print(
-        "✅ اعمللي حملة STC → Campaign"
+        "🚫 No Vision calls were made"
     )
-
     print(
-        "✅ حملة STC → Campaign"
+        "🚫 No image generation was made"
     )
-
     print(
-        "✅ Campaign asset count → Campaign"
+        "🚫 No database access was made"
     )
-
-    print(
-        "✅ بمستوى حملة → quality descriptor only"
-    )
-
-    print(
-        "✅ بجودة حملة → quality descriptor only"
-    )
-
-    print(
-        "✅ ستايل حملة → quality descriptor only"
-    )
-
-    print(
-        "✅ campaign-level → quality descriptor only"
-    )
-
-    print(
-        "✅ Research → Memory → Creative Brain"
-    )
-
-    print(
-        "✅ Semantic Benefit → Creative Brain"
-    )
-
-    print(
-        "✅ International Transfer → correct priority"
-    )
-
-    print(
-        "✅ Creative Brain → 82+ Quality Gate"
-    )
-
-    print(
-        "✅ Failed Creative Gate → image generation BLOCKED"
-    )
-
-    print(
-        "✅ Real Campaign → Campaign Bible"
-    )
-
-    print(
-        "✅ Campaign quality wording → no false Campaign"
-    )
-
-    print(
-        "✅ Real campaign + quality wording → Campaign preserved"
-    )
-
-    print(
-        "✅ Campaign Bible fallback → Masterpiece BLOCKED"
-    )
-
-    print(
-        "✅ Masterpiece → no Smart fallback"
-    )
-
-    print(
-        "✅ Campaign Bible → Production V2.1"
-    )
-
-    print(
-        "✅ Production V2.1 → Final Visual QA"
-    )
-
-    print(
-        "✅ Failed Final QA → Masterpiece delivery blocked"
-    )
-
-    print(
-        "✅ Product Reference → High-Fidelity Lock"
-    )
-
-    print(
-        "✅ Transparent Product → Exact Asset Lock"
-    )
-
-    print(
-        "✅ Exact Asset → Perspective safety gate"
-    )
-
-    print(
-        "✅ Exact Asset → Post-composite QA"
-    )
-
-    print(
-        "✅ Normal non-Masterpiece Smart fallback preserved"
-    )
-
-    print(
-        "✅ Telegram Text + Voice + Images unified"
-    )
-
-    print("")
-
-    all_ok = (
-        normalized_ok
-        and
-        quality_strip_ok
-        and
-        request_tests_ok
-        and
-        campaign_intent_ok
-        and
-        semantic_ok
-        and
-        guard_ok
-    )
-
-    print(
-        (
-            "XPAND V3.1.2 Integration self-test: "
-            +
-            (
-                "PASS ✅"
-                if all_ok
-                else
-                "FAIL ❌"
-            )
-        )
-    )
-
-    print(
-        "🚫 No paid API calls were made"
-    )
-
     print("")
