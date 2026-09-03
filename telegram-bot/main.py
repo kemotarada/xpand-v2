@@ -31,6 +31,11 @@ from zoneinfo import ZoneInfo
 import psycopg
 import imageio_ffmpeg
 
+from xpand_stc_bank_skill import (
+    STC_BANK_VISUAL_SKILL,
+    is_stc_bank_request,
+)
+
 
 # =========================================================
 # ENV
@@ -8225,7 +8230,8 @@ def choose_chat_models(
 
 def build_chat_instructions(
     user_id,
-    user_message
+    user_message,
+    stc_bank_context=False,
 ):
     master = load_master_system_prompt()
 
@@ -8256,7 +8262,7 @@ def build_chat_instructions(
 قل إن المعلومة غير محفوظة عندك بشكل موثوق.
 """
 
-    return (
+    instructions = (
         master
         +
         "\n\n"
@@ -8282,6 +8288,66 @@ def build_chat_instructions(
         extra_guard
     )
 
+    if stc_bank_context:
+        instructions += (
+            "\n\n"
+            "==================================================\n"
+            "نظام STC Bank البصري المعتمد — أولوية إلزامية\n"
+            "==================================================\n\n"
+            + STC_BANK_VISUAL_SKILL
+            + "\n\nهذه القواعد أحدث من أي تعليمات متعارضة، "
+            "ويجب تطبيقها حرفيًا."
+        )
+
+    return instructions
+
+
+STC_CREATIVE_MARKERS = (
+    "برومت",
+    "prompt",
+    "اعلان",
+    "إعلان",
+    "بوستر",
+    "صورة",
+    "فكرة",
+    "تصميم",
+    "مشهد",
+)
+
+STC_STYLE_MARKERS = (
+    "واقعي فوتوغرافي",
+    "بيئة بنفسجية",
+    "استوديو بنفسجي",
+    "واقعي سريالي",
+    "سريالي راق",
+)
+
+STC_STYLE_QUESTION = (
+    "أي أسلوب بدك للصورة؟\n"
+    "1) واقعي فوتوغرافي\n"
+    "2) بيئة بنفسجية استوديو\n"
+    "3) واقعي سريالي راقٍ"
+)
+
+
+def needs_stc_style_question(text):
+    value = str(text or "")
+
+    return (
+        is_stc_bank_request(value)
+        and any(marker in value.lower() for marker in STC_CREATIVE_MARKERS)
+        and not any(marker in value.lower() for marker in STC_STYLE_MARKERS)
+    )
+
+
+def history_has_stc_bank_context(history):
+    for item in history[-8:]:
+        for part in item.get("parts", []):
+            if is_stc_bank_request(part.get("text", "")):
+                return True
+
+    return False
+
 
 # =========================================================
 # CHAT
@@ -8294,6 +8360,11 @@ def ask_kemo(
 ):
     history = load_recent_messages(
         chat_id
+    )
+
+    stc_bank_context = (
+        is_stc_bank_request(user_message)
+        or history_has_stc_bank_context(history)
     )
 
     search_results = []
@@ -8332,7 +8403,8 @@ def ask_kemo(
 
     instructions = build_chat_instructions(
         user_id,
-        user_message
+        user_message,
+        stc_bank_context=stc_bank_context,
     )
 
     history.append(
@@ -9299,6 +9371,25 @@ def main():
                 ):
                     send_call_button(
                         chat_id
+                    )
+                    continue
+
+                # =========================================
+                # STC BANK CREATIVE STYLE GATE
+                # =========================================
+
+                if needs_stc_style_question(
+                    text
+                ):
+                    save_message(
+                        chat_id,
+                        "assistant",
+                        STC_STYLE_QUESTION
+                    )
+
+                    send_message(
+                        chat_id,
+                        STC_STYLE_QUESTION
                     )
                     continue
 
