@@ -1358,12 +1358,17 @@ def infer_benefit_family(
     if contains_any(
         request,
         [
-            "تحويل دولي",
-            "international transfer",
-            "حول دولي",
-            "حواله دوليه",
-            "حوالة دولية",
-        ],
+    "تحويل دولي",
+    "تحويل مالي دولي",
+    "تحويلات مالية دولية",
+    "حوالة مالية دولية",
+    "حواله ماليه دوليه",
+    "international transfer",
+    "international money transfer",
+    "حول دولي",
+    "حواله دوليه",
+    "حوالة دولية",
+]
     ):
         return (
             "international_transfer"
