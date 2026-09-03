@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND SMART IMAGE ENGINE V1.3
+# XPAND SMART IMAGE ENGINE V1.3.1
 #
 # Production image engine for XPAND.
 #
@@ -13,57 +13,53 @@
 # - Gemini 3 Pro Image / Nano Banana Pro
 # - Gemini 3.1 Flash Image / Nano Banana 2
 #
-# IMPORTANT ARCHITECTURE:
+# =========================================================
+# V1.3.1 FIX
+# =========================================================
 #
-# AUTO:
-#   Smart single-model routing.
+# Robust OpenAI Responses / Vision structured output:
 #
-# FAST:
-#   Nano Banana 2
-#   -> fallback GPT-Image-2
+# - Automatic JSON-request detection
+# - Responses API text.format JSON mode
+# - Optional strict JSON Schema support
+# - Separate token budget for structured Vision
+# - Reduced reasoning for extraction tasks
+# - Response status validation
+# - incomplete_details detection
+# - Automatic one-time retry for incomplete JSON
+# - JSON validation before returning to callers
+# - Refusal detection
+# - Larger text extraction limit
 #
-# PRO:
-#   Nano Banana Pro
-#   -> GPT-Image-2 refinement
+# IMPORTANT:
 #
-#   If Google fails:
-#   GPT-Image-2 generation
-#   -> GPT-Image-2 refinement
+# Existing public API remains compatible with:
 #
-# BEST:
-#   GPT-5.6 Sol art direction
-#   -> Nano Banana Pro base generation
-#   -> GPT-5.6 Sol visual critique
-#   -> GPT-Image-2 final refinement
-#
-#   If Google quota/billing/rate-limit fails:
-#
-#   GPT-5.6 Sol art direction
-#   -> GPT-Image-2 base generation
-#   -> GPT-5.6 Sol visual critique
-#   -> GPT-Image-2 final refinement
-#
-# COMPARE:
-#   Separate generations from all available providers.
-#
-# Google is OPTIONAL.
-# Google failure must NEVER stop XPAND if OpenAI works.
+# - xpand_visual_intelligence.py
+# - xpand_creative_brain.py
+# - xpand_campaign_engine.py
+# - xpand_production_engine.py
+# - xpand_image_telegram.py
 #
 # No extra Python SDK required.
 #
-# Existing dependency:
+# Dependency:
 # requests>=2.32.0,<3
 # =========================================================
 
 from __future__ import annotations
 
 import base64
+import json
 import os
 import re
 import time
 import uuid
 
-from dataclasses import dataclass, field
+from dataclasses import (
+    dataclass,
+    field,
+)
 
 from typing import (
     Any,
@@ -81,9 +77,13 @@ import requests
 # ENGINE
 # =========================================================
 
-ENGINE_NAME = "XPAND Smart Image Engine"
+ENGINE_NAME = (
+    "XPAND Smart Image Engine"
+)
 
-ENGINE_VERSION = "1.3"
+ENGINE_VERSION = (
+    "1.3.1"
+)
 
 
 # =========================================================
@@ -170,6 +170,58 @@ OPENAI_DIRECTOR_REASONING = str(
 ).strip().lower()
 
 
+#
+# Structured extraction / Vision should not burn most
+# output budget on hidden reasoning.
+#
+
+OPENAI_STRUCTURED_REASONING = str(
+    os.environ.get(
+        "XPAND_IMAGE_STRUCTURED_REASONING",
+        "low"
+    )
+).strip().lower()
+
+
+OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS = max(
+    1000,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_DIRECTOR_MAX_OUTPUT_TOKENS",
+            "3200"
+        )
+        or
+        3200
+    )
+)
+
+
+OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS = max(
+    3000,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_STRUCTURED_MAX_OUTPUT_TOKENS",
+            "9000"
+        )
+        or
+        9000
+    )
+)
+
+
+OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS = max(
+    OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS",
+            "14000"
+        )
+        or
+        14000
+    )
+)
+
+
 REQUEST_TIMEOUT = max(
     30,
     int(
@@ -212,38 +264,66 @@ GEMINI_INTERACTIONS_URL = (
 # MODES
 # =========================================================
 
-MODE_AUTO = "auto"
+MODE_AUTO = (
+    "auto"
+)
 
-MODE_FAST = "fast"
+MODE_FAST = (
+    "fast"
+)
 
-MODE_OPENAI = "openai"
+MODE_OPENAI = (
+    "openai"
+)
 
-MODE_GOOGLE_FAST = "google_fast"
+MODE_GOOGLE_FAST = (
+    "google_fast"
+)
 
-MODE_GOOGLE_PRO = "google_pro"
+MODE_GOOGLE_PRO = (
+    "google_pro"
+)
 
-MODE_PRO = "pro"
+MODE_PRO = (
+    "pro"
+)
 
-MODE_BEST = "best"
+MODE_BEST = (
+    "best"
+)
 
-MODE_COMPARE = "compare"
+MODE_COMPARE = (
+    "compare"
+)
 
 
 # =========================================================
 # PROVIDERS
 # =========================================================
 
-PROVIDER_OPENAI = "openai"
+PROVIDER_OPENAI = (
+    "openai"
+)
 
-PROVIDER_GOOGLE_FAST = "google_fast"
+PROVIDER_GOOGLE_FAST = (
+    "google_fast"
+)
 
-PROVIDER_GOOGLE_PRO = "google_pro"
+PROVIDER_GOOGLE_PRO = (
+    "google_pro"
+)
 
-PROVIDER_FUSION_PRO = "fusion_pro"
+PROVIDER_FUSION_PRO = (
+    "fusion_pro"
+)
 
-PROVIDER_FUSION_BEST = "fusion_best"
+PROVIDER_FUSION_BEST = (
+    "fusion_best"
+)
 
-PROVIDER_OPENAI_FUSION = "openai_fusion"
+PROVIDER_OPENAI_FUSION = (
+    "openai_fusion"
+)
 
 
 # =========================================================
@@ -284,6 +364,16 @@ SUPPORTED_OPENAI_QUALITIES = {
 }
 
 
+SUPPORTED_REASONING_LEVELS = {
+    "none",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max",
+}
+
+
 # =========================================================
 # EXCEPTIONS
 # =========================================================
@@ -302,6 +392,12 @@ class XPANDImageConfigurationError(
 
 class XPANDImageProviderError(
     XPANDImageError
+):
+    pass
+
+
+class XPANDStructuredOutputError(
+    XPANDImageProviderError
 ):
     pass
 
@@ -378,7 +474,6 @@ class GeneratedImage:
                 ".webp",
         }
 
-
         return mapping.get(
             self.mime_type.lower(),
             ".png"
@@ -398,13 +493,11 @@ class GeneratedImage:
             )
         )
 
-
         unique = (
             self.request_id
             or
             uuid.uuid4().hex[:10]
         )
-
 
         return (
             f"XPAND-{provider_name}-{unique}"
@@ -469,9 +562,8 @@ def normalize_arabic(
 
     text = clean_text(
         value,
-        20000
+        30000
     ).lower()
-
 
     replacements = {
         "أ": "ا",
@@ -483,7 +575,6 @@ def normalize_arabic(
         "ئ": "ي",
     }
 
-
     for old, new in replacements.items():
 
         text = text.replace(
@@ -491,20 +582,17 @@ def normalize_arabic(
             new
         )
 
-
     text = re.sub(
         r"[\u064B-\u065F]",
         "",
         text
     )
 
-
     text = re.sub(
         r"\s+",
         " ",
         text
     )
-
 
     return text.strip()
 
@@ -517,7 +605,6 @@ def contains_any(
     source = normalize_arabic(
         text
     )
-
 
     return any(
         normalize_arabic(
@@ -539,9 +626,7 @@ def extract_quoted_text(
         r"«([^»]+)»",
     ]
 
-
     results: List[str] = []
-
 
     for pattern in patterns:
 
@@ -555,7 +640,6 @@ def extract_quoted_text(
                 1000
             )
 
-
             if (
                 value
                 and
@@ -565,7 +649,6 @@ def extract_quoted_text(
                 results.append(
                     value
                 )
-
 
     return results
 
@@ -584,7 +667,6 @@ def detect_aspect_ratio(
         20
     )
 
-
     if (
         explicit
         in
@@ -593,11 +675,9 @@ def detect_aspect_ratio(
 
         return explicit
 
-
     normalized = normalize_arabic(
         prompt
     )
-
 
     for ratio in [
         "1:1",
@@ -620,7 +700,6 @@ def detect_aspect_ratio(
 
             return ratio
 
-
     if contains_any(
         prompt,
         [
@@ -638,7 +717,6 @@ def detect_aspect_ratio(
 
         return "9:16"
 
-
     if contains_any(
         prompt,
         [
@@ -650,7 +728,6 @@ def detect_aspect_ratio(
     ):
 
         return "1:1"
-
 
     if contains_any(
         prompt,
@@ -665,7 +742,6 @@ def detect_aspect_ratio(
     ):
 
         return "4:5"
-
 
     if contains_any(
         prompt,
@@ -686,7 +762,6 @@ def detect_aspect_ratio(
 
         return "16:9"
 
-
     if contains_any(
         prompt,
         [
@@ -698,7 +773,6 @@ def detect_aspect_ratio(
     ):
 
         return "2:3"
-
 
     return "1:1"
 
@@ -712,7 +786,6 @@ def detect_image_size(
         requested_size,
         20
     ).upper()
-
 
     aliases = {
         "0.5K":
@@ -734,13 +807,11 @@ def detect_image_size(
             "4K",
     }
 
-
     if explicit in aliases:
 
         return aliases[
             explicit
         ]
-
 
     if contains_any(
         prompt,
@@ -761,7 +832,6 @@ def detect_image_size(
 
         return "4K"
 
-
     if contains_any(
         prompt,
         [
@@ -776,7 +846,6 @@ def detect_image_size(
 
         return "2K"
 
-
     return "1K"
 
 
@@ -790,7 +859,6 @@ def detect_quality(
         20
     ).lower()
 
-
     if (
         explicit
         in
@@ -798,7 +866,6 @@ def detect_quality(
     ):
 
         return explicit
-
 
     if contains_any(
         prompt,
@@ -816,7 +883,6 @@ def detect_quality(
 
         return "medium"
 
-
     return DEFAULT_QUALITY
 
 
@@ -832,16 +898,14 @@ def build_professional_prompt(
 
     user_prompt = clean_text(
         user_prompt,
-        10000
+        20000
     )
-
 
     if not user_prompt:
 
         raise XPANDImageError(
             "وصف الصورة فاضي."
         )
-
 
     directives: List[str] = [
         (
@@ -867,7 +931,6 @@ def build_professional_prompt(
         ),
     ]
 
-
     if contains_any(
         user_prompt,
         [
@@ -887,7 +950,6 @@ def build_professional_prompt(
                 "professional lighting."
             )
         )
-
 
     if contains_any(
         user_prompt,
@@ -918,7 +980,6 @@ def build_professional_prompt(
                 ),
             ]
         )
-
 
     if contains_any(
         user_prompt,
@@ -954,7 +1015,6 @@ def build_professional_prompt(
             ]
         )
 
-
     if contains_any(
         user_prompt,
         [
@@ -973,11 +1033,9 @@ def build_professional_prompt(
             )
         )
 
-
     quoted_texts = extract_quoted_text(
         user_prompt
     )
-
 
     if quoted_texts:
 
@@ -985,7 +1043,6 @@ def build_professional_prompt(
             f'- "{item}"'
             for item in quoted_texts
         )
-
 
         directives.append(
             (
@@ -996,16 +1053,13 @@ def build_professional_prompt(
             )
         )
 
-
     directives.append(
         f"Target aspect ratio: {aspect_ratio}."
     )
 
-
     directives.append(
         f"Target resolution intent: {image_size}."
     )
-
 
     return (
         "USER REQUEST:\n"
@@ -1065,7 +1119,6 @@ def build_refinement_prompt(
         ),
     ]
 
-
     if stronger:
 
         directives.extend(
@@ -1087,11 +1140,9 @@ def build_refinement_prompt(
             ]
         )
 
-
     quoted_texts = extract_quoted_text(
         original_user_prompt
     )
-
 
     if quoted_texts:
 
@@ -1100,7 +1151,6 @@ def build_refinement_prompt(
             for item in quoted_texts
         )
 
-
         directives.append(
             (
                 "Preserve these requested text elements exactly:\n"
@@ -1108,7 +1158,6 @@ def build_refinement_prompt(
                 exact_lines
             )
         )
-
 
     if critique:
 
@@ -1119,18 +1168,17 @@ def build_refinement_prompt(
                 +
                 clean_text(
                     critique,
-                    5000
+                    8000
                 )
             )
         )
-
 
     return (
         "ORIGINAL USER REQUEST:\n"
         +
         clean_text(
             original_user_prompt,
-            10000
+            20000
         )
         +
         "\n\n"
@@ -1156,7 +1204,6 @@ def normalize_mode(
         mode,
         50
     ).lower()
-
 
     aliases = {
         "auto":
@@ -1223,7 +1270,6 @@ def normalize_mode(
             MODE_COMPARE,
     }
 
-
     return aliases.get(
         value,
         MODE_AUTO
@@ -1246,11 +1292,9 @@ def resolve_effective_mode(
         DEFAULT_MODE
     )
 
-
     if chosen != MODE_AUTO:
 
         return chosen
-
 
     if contains_any(
         prompt,
@@ -1271,7 +1315,6 @@ def resolve_effective_mode(
 
         return MODE_BEST
 
-
     if contains_any(
         prompt,
         [
@@ -1286,7 +1329,6 @@ def resolve_effective_mode(
     ):
 
         return MODE_FAST
-
 
     professional = contains_any(
         prompt,
@@ -1306,7 +1348,6 @@ def resolve_effective_mode(
             "commercial",
         ]
     )
-
 
     product_brand = contains_any(
         prompt,
@@ -1329,7 +1370,6 @@ def resolve_effective_mode(
         ]
     )
 
-
     precision = contains_any(
         prompt,
         [
@@ -1345,7 +1385,6 @@ def resolve_effective_mode(
         ]
     )
 
-
     if (
         professional
         and
@@ -1354,11 +1393,9 @@ def resolve_effective_mode(
 
         return MODE_PRO
 
-
     if precision:
 
         return MODE_OPENAI
-
 
     if (
         reference_count >= 2
@@ -1368,11 +1405,9 @@ def resolve_effective_mode(
 
         return MODE_PRO
 
-
     if professional:
 
         return MODE_GOOGLE_PRO
-
 
     return MODE_OPENAI
 
@@ -1428,7 +1463,6 @@ def openai_size_for_ratio(
 
         return "1024x1536"
 
-
     if aspect_ratio in {
         "16:9",
         "3:2",
@@ -1440,7 +1474,6 @@ def openai_size_for_ratio(
     }:
 
         return "1536x1024"
-
 
     return "1024x1024"
 
@@ -1460,7 +1493,6 @@ def _safe_json(
 
         value = response.json()
 
-
         if isinstance(
             value,
             dict
@@ -1468,12 +1500,10 @@ def _safe_json(
 
             return value
 
-
         return {
             "data":
                 value
         }
-
 
     except Exception:
 
@@ -1481,7 +1511,7 @@ def _safe_json(
             "raw":
                 clean_text(
                     response.text,
-                    5000
+                    10000
                 )
         }
 
@@ -1495,11 +1525,9 @@ def _provider_error_message(
         response
     )
 
-
     error = data.get(
         "error"
     )
-
 
     if isinstance(
         error,
@@ -1520,7 +1548,6 @@ def _provider_error_message(
             )
         )
 
-
     else:
 
         message = (
@@ -1539,18 +1566,22 @@ def _provider_error_message(
             )
             or
             (
-                f"HTTP "
-                f"{response.status_code}"
+                "HTTP "
+                +
+                str(
+                    response.status_code
+                )
             )
         )
 
-
     return (
-        f"{provider}: "
+        provider
+        +
+        ": "
         +
         clean_text(
             message,
-            4000
+            6000
         )
     )
 
@@ -1569,7 +1600,6 @@ def looks_like_google_quota_error(
         )
     )
 
-
     markers = [
         "quota",
         "rate limit",
@@ -1582,7 +1612,6 @@ def looks_like_google_quota_error(
         "429",
         "exceeded",
     ]
-
 
     return any(
         normalize_arabic(
@@ -1610,7 +1639,6 @@ def _download_image_url(
             REQUEST_TIMEOUT
     )
 
-
     if not response.ok:
 
         raise XPANDImageProviderError(
@@ -1623,7 +1651,6 @@ def _download_image_url(
             )
         )
 
-
     mime_type = clean_text(
         response.headers.get(
             "Content-Type",
@@ -1634,13 +1661,13 @@ def _download_image_url(
         ";"
     )[0]
 
-
     if not mime_type.startswith(
         "image/"
     ):
 
-        mime_type = "image/png"
-
+        mime_type = (
+            "image/png"
+        )
 
     return (
         response.content,
@@ -1657,11 +1684,9 @@ def _decode_base64_image(
         100000000
     )
 
-
     if not value:
 
         return None
-
 
     if value.startswith(
         "data:image/"
@@ -1674,11 +1699,9 @@ def _decode_base64_image(
                 1
             )[1]
 
-
         except Exception:
 
             return None
-
 
     try:
 
@@ -1686,14 +1709,11 @@ def _decode_base64_image(
             value
         )
 
-
         if not raw:
 
             return None
 
-
         return raw
-
 
     except Exception:
 
@@ -1716,7 +1736,6 @@ def _find_inline_images(
         ]
     ] = []
 
-
     def walk(
         item: Any
     ) -> None:
@@ -1733,7 +1752,6 @@ def _find_inline_images(
                 100
             ).lower()
 
-
             mime_type = clean_text(
                 (
                     item.get(
@@ -1749,7 +1767,6 @@ def _find_inline_images(
                 100
             ).lower()
 
-
             possible_data = [
                 item.get(
                     "data"
@@ -1763,7 +1780,6 @@ def _find_inline_images(
                     "base64"
                 ),
             ]
-
 
             looks_like_image = (
                 item_type
@@ -1780,7 +1796,6 @@ def _find_inline_images(
                 )
             )
 
-
             if looks_like_image:
 
                 for possible in possible_data:
@@ -1793,7 +1808,6 @@ def _find_inline_images(
                         raw = _decode_base64_image(
                             possible
                         )
-
 
                         if raw:
 
@@ -1808,9 +1822,7 @@ def _find_inline_images(
                                 )
                             )
 
-
                             break
-
 
                 uri = (
                     item.get(
@@ -1821,7 +1833,6 @@ def _find_inline_images(
                         "url"
                     )
                 )
-
 
                 if (
                     isinstance(
@@ -1845,18 +1856,15 @@ def _find_inline_images(
                             )
                         )
 
-
                     except Exception:
 
                         pass
-
 
             for child in item.values():
 
                 walk(
                     child
                 )
-
 
         elif isinstance(
             item,
@@ -1869,11 +1877,9 @@ def _find_inline_images(
                     child
                 )
 
-
     walk(
         value
     )
-
 
     unique: List[
         Tuple[
@@ -1882,9 +1888,7 @@ def _find_inline_images(
         ]
     ] = []
 
-
     signatures = set()
-
 
     for image_bytes, mime_type in found:
 
@@ -1895,16 +1899,13 @@ def _find_inline_images(
             image_bytes[:64],
         )
 
-
         if signature in signatures:
 
             continue
 
-
         signatures.add(
             signature
         )
-
 
         unique.append(
             (
@@ -1912,7 +1913,6 @@ def _find_inline_images(
                 mime_type
             )
         )
-
 
     return unique
 
@@ -1932,7 +1932,6 @@ def _extract_openai_response_text(
         "output_text"
     )
 
-
     if isinstance(
         top_level,
         str
@@ -1940,18 +1939,15 @@ def _extract_openai_response_text(
 
         return clean_text(
             top_level,
-            12000
+            50000
         )
 
-
     collected: List[str] = []
-
 
     output = data.get(
         "output",
         []
     )
-
 
     if isinstance(
         output,
@@ -1967,12 +1963,10 @@ def _extract_openai_response_text(
 
                 continue
 
-
             content = item.get(
                 "content",
                 []
             )
-
 
             if not isinstance(
                 content,
@@ -1980,7 +1974,6 @@ def _extract_openai_response_text(
             ):
 
                 continue
-
 
             for part in content:
 
@@ -1991,34 +1984,128 @@ def _extract_openai_response_text(
 
                     continue
 
-
-                if (
+                part_type = clean_text(
                     part.get(
                         "type"
-                    )
+                    ),
+                    100
+                ).lower()
+
+                text = part.get(
+                    "text"
+                )
+
+                if (
+                    part_type
                     ==
                     "output_text"
                     and
                     isinstance(
-                        part.get(
-                            "text"
-                        ),
+                        text,
                         str
                     )
                 ):
 
                     collected.append(
-                        part[
-                            "text"
-                        ]
+                        text
                     )
-
 
     return clean_text(
         "\n".join(
             collected
         ),
-        12000
+        50000
+    )
+
+
+def _extract_openai_refusal(
+    data: Dict[
+        str,
+        Any
+    ]
+) -> str:
+
+    output = data.get(
+        "output",
+        []
+    )
+
+    if not isinstance(
+        output,
+        list
+    ):
+
+        return ""
+
+    refusals = []
+
+    for item in output:
+
+        if not isinstance(
+            item,
+            dict
+        ):
+
+            continue
+
+        content = item.get(
+            "content",
+            []
+        )
+
+        if not isinstance(
+            content,
+            list
+        ):
+
+            continue
+
+        for part in content:
+
+            if not isinstance(
+                part,
+                dict
+            ):
+
+                continue
+
+            if (
+                clean_text(
+                    part.get(
+                        "type"
+                    ),
+                    100
+                ).lower()
+                ==
+                "refusal"
+            ):
+
+                refusal = clean_text(
+                    (
+                        part.get(
+                            "refusal"
+                        )
+                        or
+                        part.get(
+                            "text"
+                        )
+                        or
+                        ""
+                    ),
+                    5000
+                )
+
+                if refusal:
+
+                    refusals.append(
+                        refusal
+                    )
+
+    return clean_text(
+        "\n".join(
+            refusals
+        ),
+        5000
     )
 
 
@@ -2036,22 +2123,22 @@ def image_data_uri(
         100
     ).lower()
 
-
     if mime not in {
         "image/png",
         "image/jpeg",
         "image/jpg",
+        "image/webp",
     }:
 
-        mime = "image/png"
-
+        mime = (
+            "image/png"
+        )
 
     encoded = base64.b64encode(
         image_bytes
     ).decode(
         "ascii"
     )
-
 
     return (
         "data:"
@@ -2065,22 +2152,313 @@ def image_data_uri(
 
 
 # =========================================================
-# GPT-5.6 SOL TEXT / VISION
+# STRUCTURED OUTPUT DETECTION
 # =========================================================
 
-def call_openai_director(
-    prompt: str,
-    *,
-    image_bytes: Optional[bytes] = None,
-    image_mime_type: str = "image/png"
+JSON_REQUEST_MARKERS = [
+    "return json only",
+    "return only json",
+    "json only",
+    "output json",
+    "return exactly this json",
+    "return a json object",
+    "required schema",
+    "output schema",
+    "schema:",
+    "json schema",
+]
+
+
+def looks_like_json_request(
+    prompt: str
+) -> bool:
+
+    source = clean_text(
+        prompt,
+        40000
+    ).lower()
+
+    if any(
+        marker
+        in source
+        for marker in JSON_REQUEST_MARKERS
+    ):
+
+        return True
+
+    #
+    # The XPAND engines consistently use these patterns
+    # in structured extraction prompts.
+    #
+
+    if (
+        "return json"
+        in source
+        and
+        "{"
+        in source
+        and
+        "}"
+        in source
+    ):
+
+        return True
+
+    return False
+
+
+# =========================================================
+# JSON NORMALIZATION
+# =========================================================
+
+def normalize_json_text(
+    value: str
 ) -> str:
 
-    if not OPENAI_API_KEY:
+    text = clean_text(
+        value,
+        50000
+    )
 
-        raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
+    text = re.sub(
+        r"^\s*```(?:json)?\s*",
+        "",
+        text,
+        flags=
+            re.IGNORECASE
+    )
+
+    text = re.sub(
+        r"\s*```\s*$",
+        "",
+        text
+    )
+
+    text = text.strip()
+
+    try:
+
+        parsed = json.loads(
+            text
         )
 
+        if isinstance(
+            parsed,
+            (
+                dict,
+                list,
+            )
+        ):
+
+            return json.dumps(
+                parsed,
+                ensure_ascii=False
+            )
+
+    except Exception:
+
+        pass
+
+    start = text.find(
+        "{"
+    )
+
+    end = text.rfind(
+        "}"
+    )
+
+    if (
+        start >= 0
+        and
+        end > start
+    ):
+
+        candidate = text[
+            start:end + 1
+        ]
+
+        try:
+
+            parsed = json.loads(
+                candidate
+            )
+
+            if isinstance(
+                parsed,
+                dict
+            ):
+
+                return json.dumps(
+                    parsed,
+                    ensure_ascii=False
+                )
+
+        except Exception:
+
+            pass
+
+    raise XPANDStructuredOutputError(
+        "Structured model output is not valid JSON."
+    )
+
+
+def json_text_is_valid(
+    value: str
+) -> bool:
+
+    try:
+
+        normalize_json_text(
+            value
+        )
+
+        return True
+
+    except Exception:
+
+        return False
+
+
+# =========================================================
+# RESPONSE STATUS
+# =========================================================
+
+def response_status_error(
+    data: Dict[
+        str,
+        Any
+    ]
+) -> str:
+
+    status = clean_text(
+        data.get(
+            "status",
+            ""
+        ),
+        100
+    ).lower()
+
+    if status in {
+        "",
+        "completed",
+    }:
+
+        return ""
+
+    error = data.get(
+        "error"
+    )
+
+    if isinstance(
+        error,
+        dict
+    ):
+
+        message = clean_text(
+            (
+                error.get(
+                    "message"
+                )
+                or
+                error.get(
+                    "code"
+                )
+                or
+                error
+            ),
+            3000
+        )
+
+        if message:
+
+            return (
+                status
+                +
+                ": "
+                +
+                message
+            )
+
+    incomplete = data.get(
+        "incomplete_details"
+    )
+
+    if isinstance(
+        incomplete,
+        dict
+    ):
+
+        reason = clean_text(
+            incomplete.get(
+                "reason",
+                ""
+            ),
+            1000
+        )
+
+        if reason:
+
+            return (
+                status
+                +
+                ": "
+                +
+                reason
+            )
+
+    return status
+
+
+# =========================================================
+# REASONING NORMALIZATION
+# =========================================================
+
+def normalize_reasoning_effort(
+    value: str,
+    fallback: str
+) -> str:
+
+    value = clean_text(
+        value,
+        50
+    ).lower()
+
+    if value in SUPPORTED_REASONING_LEVELS:
+
+        return value
+
+    fallback = clean_text(
+        fallback,
+        50
+    ).lower()
+
+    if fallback in SUPPORTED_REASONING_LEVELS:
+
+        return fallback
+
+    return "low"
+
+
+# =========================================================
+# ONE RESPONSES API CALL
+# =========================================================
+
+def _call_openai_response_once(
+    prompt: str,
+    *,
+    image_bytes: Optional[bytes],
+    image_mime_type: str,
+    json_mode: bool,
+    json_schema: Optional[
+        Dict[
+            str,
+            Any
+        ]
+    ],
+    json_schema_name: str,
+    reasoning_effort: str,
+    max_output_tokens: int
+) -> Dict[str, Any]:
 
     content: List[
         Dict[
@@ -2095,11 +2473,10 @@ def call_openai_director(
             "text":
                 clean_text(
                     prompt,
-                    16000
+                    32000
                 ),
         }
     ]
-
 
     if image_bytes:
 
@@ -2119,8 +2496,10 @@ def call_openai_director(
             }
         )
 
-
-    payload = {
+    payload: Dict[
+        str,
+        Any
+    ] = {
         "model":
             OPENAI_DIRECTOR_MODEL,
 
@@ -2136,20 +2515,97 @@ def call_openai_director(
 
         "reasoning": {
             "effort":
-                OPENAI_DIRECTOR_REASONING,
+                normalize_reasoning_effort(
+                    reasoning_effort,
+                    "low"
+                ),
         },
 
         "max_output_tokens":
-            2200,
+            int(
+                max_output_tokens
+            ),
+
+        #
+        # We do not need to persist one-shot visual
+        # extraction/director calls server-side.
+        #
+
+        "store":
+            False,
     }
 
+    # =====================================================
+    # STRUCTURED OUTPUT
+    # =====================================================
+
+    if json_schema:
+
+        schema_name = re.sub(
+            r"[^a-zA-Z0-9_\-]",
+            "_",
+            clean_text(
+                json_schema_name,
+                64
+            )
+            or
+            "xpand_structured_output"
+        )
+
+        payload[
+            "text"
+        ] = {
+            "format": {
+                "type":
+                    "json_schema",
+
+                "name":
+                    schema_name,
+
+                "schema":
+                    json_schema,
+
+                "strict":
+                    True,
+            },
+
+            "verbosity":
+                "low",
+        }
+
+    elif json_mode:
+
+        #
+        # Generic JSON Object mode is used because existing
+        # XPAND structured prompts already describe their
+        # own detailed schemas.
+        #
+        # This preserves backwards compatibility without
+        # requiring every module to be rewritten today.
+        #
+
+        payload[
+            "text"
+        ] = {
+            "format": {
+                "type":
+                    "json_object",
+            },
+
+            "verbosity":
+                "low",
+        }
 
     response = requests.post(
         OPENAI_RESPONSES_URL,
 
         headers={
             "Authorization":
-                f"Bearer {OPENAI_API_KEY}",
+                (
+                    "Bearer "
+                    +
+                    OPENAI_API_KEY
+                ),
 
             "Content-Type":
                 "application/json",
@@ -2162,7 +2618,6 @@ def call_openai_director(
             REQUEST_TIMEOUT
     )
 
-
     if not response.ok:
 
         raise XPANDImageProviderError(
@@ -2172,25 +2627,385 @@ def call_openai_director(
             )
         )
 
-
     data = _safe_json(
         response
     )
 
+    if not isinstance(
+        data,
+        dict
+    ):
 
-    text = _extract_openai_response_text(
-        data
+        raise XPANDImageProviderError(
+            "GPT-5.6 Sol returned an invalid response object."
+        )
+
+    return data
+
+
+# =========================================================
+# GPT-5.6 SOL TEXT / VISION
+# =========================================================
+
+def call_openai_director(
+    prompt: str,
+    *,
+    image_bytes: Optional[bytes] = None,
+    image_mime_type: str = "image/png",
+    json_mode: Optional[bool] = None,
+    json_schema: Optional[
+        Dict[
+            str,
+            Any
+        ]
+    ] = None,
+    json_schema_name: str = "xpand_structured_output"
+) -> str:
+
+    if not OPENAI_API_KEY:
+
+        raise XPANDImageConfigurationError(
+            "OPENAI_API_KEY مش موجود."
+        )
+
+    prompt = clean_text(
+        prompt,
+        32000
+    )
+
+    if not prompt:
+
+        raise XPANDImageError(
+            "Director prompt is empty."
+        )
+
+    if json_mode is None:
+
+        json_mode = (
+            bool(
+                json_schema
+            )
+            or
+            looks_like_json_request(
+                prompt
+            )
+        )
+
+    structured = bool(
+        json_mode
+        or
+        json_schema
+    )
+
+    if structured:
+
+        reasoning_effort = (
+            OPENAI_STRUCTURED_REASONING
+        )
+
+        max_output_tokens = (
+            OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS
+        )
+
+    else:
+
+        reasoning_effort = (
+            OPENAI_DIRECTOR_REASONING
+        )
+
+        max_output_tokens = (
+            OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS
+        )
+
+    #
+    # JSON mode works best when the prompt explicitly
+    # reinforces complete serialization.
+    #
+
+    request_prompt = (
+        prompt
+    )
+
+    if structured:
+
+        request_prompt += (
+            "\n\n"
+            "CRITICAL OUTPUT CONTRACT:\n"
+            "Return exactly one complete valid JSON object. "
+            "Do not use Markdown fences. "
+            "Do not add prose before or after the JSON. "
+            "Finish every opened object and array."
+        )
+
+    last_error: Optional[
+        Exception
+    ] = None
+
+    attempts = (
+        2
+        if structured
+        else
+        1
+    )
+
+    for attempt in range(
+        1,
+        attempts + 1
+    ):
+
+        current_max_tokens = (
+            max_output_tokens
+            if attempt == 1
+            else
+            OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS
+        )
+
+        current_reasoning = (
+            reasoning_effort
+            if attempt == 1
+            else
+            "low"
+        )
+
+        retry_prompt = (
+            request_prompt
+        )
+
+        if attempt > 1:
+
+            retry_prompt += (
+                "\n\n"
+                "RETRY REQUIREMENT:\n"
+                "The previous structured response was incomplete "
+                "or invalid. Produce the entire JSON from the "
+                "beginning in one complete object. "
+                "Be concise in string fields so the object finishes."
+            )
+
+            print(
+                "🔁 Structured Vision retry..."
+            )
+
+        try:
+
+            data = _call_openai_response_once(
+                retry_prompt,
+
+                image_bytes=
+                    image_bytes,
+
+                image_mime_type=
+                    image_mime_type,
+
+                json_mode=
+                    bool(
+                        json_mode
+                    ),
+
+                json_schema=
+                    json_schema,
+
+                json_schema_name=
+                    json_schema_name,
+
+                reasoning_effort=
+                    current_reasoning,
+
+                max_output_tokens=
+                    current_max_tokens
+            )
+
+            refusal = _extract_openai_refusal(
+                data
+            )
+
+            if refusal:
+
+                raise XPANDImageProviderError(
+                    (
+                        "GPT-5.6 Sol refused the request: "
+                        +
+                        refusal
+                    )
+                )
+
+            status_problem = response_status_error(
+                data
+            )
+
+            text = _extract_openai_response_text(
+                data
+            )
+
+            #
+            # Completed structured output:
+            # validate BEFORE giving it to callers.
+            #
+
+            if structured:
+
+                if status_problem:
+
+                    raise XPANDStructuredOutputError(
+                        (
+                            "Structured response incomplete: "
+                            +
+                            status_problem
+                        )
+                    )
+
+                if not text:
+
+                    raise XPANDStructuredOutputError(
+                        (
+                            "GPT-5.6 Sol returned no "
+                            "structured output text."
+                        )
+                    )
+
+                normalized_json = normalize_json_text(
+                    text
+                )
+
+                if attempt > 1:
+
+                    print(
+                        "✅ Structured Vision retry succeeded"
+                    )
+
+                return normalized_json
+
+            #
+            # Plain text mode.
+            #
+
+            if status_problem:
+
+                raise XPANDImageProviderError(
+                    (
+                        "GPT-5.6 Sol response status: "
+                        +
+                        status_problem
+                    )
+                )
+
+            if not text:
+
+                raise XPANDImageProviderError(
+                    "GPT-5.6 Sol رجع بدون نص."
+                )
+
+            return text
+
+        except Exception as error:
+
+            last_error = error
+
+            if (
+                structured
+                and
+                attempt < attempts
+            ):
+
+                print(
+                    (
+                        "⚠️ Structured Vision attempt "
+                        +
+                        str(
+                            attempt
+                        )
+                        +
+                        ": "
+                        +
+                        clean_text(
+                            error,
+                            2000
+                        )
+                    )
+                )
+
+                continue
+
+            raise
+
+    raise XPANDImageProviderError(
+        (
+            "GPT-5.6 Sol failed: "
+            +
+            clean_text(
+                last_error,
+                3000
+            )
+        )
     )
 
 
-    if not text:
+# =========================================================
+# OPTIONAL EXPLICIT JSON HELPER
+# =========================================================
 
-        raise XPANDImageProviderError(
-            "GPT-5.6 Sol رجع بدون نص."
+def call_openai_director_json(
+    prompt: str,
+    *,
+    image_bytes: Optional[bytes] = None,
+    image_mime_type: str = "image/png",
+    json_schema: Optional[
+        Dict[
+            str,
+            Any
+        ]
+    ] = None,
+    json_schema_name: str = "xpand_structured_output"
+) -> Dict[str, Any]:
+
+    raw = call_openai_director(
+        prompt,
+
+        image_bytes=
+            image_bytes,
+
+        image_mime_type=
+            image_mime_type,
+
+        json_mode=
+            True,
+
+        json_schema=
+            json_schema,
+
+        json_schema_name=
+            json_schema_name
+    )
+
+    try:
+
+        value = json.loads(
+            raw
         )
 
+    except Exception as error:
 
-    return text
+        raise XPANDStructuredOutputError(
+            (
+                "Structured response could not be decoded: "
+                +
+                clean_text(
+                    error,
+                    1000
+                )
+            )
+        )
+
+    if not isinstance(
+        value,
+        dict
+    ):
+
+        raise XPANDStructuredOutputError(
+            "Structured response is not a JSON object."
+        )
+
+    return value
 
 
 # =========================================================
@@ -2247,9 +3062,10 @@ Do not explain your reasoning.
 Return only the final art-direction brief.
 """.strip()
 
-
     return call_openai_director(
-        request
+        request,
+        json_mode=
+            False
     )
 
 
@@ -2300,13 +3116,17 @@ Be precise and actionable.
 Return only a concise final-edit instruction list.
 """.strip()
 
-
     return call_openai_director(
         request,
+
         image_bytes=
             image_bytes,
+
         image_mime_type=
-            mime_type
+            mime_type,
+
+        json_mode=
+            False
     )
 
 
@@ -2329,7 +3149,6 @@ def generate_with_openai(
             "OPENAI_API_KEY مش موجود على Railway."
         )
 
-
     number = max(
         1,
         min(
@@ -2342,11 +3161,9 @@ def generate_with_openai(
         )
     )
 
-
     provider_size = openai_size_for_ratio(
         route.aspect_ratio
     )
-
 
     quality = (
         route.quality
@@ -2357,7 +3174,6 @@ def generate_with_openai(
         else
         "high"
     )
-
 
     payload: Dict[
         str,
@@ -2379,13 +3195,16 @@ def generate_with_openai(
             quality,
     }
 
-
     response = requests.post(
         OPENAI_IMAGE_GENERATION_URL,
 
         headers={
             "Authorization":
-                f"Bearer {OPENAI_API_KEY}",
+                (
+                    "Bearer "
+                    +
+                    OPENAI_API_KEY
+                ),
 
             "Content-Type":
                 "application/json",
@@ -2398,7 +3217,6 @@ def generate_with_openai(
             REQUEST_TIMEOUT
     )
 
-
     if not response.ok:
 
         raise XPANDImageProviderError(
@@ -2408,16 +3226,13 @@ def generate_with_openai(
             )
         )
 
-
     data = _safe_json(
         response
     )
 
-
     images = _find_inline_images(
         data
     )
-
 
     if not images:
 
@@ -2428,7 +3243,6 @@ def generate_with_openai(
             )
         )
 
-
     request_id = clean_text(
         response.headers.get(
             "x-request-id",
@@ -2437,11 +3251,9 @@ def generate_with_openai(
         200
     )
 
-
     results: List[
         GeneratedImage
     ] = []
-
 
     for index, (
         image_bytes,
@@ -2460,7 +3272,6 @@ def generate_with_openai(
             )
         )
 
-
         if number > 1:
 
             unique_request_id += (
@@ -2471,16 +3282,17 @@ def generate_with_openai(
                 )
             )
 
-
         results.append(
             GeneratedImage(
                 image_bytes=
                     image_bytes,
 
                 mime_type=
-                    mime_type
-                    or
-                    "image/png",
+                    (
+                        mime_type
+                        or
+                        "image/png"
+                    ),
 
                 provider=
                     PROVIDER_OPENAI,
@@ -2522,19 +3334,11 @@ def generate_with_openai(
             )
         )
 
-
     return results
 
 
 # =========================================================
 # OPENAI GPT-IMAGE-2 EDIT
-#
-# IMPORTANT:
-# Single-image edit uses multipart field:
-#
-# image
-#
-# NOT image[]
 # =========================================================
 
 def edit_with_openai(
@@ -2560,11 +3364,9 @@ def edit_with_openai(
             "OPENAI_API_KEY مش موجود."
         )
 
-
     provider_size = openai_size_for_ratio(
         route.aspect_ratio
     )
-
 
     quality = (
         route.quality
@@ -2576,19 +3378,18 @@ def edit_with_openai(
         "high"
     )
 
-
     mime_type = clean_text(
         input_mime_type,
         100
-    )
-
+    ).lower()
 
     if not mime_type.startswith(
         "image/"
     ):
 
-        mime_type = "image/png"
-
+        mime_type = (
+            "image/png"
+        )
 
     extension = (
         ".jpg"
@@ -2602,19 +3403,19 @@ def edit_with_openai(
         ".png"
     )
 
-
     files = {
         "image": (
-            "xpand-input"
-            +
-            extension,
+            (
+                "xpand-input"
+                +
+                extension
+            ),
 
             input_image_bytes,
 
             mime_type,
         )
     }
-
 
     data = {
         "model":
@@ -2633,13 +3434,16 @@ def edit_with_openai(
             "1",
     }
 
-
     response = requests.post(
         OPENAI_IMAGE_EDITS_URL,
 
         headers={
             "Authorization":
-                f"Bearer {OPENAI_API_KEY}",
+                (
+                    "Bearer "
+                    +
+                    OPENAI_API_KEY
+                ),
         },
 
         data=
@@ -2652,7 +3456,6 @@ def edit_with_openai(
             REQUEST_TIMEOUT
     )
 
-
     if not response.ok:
 
         raise XPANDImageProviderError(
@@ -2662,16 +3465,13 @@ def edit_with_openai(
             )
         )
 
-
     payload = _safe_json(
         response
     )
 
-
     images = _find_inline_images(
         payload
     )
-
 
     if not images:
 
@@ -2682,11 +3482,11 @@ def edit_with_openai(
             )
         )
 
-
     image_bytes, output_mime_type = (
-        images[0]
+        images[
+            0
+        ]
     )
-
 
     request_id = clean_text(
         response.headers.get(
@@ -2696,7 +3496,6 @@ def edit_with_openai(
         200
     )
 
-
     if not request_id:
 
         request_id = (
@@ -2705,37 +3504,34 @@ def edit_with_openai(
             uuid.uuid4().hex[:12]
         )
 
-
     final_metadata = dict(
         metadata
         or
         {}
     )
 
-
     final_metadata[
         "final_edit_model"
     ] = OPENAI_IMAGE_MODEL
-
 
     final_metadata[
         "final_edit_provider_size"
     ] = provider_size
 
-
     final_metadata[
         "generation_type"
     ] = "final_refinement"
-
 
     return GeneratedImage(
         image_bytes=
             image_bytes,
 
         mime_type=
-            output_mime_type
-            or
-            "image/png",
+            (
+                output_mime_type
+                or
+                "image/png"
+            ),
 
         provider=
             final_provider,
@@ -2789,7 +3585,6 @@ def _generate_one_with_gemini(
             "GEMINI_API_KEY مش موجود."
         )
 
-
     image_size = (
         route.image_size
         if
@@ -2799,7 +3594,6 @@ def _generate_one_with_gemini(
         else
         "1K"
     )
-
 
     payload = {
         "model":
@@ -2823,7 +3617,6 @@ def _generate_one_with_gemini(
         },
     }
 
-
     response = requests.post(
         GEMINI_INTERACTIONS_URL,
 
@@ -2842,7 +3635,6 @@ def _generate_one_with_gemini(
             REQUEST_TIMEOUT
     )
 
-
     if not response.ok:
 
         raise XPANDImageProviderError(
@@ -2852,16 +3644,13 @@ def _generate_one_with_gemini(
             )
         )
 
-
     data = _safe_json(
         response
     )
 
-
     images = _find_inline_images(
         data
     )
-
 
     if not images:
 
@@ -2872,11 +3661,11 @@ def _generate_one_with_gemini(
             )
         )
 
-
     image_bytes, mime_type = (
-        images[0]
+        images[
+            0
+        ]
     )
-
 
     request_id = clean_text(
         data.get(
@@ -2885,7 +3674,6 @@ def _generate_one_with_gemini(
         200
     )
 
-
     if not request_id:
 
         request_id = (
@@ -2893,7 +3681,6 @@ def _generate_one_with_gemini(
             +
             uuid.uuid4().hex[:12]
         )
-
 
     if index > 0:
 
@@ -2905,15 +3692,16 @@ def _generate_one_with_gemini(
             )
         )
 
-
     return GeneratedImage(
         image_bytes=
             image_bytes,
 
         mime_type=
-            mime_type
-            or
-            "image/jpeg",
+            (
+                mime_type
+                or
+                "image/jpeg"
+            ),
 
         provider=
             route.provider,
@@ -2976,14 +3764,11 @@ def generate_with_gemini(
         )
     )
 
-
     results: List[
         GeneratedImage
     ] = []
 
-
     errors: List[str] = []
-
 
     for index in range(
         number
@@ -3007,7 +3792,6 @@ def generate_with_gemini(
                 )
             )
 
-
         except Exception as error:
 
             errors.append(
@@ -3016,7 +3800,6 @@ def generate_with_gemini(
                     4000
                 )
             )
-
 
     if not results:
 
@@ -3029,7 +3812,6 @@ def generate_with_gemini(
                 )
             )
         )
-
 
     return results
 
@@ -3054,18 +3836,15 @@ def run_openai_fusion(
 
     started = time.monotonic()
 
-
     errors = list(
         inherited_errors
         or
         []
     )
 
-
     print(
         "🔁 XPAND FALLBACK: OPENAI FUSION"
     )
-
 
     # -----------------------------------------------------
     # STAGE 1
@@ -3074,9 +3853,8 @@ def run_openai_fusion(
 
     art_direction = clean_text(
         initial_art_direction,
-        12000
+        16000
     )
-
 
     if not art_direction:
 
@@ -3086,7 +3864,6 @@ def run_openai_fusion(
                 "🎨 Stage 1: GPT-5.6 Sol Art Director..."
             )
 
-
             art_direction = (
                 build_sol_art_direction(
                     original_prompt,
@@ -3095,11 +3872,9 @@ def run_openai_fusion(
                 )
             )
 
-
             print(
                 "✅ Stage 1: GPT-5.6 Sol Art Director"
             )
-
 
         except Exception as error:
 
@@ -3114,7 +3889,6 @@ def run_openai_fusion(
                 )
             )
 
-
             art_direction = (
                 build_professional_prompt(
                     original_prompt,
@@ -3123,18 +3897,18 @@ def run_openai_fusion(
                 )
             )
 
-
             print(
-                "⚠️ Art Director unavailable; using XPAND prompt enhancer"
+                (
+                    "⚠️ Art Director unavailable; "
+                    "using XPAND prompt enhancer"
+                )
             )
-
 
     else:
 
         print(
             "✅ Stage 1: Existing GPT-5.6 Sol art direction"
         )
-
 
     # -----------------------------------------------------
     # STAGE 2
@@ -3144,7 +3918,6 @@ def run_openai_fusion(
     print(
         "🖼️ Stage 2: GPT-Image-2 base generation..."
     )
-
 
     generation_route = build_route(
         PROVIDER_OPENAI,
@@ -3157,7 +3930,6 @@ def run_openai_fusion(
         quality
     )
 
-
     base_prompt = (
         "ORIGINAL REQUEST:\n"
         +
@@ -3169,7 +3941,6 @@ def run_openai_fusion(
         +
         art_direction
     )
-
 
     base_images = generate_with_openai(
         prompt=
@@ -3185,16 +3956,13 @@ def run_openai_fusion(
             number
     )
 
-
     print(
         "✅ Stage 2: GPT-Image-2 base generation"
     )
 
-
     final_images: List[
         GeneratedImage
     ] = []
-
 
     # -----------------------------------------------------
     # STAGE 3 + 4 PER IMAGE
@@ -3206,7 +3974,6 @@ def run_openai_fusion(
     ):
 
         critique = ""
-
 
         try:
 
@@ -3230,7 +3997,6 @@ def run_openai_fusion(
                 )
             )
 
-
             critique = (
                 build_sol_visual_critique(
                     original_prompt,
@@ -3239,11 +4005,9 @@ def run_openai_fusion(
                 )
             )
 
-
             print(
                 "✅ Stage 3: GPT-5.6 Sol visual critique"
             )
-
 
         except Exception as error:
 
@@ -3258,20 +4022,22 @@ def run_openai_fusion(
                 )
             )
 
-
             print(
-                "⚠️ Visual critic unavailable; using generic refinement"
+                (
+                    "⚠️ Visual critic unavailable; "
+                    "using generic refinement"
+                )
             )
-
 
         refine_prompt = build_refinement_prompt(
             original_prompt,
+
             stronger=
                 stronger,
+
             critique=
                 critique
         )
-
 
         try:
 
@@ -3294,7 +4060,6 @@ def run_openai_fusion(
                     "..."
                 )
             )
-
 
             final_image = edit_with_openai(
                 input_image_bytes=
@@ -3345,16 +4110,13 @@ def run_openai_fusion(
                 }
             )
 
-
             final_images.append(
                 final_image
             )
 
-
             print(
                 "✅ Stage 4: GPT-Image-2 final refinement"
             )
-
 
         except Exception as error:
 
@@ -3369,45 +4131,41 @@ def run_openai_fusion(
                 )
             )
 
-
             #
             # Never lose a successful base image.
             #
+
             base_image.provider = (
                 PROVIDER_OPENAI_FUSION
             )
 
-
             base_image.model = (
                 "GPT-5.6 Sol → GPT-Image-2"
             )
-
 
             base_image.route_reason = (
                 "OpenAI Fusion base image returned because "
                 "final refinement failed."
             )
 
-
             base_image.metadata[
                 "pipeline"
             ] = "openai_fusion_partial"
-
 
             base_image.metadata[
                 "final_refinement_failed"
             ] = True
 
-
             final_images.append(
                 base_image
             )
 
-
             print(
-                "⚠️ Final edit failed; returning successful base image"
+                (
+                    "⚠️ Final edit failed; returning "
+                    "successful base image"
+                )
             )
-
 
     elapsed = round(
         time.monotonic()
@@ -3416,18 +4174,15 @@ def run_openai_fusion(
         3
     )
 
-
     if not final_images:
 
         raise XPANDImageProviderError(
             "OpenAI Fusion لم يرجع أي صورة."
         )
 
-
     print(
         "✅ OPENAI FUSION COMPLETE"
     )
-
 
     return ImageGenerationResponse(
         ok=
@@ -3437,10 +4192,12 @@ def run_openai_fusion(
             final_images,
 
         selected_route=
-            MODE_BEST
-            if stronger
-            else
-            MODE_PRO,
+            (
+                MODE_BEST
+                if stronger
+                else
+                MODE_PRO
+            ),
 
         routes=[
             generation_route
@@ -3476,16 +4233,12 @@ def run_google_openai_fusion(
 
     started = time.monotonic()
 
-
     errors: List[str] = []
-
 
     art_direction = ""
 
-
     # -----------------------------------------------------
-    # BEST ONLY:
-    # SOL PRE-DIRECTS THE GOOGLE GENERATION
+    # BEST ONLY
     # -----------------------------------------------------
 
     if stronger:
@@ -3496,7 +4249,6 @@ def run_google_openai_fusion(
                 "🎨 Stage 1: GPT-5.6 Sol Art Director..."
             )
 
-
             art_direction = (
                 build_sol_art_direction(
                     original_prompt,
@@ -3505,11 +4257,9 @@ def run_google_openai_fusion(
                 )
             )
 
-
             print(
                 "✅ Stage 1: GPT-5.6 Sol Art Director"
             )
-
 
         except Exception as error:
 
@@ -3524,7 +4274,6 @@ def run_google_openai_fusion(
                 )
             )
 
-
     if not art_direction:
 
         art_direction = (
@@ -3534,7 +4283,6 @@ def run_google_openai_fusion(
                 image_size
             )
         )
-
 
     # -----------------------------------------------------
     # GOOGLE STAGE
@@ -3551,7 +4299,6 @@ def run_google_openai_fusion(
         quality
     )
 
-
     google_prompt = (
         "ORIGINAL REQUEST:\n"
         +
@@ -3564,13 +4311,11 @@ def run_google_openai_fusion(
         art_direction
     )
 
-
     try:
 
         print(
             "🍌 Stage 2: Nano Banana Pro base generation..."
         )
-
 
         base_images = generate_with_gemini(
             prompt=
@@ -3586,11 +4331,9 @@ def run_google_openai_fusion(
                 number
         )
 
-
         print(
             "✅ Stage 2: Nano Banana Pro"
         )
-
 
     except Exception as google_error:
 
@@ -3598,7 +4341,6 @@ def run_google_openai_fusion(
             google_error,
             5000
         )
-
 
         errors.append(
             (
@@ -3608,7 +4350,6 @@ def run_google_openai_fusion(
             )
         )
 
-
         if looks_like_google_quota_error(
             google_error
         ):
@@ -3617,37 +4358,40 @@ def run_google_openai_fusion(
                 "⚠️ Google quota/billing unavailable"
             )
 
-
         else:
 
             print(
                 "⚠️ Google image generation unavailable"
             )
 
-
         print(
             "➡️ Switching automatically to OpenAI Fusion"
         )
 
-
         return run_openai_fusion(
             original_prompt,
+
             aspect_ratio=
                 aspect_ratio,
+
             image_size=
                 image_size,
+
             quality=
                 quality,
+
             number=
                 number,
+
             stronger=
                 stronger,
+
             initial_art_direction=
                 art_direction,
+
             inherited_errors=
                 errors
         )
-
 
     # -----------------------------------------------------
     # CRITIQUE + OPENAI FINAL EDIT
@@ -3656,7 +4400,6 @@ def run_google_openai_fusion(
     final_images: List[
         GeneratedImage
     ] = []
-
 
     openai_route = build_route(
         PROVIDER_OPENAI,
@@ -3669,14 +4412,12 @@ def run_google_openai_fusion(
         quality
     )
 
-
     for index, base_image in enumerate(
         base_images,
         start=1
     ):
 
         critique = ""
-
 
         if stronger:
 
@@ -3702,7 +4443,6 @@ def run_google_openai_fusion(
                     )
                 )
 
-
                 critique = (
                     build_sol_visual_critique(
                         original_prompt,
@@ -3711,11 +4451,9 @@ def run_google_openai_fusion(
                     )
                 )
 
-
                 print(
                     "✅ Stage 3: GPT-5.6 Sol visual critique"
                 )
-
 
             except Exception as error:
 
@@ -3730,15 +4468,15 @@ def run_google_openai_fusion(
                     )
                 )
 
-
         refine_prompt = build_refinement_prompt(
             original_prompt,
+
             stronger=
                 stronger,
+
             critique=
                 critique
         )
-
 
         try:
 
@@ -3761,7 +4499,6 @@ def run_google_openai_fusion(
                     "..."
                 )
             )
-
 
             final_image = edit_with_openai(
                 input_image_bytes=
@@ -3835,16 +4572,13 @@ def run_google_openai_fusion(
                 }
             )
 
-
             final_images.append(
                 final_image
             )
 
-
             print(
                 "✅ Final Stage: GPT-Image-2 refinement"
             )
-
 
         except Exception as error:
 
@@ -3859,18 +4593,14 @@ def run_google_openai_fusion(
                 )
             )
 
-
-            #
-            # Return the successful Google image
-            # instead of failing the whole request.
-            #
             base_image.provider = (
-                PROVIDER_FUSION_BEST
-                if stronger
-                else
-                PROVIDER_FUSION_PRO
+                (
+                    PROVIDER_FUSION_BEST
+                    if stronger
+                    else
+                    PROVIDER_FUSION_PRO
+                )
             )
-
 
             base_image.model = (
                 (
@@ -3881,16 +4611,13 @@ def run_google_openai_fusion(
                 )
             )
 
-
             base_image.metadata[
                 "final_refinement_failed"
             ] = True
 
-
             final_images.append(
                 base_image
             )
-
 
     elapsed = round(
         time.monotonic()
@@ -3899,13 +4626,11 @@ def run_google_openai_fusion(
         3
     )
 
-
     if not final_images:
 
         raise XPANDImageProviderError(
             "Fusion pipeline لم يرجع صورة."
         )
-
 
     print(
         (
@@ -3915,7 +4640,6 @@ def run_google_openai_fusion(
             "✅ FUSION PRO COMPLETE"
         )
     )
-
 
     return ImageGenerationResponse(
         ok=
@@ -3966,7 +4690,6 @@ def run_openai_direct(
 
     started = time.monotonic()
 
-
     route = build_route(
         PROVIDER_OPENAI,
         OPENAI_IMAGE_MODEL,
@@ -3978,13 +4701,11 @@ def run_openai_direct(
         quality
     )
 
-
     enhanced = build_professional_prompt(
         original_prompt,
         aspect_ratio,
         image_size
     )
-
 
     images = generate_with_openai(
         prompt=
@@ -3999,7 +4720,6 @@ def run_openai_direct(
         number=
             number
     )
-
 
     return ImageGenerationResponse(
         ok=
@@ -4049,7 +4769,6 @@ def run_google_direct(
 
     started = time.monotonic()
 
-
     route = build_route(
         (
             PROVIDER_GOOGLE_PRO
@@ -4057,30 +4776,31 @@ def run_google_direct(
             else
             PROVIDER_GOOGLE_FAST
         ),
+
         (
             GOOGLE_IMAGE_PRO_MODEL
             if pro
             else
             GOOGLE_IMAGE_FAST_MODEL
         ),
+
         (
             "Direct Nano Banana Pro generation."
             if pro
             else
             "Direct Nano Banana 2 generation."
         ),
+
         aspect_ratio,
         image_size,
         quality
     )
-
 
     enhanced = build_professional_prompt(
         original_prompt,
         aspect_ratio,
         image_size
     )
-
 
     try:
 
@@ -4097,7 +4817,6 @@ def run_google_direct(
             number=
                 number
         )
-
 
         return ImageGenerationResponse(
             ok=
@@ -4135,26 +4854,30 @@ def run_google_direct(
             errors=[],
         )
 
-
     except Exception as google_error:
 
         print(
-            "⚠️ Google direct route failed → GPT-Image-2 fallback"
+            (
+                "⚠️ Google direct route failed "
+                "→ GPT-Image-2 fallback"
+            )
         )
-
 
         result = run_openai_direct(
             original_prompt,
+
             aspect_ratio=
                 aspect_ratio,
+
             image_size=
                 image_size,
+
             quality=
                 quality,
+
             number=
                 number
         )
-
 
         result.errors.append(
             (
@@ -4166,7 +4889,6 @@ def run_google_direct(
                 )
             )
         )
-
 
         return result
 
@@ -4186,13 +4908,11 @@ def run_compare(
 
     started = time.monotonic()
 
-
     enhanced = build_professional_prompt(
         original_prompt,
         aspect_ratio,
         image_size
     )
-
 
     routes = [
         build_route(
@@ -4223,16 +4943,17 @@ def run_compare(
         ),
     ]
 
-
     target = max(
         3,
-        int(
-            number
-            or
-            3
+        min(
+            12,
+            int(
+                number
+                or
+                3
+            )
         )
     )
-
 
     counts = [
         1,
@@ -4240,16 +4961,13 @@ def run_compare(
         1,
     ]
 
-
     remaining = (
         target
         -
         3
     )
 
-
     index = 0
-
 
     while remaining > 0:
 
@@ -4257,19 +4975,15 @@ def run_compare(
             index % 3
         ] += 1
 
-
         remaining -= 1
 
         index += 1
-
 
     images: List[
         GeneratedImage
     ] = []
 
-
     errors: List[str] = []
-
 
     # -----------------------------------------------------
     # OPENAI
@@ -4286,13 +5000,19 @@ def run_compare(
                     original_prompt,
 
                 route=
-                    routes[0],
+                    routes[
+                        0
+                    ],
 
                 number=
-                    counts[0]
+                    min(
+                        4,
+                        counts[
+                            0
+                        ]
+                    )
             )
         )
-
 
     except Exception as error:
 
@@ -4306,7 +5026,6 @@ def run_compare(
                 )
             )
         )
-
 
     # -----------------------------------------------------
     # GOOGLE PRO
@@ -4325,13 +5044,19 @@ def run_compare(
                         original_prompt,
 
                     route=
-                        routes[1],
+                        routes[
+                            1
+                        ],
 
                     number=
-                        counts[1]
+                        min(
+                            4,
+                            counts[
+                                1
+                            ]
+                        )
                 )
             )
-
 
         except Exception as error:
 
@@ -4345,7 +5070,6 @@ def run_compare(
                     )
                 )
             )
-
 
         # -------------------------------------------------
         # GOOGLE FAST
@@ -4362,13 +5086,19 @@ def run_compare(
                         original_prompt,
 
                     route=
-                        routes[2],
+                        routes[
+                            2
+                        ],
 
                     number=
-                        counts[2]
+                        min(
+                            4,
+                            counts[
+                                2
+                            ]
+                        )
                 )
             )
-
 
         except Exception as error:
 
@@ -4383,7 +5113,6 @@ def run_compare(
                 )
             )
 
-
     if not images:
 
         raise XPANDImageProviderError(
@@ -4395,7 +5124,6 @@ def run_compare(
                 )
             )
         )
-
 
     return ImageGenerationResponse(
         ok=
@@ -4447,9 +5175,8 @@ def generate_image(
 
     original_prompt = clean_text(
         user_prompt,
-        10000
+        30000
     )
-
 
     if not original_prompt:
 
@@ -4457,40 +5184,37 @@ def generate_image(
             "لازم يكون في وصف للصورة."
         )
 
-
     final_aspect_ratio = detect_aspect_ratio(
         original_prompt,
         aspect_ratio
     )
-
 
     final_image_size = detect_image_size(
         original_prompt,
         image_size
     )
 
-
     final_quality = detect_quality(
         original_prompt,
         quality
     )
 
-
     effective_mode = resolve_effective_mode(
         original_prompt,
+
         mode=
             mode,
+
         reference_count=
             reference_count
     )
-
 
     print("")
     print(
         "=========================================="
     )
     print(
-        " XPAND IMAGE REQUEST V1.3"
+        " XPAND IMAGE REQUEST V1.3.1"
     )
     print(
         "=========================================="
@@ -4525,27 +5249,51 @@ def generate_image(
     )
     print("")
 
-
     # -----------------------------------------------------
     # BEST
     # -----------------------------------------------------
 
     if effective_mode == MODE_BEST:
 
+        if not allow_fallback:
+
+            return run_google_openai_fusion(
+                original_prompt,
+
+                aspect_ratio=
+                    final_aspect_ratio,
+
+                image_size=
+                    final_image_size,
+
+                quality=
+                    final_quality,
+
+                number=
+                    number,
+
+                stronger=
+                    True
+            )
+
         return run_google_openai_fusion(
             original_prompt,
+
             aspect_ratio=
                 final_aspect_ratio,
+
             image_size=
                 final_image_size,
+
             quality=
                 final_quality,
+
             number=
                 number,
+
             stronger=
                 True
         )
-
 
     # -----------------------------------------------------
     # PRO
@@ -4555,18 +5303,22 @@ def generate_image(
 
         return run_google_openai_fusion(
             original_prompt,
+
             aspect_ratio=
                 final_aspect_ratio,
+
             image_size=
                 final_image_size,
+
             quality=
                 final_quality,
+
             number=
                 number,
+
             stronger=
                 False
         )
-
 
     # -----------------------------------------------------
     # COMPARE
@@ -4576,16 +5328,19 @@ def generate_image(
 
         return run_compare(
             original_prompt,
+
             aspect_ratio=
                 final_aspect_ratio,
+
             image_size=
                 final_image_size,
+
             quality=
                 final_quality,
+
             number=
                 number
         )
-
 
     # -----------------------------------------------------
     # GOOGLE PRO
@@ -4595,18 +5350,22 @@ def generate_image(
 
         return run_google_direct(
             original_prompt,
+
             pro=
                 True,
+
             aspect_ratio=
                 final_aspect_ratio,
+
             image_size=
                 final_image_size,
+
             quality=
                 final_quality,
+
             number=
                 number
         )
-
 
     # -----------------------------------------------------
     # GOOGLE FAST / FAST
@@ -4619,18 +5378,22 @@ def generate_image(
 
         return run_google_direct(
             original_prompt,
+
             pro=
                 False,
+
             aspect_ratio=
                 final_aspect_ratio,
+
             image_size=
                 final_image_size,
+
             quality=
                 final_quality,
+
             number=
                 number
         )
-
 
     # -----------------------------------------------------
     # OPENAI DEFAULT
@@ -4638,12 +5401,16 @@ def generate_image(
 
     return run_openai_direct(
         original_prompt,
+
         aspect_ratio=
             final_aspect_ratio,
+
         image_size=
             final_image_size,
+
         quality=
             final_quality,
+
         number=
             number
     )
@@ -4685,6 +5452,14 @@ def get_image_engine_status() -> Dict[
 
                 "director_model":
                     OPENAI_DIRECTOR_MODEL,
+
+                "structured_json":
+                    True,
+
+                "vision":
+                    bool(
+                        OPENAI_API_KEY
+                    ),
             },
 
             "google_fast": {
@@ -4714,7 +5489,32 @@ def get_image_engine_status() -> Dict[
         "default_quality":
             DEFAULT_QUALITY,
 
+        "director_reasoning":
+            OPENAI_DIRECTOR_REASONING,
+
+        "structured_reasoning":
+            OPENAI_STRUCTURED_REASONING,
+
+        "structured_max_output_tokens":
+            OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS,
+
+        "structured_retry_max_output_tokens":
+            OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS,
+
+        "structured_retry":
+            True,
+
         "supports_openai_fusion":
+            bool(
+                OPENAI_API_KEY
+            ),
+
+        #
+        # Kept for backwards compatibility with
+        # xpand_image_telegram.py.
+        #
+
+        "supports_best_mode":
             bool(
                 OPENAI_API_KEY
             ),
@@ -4770,12 +5570,10 @@ def describe_route(
             "Nano Banana Pro",
     }
 
-
     label = labels.get(
         route.provider,
         route.model
     )
-
 
     return (
         f"{label} | "
@@ -4788,28 +5586,24 @@ def describe_route(
 # =========================================================
 # SELF TEST
 #
-# IMPORTANT:
-# This does NOT generate an image.
-# This does NOT call paid APIs.
+# NO PAID API CALLS.
 # =========================================================
 
 if __name__ == "__main__":
 
     status = get_image_engine_status()
 
-
     print("")
     print(
         "=========================================="
     )
     print(
-        " XPAND SMART IMAGE ENGINE V1.3"
+        " XPAND SMART IMAGE ENGINE V1.3.1"
     )
     print(
         "=========================================="
     )
     print("")
-
 
     print(
         "OpenAI Image:",
@@ -4830,7 +5624,6 @@ if __name__ == "__main__":
         OPENAI_IMAGE_MODEL
     )
 
-
     print(
         "GPT-5.6 Sol Director:",
         (
@@ -4849,7 +5642,6 @@ if __name__ == "__main__":
         "|",
         OPENAI_DIRECTOR_MODEL
     )
-
 
     print(
         "Nano Banana 2:",
@@ -4870,7 +5662,6 @@ if __name__ == "__main__":
         GOOGLE_IMAGE_FAST_MODEL
     )
 
-
     print(
         "Nano Banana Pro:",
         (
@@ -4890,188 +5681,293 @@ if __name__ == "__main__":
         GOOGLE_IMAGE_PRO_MODEL
     )
 
-
     print("")
 
-
     print(
-        "OpenAI Fusion:",
+        "Structured JSON:",
         (
             "READY"
             if
             status[
-                "supports_openai_fusion"
+                "providers"
+            ][
+                "openai"
+            ][
+                "structured_json"
             ]
             else
-            "NOT READY"
-        )
-    )
-
-
-    print(
-        "Google + OpenAI Fusion:",
-        (
-            "CONFIGURED"
-            if
-            status[
-                "supports_google_openai_fusion"
-            ]
-            else
-            "Google unavailable"
-        )
-    )
-
-
-    print("")
-
-
-    print(
-        "BEST PRIMARY PIPELINE:"
-    )
-
-    print(
-        (
-            " - Stage 1: "
-            +
-            OPENAI_DIRECTOR_MODEL
-            +
-            " | Art Director"
+            "OFF"
         )
     )
 
     print(
-        (
-            " - Stage 2: "
-            +
-            GOOGLE_IMAGE_PRO_MODEL
-            +
-            " | Base image if Google quota works"
-        )
+        "Structured reasoning:",
+        OPENAI_STRUCTURED_REASONING
     )
 
     print(
-        (
-            " - Stage 3: "
-            +
-            OPENAI_DIRECTOR_MODEL
-            +
-            " | Visual Critic"
-        )
+        "Structured tokens:",
+        OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS
     )
 
     print(
-        (
-            " - Stage 4: "
-            +
-            OPENAI_IMAGE_MODEL
-            +
-            " | Final image refinement"
-        )
-    )
-
-
-    print("")
-
-
-    print(
-        "BEST GOOGLE FALLBACK:"
-    )
-
-    print(
-        (
-            " - Stage 1: "
-            +
-            OPENAI_DIRECTOR_MODEL
-            +
-            " | Art Director"
-        )
-    )
-
-    print(
-        (
-            " - Stage 2: "
-            +
-            OPENAI_IMAGE_MODEL
-            +
-            " | Base image"
-        )
-    )
-
-    print(
-        (
-            " - Stage 3: "
-            +
-            OPENAI_DIRECTOR_MODEL
-            +
-            " | Visual Critic"
-        )
-    )
-
-    print(
-        (
-            " - Stage 4: "
-            +
-            OPENAI_IMAGE_MODEL
-            +
-            " | Final image refinement"
-        )
-    )
-
-
-    print("")
-
-
-    test_prompt = (
-        "اعمللي بوستر منتج فاخر بأفضل نتيجة ممكنة"
-    )
-
-
-    print(
-        "Test request effective mode:"
-    )
-
-    print(
-        " -",
-        resolve_effective_mode(
-            test_prompt
-        )
-    )
-
-
-    print("")
-
-    print(
-        "Expected:"
-    )
-
-    print(
-        " - best"
+        "Structured retry tokens:",
+        OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS
     )
 
     print("")
 
+    tests = [
+        (
+            "Return JSON ONLY. Schema: {\"ok\": true}",
+            True
+        ),
+
+        (
+            "Return only the final art-direction brief.",
+            False
+        ),
+
+        (
+            "OUTPUT SCHEMA:\n{\"score\": 0}\nReturn JSON only.",
+            True
+        ),
+
+        (
+            "Review this image and give me concise advice.",
+            False
+        ),
+    ]
+
+    passed = 0
+
     print(
-        "✅ Google is now OPTIONAL"
+        "JSON request detection:"
+    )
+
+    for prompt, expected in tests:
+
+        actual = looks_like_json_request(
+            prompt
+        )
+
+        ok = (
+            actual
+            ==
+            expected
+        )
+
+        if ok:
+
+            passed += 1
+
+        print(
+            (
+                "✅"
+                if ok
+                else
+                "❌"
+            ),
+            "| expected:",
+            expected,
+            "| actual:",
+            actual
+        )
+
+    print("")
+
+    valid_json_tests = [
+        (
+            '{"ok":true}',
+            True
+        ),
+
+        (
+            '```json\n{"ok": true}\n```',
+            True
+        ),
+
+        (
+            'Here: {"ok": true}',
+            True
+        ),
+
+        (
+            '{"ok":',
+            False
+        ),
+    ]
+
+    json_passed = 0
+
+    print(
+        "JSON parser:"
+    )
+
+    for raw, expected in valid_json_tests:
+
+        actual = json_text_is_valid(
+            raw
+        )
+
+        ok = (
+            actual
+            ==
+            expected
+        )
+
+        if ok:
+
+            json_passed += 1
+
+        print(
+            (
+                "✅"
+                if ok
+                else
+                "❌"
+            ),
+            "| expected:",
+            expected,
+            "| actual:",
+            actual
+        )
+
+    print("")
+
+    ratio_tests = [
+        (
+            "بوست انستغرام",
+            "1:1"
+        ),
+
+        (
+            "بوستر 4:5",
+            "4:5"
+        ),
+
+        (
+            "ستوري",
+            "9:16"
+        ),
+
+        (
+            "بانر 16:9",
+            "16:9"
+        ),
+    ]
+
+    ratio_passed = 0
+
+    print(
+        "Aspect ratios:"
+    )
+
+    for prompt, expected in ratio_tests:
+
+        actual = detect_aspect_ratio(
+            prompt
+        )
+
+        ok = (
+            actual
+            ==
+            expected
+        )
+
+        if ok:
+
+            ratio_passed += 1
+
+        print(
+            (
+                "✅"
+                if ok
+                else
+                "❌"
+            ),
+            "|",
+            prompt,
+            "→",
+            actual
+        )
+
+    print("")
+    print(
+        "JSON detection passed:",
+        passed,
+        "/",
+        len(
+            tests
+        )
     )
 
     print(
-        "✅ Google quota failure will NOT stop XPAND"
+        "JSON parser passed:",
+        json_passed,
+        "/",
+        len(
+            valid_json_tests
+        )
     )
 
     print(
-        "✅ GPT-5.6 Sol visual direction enabled"
+        "Aspect tests passed:",
+        ratio_passed,
+        "/",
+        len(
+            ratio_tests
+        )
+    )
+
+    print("")
+
+    print(
+        "✅ GPT-5.6 Sol image input support"
     )
 
     print(
-        "✅ GPT-5.6 Sol image critique enabled"
+        "✅ Responses API JSON mode"
     )
 
     print(
-        "✅ GPT-Image-2 generation enabled"
+        "✅ Automatic JSON request detection"
     )
 
     print(
-        "✅ GPT-Image-2 image edit enabled"
+        "✅ Structured output validation"
+    )
+
+    print(
+        "✅ Incomplete response detection"
+    )
+
+    print(
+        "✅ Structured Vision one-time retry"
+    )
+
+    print(
+        "✅ Separate structured token budget"
+    )
+
+    print(
+        "✅ Low-reasoning extraction mode"
+    )
+
+    print(
+        "✅ Existing image generation API preserved"
+    )
+
+    print(
+        "✅ OpenAI Fusion preserved"
+    )
+
+    print(
+        "✅ Google optional fallback preserved"
+    )
+
+    print(
+        "🚫 No paid API calls were made"
     )
 
     print("")
