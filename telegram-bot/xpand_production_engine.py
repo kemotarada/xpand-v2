@@ -1,24 +1,72 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V2.1
+# XPAND PRODUCTION ENGINE V2.2
 #
 # Professional image-production orchestration for XPAND.
 #
 # =========================================================
-# V2.1
+# V2.2
 # =========================================================
 #
-# MAJOR FIX:
-# Prompt Budget Manager
+# MAJOR FIXES
+# ---------------------------------------------------------
 #
-# Prevents GPT-Image-2 prompt overflow caused by:
+# 1. SMART QA DELIVERY POLICY
 #
-# - large research context
-# - Brand Memory
-# - Visual Reference DNA
-# - Campaign Bible
-# - Creative Brain output
-# - repeated master brief in every production pass
+#    90+:
+#       Full QA target reached.
 #
+#    88–89.99:
+#       Masterpiece delivery approved automatically
+#       when there are NO critical blockers.
+#
+#    85–87.99:
+#       Maximum ONE correction attempt.
+#
+#    Below 85:
+#       Up to configured QA_MAX_CORRECTIONS.
+#
+#
+# 2. REGRESSION STOP
+#
+#    A correction that makes the image worse NEVER becomes
+#    the source for another correction round.
+#
+#    XPAND immediately returns to the best version.
+#
+#
+# 3. BEST VERSION PRESERVATION V2
+#
+#    Version quality ranking considers:
+#
+#    - delivery approval
+#    - critical blockers
+#    - QA score
+#
+#
+# 4. CRITICAL VISUAL BLOCKERS
+#
+#    Severe failures remain hard blockers even if the
+#    weighted average is high.
+#
+#
+# 5. QA TIME BUDGET
+#
+#    XPAND will not keep starting expensive correction
+#    rounds forever.
+#
+#
+# 6. NEAR-TARGET DELIVERY
+#
+#    Example:
+#
+#       QA = 88.75
+#       Critical blockers = none
+#
+#       => DELIVER immediately
+#       => NO correction loop
+#
+#
+# =========================================================
 #
 # MASTERPIECE PIPELINE
 # ---------------------------------------------------------
@@ -45,29 +93,11 @@
 #      ↓
 # Vision QA
 #      ↓
-# Automatic Correction Loop
+# Smart QA Decision
+#      ↓
+# Optional Targeted Correction
 #      ↓
 # Best Final Image
-#
-#
-# IMPORTANT
-# ---------------------------------------------------------
-#
-# V2.1 DOES NOT simply chop the final prompt.
-#
-# It first compacts each information layer separately:
-#
-# - request
-# - creative direction
-# - brand context
-# - visual reference DNA
-# - camera
-# - product lock
-#
-# Then each production pass receives only the pieces
-# relevant to that pass.
-#
-# Last-resort hard fitting exists only as a safety guard.
 #
 #
 # Current executable provider:
@@ -84,12 +114,11 @@
 # - Seedance
 #
 #
-# IMPORTANT:
-#
 # Product Lock here means high-fidelity AI reference lock.
 #
 # Pixel-exact identity is handled separately by:
 # xpand_exact_asset_lock.py
+#
 # =========================================================
 
 from __future__ import annotations
@@ -147,7 +176,7 @@ ENGINE_NAME = (
 )
 
 ENGINE_VERSION = (
-    "2.1"
+    "2.2"
 )
 
 
@@ -216,11 +245,6 @@ TARGET_SEEDANCE = (
 
 # =========================================================
 # PROMPT BUDGETS
-#
-# Observed GPT-Image-2 request hard boundary:
-# 32000 characters.
-#
-# XPAND intentionally stays comfortably below it.
 # =========================================================
 
 OPENAI_PROMPT_HARD_LIMIT = max(
@@ -329,8 +353,12 @@ SECTION_BUDGETS = {
 
 
 # =========================================================
-# QA
+# QA V2.2
 # =========================================================
+
+#
+# Aspirational perfect target.
+#
 
 QA_TARGET_SCORE = max(
     50,
@@ -348,6 +376,51 @@ QA_TARGET_SCORE = max(
 )
 
 
+#
+# A Masterpiece scoring at least this value can be
+# delivered without forcing another expensive regeneration,
+# as long as no critical visual blocker exists.
+#
+
+QA_DELIVERY_FLOOR = max(
+    50.0,
+    min(
+        float(
+            QA_TARGET_SCORE
+        ),
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_DELIVERY_FLOOR",
+                "88"
+            )
+            or
+            88
+        )
+    )
+)
+
+
+#
+# 85–87.99:
+# one targeted correction only.
+#
+
+QA_SINGLE_CORRECTION_FLOOR = max(
+    0.0,
+    min(
+        QA_DELIVERY_FLOOR,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_SINGLE_CORRECTION_FLOOR",
+                "85"
+            )
+            or
+            85
+        )
+    )
+)
+
+
 QA_MAX_CORRECTIONS = max(
     0,
     min(
@@ -359,6 +432,83 @@ QA_MAX_CORRECTIONS = max(
             )
             or
             2
+        )
+    )
+)
+
+
+#
+# If a correction improves the weighted score by less than
+# this amount, do not start another correction.
+#
+
+QA_MIN_IMPROVEMENT = max(
+    0.0,
+    min(
+        10.0,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_MIN_IMPROVEMENT",
+                "0.5"
+            )
+            or
+            0.5
+        )
+    )
+)
+
+
+#
+# Maximum total production time at which XPAND is allowed
+# to START another correction pass.
+#
+# It does not kill an API request already in progress.
+#
+
+QA_CORRECTION_TIME_BUDGET_SECONDS = max(
+    60.0,
+    float(
+        os.environ.get(
+            "XPAND_IMAGE_QA_CORRECTION_TIME_BUDGET_SECONDS",
+            "420"
+        )
+        or
+        420
+    )
+)
+
+
+#
+# Hard blocker thresholds.
+#
+
+QA_CRITICAL_SCORE_FLOOR = max(
+    0.0,
+    min(
+        100.0,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_CRITICAL_FLOOR",
+                "65"
+            )
+            or
+            65
+        )
+    )
+)
+
+
+QA_AD_READINESS_CRITICAL_FLOOR = max(
+    QA_CRITICAL_SCORE_FLOOR,
+    min(
+        100.0,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_AD_READINESS_CRITICAL_FLOOR",
+                "70"
+            )
+            or
+            70
         )
     )
 )
@@ -458,6 +608,16 @@ class QAEvaluation:
 
     correction_instruction: str
 
+    critical_blockers: List[str] = field(
+        default_factory=list
+    )
+
+    target_reached: bool = False
+
+    delivery_approved: bool = False
+
+    decision: str = ""
+
     raw: Dict[str, Any] = field(
         default_factory=dict
     )
@@ -546,6 +706,21 @@ def clamp_score(
             100.0,
             number
         )
+    )
+
+
+def safe_list(
+    value: Any
+) -> List[Any]:
+
+    return (
+        value
+        if isinstance(
+            value,
+            list
+        )
+        else
+        []
     )
 
 
@@ -866,13 +1041,6 @@ def compact_json(
 
             return encoded
 
-    #
-    # Last-resort logical summary.
-    #
-    # Keep JSON valid instead of slicing a JSON object
-    # halfway through.
-    #
-
     summary_size = max(
         50,
         int(
@@ -972,12 +1140,6 @@ def hard_fit_prompt(
             marker
         )
     )
-
-    #
-    # Preserve both:
-    # - beginning: user request / high priority context
-    # - ending: current pass execution rules
-    #
 
     front_size = int(
         available
@@ -1743,7 +1905,7 @@ physically plausible and professionally photographed.
 
         metadata={
             "compiler":
-                "openai_gpt_image_v2_1",
+                "openai_gpt_image_v2_2",
 
             "product_lock":
                 bool(
@@ -1829,7 +1991,7 @@ Avoid generic banking clichés.
 
         metadata={
             "compiler":
-                "gemini_image_v2_1",
+                "gemini_image_v2_2",
         }
     )
 
@@ -1893,7 +2055,7 @@ def compile_midjourney_prompt(
 
         metadata={
             "compiler":
-                "midjourney_v2_1",
+                "midjourney_v2_2",
 
             "execution_available":
                 False,
@@ -1947,7 +2109,7 @@ Clean commercial lighting.
 
         metadata={
             "compiler":
-                "flux_v2_1",
+                "flux_v2_2",
 
             "execution_available":
                 False,
@@ -1999,7 +2161,7 @@ prioritize spelling, layout clarity and readable typography.
 
         metadata={
             "compiler":
-                "ideogram_v2_1",
+                "ideogram_v2_2",
 
             "execution_available":
                 False,
@@ -2062,7 +2224,7 @@ Describe:
                 (
                     target
                     +
-                    "_v2_1"
+                    "_v2_2"
                 ),
 
             "execution_available":
@@ -3417,7 +3579,7 @@ def generate_base_image(
 
 
 # =========================================================
-# QA PROMPT
+# QA PROMPT V2.2
 # =========================================================
 
 def build_qa_prompt(
@@ -3493,7 +3655,31 @@ Evaluate 0–100:
 11. text_logo_integrity
 12. advertising_readiness
 
-IMPORTANT:
+
+CRITICAL FAILURE RULE
+=====================
+
+Also return critical_failures.
+
+A critical failure is NOT a small aesthetic preference.
+
+Only mark a critical failure when the image contains a severe
+problem that should prevent professional delivery, such as:
+
+- severely broken perspective
+- clearly malformed human anatomy
+- severe product deformation
+- severe brand mismatch
+- obviously broken required text or logo
+- major concept failure
+- major impossible geometry
+- a defect that makes the image unusable as a premium ad
+
+Do NOT mark minor polish issues as critical.
+
+
+IMPORTANT
+=========
 
 If no human appears:
 human_anatomy = 100 unless an anatomical object is malformed.
@@ -3545,6 +3731,7 @@ Return JSON only:
   }},
   "strengths": [],
   "problems": [],
+  "critical_failures": [],
   "correction_instruction": ""
 }}
 
@@ -3614,6 +3801,306 @@ def calculate_qa_score(
             2
         ),
         normalized_scores
+    )
+
+
+# =========================================================
+# CRITICAL BLOCKER DETECTION
+# =========================================================
+
+def detect_critical_blockers(
+    *,
+    scores: Dict[str, float],
+    explicit_failures: Any,
+    product_lock: Any
+) -> List[str]:
+
+    blockers: List[str] = []
+
+    if isinstance(
+        explicit_failures,
+        list
+    ):
+
+        for value in explicit_failures:
+
+            text = clean_text(
+                value,
+                1000
+            )
+
+            if (
+                text
+                and
+                text not in blockers
+            ):
+
+                blockers.append(
+                    text
+                )
+
+    thresholds = {
+        "concept_execution":
+            QA_CRITICAL_SCORE_FLOOR,
+
+        "perspective":
+            QA_CRITICAL_SCORE_FLOOR,
+
+        "human_anatomy":
+            QA_CRITICAL_SCORE_FLOOR,
+
+        "text_logo_integrity":
+            QA_CRITICAL_SCORE_FLOOR,
+
+        "advertising_readiness":
+            QA_AD_READINESS_CRITICAL_FLOOR,
+    }
+
+    if (
+        isinstance(
+            product_lock,
+            dict
+        )
+        and
+        product_lock.get(
+            "enabled"
+        )
+    ):
+
+        thresholds[
+            "product_fidelity"
+        ] = max(
+            QA_CRITICAL_SCORE_FLOOR,
+            70.0
+        )
+
+    for key, threshold in thresholds.items():
+
+        value = clamp_score(
+            scores.get(
+                key,
+                0
+            )
+        )
+
+        if value < threshold:
+
+            label = (
+                key
+                +
+                "="
+                +
+                str(
+                    round(
+                        value,
+                        2
+                    )
+                )
+                +
+                " < "
+                +
+                str(
+                    threshold
+                )
+            )
+
+            if label not in blockers:
+
+                blockers.append(
+                    label
+                )
+
+    return blockers
+
+
+# =========================================================
+# QA DECISION POLICY V2.2
+# =========================================================
+
+def qa_delivery_decision(
+    *,
+    score: float,
+    critical_blockers: Sequence[str]
+) -> Dict[str, Any]:
+
+    score = clamp_score(
+        score
+    )
+
+    blockers = [
+        clean_text(
+            item,
+            1000
+        )
+        for item in critical_blockers
+        if clean_text(
+            item,
+            1000
+        )
+    ]
+
+    target_reached = (
+        score
+        >=
+        QA_TARGET_SCORE
+    )
+
+    if blockers:
+
+        return {
+            "approved":
+                False,
+
+            "target_reached":
+                target_reached,
+
+            "decision":
+                "critical_blocker",
+
+            "reason":
+                (
+                    "Critical visual blocker detected."
+                ),
+        }
+
+    if target_reached:
+
+        return {
+            "approved":
+                True,
+
+            "target_reached":
+                True,
+
+            "decision":
+                "target_reached",
+
+            "reason":
+                (
+                    "QA target reached."
+                ),
+        }
+
+    if score >= QA_DELIVERY_FLOOR:
+
+        return {
+            "approved":
+                True,
+
+            "target_reached":
+                False,
+
+            "decision":
+                "near_target_approved",
+
+            "reason":
+                (
+                    "Premium near-target score with no critical blockers."
+                ),
+        }
+
+    return {
+        "approved":
+            False,
+
+        "target_reached":
+            False,
+
+        "decision":
+            "correction_candidate",
+
+        "reason":
+            (
+                "Below delivery floor."
+            ),
+    }
+
+
+def recommended_correction_limit(
+    qa: Optional[
+        QAEvaluation
+    ]
+) -> int:
+
+    if qa is None:
+
+        return 0
+
+    if qa.passed:
+
+        return 0
+
+    if QA_MAX_CORRECTIONS <= 0:
+
+        return 0
+
+    if qa.score >= QA_SINGLE_CORRECTION_FLOOR:
+
+        return min(
+            1,
+            QA_MAX_CORRECTIONS
+        )
+
+    return QA_MAX_CORRECTIONS
+
+
+def qa_quality_rank(
+    qa: Optional[
+        QAEvaluation
+    ]
+) -> Tuple[
+    int,
+    int,
+    float
+]:
+
+    if qa is None:
+
+        return (
+            0,
+            -999,
+            0.0
+        )
+
+    approved = (
+        1
+        if qa.passed
+        else
+        0
+    )
+
+    blocker_rank = (
+        -len(
+            qa.critical_blockers
+        )
+    )
+
+    return (
+        approved,
+        blocker_rank,
+        float(
+            qa.score
+        ),
+    )
+
+
+def qa_candidate_is_better(
+    candidate: Optional[
+        QAEvaluation
+    ],
+    existing: Optional[
+        QAEvaluation
+    ]
+) -> bool:
+
+    return (
+        qa_quality_rank(
+            candidate
+        )
+        >
+        qa_quality_rank(
+            existing
+        )
     )
 
 
@@ -3710,6 +4197,63 @@ def evaluate_generated_image(
 
         problems = []
 
+    explicit_failures = data.get(
+        "critical_failures",
+        []
+    )
+
+    critical_blockers = (
+        detect_critical_blockers(
+            scores=
+                scores,
+
+            explicit_failures=
+                explicit_failures,
+
+            product_lock=
+                product_lock
+        )
+    )
+
+    decision = qa_delivery_decision(
+        score=
+            score,
+
+        critical_blockers=
+            critical_blockers
+    )
+
+    data[
+        "xpand_qa_policy"
+    ] = {
+        "target":
+            QA_TARGET_SCORE,
+
+        "delivery_floor":
+            QA_DELIVERY_FLOOR,
+
+        "single_correction_floor":
+            QA_SINGLE_CORRECTION_FLOOR,
+
+        "critical_blockers":
+            critical_blockers,
+
+        "delivery_approved":
+            decision[
+                "approved"
+            ],
+
+        "target_reached":
+            decision[
+                "target_reached"
+            ],
+
+        "decision":
+            decision[
+                "decision"
+            ],
+    }
+
     return QAEvaluation(
         score=
             score,
@@ -3718,10 +4262,10 @@ def evaluate_generated_image(
             scores,
 
         passed=
-            (
-                score
-                >=
-                QA_TARGET_SCORE
+            bool(
+                decision[
+                    "approved"
+                ]
             ),
 
         strengths=[
@@ -3755,6 +4299,31 @@ def evaluate_generated_image(
                     ""
                 ),
                 4500
+            ),
+
+        critical_blockers=
+            critical_blockers,
+
+        target_reached=
+            bool(
+                decision[
+                    "target_reached"
+                ]
+            ),
+
+        delivery_approved=
+            bool(
+                decision[
+                    "approved"
+                ]
+            ),
+
+        decision=
+            clean_text(
+                decision[
+                    "decision"
+                ],
+                200
             ),
 
         raw=
@@ -3809,8 +4378,14 @@ QUALITY CORRECTION PASS
 CURRENT QA SCORE:
 {qa.score}/100
 
-TARGET:
-{QA_TARGET_SCORE}/100 or higher.
+ASPIRATIONAL TARGET:
+{QA_TARGET_SCORE}/100.
+
+DELIVERY FLOOR:
+{QA_DELIVERY_FLOOR}/100 if no critical blocker remains.
+
+CRITICAL BLOCKERS:
+{compact_json(qa.critical_blockers, 3200)}
 
 DETECTED PROBLEMS:
 {compact_json(qa.problems, 4500)}
@@ -3827,7 +4402,8 @@ PRODUCT LOCK:
 RULES:
 
 - Fix only the detected problems.
-- Preserve all successful parts.
+- Prioritize critical blockers first.
+- Preserve every successful part.
 - Do not redesign the concept.
 - Do not replace the visual metaphor.
 - Do not change product identity.
@@ -3835,6 +4411,7 @@ RULES:
 - Do not introduce new text.
 - Do not add decorative objects.
 - Improve realism and campaign readiness.
+- The corrected version must be a refinement, not a new image concept.
 """.strip()
 
     return fit_prompt_for_api(
@@ -3984,7 +4561,78 @@ def run_named_pass(
 
 
 # =========================================================
-# MASTER PRODUCTION PIPELINE
+# QA LOGGING
+# =========================================================
+
+def print_qa_decision(
+    qa: Optional[
+        QAEvaluation
+    ]
+) -> None:
+
+    if qa is None:
+
+        print(
+            "⚠️ QA decision unavailable"
+        )
+
+        return
+
+    print(
+        (
+            "QA decision: "
+            +
+            qa.decision
+        )
+    )
+
+    print(
+        (
+            "Delivery approved: "
+            +
+            str(
+                qa.passed
+            )
+        )
+    )
+
+    print(
+        (
+            "Target reached: "
+            +
+            str(
+                qa.target_reached
+            )
+        )
+    )
+
+    print(
+        (
+            "Critical blockers: "
+            +
+            str(
+                len(
+                    qa.critical_blockers
+                )
+            )
+        )
+    )
+
+    for blocker in qa.critical_blockers[
+        :5
+    ]:
+
+        print(
+            (
+                "  ⛔ "
+                +
+                blocker
+            )
+        )
+
+
+# =========================================================
+# MASTER PRODUCTION PIPELINE V2.2
 # =========================================================
 
 def run_production(
@@ -4058,7 +4706,7 @@ def run_production(
                 +
                 "' is not connected yet. "
                 "Prompt compilation is available, "
-                "but production execution is OpenAI-only in V2.1."
+                "but production execution is OpenAI-only in V2.2."
             )
         )
 
@@ -4067,7 +4715,7 @@ def run_production(
         "=========================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V2.1"
+        " XPAND PRODUCTION ENGINE V2.2"
     )
     print(
         "=========================================="
@@ -4112,6 +4760,27 @@ def run_production(
     print(
         "QA target:",
         QA_TARGET_SCORE
+    )
+
+    print(
+        "QA delivery floor:",
+        QA_DELIVERY_FLOOR
+    )
+
+    print(
+        "QA single-correction floor:",
+        QA_SINGLE_CORRECTION_FLOOR
+    )
+
+    print(
+        "QA max corrections:",
+        QA_MAX_CORRECTIONS
+    )
+
+    print(
+        "QA correction time budget:",
+        QA_CORRECTION_TIME_BUDGET_SECONDS,
+        "seconds"
     )
 
     print(
@@ -4388,6 +5057,10 @@ def run_production(
             )
         )
 
+        print_qa_decision(
+            qa
+        )
+
     except Exception as error:
 
         errors.append(
@@ -4413,28 +5086,146 @@ def run_production(
         )
 
     # =====================================================
-    # AUTO-CORRECTION LOOP
+    # IMMEDIATE DELIVERY DECISION
+    # =====================================================
+
+    if (
+        best_qa is not None
+        and
+        best_qa.passed
+    ):
+
+        if best_qa.target_reached:
+
+            print(
+                "✅ MASTERPIECE QA TARGET REACHED"
+            )
+
+        else:
+
+            print(
+                (
+                    "✅ MASTERPIECE DELIVERY APPROVED"
+                    +
+                    " | near-target premium score="
+                    +
+                    str(
+                        best_qa.score
+                    )
+                )
+            )
+
+            print(
+                "✅ No critical blockers"
+            )
+
+            print(
+                (
+                    "🚫 Correction skipped"
+                    +
+                    " | score already >= "
+                    +
+                    str(
+                        QA_DELIVERY_FLOOR
+                    )
+                )
+            )
+
+    # =====================================================
+    # SMART AUTO-CORRECTION LOOP V2.2
     # =====================================================
 
     correction_round = 0
 
-    current_image = working
+    correction_limit = (
+        recommended_correction_limit(
+            best_qa
+        )
+    )
+
+    if (
+        best_qa is not None
+        and
+        not best_qa.passed
+    ):
+
+        print(
+            (
+                "🧠 QA correction allowance: "
+                +
+                str(
+                    correction_limit
+                )
+                +
+                " round(s)"
+            )
+        )
+
+    current_image = best_image
 
     current_qa = best_qa
 
     while (
         current_qa is not None
         and
-        current_qa.score
-        <
-        QA_TARGET_SCORE
+        not current_qa.passed
         and
         correction_round
         <
-        QA_MAX_CORRECTIONS
+        correction_limit
     ):
 
+        elapsed_before_correction = (
+            time.monotonic()
+            -
+            started
+        )
+
+        if (
+            elapsed_before_correction
+            >=
+            QA_CORRECTION_TIME_BUDGET_SECONDS
+        ):
+
+            print(
+                (
+                    "⏱️ QA CORRECTION STOPPED"
+                    +
+                    " | elapsed="
+                    +
+                    str(
+                        round(
+                            elapsed_before_correction,
+                            1
+                        )
+                    )
+                    +
+                    "s"
+                    +
+                    " | budget="
+                    +
+                    str(
+                        QA_CORRECTION_TIME_BUDGET_SECONDS
+                    )
+                    +
+                    "s"
+                )
+            )
+
+            print(
+                "✅ Keeping best version already produced."
+            )
+
+            break
+
         correction_round += 1
+
+        previous_best_score = (
+            best_qa.score
+            if best_qa
+            else
+            0.0
+        )
 
         print(
             (
@@ -4444,9 +5235,27 @@ def run_production(
                     correction_round
                 )
                 +
+                "/"
+                +
+                str(
+                    correction_limit
+                )
+                +
                 "..."
             )
         )
+
+        #
+        # IMPORTANT:
+        #
+        # Always correct the CURRENT BEST VERSION.
+        #
+        # Never correct a known-worse result.
+        #
+
+        current_image = best_image
+
+        current_qa = best_qa
 
         prompt = correction_prompt(
             qa=
@@ -4544,41 +5353,137 @@ def run_production(
                 )
             )
 
-            #
-            # Best-version preservation:
-            # never throw away a better previous image.
-            #
-
-            if (
-                corrected_qa.score
-                >
-                best_score
-            ):
-
-                best_score = (
-                    corrected_qa.score
-                )
-
-                best_image = (
-                    corrected
-                )
-
-                best_qa = (
-                    corrected_qa
-                )
-
-            current_image = (
-                corrected
-            )
-
-            current_qa = (
+            print_qa_decision(
                 corrected_qa
             )
 
-            if corrected_qa.passed:
+            candidate_better = (
+                qa_candidate_is_better(
+                    corrected_qa,
+                    best_qa
+                )
+            )
+
+            if not candidate_better:
 
                 print(
-                    "✅ QA TARGET REACHED"
+                    "🛑 CORRECTION REGRESSION DETECTED"
+                )
+
+                print(
+                    (
+                        "Best kept: "
+                        +
+                        str(
+                            best_score
+                        )
+                        +
+                        "/100"
+                    )
+                )
+
+                print(
+                    (
+                        "Rejected correction: "
+                        +
+                        str(
+                            corrected_qa.score
+                        )
+                        +
+                        "/100"
+                    )
+                )
+
+                print(
+                    "🚫 No further correction will start from a worse image."
+                )
+
+                break
+
+            best_image = corrected
+
+            best_qa = corrected_qa
+
+            best_score = corrected_qa.score
+
+            current_image = best_image
+
+            current_qa = best_qa
+
+            improvement = (
+                best_score
+                -
+                previous_best_score
+            )
+
+            print(
+                (
+                    "📈 Improvement: +"
+                    +
+                    str(
+                        round(
+                            improvement,
+                            2
+                        )
+                    )
+                )
+            )
+
+            if best_qa.passed:
+
+                if best_qa.target_reached:
+
+                    print(
+                        "✅ QA TARGET REACHED"
+                    )
+
+                else:
+
+                    print(
+                        (
+                            "✅ MASTERPIECE DELIVERY APPROVED"
+                            +
+                            " | score="
+                            +
+                            str(
+                                best_qa.score
+                            )
+                            +
+                            " | no critical blockers"
+                        )
+                    )
+
+                break
+
+            if (
+                improvement
+                <
+                QA_MIN_IMPROVEMENT
+            ):
+
+                print(
+                    (
+                        "🛑 QA CORRECTION STOP"
+                        +
+                        " | improvement "
+                        +
+                        str(
+                            round(
+                                improvement,
+                                2
+                            )
+                        )
+                        +
+                        " < "
+                        +
+                        str(
+                            QA_MIN_IMPROVEMENT
+                        )
+                    )
+                )
+
+                print(
+                    "✅ Keeping the best version."
                 )
 
                 break
@@ -4612,6 +5517,36 @@ def run_production(
             break
 
     # =====================================================
+    # FINAL QA STATUS
+    # =====================================================
+
+    final_delivery_approved = bool(
+        best_qa
+        and
+        best_qa.passed
+    )
+
+    final_target_reached = bool(
+        best_qa
+        and
+        best_qa.target_reached
+    )
+
+    final_decision = (
+        best_qa.decision
+        if best_qa
+        else
+        "qa_unavailable"
+    )
+
+    final_blockers = (
+        best_qa.critical_blockers
+        if best_qa
+        else
+        []
+    )
+
+    # =====================================================
     # FINAL METADATA
     # =====================================================
 
@@ -4623,7 +5558,7 @@ def run_production(
     )
 
     best_image.model = (
-        "XPAND Production V2.1 → "
+        "XPAND Production V2.2 → "
         +
         OPENAI_IMAGE_MODEL
     )
@@ -4645,12 +5580,36 @@ def run_production(
     ] = QA_TARGET_SCORE
 
     best_image.metadata[
+        "qa_delivery_floor"
+    ] = QA_DELIVERY_FLOOR
+
+    best_image.metadata[
         "qa_passed"
-    ] = bool(
-        best_qa
-        and
-        best_qa.passed
-    )
+    ] = final_delivery_approved
+
+    best_image.metadata[
+        "qa_delivery_approved"
+    ] = final_delivery_approved
+
+    best_image.metadata[
+        "qa_target_reached"
+    ] = final_target_reached
+
+    best_image.metadata[
+        "qa_decision"
+    ] = final_decision
+
+    best_image.metadata[
+        "qa_critical_blockers"
+    ] = final_blockers
+
+    best_image.metadata[
+        "qa_correction_rounds"
+    ] = correction_round
+
+    best_image.metadata[
+        "qa_correction_limit"
+    ] = correction_limit
 
     best_image.metadata[
         "product_lock"
@@ -4689,7 +5648,7 @@ def run_production(
         "=========================================="
     )
     print(
-        " XPAND PRODUCTION COMPLETE"
+        " XPAND PRODUCTION COMPLETE V2.2"
     )
     print(
         "=========================================="
@@ -4703,6 +5662,38 @@ def run_production(
     print(
         "Target:",
         QA_TARGET_SCORE
+    )
+
+    print(
+        "Delivery floor:",
+        QA_DELIVERY_FLOOR
+    )
+
+    print(
+        "Delivery approved:",
+        final_delivery_approved
+    )
+
+    print(
+        "Target reached:",
+        final_target_reached
+    )
+
+    print(
+        "QA decision:",
+        final_decision
+    )
+
+    print(
+        "Critical blockers:",
+        len(
+            final_blockers
+        )
+    )
+
+    print(
+        "Correction rounds:",
+        correction_round
     )
 
     print(
@@ -4785,7 +5776,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V2.1"
+        " XPAND PRODUCTION ENGINE V2.2"
     )
     print(
         "=========================================="
@@ -4798,8 +5789,29 @@ if __name__ == "__main__":
     )
 
     print(
+        "QA delivery floor:",
+        QA_DELIVERY_FLOOR
+    )
+
+    print(
+        "QA single-correction floor:",
+        QA_SINGLE_CORRECTION_FLOOR
+    )
+
+    print(
         "QA max corrections:",
         QA_MAX_CORRECTIONS
+    )
+
+    print(
+        "QA minimum improvement:",
+        QA_MIN_IMPROVEMENT
+    )
+
+    print(
+        "QA correction time budget:",
+        QA_CORRECTION_TIME_BUDGET_SECONDS,
+        "seconds"
     )
 
     print(
@@ -4963,10 +5975,281 @@ if __name__ == "__main__":
     print("")
 
     # =====================================================
+    # QA POLICY SELF TEST
+    # =====================================================
+
+    def fake_qa(
+        score: float,
+        *,
+        blockers: Optional[
+            List[str]
+        ] = None
+    ) -> QAEvaluation:
+
+        blocker_list = (
+            blockers
+            if blockers
+            else
+            []
+        )
+
+        decision = qa_delivery_decision(
+            score=
+                score,
+
+            critical_blockers=
+                blocker_list
+        )
+
+        return QAEvaluation(
+            score=
+                score,
+
+            scores={},
+
+            passed=
+                bool(
+                    decision[
+                        "approved"
+                    ]
+                ),
+
+            strengths=[],
+
+            problems=[],
+
+            correction_instruction="",
+
+            critical_blockers=
+                blocker_list,
+
+            target_reached=
+                bool(
+                    decision[
+                        "target_reached"
+                    ]
+                ),
+
+            delivery_approved=
+                bool(
+                    decision[
+                        "approved"
+                    ]
+                ),
+
+            decision=
+                decision[
+                    "decision"
+                ],
+        )
+
+    qa_92 = fake_qa(
+        92
+    )
+
+    qa_8875 = fake_qa(
+        88.75
+    )
+
+    qa_8725 = fake_qa(
+        87.25
+    )
+
+    qa_82 = fake_qa(
+        82
+    )
+
+    qa_91_blocked = fake_qa(
+        91,
+        blockers=[
+            "perspective critical failure"
+        ]
+    )
+
+    qa_policy_tests = [
+        (
+            "92 target reached",
+            qa_92.passed
+            and
+            qa_92.target_reached,
+        ),
+
+        (
+            "88.75 near-target delivery approved",
+            qa_8875.passed
+            and
+            not qa_8875.target_reached,
+        ),
+
+        (
+            "88.75 correction count = 0",
+            (
+                recommended_correction_limit(
+                    qa_8875
+                )
+                ==
+                0
+            ),
+        ),
+
+        (
+            "87.25 requires one correction",
+            (
+                not qa_8725.passed
+                and
+                recommended_correction_limit(
+                    qa_8725
+                )
+                ==
+                min(
+                    1,
+                    QA_MAX_CORRECTIONS
+                )
+            ),
+        ),
+
+        (
+            "82 allows extended correction",
+            (
+                recommended_correction_limit(
+                    qa_82
+                )
+                ==
+                QA_MAX_CORRECTIONS
+            ),
+        ),
+
+        (
+            "91 with critical blocker rejected",
+            (
+                not
+                qa_91_blocked.passed
+            ),
+        ),
+    ]
+
+    qa_policy_ok = True
+
+    print(
+        "QA V2.2 policy tests:"
+    )
+
+    for name, ok in qa_policy_tests:
+
+        qa_policy_ok = (
+            qa_policy_ok
+            and
+            bool(
+                ok
+            )
+        )
+
+        print(
+            (
+                " ✅ "
+                if ok
+                else
+                " ❌ "
+            ),
+            name
+        )
+
+    print("")
+
+    # =====================================================
+    # BEST VERSION / REGRESSION TEST
+    # =====================================================
+
+    old_good = fake_qa(
+        87.5
+    )
+
+    worse_new = fake_qa(
+        86.5
+    )
+
+    better_new = fake_qa(
+        88.5
+    )
+
+    regression_rejected = (
+        not qa_candidate_is_better(
+            worse_new,
+            old_good
+        )
+    )
+
+    improvement_accepted = (
+        qa_candidate_is_better(
+            better_new,
+            old_good
+        )
+    )
+
+    blocker_candidate = fake_qa(
+        89.0,
+        blockers=[
+            "critical defect"
+        ]
+    )
+
+    clean_candidate = fake_qa(
+        87.0
+    )
+
+    clean_beats_blocked = (
+        qa_candidate_is_better(
+            clean_candidate,
+            blocker_candidate
+        )
+    )
+
+    version_policy_ok = (
+        regression_rejected
+        and
+        improvement_accepted
+        and
+        clean_beats_blocked
+    )
+
+    print(
+        "Best-version policy:"
+    )
+
+    print(
+        (
+            " ✅ "
+            if regression_rejected
+            else
+            " ❌ "
+        ),
+        "worse correction rejected"
+    )
+
+    print(
+        (
+            " ✅ "
+            if improvement_accepted
+            else
+            " ❌ "
+        ),
+        "better correction accepted"
+    )
+
+    print(
+        (
+            " ✅ "
+            if clean_beats_blocked
+            else
+            " ❌ "
+        ),
+        "clean version preferred over critical-blocked version"
+    )
+
+    print("")
+
+    # =====================================================
     # EXTREME CONTEXT TEST
-    #
-    # Recreates the problem that previously generated
-    # > 32,000-character prompts.
     # =====================================================
 
     giant_text = (
@@ -5303,11 +6586,43 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ QA threshold correction loop"
+        "✅ 90+ full target"
     )
 
     print(
-        "✅ Best-version preservation"
+        "✅ 88+ near-target Masterpiece delivery"
+    )
+
+    print(
+        "✅ Critical blocker hard gate"
+    )
+
+    print(
+        "✅ 85–87.99 single correction policy"
+    )
+
+    print(
+        "✅ Below-85 extended correction policy"
+    )
+
+    print(
+        "✅ Correction regression stop"
+    )
+
+    print(
+        "✅ Never continue from a worse image"
+    )
+
+    print(
+        "✅ Minimum-improvement stop"
+    )
+
+    print(
+        "✅ QA correction time budget"
+    )
+
+    print(
+        "✅ Best-version preservation V2"
     )
 
     print(
@@ -5316,17 +6631,23 @@ if __name__ == "__main__":
 
     print("")
 
+    all_ok = (
+        giant_ok
+        and
+        all_passes_ok
+        and
+        qa_policy_ok
+        and
+        version_policy_ok
+    )
+
     print(
         (
-            "Prompt Budget Manager self-test: "
+            "XPAND Production Engine V2.2 self-test: "
             +
             (
                 "PASS ✅"
-                if (
-                    giant_ok
-                    and
-                    all_passes_ok
-                )
+                if all_ok
                 else
                 "FAIL ❌"
             )
