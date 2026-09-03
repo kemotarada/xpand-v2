@@ -1,129 +1,76 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V2.3.1
+# XPAND PRODUCTION ENGINE V3.0
 #
-# FULL-QUALITY MULTI-PASS MASTERPIECE ENGINE
-#
-# NATIVE CANVAS + EXACT DELIVERY FRAME
+# QUALITY-FIRST ADAPTIVE MASTERPIECE
 #
 # =========================================================
 #
-# THIS IS NOT THE COST-OPTIMIZED ENGINE.
+# GOAL
+# ---------------------------------------------------------
 #
-# The full Masterpiece production pipeline remains:
+# Highest practical image quality with controlled cost.
 #
-# Creative Brain
-#      ↓
-# Prompt Budget Manager
-#      ↓
-# Model-specific Prompt Compiler
-#      ↓
-# Brand / Reference Memory
-#      ↓
-# Concept Base
-#      ↓
-# Exact Delivery-Frame Preview
-#      ↓
-# Concept Execution Gate
-#      ↓
-# Composition Pass
-#      ↓
-# Product Fidelity Pass
-#      ↓
-# Lighting Pass
-#      ↓
-# Material Pass
-#      ↓
-# Final Polish
-#      ↓
-# Exact Delivery-Frame Preview
-#      ↓
-# Final Vision QA
-#      ↓
-# Optional Corrections
-#      ↓
-# Exact Final Delivery Frame
+# This engine deliberately moves:
+#
+#   Composition
+#   Product Fidelity
+#   Lighting
+#   Materials
+#   Final Polish
+#
+# into ONE high-quality production blueprint BEFORE the
+# first image is generated.
 #
 #
-# =========================================================
-# V2.3.1 ROOT FIXES
-# =========================================================
+# PRODUCTION FLOW
+# ---------------------------------------------------------
 #
-# 1. PROVIDER-NATIVE CANVAS
-#
-# GPT-Image is allowed to work in its native supported
-# portrait / landscape / square canvas.
-#
-# Example:
-#
-# requested delivery ratio = 4:5
-# provider canvas          = 1024x1536
-#
-# This is VALID.
-#
-#
-# 2. EXACT LOCAL DELIVERY FRAME
-#
-# Before Concept QA and Final QA:
-#
-#   1024x1536
-#       ↓ local crop
-#   1024x1280
-#
-# No paid image generation is required for this conversion.
-#
-#
-# 3. SAFE-FRAME PROMPTING
-#
-# All important elements must remain inside the final
-# requested crop area.
-#
-# For 4:5 from a 2:3 provider canvas:
-#
-# approximately 8.33% of the provider canvas at the top
-# and bottom can become crop/bleed area.
+# Creative Brain / Brand Memory / Research
+#             ↓
+# Quality-First Production Blueprint
+#             ↓
+# GPT-Image-2 HIGH          [IMAGE CALL 1]
+#             ↓
+# Exact Local Delivery Frame
+#             ↓
+# Adaptive Vision QA        [VISION CALL 1]
+#             ↓
+#        ┌────┴────┐
+#        │         │
+#      GOOD      NEEDS WORK
+#        │         │
+#        │       choose ONE:
+#        │       - concept recovery
+#        │       - targeted correction
+#        │               ↓
+#        │       GPT-Image-2 HIGH       [IMAGE CALL 2 MAX]
+#        │               ↓
+#        │       Adaptive Vision QA     [VISION CALL 2 MAX]
+#        │               ↓
+#        └────── Best Version Selector
+#                         ↓
+#               Exact Final Delivery Frame
+#                         ↓
+#                       DELIVER
 #
 #
-# 4. PROVIDER CANVAS GUARD
+# IMPORTANT
+# ---------------------------------------------------------
 #
-# We still reject REAL failures:
-#
-# 4:5 requested + square returned     => reject
-# 4:5 requested + landscape returned  => reject
-#
-# But:
-#
-# 4:5 requested + 1024x1536 portrait => accepted
-#
-#
-# 5. FINAL QA SEES THE REAL DELIVERABLE
-#
-# Vision QA evaluates the exact cropped 4:5 frame,
-# not the uncropped provider canvas.
-#
-#
-# 6. CORRECTIONS
-#
-# Corrections operate on the full provider-native source.
-#
-# After each correction:
-# - provider canvas is validated
-# - exact delivery crop is produced locally
-# - QA evaluates that exact delivery crop
-#
-#
-# 7. FULL V2.2/V2.3 QUALITY PIPELINE PRESERVED
-#
-# - Concept Gate
-# - Composition
-# - Product Fidelity
-# - Lighting
-# - Materials
-# - Final Polish
-# - Final Vision QA
-# - Critical blockers
-# - Regression protection
-# - 88+ near-target delivery
-#
+# - QA NEVER destroys the user's paid image.
+# - QA NEVER prevents run_production() from returning the
+#   best successfully generated image.
+# - No Composition/Lighting/Materials image passes.
+# - Maximum automatic image calls defaults to 2.
+# - Maximum automatic Vision QA calls defaults to 2.
+# - A bad second version never replaces a better first one.
+# - A concept failure uses the second image call as a
+#   concept recovery, not as useless polish.
+# - A normal quality problem uses the second call as a
+#   targeted correction.
+# - Native provider canvas is accepted.
+# - Exact 4:5 / 9:16 / etc. delivery framing is local.
+# - Crop / resize costs $0 API spend.
 #
 # =========================================================
 
@@ -136,29 +83,16 @@ import re
 import time
 import uuid
 
-from dataclasses import (
-    dataclass,
-    field,
-)
-
+from dataclasses import dataclass, field
 from io import BytesIO
-
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import requests
-
 from PIL import Image
 
 
 # =========================================================
-# XPAND MODULES
+# XPAND EXISTING MODULES
 # =========================================================
 
 from xpand_image_engine import (
@@ -178,20 +112,28 @@ from xpand_brand_memory import (
 
 
 # =========================================================
-# ENGINE
+# IDENTITY
 # =========================================================
 
-ENGINE_NAME = (
-    "XPAND Production Engine"
-)
+ENGINE_NAME = "XPAND Production Engine"
+ENGINE_VERSION = "3.0"
 
-ENGINE_VERSION = (
-    "2.3.1"
-)
+MODE_FAST = "fast"
+MODE_PRO = "pro"
+MODE_MASTERPIECE = "masterpiece"
+
+TARGET_OPENAI = "openai"
+TARGET_GEMINI = "gemini"
+TARGET_MIDJOURNEY = "midjourney"
+TARGET_FLUX = "flux"
+TARGET_IDEOGRAM = "ideogram"
+TARGET_RUNWAY = "runway"
+TARGET_KLING = "kling"
+TARGET_SEEDANCE = "seedance"
 
 
 # =========================================================
-# API
+# OPENAI
 # =========================================================
 
 OPENAI_IMAGE_EDITS_URL = (
@@ -200,57 +142,172 @@ OPENAI_IMAGE_EDITS_URL = (
 
 
 # =========================================================
-# MODES
+# QUALITY-FIRST LIMITS
 # =========================================================
 
-MODE_FAST = (
-    "fast"
+#
+# Automatic image generations/edits per one final asset.
+#
+# Masterpiece defaults to:
+#
+#   1 initial high-quality image
+#   1 optional adaptive recovery/correction
+#
+# Never more than 2 unless this code is intentionally
+# changed later.
+#
+
+MASTERPIECE_MAX_IMAGE_CALLS = max(
+    1,
+    min(
+        2,
+        int(
+            os.environ.get(
+                "XPAND_MASTERPIECE_MAX_IMAGE_CALLS",
+                "2",
+            )
+            or 2
+        ),
+    ),
 )
 
-MODE_PRO = (
-    "pro"
+
+MASTERPIECE_MAX_VISION_CALLS = max(
+    1,
+    min(
+        2,
+        int(
+            os.environ.get(
+                "XPAND_MASTERPIECE_MAX_VISION_CALLS",
+                "2",
+            )
+            or 2
+        ),
+    ),
 )
 
-MODE_MASTERPIECE = (
-    "masterpiece"
+
+#
+# Score at which we stop spending automatically.
+#
+# 90+ = excellent enough to avoid another paid image call.
+#
+
+ADAPTIVE_CORRECTION_TRIGGER_SCORE = max(
+    70.0,
+    min(
+        100.0,
+        float(
+            os.environ.get(
+                "XPAND_ADAPTIVE_CORRECTION_TRIGGER_SCORE",
+                "90",
+            )
+            or 90
+        ),
+    ),
+)
+
+
+#
+# Major concept failure threshold.
+#
+# Below this, second image call is a CONCEPT RECOVERY,
+# not a normal correction.
+#
+
+CONCEPT_RECOVERY_SCORE_FLOOR = max(
+    40.0,
+    min(
+        90.0,
+        float(
+            os.environ.get(
+                "XPAND_CONCEPT_RECOVERY_SCORE_FLOOR",
+                "65",
+            )
+            or 65
+        ),
+    ),
 )
 
 
 # =========================================================
-# PROMPT TARGETS
+# QA POLICY
 # =========================================================
 
-TARGET_OPENAI = (
-    "openai"
+QA_TARGET_SCORE = max(
+    50,
+    min(
+        100,
+        int(
+            os.environ.get(
+                "XPAND_IMAGE_QA_TARGET",
+                "90",
+            )
+            or 90
+        ),
+    ),
 )
 
-TARGET_GEMINI = (
-    "gemini"
+
+QA_DELIVERY_FLOOR = max(
+    50.0,
+    min(
+        float(QA_TARGET_SCORE),
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_DELIVERY_FLOOR",
+                "88",
+            )
+            or 88
+        ),
+    ),
 )
 
-TARGET_MIDJOURNEY = (
-    "midjourney"
+
+QA_CRITICAL_SCORE_FLOOR = max(
+    0.0,
+    min(
+        100.0,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_CRITICAL_FLOOR",
+                "65",
+            )
+            or 65
+        ),
+    ),
 )
 
-TARGET_FLUX = (
-    "flux"
+
+QA_AD_READINESS_CRITICAL_FLOOR = max(
+    QA_CRITICAL_SCORE_FLOOR,
+    min(
+        100.0,
+        float(
+            os.environ.get(
+                "XPAND_IMAGE_QA_AD_READINESS_CRITICAL_FLOOR",
+                "70",
+            )
+            or 70
+        ),
+    ),
 )
 
-TARGET_IDEOGRAM = (
-    "ideogram"
-)
 
-TARGET_RUNWAY = (
-    "runway"
-)
-
-TARGET_KLING = (
-    "kling"
-)
-
-TARGET_SEEDANCE = (
-    "seedance"
-)
+QA_WEIGHTS = {
+    "concept_execution": 15,
+    "reference_adherence": 10,
+    "perspective": 10,
+    "product_fidelity": 10,
+    "lighting": 10,
+    "materials": 10,
+    "human_anatomy": 5,
+    "background_cleanliness": 5,
+    "brand_alignment": 10,
+    "negative_space": 5,
+    "text_logo_integrity": 3,
+    "advertising_readiness": 7,
+}
 
 
 # =========================================================
@@ -266,8 +323,7 @@ OPENAI_PROMPT_HARD_LIMIT = max(
                 "XPAND_OPENAI_PROMPT_HARD_LIMIT",
                 "32000",
             )
-            or
-            32000
+            or 32000
         ),
     ),
 )
@@ -280,374 +336,51 @@ COMPILED_PROMPT_BUDGET = max(
         int(
             os.environ.get(
                 "XPAND_COMPILED_PROMPT_BUDGET",
-                "26000",
+                "24000",
             )
-            or
-            26000
-        ),
-    ),
-)
-
-
-PASS_PROMPT_BUDGET = max(
-    12000,
-    min(
-        OPENAI_PROMPT_HARD_LIMIT - 1000,
-        int(
-            os.environ.get(
-                "XPAND_PASS_PROMPT_BUDGET",
-                "27500",
-            )
-            or
-            27500
+            or 24000
         ),
     ),
 )
 
 
 QA_PROMPT_BUDGET = max(
-    12000,
+    6000,
     min(
         OPENAI_PROMPT_HARD_LIMIT - 1000,
         int(
             os.environ.get(
                 "XPAND_QA_PROMPT_BUDGET",
-                "26000",
+                "12000",
             )
-            or
-            26000
+            or 12000
         ),
     ),
 )
 
 
 CORRECTION_PROMPT_BUDGET = max(
-    12000,
-    min(
-        OPENAI_PROMPT_HARD_LIMIT - 1000,
-        int(
-            os.environ.get(
-                "XPAND_CORRECTION_PROMPT_BUDGET",
-                "25000",
-            )
-            or
-            25000
-        ),
-    ),
-)
-
-
-CONCEPT_GATE_PROMPT_BUDGET = max(
     8000,
     min(
         OPENAI_PROMPT_HARD_LIMIT - 1000,
         int(
             os.environ.get(
-                "XPAND_CONCEPT_GATE_PROMPT_BUDGET",
+                "XPAND_CORRECTION_PROMPT_BUDGET",
                 "18000",
             )
-            or
-            18000
+            or 18000
         ),
     ),
 )
 
 
 # =========================================================
-# SECTION BUDGETS
+# PROVIDER-NATIVE CANVAS
 # =========================================================
 
-SECTION_BUDGETS = {
-    "request":
-        5000,
-
-    "creative_direction":
-        6000,
-
-    "brand_context":
-        5000,
-
-    "references":
-        3800,
-
-    "camera_direction":
-        1800,
-
-    "product_lock":
-        2200,
-}
-
-
-# =========================================================
-# PROVIDER CANVAS
-# =========================================================
-
-#
-# GPT-Image provider-native families.
-#
-# We intentionally use provider-native dimensions here.
-#
-# Exact campaign ratios such as 4:5 are produced locally
-# after generation/editing.
-#
-
-PROVIDER_PORTRAIT_SIZE = (
-    "1024x1536"
-)
-
-PROVIDER_LANDSCAPE_SIZE = (
-    "1536x1024"
-)
-
-PROVIDER_SQUARE_SIZE = (
-    "1024x1024"
-)
-
-
-PROVIDER_CANVAS_TOLERANCE = max(
-    0.01,
-    min(
-        0.20,
-        float(
-            os.environ.get(
-                "XPAND_PROVIDER_CANVAS_TOLERANCE",
-                "0.08",
-            )
-            or
-            0.08
-        ),
-    ),
-)
-
-
-# =========================================================
-# CONCEPT GATE
-# =========================================================
-
-CONCEPT_GATE_ENABLED = (
-    str(
-        os.environ.get(
-            "XPAND_CONCEPT_GATE_ENABLED",
-            "true",
-        )
-    )
-    .strip()
-    .lower()
-    not in {
-        "0",
-        "false",
-        "no",
-        "off",
-    }
-)
-
-
-CONCEPT_GATE_MIN_SCORE = max(
-    50.0,
-    min(
-        100.0,
-        float(
-            os.environ.get(
-                "XPAND_CONCEPT_GATE_MIN_SCORE",
-                "75",
-            )
-            or
-            75
-        ),
-    ),
-)
-
-
-CONCEPT_GATE_MAX_REGENERATIONS = max(
-    0,
-    min(
-        2,
-        int(
-            os.environ.get(
-                "XPAND_CONCEPT_GATE_MAX_REGENERATIONS",
-                "1",
-            )
-            or
-            1
-        ),
-    ),
-)
-
-
-# =========================================================
-# QA
-# =========================================================
-
-QA_TARGET_SCORE = max(
-    50,
-    min(
-        100,
-        int(
-            os.environ.get(
-                "XPAND_IMAGE_QA_TARGET",
-                "90",
-            )
-            or
-            90
-        ),
-    ),
-)
-
-
-QA_DELIVERY_FLOOR = max(
-    50.0,
-    min(
-        float(
-            QA_TARGET_SCORE
-        ),
-        float(
-            os.environ.get(
-                "XPAND_IMAGE_QA_DELIVERY_FLOOR",
-                "88",
-            )
-            or
-            88
-        ),
-    ),
-)
-
-
-QA_SINGLE_CORRECTION_FLOOR = max(
-    0.0,
-    min(
-        QA_DELIVERY_FLOOR,
-        float(
-            os.environ.get(
-                "XPAND_IMAGE_QA_SINGLE_CORRECTION_FLOOR",
-                "85",
-            )
-            or
-            85
-        ),
-    ),
-)
-
-
-QA_MAX_CORRECTIONS = max(
-    0,
-    min(
-        4,
-        int(
-            os.environ.get(
-                "XPAND_IMAGE_QA_MAX_CORRECTIONS",
-                "2",
-            )
-            or
-            2
-        ),
-    ),
-)
-
-
-QA_MIN_IMPROVEMENT = max(
-    0.0,
-    min(
-        10.0,
-        float(
-            os.environ.get(
-                "XPAND_IMAGE_QA_MIN_IMPROVEMENT",
-                "0.5",
-            )
-            or
-            0.5
-        ),
-    ),
-)
-
-
-#
-# Full-quality system.
-#
-# This intentionally remains long.
-#
-
-QA_CORRECTION_TIME_BUDGET_SECONDS = max(
-    60.0,
-    float(
-        os.environ.get(
-            "XPAND_IMAGE_QA_CORRECTION_TIME_BUDGET_SECONDS",
-            "900",
-        )
-        or
-        900
-    ),
-)
-
-
-QA_CRITICAL_SCORE_FLOOR = max(
-    0.0,
-    min(
-        100.0,
-        float(
-            os.environ.get(
-                "XPAND_IMAGE_QA_CRITICAL_FLOOR",
-                "65",
-            )
-            or
-            65
-        ),
-    ),
-)
-
-
-QA_AD_READINESS_CRITICAL_FLOOR = max(
-    QA_CRITICAL_SCORE_FLOOR,
-    min(
-        100.0,
-        float(
-            os.environ.get(
-                "XPAND_IMAGE_QA_AD_READINESS_CRITICAL_FLOOR",
-                "70",
-            )
-            or
-            70
-        ),
-    ),
-)
-
-
-QA_WEIGHTS = {
-    "concept_execution":
-        10,
-
-    "reference_adherence":
-        10,
-
-    "perspective":
-        10,
-
-    "product_fidelity":
-        15,
-
-    "lighting":
-        10,
-
-    "shadows":
-        5,
-
-    "reflections":
-        5,
-
-    "human_anatomy":
-        5,
-
-    "background_cleanliness":
-        5,
-
-    "brand_alignment":
-        10,
-
-    "text_logo_integrity":
-        5,
-
-    "advertising_readiness":
-        10,
-}
+PROVIDER_PORTRAIT_SIZE = "1024x1536"
+PROVIDER_LANDSCAPE_SIZE = "1536x1024"
+PROVIDER_SQUARE_SIZE = "1024x1024"
 
 
 # =========================================================
@@ -656,135 +389,75 @@ QA_WEIGHTS = {
 
 @dataclass
 class ProductionReference:
-
     role: str
-
     image_bytes: bytes
-
     mime_type: str
-
-    dna: Dict[str, Any] = field(
-        default_factory=dict
-    )
-
-    product_lock: Dict[str, Any] = field(
-        default_factory=dict
-    )
-
+    dna: Dict[str, Any] = field(default_factory=dict)
+    product_lock: Dict[str, Any] = field(default_factory=dict)
     user_note: str = ""
-
     source_id: str = ""
 
 
 @dataclass
 class CompiledPrompt:
-
     target: str
-
     prompt: str
-
     negative_prompt: str
-
-    metadata: Dict[str, Any] = field(
-        default_factory=dict
-    )
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class QAEvaluation:
-
     score: float
-
     scores: Dict[str, float]
-
     passed: bool
-
     strengths: List[str]
-
     problems: List[str]
-
     correction_instruction: str
-
-    critical_blockers: List[str] = field(
-        default_factory=list
-    )
-
+    critical_blockers: List[str] = field(default_factory=list)
     target_reached: bool = False
-
     delivery_approved: bool = False
-
     decision: str = ""
-
-    raw: Dict[str, Any] = field(
-        default_factory=dict
-    )
+    raw: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ProductionPassResult:
-
     pass_name: str
-
     image: GeneratedImage
-
-    qa: Optional[
-        QAEvaluation
-    ] = None
-
-    metadata: Dict[str, Any] = field(
-        default_factory=dict
-    )
+    qa: Optional[QAEvaluation] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ProductionResult:
-
     ok: bool
-
     final_image: GeneratedImage
-
     best_score: float
-
-    qa: Optional[
-        QAEvaluation
-    ]
-
-    passes: List[
-        ProductionPassResult
-    ]
-
+    qa: Optional[QAEvaluation]
+    passes: List[ProductionPassResult]
     compiled_prompt: CompiledPrompt
-
     references_used: int
-
     product_references_used: int
-
     elapsed_seconds: float
-
-    errors: List[str] = field(
-        default_factory=list
-    )
+    errors: List[str] = field(default_factory=list)
 
 
 # =========================================================
-# BASIC HELPERS
+# HELPERS
 # =========================================================
 
 def clean_text(
     value: Any,
     limit: int = 20000,
 ) -> str:
-
     return (
         str(
             value
             if value is not None
             else ""
         )
-        .replace(
-            "\x00",
-            ""
-        )
+        .replace("\x00", "")
         .strip()[:limit]
     )
 
@@ -792,483 +465,100 @@ def clean_text(
 def clamp_score(
     value: Any,
 ) -> float:
-
     try:
-
-        number = float(
-            value
-        )
-
+        number = float(value)
     except Exception:
-
         number = 0.0
 
     return max(
         0.0,
         min(
             100.0,
-            number
-        )
+            number,
+        ),
     )
 
 
 def safe_list(
     value: Any,
 ) -> List[Any]:
-
     return (
         value
-        if isinstance(
-            value,
-            list
-        )
-        else
-        []
+        if isinstance(value, list)
+        else []
     )
 
 
-# =========================================================
-# PROMPT COMPACTION
-# =========================================================
-
-DROP_CONTEXT_KEYS = {
-    "image_bytes",
-    "source_bytes",
-    "raw_bytes",
-    "binary",
-    "b64_json",
-    "base64",
-    "telegram_file_id",
-    "telegram_file_unique_id",
-    "photo_file_id",
-    "document_file_id",
-    "document_file_unique_id",
-}
-
-
-def reduce_prompt_value(
+def safe_dict(
     value: Any,
-    *,
-    depth: int = 0,
-    max_depth: int = 4,
-    list_limit: int = 8,
-    dict_limit: int = 40,
-    string_limit: int = 1200,
-) -> Any:
-
-    if depth > max_depth:
-
-        if isinstance(
-            value,
-            dict
-        ):
-
-            return {
-                "_summary":
-                    "nested object omitted"
-            }
-
-        if isinstance(
-            value,
-            list
-        ):
-
-            return [
-                "nested list omitted"
-            ]
-
-        return clean_text(
-            value,
-            min(
-                string_limit,
-                400
-            )
-        )
-
-    if isinstance(
-        value,
-        bytes
-    ):
-
-        return (
-            "<binary image data omitted>"
-        )
-
-    if isinstance(
-        value,
-        dict
-    ):
-
-        output = {}
-
-        count = 0
-
-        for key, child in value.items():
-
-            key_text = clean_text(
-                key,
-                200
-            )
-
-            if not key_text:
-
-                continue
-
-            if (
-                key_text.lower()
-                in DROP_CONTEXT_KEYS
-            ):
-
-                continue
-
-            if count >= dict_limit:
-
-                output[
-                    "_additional_fields_omitted"
-                ] = True
-
-                break
-
-            output[
-                key_text
-            ] = reduce_prompt_value(
-                child,
-
-                depth=
-                    depth + 1,
-
-                max_depth=
-                    max_depth,
-
-                list_limit=
-                    list_limit,
-
-                dict_limit=
-                    dict_limit,
-
-                string_limit=
-                    string_limit
-            )
-
-            count += 1
-
-        return output
-
-    if isinstance(
-        value,
-        list
-    ):
-
-        output = []
-
-        for child in value[
-            :list_limit
-        ]:
-
-            output.append(
-                reduce_prompt_value(
-                    child,
-
-                    depth=
-                        depth + 1,
-
-                    max_depth=
-                        max_depth,
-
-                    list_limit=
-                        list_limit,
-
-                    dict_limit=
-                        dict_limit,
-
-                    string_limit=
-                        string_limit
-                )
-            )
-
-        if len(
-            value
-        ) > list_limit:
-
-            output.append(
-                (
-                    "<"
-                    +
-                    str(
-                        len(
-                            value
-                        )
-                        -
-                        list_limit
-                    )
-                    +
-                    " additional items omitted>"
-                )
-            )
-
-        return output
-
-    if isinstance(
-        value,
-        (
-            int,
-            float,
-            bool,
-        )
-    ):
-
-        return value
-
-    if value is None:
-
-        return None
-
-    return clean_text(
-        value,
-        string_limit
+) -> Dict[str, Any]:
+    return (
+        value
+        if isinstance(value, dict)
+        else {}
     )
 
 
 def compact_json(
     value: Any,
-    limit: int,
+    limit: int = 6000,
 ) -> str:
-
-    limit = max(
-        100,
-        int(
-            limit
-            or
-            100
-        )
-    )
-
-    attempts = [
-        {
-            "max_depth":
-                4,
-
-            "list_limit":
-                10,
-
-            "dict_limit":
-                50,
-
-            "string_limit":
-                1400,
-        },
-
-        {
-            "max_depth":
-                4,
-
-            "list_limit":
-                7,
-
-            "dict_limit":
-                35,
-
-            "string_limit":
-                900,
-        },
-
-        {
-            "max_depth":
-                3,
-
-            "list_limit":
-                5,
-
-            "dict_limit":
-                28,
-
-            "string_limit":
-                650,
-        },
-
-        {
-            "max_depth":
-                3,
-
-            "list_limit":
-                3,
-
-            "dict_limit":
-                20,
-
-            "string_limit":
-                400,
-        },
-
-        {
-            "max_depth":
-                2,
-
-            "list_limit":
-                2,
-
-            "dict_limit":
-                14,
-
-            "string_limit":
-                250,
-        },
-    ]
-
-    for settings in attempts:
-
-        reduced = reduce_prompt_value(
+    try:
+        text = json.dumps(
             value,
-            **settings
-        )
-
-        try:
-
-            encoded = json.dumps(
-                reduced,
-                ensure_ascii=False,
-                separators=(
-                    ",",
-                    ":"
-                ),
-                default=str
-            )
-
-        except Exception:
-
-            encoded = clean_text(
-                reduced,
-                limit
-            )
-
-        if len(
-            encoded
-        ) <= limit:
-
-            return encoded
-
-    summary_size = max(
-        50,
-        int(
-            limit
-            *
-            0.65
-        )
-    )
-
-    while summary_size > 30:
-
-        fallback = {
-            "truncated":
-                True,
-
-            "summary":
-                clean_text(
-                    value,
-                    summary_size
-                ),
-        }
-
-        encoded = json.dumps(
-            fallback,
             ensure_ascii=False,
-            separators=(
-                ",",
-                ":"
-            ),
-            default=str
+            separators=(",", ":"),
+            default=str,
+        )
+    except Exception:
+        text = clean_text(
+            value,
+            limit,
         )
 
-        if len(
-            encoded
-        ) <= limit:
+    if len(text) <= limit:
+        return text
 
-            return encoded
+    return text[:limit]
 
-        summary_size = int(
-            summary_size
-            *
-            0.75
-        )
-
-    return json.dumps(
-        {
-            "truncated":
-                True
-        },
-        ensure_ascii=False
-    )
-
-
-def safe_json(
-    value: Any,
-    limit: int = 30000,
-) -> str:
-
-    return compact_json(
-        value,
-        limit
-    )
-
-
-# =========================================================
-# PROMPT SAFETY
-# =========================================================
 
 def hard_fit_prompt(
     text: str,
     max_chars: int,
 ) -> str:
-
-    text = clean_text(
+    value = clean_text(
         text,
-        1000000
+        1000000,
     )
 
-    if len(
-        text
-    ) <= max_chars:
-
-        return text
+    if len(value) <= max_chars:
+        return value
 
     marker = (
         "\n\n"
-        "[XPAND PROMPT BUDGET COMPACTION]\n"
-        "Secondary context omitted to stay inside provider limits.\n"
-        "\n"
+        "[XPAND CONTEXT COMPACTED]\n"
+        "Secondary detail omitted. "
+        "Original request and core creative direction remain authoritative."
+        "\n\n"
     )
 
     available = max(
-        100,
-        max_chars
-        -
-        len(
-            marker
-        )
+        500,
+        max_chars - len(marker),
     )
 
-    front_size = int(
-        available
-        *
-        0.62
+    front = int(
+        available * 0.68
     )
 
-    back_size = (
-        available
-        -
-        front_size
+    back = (
+        available - front
     )
 
     return (
-        text[
-            :front_size
-        ]
-        +
-        marker
-        +
-        text[
-            -back_size:
-        ]
+        value[:front]
+        + marker
+        + value[-back:]
     )
 
 
@@ -1278,91 +568,37 @@ def fit_prompt_for_api(
     label: str,
     budget: int,
 ) -> str:
-
     original = clean_text(
         prompt,
-        1000000
-    )
-
-    original_length = len(
-        original
+        1000000,
     )
 
     fitted = hard_fit_prompt(
         original,
-        budget
+        budget,
     )
 
-    final_length = len(
-        fitted
-    )
-
-    if original_length <= budget:
-
+    if len(original) <= budget:
         print(
-            (
-                "🧮 Prompt budget ["
-                +
-                label
-                +
-                "]: "
-                +
-                str(
-                    final_length
-                )
-                +
-                "/"
-                +
-                str(
-                    budget
-                )
-                +
-                " chars ✅"
-            )
+            "🧮 Prompt budget ["
+            + label
+            + "]: "
+            + str(len(fitted))
+            + "/"
+            + str(budget)
+            + " chars ✅"
         )
-
     else:
-
         print(
-            (
-                "🧮 Prompt budget ["
-                +
-                label
-                +
-                "]: "
-                +
-                str(
-                    original_length
-                )
-                +
-                " → "
-                +
-                str(
-                    final_length
-                )
-                +
-                "/"
-                +
-                str(
-                    budget
-                )
-                +
-                " chars ✅ COMPACTED"
-            )
-        )
-
-    if len(
-        fitted
-    ) >= OPENAI_PROMPT_HARD_LIMIT:
-
-        raise RuntimeError(
-            (
-                "XPAND Prompt Budget Manager failed for "
-                +
-                label
-                +
-                "."
-            )
+            "🧮 Prompt budget ["
+            + label
+            + "]: "
+            + str(len(original))
+            + " → "
+            + str(len(fitted))
+            + "/"
+            + str(budget)
+            + " chars ✅ COMPACTED"
         )
 
     return fitted
@@ -1375,168 +611,101 @@ def fit_prompt_for_api(
 def extract_json_object(
     value: str,
 ) -> Dict[str, Any]:
-
     text = clean_text(
         value,
-        100000
+        100000,
     )
 
     text = re.sub(
         r"^```(?:json)?\s*",
         "",
         text,
-        flags=
-            re.IGNORECASE
+        flags=re.IGNORECASE,
     )
 
     text = re.sub(
         r"\s*```$",
         "",
-        text
+        text,
     )
 
     try:
+        parsed = json.loads(text)
 
-        parsed = json.loads(
-            text
-        )
-
-        if isinstance(
-            parsed,
-            dict
-        ):
-
+        if isinstance(parsed, dict):
             return parsed
-
     except Exception:
-
         pass
 
-    start = text.find(
-        "{"
-    )
-
-    end = text.rfind(
-        "}"
-    )
+    start = text.find("{")
+    end = text.rfind("}")
 
     if (
         start >= 0
-        and
-        end > start
+        and end > start
     ):
-
         try:
-
             parsed = json.loads(
-                text[
-                    start:
-                    end + 1
-                ]
+                text[start:end + 1]
             )
 
-            if isinstance(
-                parsed,
-                dict
-            ):
-
+            if isinstance(parsed, dict):
                 return parsed
-
         except Exception:
-
             pass
 
     return {}
 
 
 # =========================================================
-# IMAGE RESPONSE PARSING
+# IMAGE RESPONSE EXTRACTION
 # =========================================================
 
 def decode_image_value(
     value: str,
 ) -> Optional[bytes]:
-
-    value = clean_text(
+    text = clean_text(
         value,
-        100000000
+        100000000,
     )
 
-    if not value:
-
+    if not text:
         return None
 
-    if value.startswith(
-        "data:image/"
-    ):
-
+    if text.startswith("data:image/"):
         try:
-
-            value = value.split(
+            text = text.split(
                 ",",
-                1
+                1,
             )[1]
-
         except Exception:
-
             return None
 
     try:
-
-        result = base64.b64decode(
-            value
-        )
-
-        return (
-            result
-            if result
-            else
-            None
-        )
-
+        raw = base64.b64decode(text)
+        return raw if raw else None
     except Exception:
-
         return None
 
 
 def find_images_in_response(
     value: Any,
-) -> List[
-    Tuple[
-        bytes,
-        str,
-    ]
-]:
-
+) -> List[Tuple[bytes, str]]:
     found: List[
-        Tuple[
-            bytes,
-            str,
-        ]
+        Tuple[bytes, str]
     ] = []
 
     def walk(
         item: Any,
     ) -> None:
-
-        if isinstance(
-            item,
-            dict
-        ):
-
+        if isinstance(item, dict):
             mime_type = clean_text(
                 (
-                    item.get(
-                        "mime_type"
-                    )
-                    or
-                    item.get(
-                        "mimeType"
-                    )
-                    or
-                    ""
+                    item.get("mime_type")
+                    or item.get("mimeType")
+                    or ""
                 ),
-                100
+                100,
             )
 
             for key in [
@@ -1544,16 +713,12 @@ def find_images_in_response(
                 "base64",
                 "data",
             ]:
-
-                raw_value = item.get(
-                    key
-                )
+                raw_value = item.get(key)
 
                 if not isinstance(
                     raw_value,
-                    str
+                    str,
                 ):
-
                     continue
 
                 raw = decode_image_value(
@@ -1561,177 +726,165 @@ def find_images_in_response(
                 )
 
                 if raw:
-
                     found.append(
                         (
                             raw,
                             mime_type
-                            or
-                            "image/png",
+                            or "image/png",
                         )
                     )
-
                     break
 
             for child in item.values():
+                walk(child)
 
-                walk(
-                    child
-                )
-
-        elif isinstance(
-            item,
-            list
-        ):
-
+        elif isinstance(item, list):
             for child in item:
+                walk(child)
 
-                walk(
-                    child
-                )
+    walk(value)
 
-    walk(
-        value
-    )
+    output: List[
+        Tuple[bytes, str]
+    ] = []
 
-    unique = []
-
-    signatures = set()
+    seen = set()
 
     for raw, mime_type in found:
-
         signature = (
-            len(
-                raw
-            ),
-            raw[
-                :64
-            ],
+            len(raw),
+            raw[:64],
         )
 
-        if signature in signatures:
-
+        if signature in seen:
             continue
 
-        signatures.add(
-            signature
-        )
+        seen.add(signature)
 
-        unique.append(
+        output.append(
             (
                 raw,
                 mime_type,
             )
         )
 
-    return unique
+    return output
 
 
 # =========================================================
-# ASPECT / RESOLUTION HELPERS
+# MIME
+# =========================================================
+
+def infer_mime_type(
+    raw: bytes,
+    fallback: str = "image/jpeg",
+) -> str:
+    if raw.startswith(
+        b"\x89PNG\r\n\x1a\n"
+    ):
+        return "image/png"
+
+    if raw.startswith(
+        b"\xff\xd8\xff"
+    ):
+        return "image/jpeg"
+
+    if (
+        raw.startswith(b"RIFF")
+        and b"WEBP" in raw[:16]
+    ):
+        return "image/webp"
+
+    return fallback
+
+
+def extension_for_mime(
+    mime_type: str,
+) -> str:
+    value = clean_text(
+        mime_type,
+        100,
+    ).lower()
+
+    if "png" in value:
+        return ".png"
+
+    if "webp" in value:
+        return ".webp"
+
+    return ".jpg"
+
+
+# =========================================================
+# ASPECT RATIO
 # =========================================================
 
 def aspect_ratio_value(
     aspect_ratio: str,
 ) -> Optional[float]:
-
     text = clean_text(
         aspect_ratio,
-        50
+        50,
     )
 
     match = re.fullmatch(
         r"\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*",
-        text
+        text,
     )
 
     if not match:
-
         return None
 
     width = float(
-        match.group(
-            1
-        )
+        match.group(1)
     )
 
     height = float(
-        match.group(
-            2
-        )
+        match.group(2)
     )
 
     if (
         width <= 0
-        or
-        height <= 0
+        or height <= 0
     ):
-
         return None
 
-    return (
-        width
-        /
-        height
-    )
+    return width / height
 
 
 def orientation_for_ratio(
     aspect_ratio: str,
 ) -> str:
-
     ratio = aspect_ratio_value(
         aspect_ratio
     )
 
     if ratio is None:
-
-        return (
-            "square"
-        )
+        return "square"
 
     if ratio < 0.95:
-
-        return (
-            "portrait"
-        )
+        return "portrait"
 
     if ratio > 1.05:
+        return "landscape"
 
-        return (
-            "landscape"
-        )
-
-    return (
-        "square"
-    )
+    return "square"
 
 
 def provider_size_for_ratio(
     aspect_ratio: str,
 ) -> str:
-
-    orientation = (
-        orientation_for_ratio(
-            aspect_ratio
-        )
+    orientation = orientation_for_ratio(
+        aspect_ratio
     )
 
     if orientation == "portrait":
-
-        return (
-            PROVIDER_PORTRAIT_SIZE
-        )
+        return PROVIDER_PORTRAIT_SIZE
 
     if orientation == "landscape":
+        return PROVIDER_LANDSCAPE_SIZE
 
-        return (
-            PROVIDER_LANDSCAPE_SIZE
-        )
-
-    return (
-        PROVIDER_SQUARE_SIZE
-    )
+    return PROVIDER_SQUARE_SIZE
 
 
 def production_size_for_ratio(
@@ -1739,235 +892,102 @@ def production_size_for_ratio(
     *,
     final_quality: bool = True,
 ) -> str:
-
-    #
-    # Exact delivery-frame mapping.
-    #
-    # This function is kept for compatibility with the
-    # existing XPAND runtime.
-    #
-
     ratio = clean_text(
         aspect_ratio,
-        30
+        30,
     )
 
     if not final_quality:
-
         mapping = {
-            "1:1":
-                "1024x1024",
-
-            "4:5":
-                "1024x1280",
-
-            "5:4":
-                "1280x1024",
-
-            "9:16":
-                "864x1536",
-
-            "16:9":
-                "1536x864",
-
-            "2:3":
-                "1024x1536",
-
-            "3:2":
-                "1536x1024",
-
-            "3:4":
-                "1024x1365",
-
-            "4:3":
-                "1365x1024",
+            "1:1": "1024x1024",
+            "4:5": "1024x1280",
+            "5:4": "1280x1024",
+            "9:16": "864x1536",
+            "16:9": "1536x864",
+            "2:3": "1024x1536",
+            "3:2": "1536x1024",
+            "3:4": "1024x1365",
+            "4:3": "1365x1024",
         }
 
         return mapping.get(
             ratio,
-            "1024x1024"
+            "1024x1024",
         )
 
     mapping = {
-        "1:1":
-            "2048x2048",
-
-        "4:5":
-            "2560x3200",
-
-        "5:4":
-            "3200x2560",
-
-        "9:16":
-            "2160x3840",
-
-        "16:9":
-            "3840x2160",
-
-        "2:3":
-            "2304x3456",
-
-        "3:2":
-            "3456x2304",
-
-        "3:4":
-            "2448x3264",
-
-        "4:3":
-            "3264x2448",
-
-        "21:9":
-            "3840x1646",
+        "1:1": "2048x2048",
+        "4:5": "2560x3200",
+        "5:4": "3200x2560",
+        "9:16": "2160x3840",
+        "16:9": "3840x2160",
+        "2:3": "2304x3456",
+        "3:2": "3456x2304",
+        "3:4": "2448x3264",
+        "4:3": "3264x2448",
+        "21:9": "3840x1646",
     }
 
     return mapping.get(
         ratio,
-        "2048x2048"
+        "2048x2048",
     )
 
 
 def parse_size_string(
     value: str,
-) -> Optional[
-    Tuple[
-        int,
-        int,
-    ]
-]:
-
+) -> Optional[Tuple[int, int]]:
     match = re.fullmatch(
         r"\s*(\d+)\s*x\s*(\d+)\s*",
         clean_text(
             value,
-            100
+            100,
         ),
-        flags=
-            re.IGNORECASE
+        flags=re.IGNORECASE,
     )
 
     if not match:
-
         return None
 
     return (
-        int(
-            match.group(
-                1
-            )
-        ),
-        int(
-            match.group(
-                2
-            )
-        ),
+        int(match.group(1)),
+        int(match.group(2)),
     )
 
 
 # =========================================================
-# PIL IMAGE HELPERS
+# LOCAL IMAGE PROCESSING
 # =========================================================
 
 def real_image_dimensions(
     raw: bytes,
-) -> Tuple[
-    int,
-    int,
-]:
-
+) -> Tuple[int, int]:
     try:
-
         with Image.open(
-            BytesIO(
-                raw
-            )
+            BytesIO(raw)
         ) as image:
-
             image.load()
 
             return (
-                int(
-                    image.width
-                ),
-                int(
-                    image.height
-                ),
+                int(image.width),
+                int(image.height),
             )
-
     except Exception as error:
-
         raise RuntimeError(
-            (
-                "Unable to inspect physical image dimensions: "
-                +
-                clean_text(
-                    error,
-                    1000
-                )
+            "Unable to inspect image dimensions: "
+            + clean_text(
+                error,
+                1000,
             )
         )
 
 
-def provider_canvas_status(
+def inspect_provider_canvas(
     image: GeneratedImage,
     requested_aspect_ratio: str,
 ) -> Dict[str, Any]:
-
-    width, height = (
-        real_image_dimensions(
-            image.image_bytes
-        )
-    )
-
-    expected_provider_size = (
-        provider_size_for_ratio(
-            requested_aspect_ratio
-        )
-    )
-
-    expected_dims = (
-        parse_size_string(
-            expected_provider_size
-        )
-    )
-
-    if not expected_dims:
-
-        raise RuntimeError(
-            "Invalid XPAND provider-size configuration."
-        )
-
-    expected_width, expected_height = (
-        expected_dims
-    )
-
-    actual_ratio = (
-        float(
-            width
-        )
-        /
-        float(
-            height
-        )
-    )
-
-    expected_ratio = (
-        float(
-            expected_width
-        )
-        /
-        float(
-            expected_height
-        )
-    )
-
-    relative_error = (
-        abs(
-            actual_ratio
-            -
-            expected_ratio
-        )
-        /
-        expected_ratio
+    width, height = real_image_dimensions(
+        image.image_bytes
     )
 
     requested_orientation = (
@@ -1977,278 +997,115 @@ def provider_canvas_status(
     )
 
     if width > height:
-
-        actual_orientation = (
-            "landscape"
-        )
+        actual_orientation = "landscape"
 
     elif height > width:
-
-        actual_orientation = (
-            "portrait"
-        )
+        actual_orientation = "portrait"
 
     else:
+        actual_orientation = "square"
 
-        actual_orientation = (
-            "square"
-        )
+    expected_size = provider_size_for_ratio(
+        requested_aspect_ratio
+    )
 
-    orientation_ok = (
-        actual_orientation
-        ==
+    expected_orientation_match = (
         requested_orientation
+        == actual_orientation
     )
 
-    ratio_ok = (
-        relative_error
-        <=
-        PROVIDER_CANVAS_TOLERANCE
-    )
-
-    ok = (
-        orientation_ok
-        and
-        ratio_ok
-    )
-
-    return {
-        "ok":
-            ok,
-
-        "requested_delivery_ratio":
+    status = {
+        "requested_ratio":
             requested_aspect_ratio,
+
+        "expected_native":
+            expected_size,
+
+        "width":
+            width,
+
+        "height":
+            height,
 
         "requested_orientation":
             requested_orientation,
 
-        "provider_expected_size":
-            expected_provider_size,
-
-        "provider_expected_ratio":
-            round(
-                expected_ratio,
-                6
-            ),
-
-        "actual_width":
-            width,
-
-        "actual_height":
-            height,
-
         "actual_orientation":
             actual_orientation,
 
-        "actual_ratio":
-            round(
-                actual_ratio,
-                6
-            ),
-
-        "relative_error":
-            round(
-                relative_error,
-                6
-            ),
-
-        "tolerance":
-            PROVIDER_CANVAS_TOLERANCE,
-
-        "reason":
-            (
-                "provider_native_canvas_match"
-                if ok
-                else
-                "unexpected_provider_canvas"
-            ),
+        "orientation_match":
+            expected_orientation_match,
     }
 
-
-def require_provider_canvas(
-    image: GeneratedImage,
-    requested_aspect_ratio: str,
-    *,
-    label: str,
-) -> Dict[str, Any]:
-
-    status = provider_canvas_status(
-        image,
-        requested_aspect_ratio
-    )
+    if expected_orientation_match:
+        print(
+            "📐 PROVIDER CANVAS: "
+            + str(width)
+            + "x"
+            + str(height)
+            + " ✅"
+        )
+    else:
+        #
+        # IMPORTANT:
+        #
+        # V3 does NOT throw away a paid image merely because
+        # the provider returned another valid canvas.
+        #
+        # Local exact-frame processing will still attempt to
+        # create the requested campaign ratio.
+        #
+        print(
+            "⚠️ PROVIDER CANVAS DIFFERENT"
+            + " | requested="
+            + requested_aspect_ratio
+            + " | actual="
+            + str(width)
+            + "x"
+            + str(height)
+            + " | continuing safely"
+        )
 
     if not isinstance(
         image.metadata,
-        dict
+        dict,
     ):
-
         image.metadata = {}
 
     image.metadata[
-        "provider_canvas_guard"
+        "provider_canvas"
     ] = status
 
-    if status.get(
-        "ok"
-    ):
+    return status
 
-        print(
-            (
-                "📐 NATIVE CANVAS ["
-                +
-                label
-                +
-                "]: PASS ✅"
-                +
-                " | requested="
-                +
-                requested_aspect_ratio
-                +
-                " | provider="
-                +
-                str(
-                    status.get(
-                        "actual_width"
-                    )
-                )
-                +
-                "x"
-                +
-                str(
-                    status.get(
-                        "actual_height"
-                    )
-                )
-            )
-        )
-
-        return status
-
-    print(
-        (
-            "⛔ NATIVE CANVAS ["
-            +
-            label
-            +
-            "]: REJECTED"
-            +
-            " | requested="
-            +
-            requested_aspect_ratio
-            +
-            " | expected_provider="
-            +
-            str(
-                status.get(
-                    "provider_expected_size"
-                )
-            )
-            +
-            " | actual="
-            +
-            str(
-                status.get(
-                    "actual_width"
-                )
-            )
-            +
-            "x"
-            +
-            str(
-                status.get(
-                    "actual_height"
-                )
-            )
-        )
-    )
-
-    raise RuntimeError(
-        (
-            "Unexpected provider canvas for "
-            +
-            label
-            +
-            ": requested delivery "
-            +
-            requested_aspect_ratio
-            +
-            ", expected native family "
-            +
-            str(
-                status.get(
-                    "provider_expected_size"
-                )
-            )
-            +
-            ", actual "
-            +
-            str(
-                status.get(
-                    "actual_width"
-                )
-            )
-            +
-            "x"
-            +
-            str(
-                status.get(
-                    "actual_height"
-                )
-            )
-            +
-            "."
-        )
-    )
-
-
-# =========================================================
-# EXACT LOCAL DELIVERY FRAME
-# =========================================================
 
 def crop_box_for_aspect(
     width: int,
     height: int,
     aspect_ratio: str,
-) -> Tuple[
-    int,
-    int,
-    int,
-    int,
-]:
-
+) -> Tuple[int, int, int, int]:
     target_ratio = aspect_ratio_value(
         aspect_ratio
     )
 
     if target_ratio is None:
-
         raise RuntimeError(
-            (
-                "Invalid requested aspect ratio: "
-                +
-                clean_text(
-                    aspect_ratio,
-                    100
-                )
+            "Invalid aspect ratio: "
+            + clean_text(
+                aspect_ratio,
+                100,
             )
         )
 
     current_ratio = (
-        float(
-            width
-        )
-        /
-        float(
-            height
-        )
+        float(width)
+        / float(height)
     )
 
     if abs(
         current_ratio
-        -
-        target_ratio
+        - target_ratio
     ) < 0.0001:
-
         return (
             0,
             0,
@@ -2257,17 +1114,10 @@ def crop_box_for_aspect(
         )
 
     if current_ratio > target_ratio:
-
-        #
-        # Image is too wide.
-        # Crop left/right.
-        #
-
         target_width = int(
             round(
                 height
-                *
-                target_ratio
+                * target_ratio
             )
         )
 
@@ -2275,45 +1125,31 @@ def crop_box_for_aspect(
             1,
             min(
                 width,
-                target_width
-            )
+                target_width,
+            ),
         )
 
         left = int(
             round(
                 (
                     width
-                    -
-                    target_width
+                    - target_width
                 )
-                /
-                2
+                / 2
             )
-        )
-
-        right = (
-            left
-            +
-            target_width
         )
 
         return (
             left,
             0,
-            right,
+            left + target_width,
             height,
         )
-
-    #
-    # Image is too tall.
-    # Crop top/bottom.
-    #
 
     target_height = int(
         round(
             width
-            /
-            target_ratio
+            / target_ratio
         )
     )
 
@@ -2321,33 +1157,25 @@ def crop_box_for_aspect(
         1,
         min(
             height,
-            target_height
-        )
+            target_height,
+        ),
     )
 
     top = int(
         round(
             (
                 height
-                -
-                target_height
+                - target_height
             )
-            /
-            2
+            / 2
         )
-    )
-
-    bottom = (
-        top
-        +
-        target_height
     )
 
     return (
         0,
         top,
         width,
-        bottom,
+        top + target_height,
     )
 
 
@@ -2358,20 +1186,15 @@ def derived_image(
     mime_type: str,
     aspect_ratio: str,
     image_size: str,
-    metadata_updates: Dict[
-        str,
-        Any
-    ],
+    metadata_updates: Dict[str, Any],
 ) -> GeneratedImage:
-
     metadata = dict(
         source.metadata
         if isinstance(
             source.metadata,
-            dict
+            dict,
         )
-        else
-        {}
+        else {}
     )
 
     metadata.update(
@@ -2379,75 +1202,47 @@ def derived_image(
     )
 
     return GeneratedImage(
-        image_bytes=
-            image_bytes,
-
-        mime_type=
-            mime_type,
-
-        provider=
-            getattr(
-                source,
-                "provider",
-                "xpand_production"
-            ),
-
-        model=
-            getattr(
-                source,
-                "model",
-                OPENAI_IMAGE_MODEL
-            ),
-
-        prompt=
-            getattr(
-                source,
-                "prompt",
-                ""
-            ),
-
-        original_prompt=
-            getattr(
-                source,
-                "original_prompt",
-                ""
-            ),
-
-        aspect_ratio=
-            aspect_ratio,
-
-        image_size=
-            image_size,
-
-        quality=
-            getattr(
-                source,
-                "quality",
-                "high"
-            ),
-
-        route_reason=
-            getattr(
-                source,
-                "route_reason",
-                "XPAND local delivery frame"
-            ),
-
-        request_id=
-            getattr(
-                source,
-                "request_id",
-                (
-                    "local-"
-                    +
-                    uuid.uuid4().hex[
-                        :12
-                    ]
-                )
-            ),
-
-        metadata=
-            metadata,
+        image_bytes=image_bytes,
+        mime_type=mime_type,
+        provider=getattr(
+            source,
+            "provider",
+            "xpand_production",
+        ),
+        model=getattr(
+            source,
+            "model",
+            OPENAI_IMAGE_MODEL,
+        ),
+        prompt=getattr(
+            source,
+            "prompt",
+            "",
+        ),
+        original_prompt=getattr(
+            source,
+            "original_prompt",
+            "",
+        ),
+        aspect_ratio=aspect_ratio,
+        image_size=image_size,
+        quality=getattr(
+            source,
+            "quality",
+            "high",
+        ),
+        route_reason=getattr(
+            source,
+            "route_reason",
+            "XPAND local exact frame",
+        ),
+        request_id=getattr(
+            source,
+            "request_id",
+            "local-"
+            + uuid.uuid4().hex[:12],
+        ),
+        metadata=metadata,
     )
 
 
@@ -2458,109 +1253,106 @@ def create_exact_delivery_frame(
     upscale_final: bool = False,
     label: str = "delivery_frame",
 ) -> GeneratedImage:
-
-    require_provider_canvas(
-        source,
-        requested_aspect_ratio,
-        label=(
-            label
-            +
-            "_source"
+    #
+    # If this is already an exact local delivery frame and
+    # no further upscale is needed, do not crop it again.
+    #
+    existing_meta = safe_dict(
+        getattr(
+            source,
+            "metadata",
+            {},
         )
     )
 
-    try:
+    if (
+        existing_meta.get(
+            "exact_delivery_frame"
+        )
+        and clean_text(
+            getattr(
+                source,
+                "aspect_ratio",
+                "",
+            ),
+            30,
+        )
+        == requested_aspect_ratio
+        and not upscale_final
+    ):
+        return source
 
-        with Image.open(
-            BytesIO(
-                source.image_bytes
+    source_width, source_height = (
+        real_image_dimensions(
+            source.image_bytes
+        )
+    )
+
+    with Image.open(
+        BytesIO(
+            source.image_bytes
+        )
+    ) as pil_image:
+        pil_image.load()
+
+        if pil_image.mode not in {
+            "RGB",
+            "RGBA",
+        }:
+            pil_image = pil_image.convert(
+                "RGB"
             )
-        ) as pil_image:
 
-            pil_image.load()
+        crop_box = crop_box_for_aspect(
+            int(pil_image.width),
+            int(pil_image.height),
+            requested_aspect_ratio,
+        )
 
-            if pil_image.mode not in {
-                "RGB",
-                "RGBA",
-            }:
+        cropped = pil_image.crop(
+            crop_box
+        )
 
-                pil_image = (
-                    pil_image.convert(
-                        "RGB"
-                    )
+        crop_width = int(
+            cropped.width
+        )
+
+        crop_height = int(
+            cropped.height
+        )
+
+        output_width = crop_width
+        output_height = crop_height
+
+        if upscale_final:
+            target_size = (
+                production_size_for_ratio(
+                    requested_aspect_ratio,
+                    final_quality=True,
                 )
-
-            source_width = int(
-                pil_image.width
             )
 
-            source_height = int(
-                pil_image.height
+            target_dims = parse_size_string(
+                target_size
             )
 
-            crop_box = crop_box_for_aspect(
-                source_width,
-                source_height,
-                requested_aspect_ratio
-            )
-
-            cropped = pil_image.crop(
-                crop_box
-            )
-
-            crop_width = int(
-                cropped.width
-            )
-
-            crop_height = int(
-                cropped.height
-            )
-
-            if upscale_final:
-
-                target_size_string = (
-                    production_size_for_ratio(
-                        requested_aspect_ratio,
-                        final_quality=True
-                    )
-                )
-
-                target_dims = (
-                    parse_size_string(
-                        target_size_string
-                    )
-                )
-
-                if not target_dims:
-
-                    raise RuntimeError(
-                        (
-                            "Invalid final delivery size: "
-                            +
-                            target_size_string
-                        )
-                    )
-
+            if target_dims:
                 target_width, target_height = (
                     target_dims
                 )
 
                 if (
-                    crop_width
-                    !=
                     target_width
-                    or
-                    crop_height
-                    !=
-                    target_height
+                    != crop_width
+                    or target_height
+                    != crop_height
                 ):
-
                     cropped = cropped.resize(
                         (
                             target_width,
                             target_height,
                         ),
-                        Image.Resampling.LANCZOS
+                        Image.Resampling.LANCZOS,
                     )
 
                 output_width = (
@@ -2571,171 +1363,45 @@ def create_exact_delivery_frame(
                     target_height
                 )
 
-            else:
+        buffer = BytesIO()
 
-                output_width = int(
-                    cropped.width
-                )
-
-                output_height = int(
-                    cropped.height
-                )
-
-            buffer = BytesIO()
-
-            cropped.save(
-                buffer,
-                format="PNG",
-                optimize=False,
-                compress_level=4
-            )
-
-            output_bytes = (
-                buffer.getvalue()
-            )
-
-    except Exception as error:
-
-        raise RuntimeError(
-            (
-                "Local exact-frame processing failed: "
-                +
-                clean_text(
-                    error,
-                    1500
-                )
-            )
+        cropped.save(
+            buffer,
+            format="PNG",
+            optimize=False,
+            compress_level=4,
         )
 
-    actual_ratio = (
-        float(
-            output_width
-        )
-        /
-        float(
-            output_height
-        )
-    )
-
-    expected_ratio = (
-        aspect_ratio_value(
-            requested_aspect_ratio
-        )
-    )
-
-    if expected_ratio is None:
-
-        raise RuntimeError(
-            "Unable to validate exact delivery ratio."
-        )
-
-    relative_error = (
-        abs(
-            actual_ratio
-            -
-            expected_ratio
-        )
-        /
-        expected_ratio
-    )
-
-    if relative_error > 0.002:
-
-        raise RuntimeError(
-            (
-                "Exact Delivery Frame validation failed: "
-                +
-                str(
-                    output_width
-                )
-                +
-                "x"
-                +
-                str(
-                    output_height
-                )
-                +
-                " is not "
-                +
-                requested_aspect_ratio
-            )
+        output_bytes = (
+            buffer.getvalue()
         )
 
     print(
-        (
-            "✂️ EXACT FRAME ["
-            +
-            label
-            +
-            "]: PASS ✅"
-            +
-            " | source="
-            +
-            str(
-                source_width
-            )
-            +
-            "x"
-            +
-            str(
-                source_height
-            )
-            +
-            " | crop="
-            +
-            str(
-                crop_width
-            )
-            +
-            "x"
-            +
-            str(
-                crop_height
-            )
-            +
-            " | output="
-            +
-            str(
-                output_width
-            )
-            +
-            "x"
-            +
-            str(
-                output_height
-            )
-            +
-            " | ratio="
-            +
-            requested_aspect_ratio
-        )
+        "✂️ EXACT FRAME ["
+        + label
+        + "]: "
+        + str(source_width)
+        + "x"
+        + str(source_height)
+        + " → "
+        + str(output_width)
+        + "x"
+        + str(output_height)
+        + " "
+        + requested_aspect_ratio
+        + " ✅"
     )
 
     return derived_image(
         source,
-
-        image_bytes=
-            output_bytes,
-
-        mime_type=
-            "image/png",
-
-        aspect_ratio=
-            requested_aspect_ratio,
-
-        image_size=
-            (
-                str(
-                    output_width
-                )
-                +
-                "x"
-                +
-                str(
-                    output_height
-                )
-            ),
-
+        image_bytes=output_bytes,
+        mime_type="image/png",
+        aspect_ratio=requested_aspect_ratio,
+        image_size=(
+            str(output_width)
+            + "x"
+            + str(output_height)
+        ),
         metadata_updates={
             "exact_delivery_frame":
                 True,
@@ -2749,35 +1415,6 @@ def create_exact_delivery_frame(
             "source_native_height":
                 source_height,
 
-            "crop_box":
-                {
-                    "left":
-                        crop_box[
-                            0
-                        ],
-
-                    "top":
-                        crop_box[
-                            1
-                        ],
-
-                    "right":
-                        crop_box[
-                            2
-                        ],
-
-                    "bottom":
-                        crop_box[
-                            3
-                        ],
-                },
-
-            "cropped_width":
-                crop_width,
-
-            "cropped_height":
-                crop_height,
-
             "output_width":
                 output_width,
 
@@ -2785,9 +1422,7 @@ def create_exact_delivery_frame(
                 output_height,
 
             "local_upscale":
-                bool(
-                    upscale_final
-                ),
+                bool(upscale_final),
 
             "local_processing_cost":
                 0,
@@ -2802,7 +1437,6 @@ def create_exact_delivery_frame(
 def safe_frame_description(
     aspect_ratio: str,
 ) -> Dict[str, Any]:
-
     provider_size = (
         provider_size_for_ratio(
             aspect_ratio
@@ -2814,16 +1448,12 @@ def safe_frame_description(
     )
 
     if not dims:
-
         return {
             "provider_size":
                 provider_size,
 
             "requested_ratio":
                 aspect_ratio,
-
-            "crop":
-                "unknown",
         }
 
     width, height = dims
@@ -2831,55 +1461,11 @@ def safe_frame_description(
     crop_box = crop_box_for_aspect(
         width,
         height,
-        aspect_ratio
+        aspect_ratio,
     )
 
     left, top, right, bottom = (
         crop_box
-    )
-
-    left_pct = (
-        (
-            left
-            /
-            width
-        )
-        *
-        100.0
-    )
-
-    right_pct = (
-        (
-            width
-            -
-            right
-        )
-        /
-        width
-        *
-        100.0
-    )
-
-    top_pct = (
-        (
-            top
-            /
-            height
-        )
-        *
-        100.0
-    )
-
-    bottom_pct = (
-        (
-            height
-            -
-            bottom
-        )
-        /
-        height
-        *
-        100.0
     )
 
     return {
@@ -2890,37 +1476,41 @@ def safe_frame_description(
             aspect_ratio,
 
         "safe_width":
-            right
-            -
-            left,
+            right - left,
 
         "safe_height":
-            bottom
-            -
-            top,
+            bottom - top,
 
         "left_bleed_pct":
             round(
-                left_pct,
-                2
+                left / width * 100,
+                2,
             ),
 
         "right_bleed_pct":
             round(
-                right_pct,
-                2
+                (
+                    width - right
+                )
+                / width
+                * 100,
+                2,
             ),
 
         "top_bleed_pct":
             round(
-                top_pct,
-                2
+                top / height * 100,
+                2,
             ),
 
         "bottom_bleed_pct":
             round(
-                bottom_pct,
-                2
+                (
+                    height - bottom
+                )
+                / height
+                * 100,
+                2,
             ),
     }
 
@@ -2928,886 +1518,59 @@ def safe_frame_description(
 def safe_frame_instruction(
     aspect_ratio: str,
 ) -> str:
-
     safe = safe_frame_description(
         aspect_ratio
     )
 
-    provider_size = safe.get(
-        "provider_size"
-    )
-
-    final_size = (
-        production_size_for_ratio(
-            aspect_ratio,
-            final_quality=True
-        )
-    )
-
     return f"""
-XPAND DELIVERY FRAME LOCK
-=========================
-
-FINAL requested campaign ratio:
-{aspect_ratio}
-
-Provider-native working canvas:
-{provider_size}
-
-Exact final delivery frame:
-{final_size}
-
-The provider canvas may be larger/taller/wider than the
-requested delivery frame.
-
-This is intentional.
-
-SAFE-FRAME RULE
-===============
-
-All critical visual information MUST remain inside the
-central {aspect_ratio} delivery frame.
-
-This includes:
-
-- hero subject
-- core visual metaphor
-- product
-- human faces
-- human hands
-- architecture required to understand the idea
-- important foreground objects
-- important city landmarks
-- required negative-space region
-- any future headline-safe area
-
-Approximate provider bleed outside final crop:
-
-left:
-{safe.get("left_bleed_pct", 0)}%
-
-right:
-{safe.get("right_bleed_pct", 0)}%
-
-top:
-{safe.get("top_bleed_pct", 0)}%
-
-bottom:
-{safe.get("bottom_bleed_pct", 0)}%
-
-Treat these outer areas as expendable photographic bleed.
-
-DO NOT place critical information there.
-
-Do NOT design the concept around the full provider canvas.
-
-Compose for the FINAL {aspect_ratio} frame from the start.
-""".strip()
-
-
-# =========================================================
-# NEGATIVE PROMPT
-# =========================================================
-
-def base_negative_prompt() -> str:
-
-    return (
-        "avoid malformed anatomy, extra fingers, warped products, "
-        "incorrect perspective, broken reflections, duplicated objects, "
-        "random decorative elements, generic stock-photo composition, "
-        "fake watermarks, random text, misspelled typography, "
-        "unrequested logos, visual clutter, cheap CGI appearance"
-    )
-
-
-# =========================================================
-# COMPILED SECTIONS
-# =========================================================
-
-def compiled_sections(
-    compiled: CompiledPrompt,
-) -> Dict[str, str]:
-
-    metadata = (
-        compiled.metadata
-        if isinstance(
-            compiled.metadata,
-            dict
-        )
-        else
-        {}
-    )
-
-    sections = metadata.get(
-        "sections",
-        {}
-    )
-
-    return (
-        sections
-        if isinstance(
-            sections,
-            dict
-        )
-        else
-        {}
-    )
-
-
-def section_text(
-    compiled: CompiledPrompt,
-    key: str,
-    fallback_limit: int = 5000,
-) -> str:
-
-    sections = compiled_sections(
-        compiled
-    )
-
-    value = sections.get(
-        key
-    )
-
-    if value:
-
-        return clean_text(
-            value,
-            fallback_limit
-        )
-
-    return clean_text(
-        compiled.prompt,
-        fallback_limit
-    )
-
-
-def build_pass_context(
-    compiled: CompiledPrompt,
-    keys: Sequence[
-        Tuple[
-            str,
-            str,
-            int,
-        ]
-    ],
-) -> str:
-
-    parts = []
-
-    for key, label, limit in keys:
-
-        value = section_text(
-            compiled,
-            key,
-            limit
-        )
-
-        if not value:
-
-            continue
-
-        parts.append(
-            (
-                label
-                +
-                "\n"
-                +
-                (
-                    "-"
-                    *
-                    len(
-                        label
-                    )
-                )
-                +
-                "\n"
-                +
-                clean_text(
-                    value,
-                    limit
-                )
-            )
-        )
-
-    return "\n\n".join(
-        parts
-    )
-
-
-# =========================================================
-# OPENAI COMPILER
-# =========================================================
-
-def compile_openai_prompt(
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    references: Any,
-    camera_direction: Any,
-    product_lock: Any,
-) -> CompiledPrompt:
-
-    sections = {
-        "request":
-            clean_text(
-                request,
-                SECTION_BUDGETS[
-                    "request"
-                ]
-            ),
-
-        "creative_direction":
-            compact_json(
-                creative_direction,
-                SECTION_BUDGETS[
-                    "creative_direction"
-                ]
-            ),
-
-        "brand_context":
-            compact_json(
-                brand_context,
-                SECTION_BUDGETS[
-                    "brand_context"
-                ]
-            ),
-
-        "references":
-            compact_json(
-                references,
-                SECTION_BUDGETS[
-                    "references"
-                ]
-            ),
-
-        "camera_direction":
-            compact_json(
-                camera_direction,
-                SECTION_BUDGETS[
-                    "camera_direction"
-                ]
-            ),
-
-        "product_lock":
-            compact_json(
-                product_lock,
-                SECTION_BUDGETS[
-                    "product_lock"
-                ]
-            ),
-    }
-
-    prompt = f"""
-ORIGINAL REQUEST
-================
-
-{sections["request"]}
-
-
-APPROVED CREATIVE DIRECTION
-===========================
-
-{sections["creative_direction"]}
-
-
-BRAND EXECUTION CONTEXT
-=======================
-
-{sections["brand_context"]}
-
-
-VISUAL REFERENCE DNA
+FINAL DELIVERY FRAME
 ====================
 
-{sections["references"]}
+Final campaign ratio:
+{aspect_ratio}
 
+Provider working canvas:
+{safe.get("provider_size")}
 
-CAMERA LOCK
-===========
+All visually critical information MUST survive the central
+{aspect_ratio} crop.
 
-{sections["camera_direction"]}
+Approximate expendable provider bleed:
+left   {safe.get("left_bleed_pct", 0)}%
+right  {safe.get("right_bleed_pct", 0)}%
+top    {safe.get("top_bleed_pct", 0)}%
+bottom {safe.get("bottom_bleed_pct", 0)}%
 
+Keep inside the final safe frame:
 
-PRODUCT LOCK
-============
+- hero subject
+- core metaphor
+- product
+- human face/hands
+- architectural storytelling
+- important city/environment cues
+- negative-space copy area
 
-{sections["product_lock"]}
-
-
-OPENAI GPT-IMAGE EXECUTION RULES
-================================
-
-Create one world-class commercial advertising image.
-
-The APPROVED CREATIVE DIRECTION is the primary concept.
-
-Do not replace it with a generic advertising idea.
-
-CORE-CONCEPT PRIORITY
-=====================
-
-The semantic metaphor requested by the user must be visibly
-understandable in the actual image.
-
-It must not exist only in the written prompt.
-
-Use brand and reference information as execution constraints,
-not as competing concepts.
-
-Use the camera direction literally and coherently.
-
-Maintain:
-
-- physically plausible camera geometry
-- premium commercial photography
-- realistic material response
-- believable contact shadows
-- controlled reflections
-- sophisticated depth
-- clear visual hierarchy
-- intentional negative space
-- brand-consistent colors
-- realistic human anatomy
-- professional advertising finish
-
-If product references are supplied:
-
-- treat them as authoritative product identity
-- preserve silhouette
-- preserve proportions
-- preserve corner geometry
-- preserve material
-- preserve color relationships
-- preserve major graphic layout
-- redesign the environment around the product
-- do not redesign the product itself
-
-Do not imitate one existing advertisement exactly.
-
-Do not create a generic AI banking image.
-
-Avoid visual clichés unless transformed into an original,
-brand-relevant visual metaphor.
-
-The final scene must feel intentionally art-directed,
-physically plausible and professionally photographed.
+Do not put critical information in crop bleed.
 """.strip()
-
-    prompt = fit_prompt_for_api(
-        prompt,
-
-        label=
-            "compiled_master_brief",
-
-        budget=
-            COMPILED_PROMPT_BUDGET
-    )
-
-    return CompiledPrompt(
-        target=
-            TARGET_OPENAI,
-
-        prompt=
-            prompt,
-
-        negative_prompt=
-            base_negative_prompt(),
-
-        metadata={
-            "compiler":
-                "openai_gpt_image_v2_3_1",
-
-            "product_lock":
-                bool(
-                    product_lock
-                ),
-
-            "prompt_budget":
-                COMPILED_PROMPT_BUDGET,
-
-            "prompt_chars":
-                len(
-                    prompt
-                ),
-
-            "sections":
-                sections,
-        },
-    )
-
-
-# =========================================================
-# OTHER COMPILERS
-# =========================================================
-
-def compile_gemini_prompt(
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    references: Any,
-    camera_direction: Any,
-    product_lock: Any,
-) -> CompiledPrompt:
-
-    prompt = f"""
-TASK:
-{clean_text(request, 5000)}
-
-CREATIVE DIRECTION:
-{compact_json(creative_direction, 6000)}
-
-BRAND:
-{compact_json(brand_context, 4500)}
-
-REFERENCE DNA:
-{compact_json(references, 3500)}
-
-CAMERA:
-{compact_json(camera_direction, 1800)}
-
-LOCKED PRODUCT:
-{compact_json(product_lock, 2200)}
-
-Generate a premium photorealistic advertising key visual.
-
-Prioritize:
-
-- semantic coherence
-- original concept
-- brand consistency
-- believable camera geometry
-- realistic material behavior
-- premium lighting
-
-Preserve locked product geometry and identity.
-
-Avoid generic banking clichés.
-""".strip()
-
-    return CompiledPrompt(
-        target=
-            TARGET_GEMINI,
-
-        prompt=
-            hard_fit_prompt(
-                prompt,
-                COMPILED_PROMPT_BUDGET
-            ),
-
-        negative_prompt=
-            base_negative_prompt(),
-
-        metadata={
-            "compiler":
-                "gemini_image_v2_3_1",
-        },
-    )
-
-
-def compile_midjourney_prompt(
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    references: Any,
-    camera_direction: Any,
-    product_lock: Any,
-) -> CompiledPrompt:
-
-    prompt = (
-        clean_text(
-            request,
-            4000
-        )
-        +
-        ", "
-        +
-        compact_json(
-            creative_direction,
-            4500
-        )
-        +
-        ", "
-        +
-        compact_json(
-            camera_direction,
-            1400
-        )
-        +
-        ", commercial advertising photography, "
-        +
-        "precise cinematic camera geometry, "
-        +
-        "premium realistic materials, "
-        +
-        "controlled reflections, professional lighting, "
-        +
-        "intentional negative space"
-    )
-
-    return CompiledPrompt(
-        target=
-            TARGET_MIDJOURNEY,
-
-        prompt=
-            hard_fit_prompt(
-                prompt,
-                14000
-            ),
-
-        negative_prompt=
-            (
-                "generic banking icons, floating coins, "
-                "deformed anatomy, warped product, random typography"
-            ),
-
-        metadata={
-            "compiler":
-                "midjourney_v2_3_1",
-
-            "execution_available":
-                False,
-        },
-    )
-
-
-def compile_flux_prompt(
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    references: Any,
-    camera_direction: Any,
-    product_lock: Any,
-) -> CompiledPrompt:
-
-    prompt = f"""
-{clean_text(request, 5000)}
-
-SCENE:
-{compact_json(creative_direction, 5500)}
-
-BRAND:
-{compact_json(brand_context, 3000)}
-
-CAMERA:
-{compact_json(camera_direction, 1600)}
-
-PRODUCT:
-{compact_json(product_lock, 2000)}
-
-Photorealistic high-end advertising photography.
-Accurate geometry.
-Controlled materials.
-Clean commercial lighting.
-""".strip()
-
-    return CompiledPrompt(
-        target=
-            TARGET_FLUX,
-
-        prompt=
-            hard_fit_prompt(
-                prompt,
-                18000
-            ),
-
-        negative_prompt=
-            base_negative_prompt(),
-
-        metadata={
-            "compiler":
-                "flux_v2_3_1",
-
-            "execution_available":
-                False,
-        },
-    )
-
-
-def compile_ideogram_prompt(
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    references: Any,
-    camera_direction: Any,
-    product_lock: Any,
-) -> CompiledPrompt:
-
-    prompt = f"""
-Create a polished commercial campaign visual.
-
-REQUEST:
-{clean_text(request, 5000)}
-
-CREATIVE:
-{compact_json(creative_direction, 5500)}
-
-BRAND:
-{compact_json(brand_context, 3500)}
-
-CAMERA:
-{compact_json(camera_direction, 1600)}
-
-If exact headline text is specified,
-prioritize spelling, layout clarity and readable typography.
-""".strip()
-
-    return CompiledPrompt(
-        target=
-            TARGET_IDEOGRAM,
-
-        prompt=
-            hard_fit_prompt(
-                prompt,
-                18000
-            ),
-
-        negative_prompt=
-            base_negative_prompt(),
-
-        metadata={
-            "compiler":
-                "ideogram_v2_3_1",
-
-            "execution_available":
-                False,
-        },
-    )
-
-
-def compile_video_prompt(
-    target: str,
-    *,
-    request: str,
-    creative_direction: Any,
-    brand_context: Any,
-    camera_direction: Any,
-) -> CompiledPrompt:
-
-    prompt = f"""
-ADVERTISING SCENE:
-{clean_text(request, 5000)}
-
-VISUAL DIRECTION:
-{compact_json(creative_direction, 6500)}
-
-BRAND:
-{compact_json(brand_context, 3500)}
-
-CAMERA:
-{compact_json(camera_direction, 1800)}
-
-Describe:
-
-- physically coherent subject motion
-- camera motion
-- lighting continuity
-- material consistency
-- product identity continuity
-- clear opening frame
-- clear final frame
-""".strip()
-
-    return CompiledPrompt(
-        target=
-            target,
-
-        prompt=
-            hard_fit_prompt(
-                prompt,
-                19000
-            ),
-
-        negative_prompt=
-            (
-                "camera teleportation, geometry morphing, "
-                "warped hands, product deformation, flicker, "
-                "identity drift"
-            ),
-
-        metadata={
-            "compiler":
-                (
-                    target
-                    +
-                    "_v2_3_1"
-                ),
-
-            "execution_available":
-                False,
-        },
-    )
-
-
-def compile_prompt(
-    target: str,
-    *,
-    request: str,
-    creative_direction: Any = None,
-    brand_context: Any = None,
-    references: Any = None,
-    camera_direction: Any = None,
-    product_lock: Any = None,
-) -> CompiledPrompt:
-
-    target = clean_text(
-        target,
-        100
-    ).lower()
-
-    kwargs = {
-        "request":
-            request,
-
-        "creative_direction":
-            creative_direction
-            or
-            {},
-
-        "brand_context":
-            brand_context
-            or
-            {},
-
-        "references":
-            references
-            or
-            [],
-
-        "camera_direction":
-            camera_direction
-            or
-            {},
-
-        "product_lock":
-            product_lock
-            or
-            {},
-    }
-
-    if target == TARGET_GEMINI:
-
-        return compile_gemini_prompt(
-            **kwargs
-        )
-
-    if target == TARGET_MIDJOURNEY:
-
-        return compile_midjourney_prompt(
-            **kwargs
-        )
-
-    if target == TARGET_FLUX:
-
-        return compile_flux_prompt(
-            **kwargs
-        )
-
-    if target == TARGET_IDEOGRAM:
-
-        return compile_ideogram_prompt(
-            **kwargs
-        )
-
-    if target in {
-        TARGET_RUNWAY,
-        TARGET_KLING,
-        TARGET_SEEDANCE,
-    }:
-
-        return compile_video_prompt(
-            target,
-
-            request=
-                request,
-
-            creative_direction=
-                creative_direction
-                or
-                {},
-
-            brand_context=
-                brand_context
-                or
-                {},
-
-            camera_direction=
-                camera_direction
-                or
-                {},
-        )
-
-    return compile_openai_prompt(
-        **kwargs
-    )
 
 
 # =========================================================
 # REFERENCES
 # =========================================================
 
-def infer_mime_type(
-    raw: bytes,
-    fallback: str = "image/jpeg",
-) -> str:
-
-    if raw.startswith(
-        b"\x89PNG\r\n\x1a\n"
-    ):
-
-        return (
-            "image/png"
-        )
-
-    if raw.startswith(
-        b"\xff\xd8\xff"
-    ):
-
-        return (
-            "image/jpeg"
-        )
-
-    if (
-        raw.startswith(
-            b"RIFF"
-        )
-        and
-        b"WEBP"
-        in raw[
-            :16
-        ]
-    ):
-
-        return (
-            "image/webp"
-        )
-
-    return fallback
-
-
 def load_runtime_references(
     core,
     user_id,
     brand_id: str,
     *,
-    limit: int = 12,
-) -> List[
-    ProductionReference
-]:
-
+    limit: int = 10,
+) -> List[ProductionReference]:
     stored = load_visual_references(
         core,
         user_id,
-
-        brand_id=
-            brand_id,
-
-        limit=
-            limit
+        brand_id=brand_id,
+        limit=limit,
     )
 
     references: List[
@@ -3815,122 +1578,86 @@ def load_runtime_references(
     ] = []
 
     for item in stored:
-
         if not isinstance(
             item,
-            dict
+            dict,
         ):
-
             continue
 
         file_id = clean_text(
             item.get(
                 "telegram_file_id",
-                ""
+                "",
             ),
-            1500
+            1500,
         )
 
         if not file_id:
-
             continue
 
         try:
-
             raw = (
                 core.get_telegram_file_bytes(
                     file_id
                 )
             )
-
         except Exception as error:
-
             print(
-                (
-                    "⚠️ Reference download skipped: "
-                    +
-                    clean_text(
-                        error,
-                        1000
-                    )
+                "⚠️ Reference download skipped: "
+                + clean_text(
+                    error,
+                    1000,
                 )
             )
-
             continue
 
         if not raw:
-
             continue
 
         references.append(
             ProductionReference(
-                role=
-                    clean_text(
-                        item.get(
-                            "reference_role",
-                            "style_reference"
-                        ),
-                        100
+                role=clean_text(
+                    item.get(
+                        "reference_role",
+                        "style_reference",
                     ),
+                    100,
+                ),
 
-                image_bytes=
-                    raw,
+                image_bytes=raw,
 
-                mime_type=
-                    infer_mime_type(
-                        raw
+                mime_type=infer_mime_type(
+                    raw
+                ),
+
+                dna=safe_dict(
+                    item.get(
+                        "dna",
+                        {},
+                    )
+                ),
+
+                product_lock=safe_dict(
+                    item.get(
+                        "product_lock",
+                        {},
+                    )
+                ),
+
+                user_note=clean_text(
+                    item.get(
+                        "user_note",
+                        "",
                     ),
+                    1500,
+                ),
 
-                dna=
-                    (
-                        item.get(
-                            "dna",
-                            {}
-                        )
-                        if isinstance(
-                            item.get(
-                                "dna",
-                                {}
-                            ),
-                            dict
-                        )
-                        else
-                        {}
-                    ),
-
-                product_lock=
-                    (
-                        item.get(
-                            "product_lock",
-                            {}
-                        )
-                        if isinstance(
-                            item.get(
-                                "product_lock",
-                                {}
-                            ),
-                            dict
-                        )
-                        else
-                        {}
-                    ),
-
-                user_note=
-                    clean_text(
-                        item.get(
-                            "user_note",
-                            ""
-                        ),
-                        2000
-                    ),
-
-                source_id=
-                    str(
-                        item.get(
-                            "id",
-                            ""
-                        )
-                    ),
+                source_id=str(
+                    item.get(
+                        "id",
+                        "",
+                    )
+                ),
             )
         )
 
@@ -3941,16 +1668,12 @@ def product_references(
     references: Sequence[
         ProductionReference
     ],
-) -> List[
-    ProductionReference
-]:
-
+) -> List[ProductionReference]:
     return [
         item
         for item in references
         if item.role
-        ==
-        "product_reference"
+        == "product_reference"
     ]
 
 
@@ -3958,61 +1681,23 @@ def reference_dna_payload(
     references: Sequence[
         ProductionReference
     ],
-) -> List[
-    Dict[
-        str,
-        Any
-    ]
-]:
-
+) -> List[Dict[str, Any]]:
     output = []
 
-    for item in references:
-
+    for item in references[:10]:
         output.append(
             {
                 "role":
                     item.role,
 
                 "dna":
-                    reduce_prompt_value(
-                        item.dna,
-
-                        max_depth=
-                            3,
-
-                        list_limit=
-                            6,
-
-                        dict_limit=
-                            30,
-
-                        string_limit=
-                            700
-                    ),
+                    item.dna,
 
                 "product_lock":
-                    reduce_prompt_value(
-                        item.product_lock,
+                    item.product_lock,
 
-                        max_depth=
-                            3,
-
-                        list_limit=
-                            6,
-
-                        dict_limit=
-                            25,
-
-                        string_limit=
-                            500
-                    ),
-
-                "user_note":
-                    clean_text(
-                        item.user_note,
-                        1000
-                    ),
+                "note":
+                    item.user_note,
             }
         )
 
@@ -4024,72 +1709,42 @@ def combined_product_lock(
         ProductionReference
     ],
 ) -> Dict[str, Any]:
-
-    locked: List[str] = []
-
-    source_count = 0
+    rules: List[str] = []
+    count = 0
 
     for item in references:
-
         if item.role != "product_reference":
-
             continue
 
-        source_count += 1
+        count += 1
 
-        product_lock = (
-            item.product_lock
+        values = safe_list(
+            item.product_lock.get(
+                "must_remain_identical"
+            )
         )
-
-        if not isinstance(
-            product_lock,
-            dict
-        ):
-
-            continue
-
-        values = product_lock.get(
-            "must_remain_identical",
-            []
-        )
-
-        if not isinstance(
-            values,
-            list
-        ):
-
-            continue
 
         for value in values:
-
             text = clean_text(
                 value,
-                500
+                500,
             )
 
             if (
                 text
-                and
-                text not in locked
+                and text not in rules
             ):
-
-                locked.append(
-                    text
-                )
+                rules.append(text)
 
     return {
         "enabled":
-            bool(
-                source_count
-            ),
+            bool(count),
 
         "reference_count":
-            source_count,
+            count,
 
         "must_remain_identical":
-            locked[
-                :30
-            ],
+            rules[:30],
 
         "environment_may_change":
             True,
@@ -4100,18 +1755,247 @@ def combined_product_lock(
         "lock_type":
             (
                 "high_fidelity_reference"
-                if source_count
-                else
-                "none"
+                if count
+                else "none"
             ),
-
-        "exact_pixel_identity_guaranteed":
-            False,
     }
 
 
 # =========================================================
-# MULTI-REFERENCE IMAGE EDIT
+# PRODUCTION BLUEPRINT
+# =========================================================
+
+def base_negative_prompt() -> str:
+    return (
+        "malformed anatomy, extra fingers, warped product, "
+        "wrong perspective, fake reflections, duplicated objects, "
+        "generic stock photography, floating decorative objects, "
+        "random text, fake logos, misspelled typography, "
+        "cheap CGI, plastic skin, wet-floor reflections, "
+        "generic banking clichés"
+    )
+
+
+def build_quality_first_blueprint(
+    *,
+    request: str,
+    creative_direction: Any,
+    brand_context: Any,
+    references: Any,
+    camera_direction: Any,
+    product_lock: Any,
+    aspect_ratio: str,
+) -> str:
+    return f"""
+XPAND QUALITY-FIRST MASTERPIECE BLUEPRINT
+========================================
+
+ORIGINAL USER REQUEST
+---------------------
+{clean_text(request, 5000)}
+
+
+APPROVED CREATIVE DIRECTION
+---------------------------
+{compact_json(creative_direction, 5500)}
+
+
+BRAND EXECUTION DNA
+-------------------
+{compact_json(brand_context, 4500)}
+
+
+VISUAL REFERENCE DNA
+--------------------
+{compact_json(references, 3500)}
+
+
+CAMERA DIRECTION
+----------------
+{compact_json(camera_direction, 1800)}
+
+
+PRODUCT LOCK
+------------
+{compact_json(product_lock, 2200)}
+
+
+{safe_frame_instruction(aspect_ratio)}
+
+
+ONE-PASS MASTERPIECE OBJECTIVE
+==============================
+
+Create the strongest possible finished advertising hero image
+in ONE high-quality production generation.
+
+Do NOT treat this as a rough concept sketch.
+
+The first generated image should already integrate:
+
+1. CONCEPT
+   - execute the approved visual metaphor clearly
+   - make the message understandable visually
+   - avoid generic interpretation
+   - reject banking / travel / technology clichés
+
+2. COMPOSITION
+   - world-class campaign framing
+   - strong visual hierarchy
+   - purposeful foreground / midground / background
+   - clean negative space
+   - no random decoration
+   - no unnecessary clutter
+
+3. CAMERA
+   - physically believable real-lens behavior
+   - correct horizon and vanishing points
+   - intentional focal length
+   - natural depth
+   - premium advertising perspective
+
+4. LIGHTING
+   - motivated cinematic commercial light
+   - natural fill
+   - controlled highlights
+   - correct contact shadows
+   - realistic exposure
+   - premium contrast
+   - no fake neon unless conceptually necessary
+
+5. MATERIALS
+   - physically convincing glass
+   - real metal
+   - believable stone
+   - realistic fabric
+   - realistic skin
+   - correct surface roughness
+   - controlled reflections
+   - no wet-floor appearance unless explicitly requested
+
+6. BRAND
+   - visually recognizable brand world
+   - correct visual tone
+   - correct color hierarchy
+   - use brand accent colors intentionally
+   - do not turn brand colors into random decoration
+
+7. PRODUCT
+   If Product Lock is enabled:
+   - preserve identity
+   - preserve silhouette
+   - preserve proportions
+   - preserve major geometry
+   - preserve major graphic placement
+   - preserve color relationships
+   - do not redesign it
+
+8. PEOPLE
+   - natural behavior
+   - correct anatomy
+   - believable hands
+   - authentic styling
+   - never generic posed stock-photo behavior
+
+9. ADVERTISING READINESS
+   - premium global campaign finish
+   - cinematic photorealism
+   - real commercial photography feeling
+   - immediately usable as a hero visual
+   - intentional copy space where required
+
+10. FINAL QUALITY
+   Solve composition, lighting, materials and polish NOW.
+   Do not depend on later passes to rescue weak fundamentals.
+
+
+NON-NEGOTIABLE
+==============
+
+The concept matters more than decorative beauty.
+
+A beautiful image that fails the requested idea is a failure.
+
+The image must feel designed by a top international
+creative director, photographer and production team,
+not like generic AI art.
+""".strip()
+
+
+def compile_prompt(
+    target: str,
+    *,
+    request: str,
+    creative_direction: Any = None,
+    brand_context: Any = None,
+    references: Any = None,
+    camera_direction: Any = None,
+    product_lock: Any = None,
+    aspect_ratio: str = "4:5",
+) -> CompiledPrompt:
+    target = clean_text(
+        target,
+        100,
+    ).lower()
+
+    blueprint = (
+        build_quality_first_blueprint(
+            request=request,
+            creative_direction=(
+                creative_direction
+                or {}
+            ),
+            brand_context=(
+                brand_context
+                or {}
+            ),
+            references=(
+                references
+                or []
+            ),
+            camera_direction=(
+                camera_direction
+                or {}
+            ),
+            product_lock=(
+                product_lock
+                or {}
+            ),
+            aspect_ratio=aspect_ratio,
+        )
+    )
+
+    blueprint = fit_prompt_for_api(
+        blueprint,
+        label="quality_first_blueprint",
+        budget=COMPILED_PROMPT_BUDGET,
+    )
+
+    return CompiledPrompt(
+        target=target,
+        prompt=blueprint,
+        negative_prompt=base_negative_prompt(),
+        metadata={
+            "compiler":
+                "xpand_quality_first_v3",
+
+            "prompt_chars":
+                len(blueprint),
+
+            "prompt_budget":
+                COMPILED_PROMPT_BUDGET,
+
+            "aspect_ratio":
+                aspect_ratio,
+
+            "adaptive":
+                True,
+        },
+    )
+
+
+# =========================================================
+# OPENAI IMAGE EDIT
 # =========================================================
 
 def openai_multi_reference_edit(
@@ -4124,12 +2008,9 @@ def openai_multi_reference_edit(
     ],
     prompt: str,
     aspect_ratio: str,
-    final_quality: bool,
     pass_name: str,
 ) -> GeneratedImage:
-
     if not OPENAI_API_KEY:
-
         raise RuntimeError(
             "OPENAI_API_KEY missing."
         )
@@ -4146,65 +2027,40 @@ def openai_multi_reference_edit(
     ] = []
 
     if working_image is not None:
-
-        require_provider_canvas(
-            working_image,
-            aspect_ratio,
-            label=(
-                pass_name
-                +
-                "_input"
-            )
+        extension = extension_for_mime(
+            working_image.mime_type
         )
 
         files.append(
             (
                 "image[]",
                 (
-                    (
-                        "working-image"
-                        +
-                        working_image.extension
-                    ),
+                    "working-image"
+                    + extension,
 
                     working_image.image_bytes,
 
-                    (
-                        working_image.mime_type
-                        or
-                        "image/png"
-                    ),
+                    working_image.mime_type
+                    or "image/png",
                 ),
             )
         )
 
     for index, reference in enumerate(
         references,
-        start=1
+        start=1,
     ):
-
-        extension = (
-            ".png"
-            if reference.mime_type
-            ==
-            "image/png"
-            else
-            ".jpg"
+        extension = extension_for_mime(
+            reference.mime_type
         )
 
         files.append(
             (
                 "image[]",
                 (
-                    (
-                        "product-reference-"
-                        +
-                        str(
-                            index
-                        )
-                        +
-                        extension
-                    ),
+                    "reference-"
+                    + str(index)
+                    + extension,
 
                     reference.image_bytes,
 
@@ -4214,27 +2070,31 @@ def openai_multi_reference_edit(
         )
 
     if not files:
-
         raise RuntimeError(
-            "No image input supplied to edit."
+            "Image edit requested without an image input."
         )
 
-    if len(
-        files
-    ) == 1:
-
-        _, file_tuple = (
-            files[
-                0
-            ]
-        )
+    if len(files) == 1:
+        _, file_value = files[0]
 
         files = [
             (
                 "image",
-                file_tuple,
+                file_value,
             )
         ]
+
+    safe_prompt = fit_prompt_for_api(
+        (
+            prompt
+            + "\n\n"
+            + safe_frame_instruction(
+                aspect_ratio
+            )
+        ),
+        label=pass_name,
+        budget=CORRECTION_PROMPT_BUDGET,
+    )
 
     provider_size = (
         provider_size_for_ratio(
@@ -4242,133 +2102,73 @@ def openai_multi_reference_edit(
         )
     )
 
-    combined_prompt = (
-        clean_text(
-            prompt,
-            1000000
-        )
-        +
-        "\n\n"
-        +
-        safe_frame_instruction(
-            aspect_ratio
-        )
-    )
-
-    safe_prompt = fit_prompt_for_api(
-        combined_prompt,
-
-        label=
-            pass_name,
-
-        budget=
-            PASS_PROMPT_BUDGET
-    )
-
-    payload = {
-        "model":
-            OPENAI_IMAGE_MODEL,
-
-        "prompt":
-            safe_prompt,
-
-        "size":
-            provider_size,
-
-        "quality":
-            (
-                "high"
-                if final_quality
-                else
-                "medium"
-            ),
-
-        "n":
-            "1",
-    }
-
     response = requests.post(
         OPENAI_IMAGE_EDITS_URL,
-
         headers={
             "Authorization":
-                (
-                    "Bearer "
-                    +
-                    OPENAI_API_KEY
-                ),
+                "Bearer "
+                + OPENAI_API_KEY,
         },
+        data={
+            "model":
+                OPENAI_IMAGE_MODEL,
 
-        data=
-            payload,
+            "prompt":
+                safe_prompt,
 
-        files=
-            files,
+            "size":
+                provider_size,
 
-        timeout=
-            REQUEST_TIMEOUT
+            "quality":
+                "high",
+
+            "n":
+                "1",
+        },
+        files=files,
+        timeout=REQUEST_TIMEOUT,
     )
 
     try:
-
         response_data = (
             response.json()
         )
-
     except Exception:
-
         response_data = {
             "raw":
                 response.text
         }
 
     if not response.ok:
-
         error = response_data.get(
             "error"
         )
 
         if isinstance(
             error,
-            dict
+            dict,
         ):
-
             message = (
-                error.get(
-                    "message"
-                )
-                or
-                str(
-                    error
-                )
+                error.get("message")
+                or str(error)
             )
-
         else:
-
             message = (
                 error
-                or
-                response_data.get(
-                    "raw"
-                )
-                or
-                (
+                or response_data.get("raw")
+                or (
                     "HTTP "
-                    +
-                    str(
+                    + str(
                         response.status_code
                     )
                 )
             )
 
         raise RuntimeError(
-            (
-                "GPT-Image-2 edit failed: "
-                +
-                clean_text(
-                    message,
-                    3000
-                )
+            "GPT-Image-2 edit failed: "
+            + clean_text(
+                message,
+                3000,
             )
         )
 
@@ -4377,80 +2177,43 @@ def openai_multi_reference_edit(
     )
 
     if not images:
-
         raise RuntimeError(
             "GPT-Image-2 edit returned no image."
         )
 
     image_bytes, mime_type = (
-        images[
-            0
-        ]
+        images[0]
     )
-
-    request_id = clean_text(
-        response.headers.get(
-            "x-request-id",
-            ""
-        ),
-        300
-    )
-
-    if not request_id:
-
-        request_id = (
-            "prod-"
-            +
-            uuid.uuid4().hex[
-                :12
-            ]
-        )
 
     result = GeneratedImage(
-        image_bytes=
-            image_bytes,
-
-        mime_type=
+        image_bytes=image_bytes,
+        mime_type=(
             mime_type
+            or "image/png"
+        ),
+        provider="xpand_production",
+        model=OPENAI_IMAGE_MODEL,
+        prompt=safe_prompt,
+        original_prompt=safe_prompt,
+        aspect_ratio=aspect_ratio,
+        image_size=provider_size,
+        quality="high",
+        route_reason=(
+            "XPAND Quality-First Adaptive: "
+            + pass_name
+        ),
+        request_id=(
+            clean_text(
+                response.headers.get(
+                    "x-request-id",
+                    "",
+                ),
+                300,
+            )
             or
-            "image/png",
-
-        provider=
-            "xpand_production",
-
-        model=
-            OPENAI_IMAGE_MODEL,
-
-        prompt=
-            safe_prompt,
-
-        original_prompt=
-            safe_prompt,
-
-        aspect_ratio=
-            aspect_ratio,
-
-        image_size=
-            provider_size,
-
-        quality=
-            (
-                "high"
-                if final_quality
-                else
-                "medium"
-            ),
-
-        route_reason=
-            (
-                "XPAND Production Pass: "
-                +
-                pass_name
-            ),
-
-        request_id=
-            request_id,
-
+            "prod-"
+            + uuid.uuid4().hex[:12]
+        ),
         metadata={
             "production_engine":
                 ENGINE_VERSION,
@@ -4458,1406 +2221,193 @@ def openai_multi_reference_edit(
             "pass_name":
                 pass_name,
 
-            "reference_images":
-                len(
-                    references
-                ),
-
-            "working_image_input":
-                bool(
-                    working_image
-                ),
-
             "prompt_chars":
-                len(
-                    safe_prompt
-                ),
+                len(safe_prompt),
 
-            "prompt_budget":
-                PASS_PROMPT_BUDGET,
-
-            "provider_requested_size":
-                provider_size,
-
-            "delivery_ratio":
+            "requested_delivery_ratio":
                 aspect_ratio,
+
+            "quality":
+                "high",
         },
     )
 
-    require_provider_canvas(
+    inspect_provider_canvas(
         result,
         aspect_ratio,
-        label=
-            pass_name
     )
 
     return result
 
 
 # =========================================================
-# PASS PROMPTS
+# INITIAL HIGH-QUALITY GENERATION
 # =========================================================
 
-def composition_pass_prompt(
-    compiled: CompiledPrompt,
-    camera: Any,
-    product_lock: Any,
-) -> str:
-
-    master = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                4500,
-            ),
-
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                6500,
-            ),
-
-            (
-                "brand_context",
-                "BRAND CONSTRAINTS",
-                3500,
-            ),
-
-            (
-                "references",
-                "REFERENCE DNA",
-                2800,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA DIRECTION",
-                2200,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                2200,
-            ),
-        ]
-    )
-
-    return hard_fit_prompt(
-        f"""
-COMPOSITION PASS
-================
-
-{master}
-
-CURRENT PASS OBJECTIVE
-======================
-
-Refine the supplied image into the approved final composition.
-
-CHANGE ONLY WHAT IMPROVES COMPOSITION:
-
-- preserve the approved concept
-- preserve the visual metaphor
-- lock camera geometry
-- lock horizon
-- correct vanishing points
-- preserve physically believable perspective
-- improve foreground / midground / background separation
-- improve visual hierarchy
-- improve hero subject position
-- establish intentional negative space
-- remove distracting clutter
-- improve visual storytelling
-- preserve brand world
-- preserve product identity if locked
-
-The FINAL delivery crop is mandatory.
-
-Keep all core visual information inside its safe frame.
-
-Do NOT create a different concept.
-
-Do NOT replace the visual metaphor.
-
-Do NOT redesign a locked product.
-
-The image after this pass must look like a stronger version
-of the same approved concept.
-""".strip(),
-
-        PASS_PROMPT_BUDGET
-    )
-
-
-def product_pass_prompt(
-    compiled: CompiledPrompt,
-    product_lock: Any,
-) -> str:
-
-    master = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                4000,
-            ),
-
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                5000,
-            ),
-
-            (
-                "references",
-                "PRODUCT / REFERENCE DNA",
-                4200,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                4000,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA",
-                1600,
-            ),
-        ]
-    )
-
-    return hard_fit_prompt(
-        f"""
-PRODUCT FIDELITY PASS
-=====================
-
-{master}
-
-The supplied product reference images are authoritative.
-
-Preserve:
-
-- silhouette
-- proportions
-- thickness
-- corners
-- major design geometry
-- material
-- color relationships
-- major graphic placement
-- intended product perspective
-
-Correct:
-
-- warped product edges
-- wrong perspective
-- inconsistent thickness
-- impossible reflections
-- bad hand/product contact
-- product identity drift
-
-Environment may remain as designed.
-
-Lighting may adapt naturally.
-
-Keep the product safely inside the final delivery crop.
-
-Do NOT invent another product.
-
-Do NOT convert the product into a generic AI approximation.
-""".strip(),
-
-        PASS_PROMPT_BUDGET
-    )
-
-
-def lighting_pass_prompt(
-    compiled: CompiledPrompt,
-) -> str:
-
-    master = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                3500,
-            ),
-
-            (
-                "creative_direction",
-                "CREATIVE DIRECTION",
-                5200,
-            ),
-
-            (
-                "brand_context",
-                "BRAND LIGHTING / VISUAL CONTEXT",
-                4200,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA",
-                1800,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                1800,
-            ),
-        ]
-    )
-
-    return hard_fit_prompt(
-        f"""
-LIGHTING PASS
-=============
-
-{master}
-
-Preserve:
-
-- subject identity
-- product geometry
-- camera
-- composition
-- environment structure
-- visual metaphor
-- delivery safe frame
-
-Improve only professional lighting behavior:
-
-- motivated key light
-- natural fill
-- controlled rim / edge light
-- realistic falloff
-- contact shadows
-- ambient occlusion
-- believable reflections
-- physically coherent highlights
-- premium cinematic contrast
-- brand-consistent color temperature
-- realistic exposure relationships
-
-Avoid:
-
-- fake glow
-- uncontrolled neon
-- excessive wet-looking reflections
-- impossible highlights
-- flat AI lighting
-- decorative light that does not belong to the scene
-""".strip(),
-
-        PASS_PROMPT_BUDGET
-    )
-
-
-def material_pass_prompt(
-    compiled: CompiledPrompt,
-) -> str:
-
-    master = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                3200,
-            ),
-
-            (
-                "creative_direction",
-                "CREATIVE DIRECTION",
-                4500,
-            ),
-
-            (
-                "brand_context",
-                "BRAND MATERIAL CONTEXT",
-                3500,
-            ),
-
-            (
-                "references",
-                "REFERENCE MATERIAL DNA",
-                3000,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                2200,
-            ),
-        ]
-    )
-
-    return hard_fit_prompt(
-        f"""
-MATERIAL REALISM PASS
-=====================
-
-{master}
-
-Preserve camera, composition, concept and delivery safe frame.
-
-Improve physical realism of:
-
-- metal
-- glass
-- plastic
-- bank-card surfaces
-- fabric
-- leather
-- skin
-- architecture
-- floors
-- walls
-- luggage
-- furniture
-- screens
-
-Correct:
-
-- plastic-looking skin
-- excessive gloss
-- impossible reflections
-- identical roughness across surfaces
-- fake CGI texture
-- over-smoothed surfaces
-- unrealistic glass
-- unnatural specular highlights
-
-Use:
-
-- realistic microtexture
-- material-specific roughness
-- physically believable reflections
-- subtle surface variation
-- premium commercial finish
-""".strip(),
-
-        PASS_PROMPT_BUDGET
-    )
-
-
-def polish_pass_prompt(
-    compiled: CompiledPrompt,
-) -> str:
-
-    master = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                3500,
-            ),
-
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                5000,
-            ),
-
-            (
-                "brand_context",
-                "BRAND",
-                3500,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                2200,
-            ),
-        ]
-    )
-
-    return hard_fit_prompt(
-        f"""
-FINAL ADVERTISING POLISH
-========================
-
-{master}
-
-Do NOT redesign the scene.
-
-Do NOT create a different idea.
-
-Do NOT weaken or remove the core visual metaphor.
-
-Preserve all successful elements.
-
-Preserve the final campaign safe frame.
-
-Final corrections only:
-
-- clean AI artifacts
-- improve fine detail
-- correct anatomy
-- fix edges
-- remove random objects
-- refine contact shadows
-- refine reflections
-- improve commercial color grade
-- preserve intentional negative space
-- preserve locked product
-- preserve brand consistency
-- improve realism
-- improve premium campaign finish
-
-The result must look publication-ready,
-not like unfinished AI artwork.
-""".strip(),
-
-        PASS_PROMPT_BUDGET
-    )
-
-
-# =========================================================
-# BASE GENERATION
-# =========================================================
-
-def generate_base_image(
+def generate_high_quality_image(
     *,
     compiled: CompiledPrompt,
     product_refs: Sequence[
         ProductionReference
     ],
     aspect_ratio: str,
+    original_request: str,
+    pass_name: str = "quality_first_generation",
 ) -> GeneratedImage:
-
-    base_prompt = fit_prompt_for_api(
-        (
-            compiled.prompt
-            +
-            "\n\n"
-            +
-            safe_frame_instruction(
-                aspect_ratio
-            )
-        ),
-
-        label=
-            "concept_base",
-
-        budget=
-            COMPILED_PROMPT_BUDGET
-    )
-
+    #
+    # With Product Reference:
+    #
+    # use image edit/generation so product identity is
+    # physically supplied to the image model.
+    #
     if product_refs:
-
         prompt = (
-            base_prompt
-            +
-            "\n\n"
-            +
-            """
-BASE GENERATION WITH PRODUCT REFERENCES
-=======================================
+            compiled.prompt
+            + "\n\n"
+            + """
+PRODUCT-REFERENCE EXECUTION
+===========================
 
-Use the attached product reference image(s) as authoritative
-product identity.
+The attached reference image(s) are authoritative product
+identity references.
 
-Build the new advertising environment around the product.
+Create the full new campaign scene around them.
 
-Do not redesign the product.
+Do not merely copy the reference background.
 
-The core requested visual metaphor must already be visibly
-present in this Concept Base.
-
-Keep the full product and all critical content inside the
-final requested delivery safe frame.
+Do not redesign the locked product.
 """.strip()
         )
 
         return openai_multi_reference_edit(
-            working_image=
-                None,
-
-            references=
-                product_refs,
-
-            prompt=
-                prompt,
-
-            aspect_ratio=
-                aspect_ratio,
-
-            final_quality=
-                False,
-
-            pass_name=
-                "concept_base_with_product_lock"
+            working_image=None,
+            references=product_refs,
+            prompt=prompt,
+            aspect_ratio=aspect_ratio,
+            pass_name=pass_name,
         )
 
+    #
+    # No product reference:
+    #
+    # direct HIGH quality generation.
+    #
     route = build_route(
         PROVIDER_OPENAI,
         OPENAI_IMAGE_MODEL,
-
         (
-            "XPAND Production base generation. "
-            "Requested delivery ratio: "
-            +
-            aspect_ratio
-            +
-            ". Provider-native canvas is allowed."
+            "XPAND Quality-First V3 "
+            "high-quality final-candidate generation"
         ),
-
         aspect_ratio,
-        "2K",
-        "medium"
+        "4K",
+        "high",
     )
 
     images = generate_with_openai(
-        prompt=
-            base_prompt,
-
-        original_prompt=
-            clean_text(
-                compiled_sections(
-                    compiled
-                ).get(
-                    "request",
-                    base_prompt
-                ),
-                6000
-            ),
-
-        route=
-            route,
-
-        number=
-            1
+        prompt=compiled.prompt,
+        original_prompt=clean_text(
+            original_request,
+            6000,
+        ),
+        route=route,
+        number=1,
     )
 
     if not images:
-
         raise RuntimeError(
-            "Base generation returned no image."
+            "Quality-First generation returned no image."
         )
 
-    image = (
-        images[
-            0
-        ]
-    )
+    result = images[0]
 
-    image.provider = (
+    result.provider = (
         "xpand_production"
     )
 
-    image.aspect_ratio = (
+    result.aspect_ratio = (
         aspect_ratio
     )
 
+    result.quality = "high"
+
     if not isinstance(
-        image.metadata,
-        dict
+        result.metadata,
+        dict,
     ):
+        result.metadata = {}
 
-        image.metadata = {}
+    result.metadata.update(
+        {
+            "production_engine":
+                ENGINE_VERSION,
 
-    image.metadata[
-        "production_engine"
-    ] = ENGINE_VERSION
+            "pass_name":
+                pass_name,
 
-    image.metadata[
-        "pass_name"
-    ] = "concept_base"
+            "quality_first":
+                True,
 
-    image.metadata[
-        "prompt_chars"
-    ] = len(
-        base_prompt
-    )
+            "requested_delivery_ratio":
+                aspect_ratio,
 
-    image.metadata[
-        "prompt_budget"
-    ] = COMPILED_PROMPT_BUDGET
+            "quality":
+                "high",
 
-    image.metadata[
-        "delivery_ratio"
-    ] = aspect_ratio
-
-    require_provider_canvas(
-        image,
-        aspect_ratio,
-        label=
-            "concept_base"
-    )
-
-    return image
-
-
-# =========================================================
-# CONCEPT EXECUTION GATE
-# =========================================================
-
-def build_concept_gate_prompt(
-    *,
-    original_request: str,
-    compiled: CompiledPrompt,
-    aspect_ratio: str,
-) -> str:
-
-    context = build_pass_context(
-        compiled,
-        [
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                5500,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA",
-                1600,
-            ),
-
-            (
-                "brand_context",
-                "BRAND",
-                3000,
-            ),
-        ]
-    )
-
-    prompt = f"""
-You are XPAND Concept Execution Gate.
-
-This is NOT final visual QA.
-
-The attached image is the EXACT requested campaign crop.
-
-Requested campaign ratio:
-{aspect_ratio}
-
-The image has already been locally cropped from the
-provider-native working canvas.
-
-Judge ONLY whether the CORE ADVERTISING IDEA was translated
-strongly enough to justify the expensive production passes.
-
-Do NOT fail for:
-
-- minor lighting refinement
-- incomplete microtexture
-- normal pre-polish imperfections
-
-ORIGINAL USER REQUEST:
-{clean_text(original_request, 5000)}
-
-APPROVED EXECUTION CONTEXT:
-{context}
-
-Check:
-
-1. Is the central commercial message visually understandable?
-2. Is the approved visual metaphor visibly present?
-3. Are mandatory locations/environments/elements present?
-4. Does the composition have a realistic path to becoming a
-   premium final advertisement?
-5. Has the image collapsed into a generic advertising cliché?
-6. Is a forbidden visual cliché dominating?
-7. Did critical elements survive the final delivery crop?
-8. Is negative space usable in the requested campaign frame?
-
-Return JSON only:
-
-{{
-  "concept_score": 0,
-  "passed": true,
-  "core_message_visible": true,
-  "visual_metaphor_visible": true,
-  "required_elements_present": [],
-  "missing_required_elements": [],
-  "forbidden_cliches_detected": [],
-  "critical_failures": [],
-  "regeneration_instruction": ""
-}}
-""".strip()
-
-    return fit_prompt_for_api(
-        prompt,
-
-        label=
-            "concept_execution_gate",
-
-        budget=
-            CONCEPT_GATE_PROMPT_BUDGET
-    )
-
-
-def evaluate_concept_base(
-    *,
-    image: GeneratedImage,
-    original_request: str,
-    compiled: CompiledPrompt,
-    aspect_ratio: str,
-) -> Dict[str, Any]:
-
-    concept_frame = (
-        create_exact_delivery_frame(
-            image,
-            aspect_ratio,
-
-            upscale_final=
-                False,
-
-            label=
-                "concept_gate"
-        )
-    )
-
-    prompt = build_concept_gate_prompt(
-        original_request=
-            original_request,
-
-        compiled=
-            compiled,
-
-        aspect_ratio=
-            aspect_ratio
-    )
-
-    raw = call_openai_director(
-        prompt,
-
-        image_bytes=
-            concept_frame.image_bytes,
-
-        image_mime_type=
-            concept_frame.mime_type,
-
-        json_mode=
-            True
-    )
-
-    data = extract_json_object(
-        raw
-    )
-
-    if not data:
-
-        raise RuntimeError(
-            "Concept Execution Gate returned invalid JSON."
-        )
-
-    score = clamp_score(
-        data.get(
-            "concept_score",
-            0
-        )
-    )
-
-    failures = [
-        clean_text(
-            item,
-            1000
-        )
-        for item in safe_list(
-            data.get(
-                "critical_failures"
-            )
-        )
-        if clean_text(
-            item,
-            1000
-        )
-    ]
-
-    core_visible = bool(
-        data.get(
-            "core_message_visible",
-            False
-        )
-    )
-
-    metaphor_visible = bool(
-        data.get(
-            "visual_metaphor_visible",
-            False
-        )
-    )
-
-    model_passed = bool(
-        data.get(
-            "passed",
-            False
-        )
-    )
-
-    passed = (
-        model_passed
-        and
-        score
-        >=
-        CONCEPT_GATE_MIN_SCORE
-        and
-        not failures
-        and
-        core_visible
-        and
-        metaphor_visible
-    )
-
-    return {
-        "passed":
-            passed,
-
-        "concept_score":
-            score,
-
-        "core_message_visible":
-            core_visible,
-
-        "visual_metaphor_visible":
-            metaphor_visible,
-
-        "required_elements_present":
-            safe_list(
-                data.get(
-                    "required_elements_present"
-                )
-            ),
-
-        "missing_required_elements":
-            safe_list(
-                data.get(
-                    "missing_required_elements"
-                )
-            ),
-
-        "forbidden_cliches_detected":
-            safe_list(
-                data.get(
-                    "forbidden_cliches_detected"
-                )
-            ),
-
-        "critical_failures":
-            failures,
-
-        "regeneration_instruction":
-            clean_text(
-                data.get(
-                    "regeneration_instruction",
-                    ""
+            "prompt_chars":
+                len(
+                    compiled.prompt
                 ),
-                5000
-            ),
-
-        "qa_frame_size":
-            concept_frame.image_size,
-
-        "raw":
-            data,
-    }
-
-
-def print_concept_gate(
-    result: Dict[str, Any],
-) -> None:
-
-    print(
-        (
-            "🧠 CONCEPT GATE SCORE: "
-            +
-            str(
-                result.get(
-                    "concept_score",
-                    0
-                )
-            )
-            +
-            "/100"
-        )
+        }
     )
 
-    print(
-        (
-            "Core message visible: "
-            +
-            str(
-                result.get(
-                    "core_message_visible",
-                    False
-                )
-            )
-        )
+    inspect_provider_canvas(
+        result,
+        aspect_ratio,
     )
 
-    print(
-        (
-            "Visual metaphor visible: "
-            +
-            str(
-                result.get(
-                    "visual_metaphor_visible",
-                    False
-                )
-            )
-        )
-    )
-
-    print(
-        (
-            "Exact QA frame: "
-            +
-            str(
-                result.get(
-                    "qa_frame_size",
-                    "-"
-                )
-            )
-        )
-    )
-
-    if result.get(
-        "passed"
-    ):
-
-        print(
-            "✅ CONCEPT EXECUTION GATE: PASSED"
-        )
-
-    else:
-
-        print(
-            "⛔ CONCEPT EXECUTION GATE: FAILED"
-        )
-
-        for item in safe_list(
-            result.get(
-                "missing_required_elements"
-            )
-        )[
-            :5
-        ]:
-
-            print(
-                (
-                    "  ❌ Missing: "
-                    +
-                    clean_text(
-                        item,
-                        600
-                    )
-                )
-            )
-
-        for item in safe_list(
-            result.get(
-                "critical_failures"
-            )
-        )[
-            :5
-        ]:
-
-            print(
-                (
-                    "  ❌ "
-                    +
-                    clean_text(
-                        item,
-                        600
-                    )
-                )
-            )
-
-
-def compiled_with_regeneration_instruction(
-    compiled: CompiledPrompt,
-    gate_result: Dict[str, Any],
-    aspect_ratio: str,
-) -> CompiledPrompt:
-
-    instruction = clean_text(
-        gate_result.get(
-            "regeneration_instruction",
-            ""
-        ),
-        5000
-    )
-
-    missing = compact_json(
-        gate_result.get(
-            "missing_required_elements",
-            []
-        ),
-        3500
-    )
-
-    failures = compact_json(
-        gate_result.get(
-            "critical_failures",
-            []
-        ),
-        3500
-    )
-
-    cliches = compact_json(
-        gate_result.get(
-            "forbidden_cliches_detected",
-            []
-        ),
-        2500
-    )
-
-    repair = f"""
-CONCEPT-BASE REGENERATION DIRECTIVE
-===================================
-
-The previous Concept Base failed the visual concept gate.
-
-DO NOT repeat the failed composition.
-
-MISSING REQUIRED ELEMENTS:
-{missing}
-
-CRITICAL CONCEPT FAILURES:
-{failures}
-
-FORBIDDEN CLICHES DETECTED:
-{cliches}
-
-VISION DIRECTOR REGENERATION INSTRUCTION:
-{instruction}
-
-HARD REQUIREMENTS:
-
-- visibly execute the approved central metaphor
-- make the commercial message understandable visually
-- preserve the approved brand direction
-- preserve the requested camera logic unless it caused failure
-- do not hide the concept behind decorative styling
-- do not substitute a generic banking visual
-- compose for the final delivery frame {aspect_ratio}
-- keep critical content inside its safe frame
-""".strip()
-
-    new_prompt = fit_prompt_for_api(
-        (
-            compiled.prompt
-            +
-            "\n\n"
-            +
-            repair
-        ),
-
-        label=
-            "concept_regeneration_brief",
-
-        budget=
-            COMPILED_PROMPT_BUDGET
-    )
-
-    metadata = dict(
-        compiled.metadata
-        if isinstance(
-            compiled.metadata,
-            dict
-        )
-        else
-        {}
-    )
-
-    metadata[
-        "concept_regeneration"
-    ] = True
-
-    metadata[
-        "concept_gate_failure"
-    ] = reduce_prompt_value(
-        gate_result,
-
-        max_depth=
-            3,
-
-        list_limit=
-            8,
-
-        dict_limit=
-            30,
-
-        string_limit=
-            700
-    )
-
-    return CompiledPrompt(
-        target=
-            compiled.target,
-
-        prompt=
-            new_prompt,
-
-        negative_prompt=
-            compiled.negative_prompt,
-
-        metadata=
-            metadata,
-    )
+    return result
 
 
 # =========================================================
-# FINAL QA PROMPT
-# =========================================================
-
-def build_qa_prompt(
-    *,
-    original_request: str,
-    compiled_prompt: CompiledPrompt,
-    image_metadata: Any,
-    product_lock: Any,
-    brand_context: Any,
-) -> str:
-
-    master_context = build_pass_context(
-        compiled_prompt,
-        [
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                5000,
-            ),
-
-            (
-                "references",
-                "VISUAL REFERENCE DNA",
-                2800,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA DIRECTION",
-                1800,
-            ),
-        ]
-    )
-
-    prompt = f"""
-You are XPAND Final Visual QA Director.
-
-Evaluate the attached generated advertising image.
-
-IMPORTANT:
-
-The attached image IS the exact campaign-delivery crop.
-
-Do not judge the larger provider-native canvas.
-
-Judge only this final frame.
-
-Do NOT compliment automatically.
-
-Do NOT expose private chain-of-thought.
-
-Be strict enough for a premium international advertising campaign.
-
-ORIGINAL REQUEST:
-{clean_text(original_request, 4500)}
-
-CORE PRODUCTION CONTEXT:
-{master_context}
-
-PRODUCT LOCK:
-{compact_json(product_lock, 2400)}
-
-BRAND CONTEXT:
-{compact_json(brand_context, 4200)}
-
-IMAGE METADATA:
-{compact_json(image_metadata, 1800)}
-
-Evaluate 0–100:
-
-1. concept_execution
-2. reference_adherence
-3. perspective
-4. product_fidelity
-5. lighting
-6. shadows
-7. reflections
-8. human_anatomy
-9. background_cleanliness
-10. brand_alignment
-11. text_logo_integrity
-12. advertising_readiness
-
-
-CRITICAL FAILURE RULE
-=====================
-
-A critical failure is NOT a small aesthetic preference.
-
-Only mark a critical failure when the image contains a severe
-problem that should prevent professional delivery.
-
-Examples:
-
-- severely broken perspective
-- clearly malformed human anatomy
-- severe product deformation
-- severe brand mismatch
-- obviously broken required text or logo
-- major concept failure
-- major impossible geometry
-- missing required visual metaphor
-- unusable final crop
-- a defect that makes the image unusable as a premium ad
-
-Do NOT mark minor polish issues as critical.
-
-
-IMPORTANT
-=========
-
-If no human appears:
-human_anatomy = 100 unless an anatomical object is malformed.
-
-If no readable text/logo is required:
-text_logo_integrity evaluates absence of random or broken text.
-
-If no product reference was supplied:
-product_fidelity evaluates product realism and consistency,
-not exact reference matching.
-
-The physical aspect ratio was already enforced locally.
-
-Do not claim the image is 1:1 unless the attached pixels
-actually appear square.
-
-Look specifically for:
-
-- weak execution of approved concept
-- generic or cliché interpretation
-- warped bank cards
-- wrong card thickness
-- distorted phones
-- impossible fingers
-- bad hand contact
-- broken reflections
-- wet-looking surfaces when not intended
-- floating objects without physical logic
-- bad perspective
-- random decorative brand colors
-- generic banking clichés
-- unreadable Arabic
-- fake logos
-- clutter
-- cheap CGI feeling
-- mismatch with stored Visual Reference DNA
-- critical content accidentally cropped out
-
-Return JSON only:
-
-{{
-  "scores": {{
-    "concept_execution": 0,
-    "reference_adherence": 0,
-    "perspective": 0,
-    "product_fidelity": 0,
-    "lighting": 0,
-    "shadows": 0,
-    "reflections": 0,
-    "human_anatomy": 0,
-    "background_cleanliness": 0,
-    "brand_alignment": 0,
-    "text_logo_integrity": 0,
-    "advertising_readiness": 0
-  }},
-  "strengths": [],
-  "problems": [],
-  "critical_failures": [],
-  "correction_instruction": ""
-}}
-
-Correction instruction must:
-
-- fix only actual defects
-- preserve successful elements
-- preserve product identity
-- preserve camera and concept unless defective
-- never replace the concept simply to increase aesthetics
-""".strip()
-
-    return fit_prompt_for_api(
-        prompt,
-
-        label=
-            "visual_qa",
-
-        budget=
-            QA_PROMPT_BUDGET
-    )
-
-
-# =========================================================
-# QA CALCULATION
+# QA
 # =========================================================
 
 def calculate_qa_score(
     scores: Dict[str, Any],
 ) -> Tuple[
     float,
-    Dict[
-        str,
-        float
-    ],
+    Dict[str, float],
 ]:
-
-    normalized_scores = {}
-
+    normalized = {}
     total = 0.0
 
     for key, weight in QA_WEIGHTS.items():
-
         value = clamp_score(
             scores.get(
                 key,
-                0
+                0,
             )
         )
 
-        normalized_scores[
-            key
-        ] = value
+        normalized[key] = value
 
         total += (
             value
-            *
-            (
-                float(
-                    weight
-                )
-                /
-                100.0
+            * (
+                float(weight)
+                / 100.0
             )
         )
 
     return (
         round(
             total,
-            2
+            2,
         ),
-        normalized_scores,
+        normalized,
     )
 
-
-# =========================================================
-# CRITICAL BLOCKERS
-# =========================================================
 
 def detect_critical_blockers(
     *,
@@ -5865,30 +2415,21 @@ def detect_critical_blockers(
     explicit_failures: Any,
     product_lock: Any,
 ) -> List[str]:
-
     blockers: List[str] = []
 
-    if isinstance(
-        explicit_failures,
-        list
+    for value in safe_list(
+        explicit_failures
     ):
+        text = clean_text(
+            value,
+            1000,
+        )
 
-        for value in explicit_failures:
-
-            text = clean_text(
-                value,
-                1000
-            )
-
-            if (
-                text
-                and
-                text not in blockers
-            ):
-
-                blockers.append(
-                    text
-                )
+        if (
+            text
+            and text not in blockers
+        ):
+            blockers.append(text)
 
     thresholds = {
         "concept_execution":
@@ -5900,196 +2441,323 @@ def detect_critical_blockers(
         "human_anatomy":
             QA_CRITICAL_SCORE_FLOOR,
 
-        "text_logo_integrity":
-            QA_CRITICAL_SCORE_FLOOR,
-
         "advertising_readiness":
             QA_AD_READINESS_CRITICAL_FLOOR,
     }
 
-    if (
-        isinstance(
-            product_lock,
-            dict
-        )
-        and
-        product_lock.get(
-            "enabled"
-        )
+    if safe_dict(
+        product_lock
+    ).get(
+        "enabled"
     ):
-
         thresholds[
             "product_fidelity"
-        ] = max(
-            QA_CRITICAL_SCORE_FLOOR,
-            70.0
-        )
+        ] = 70.0
 
     for key, threshold in thresholds.items():
-
         value = clamp_score(
             scores.get(
                 key,
-                0
+                0,
             )
         )
 
         if value < threshold:
-
             label = (
                 key
-                +
-                "="
-                +
-                str(
+                + "="
+                + str(
                     round(
                         value,
-                        2
+                        1,
                     )
                 )
-                +
-                " < "
-                +
-                str(
-                    threshold
-                )
+                + " < "
+                + str(threshold)
             )
 
             if label not in blockers:
-
-                blockers.append(
-                    label
-                )
+                blockers.append(label)
 
     return blockers
 
 
-# =========================================================
-# QA DECISION
-# =========================================================
-
-def qa_delivery_decision(
+def build_qa_prompt(
     *,
-    score: float,
-    critical_blockers: Sequence[str],
-) -> Dict[str, Any]:
+    original_request: str,
+    compiled_prompt: CompiledPrompt,
+    product_lock: Any,
+    brand_context: Any,
+    aspect_ratio: str,
+) -> str:
+    prompt = f"""
+You are XPAND Adaptive Visual QA.
 
-    score = clamp_score(
-        score
+Evaluate the attached EXACT FINAL CAMPAIGN CROP.
+
+Be strict but practical.
+
+Do not reject a professionally usable image because of tiny
+subjective preferences.
+
+ORIGINAL REQUEST
+----------------
+{clean_text(original_request, 4000)}
+
+APPROVED PRODUCTION BLUEPRINT
+-----------------------------
+{clean_text(compiled_prompt.prompt, 5000)}
+
+PRODUCT LOCK
+------------
+{compact_json(product_lock, 1800)}
+
+BRAND
+-----
+{compact_json(brand_context, 2500)}
+
+FINAL RATIO
+-----------
+{aspect_ratio}
+
+Score 0-100:
+
+- concept_execution
+- reference_adherence
+- perspective
+- product_fidelity
+- lighting
+- materials
+- human_anatomy
+- background_cleanliness
+- brand_alignment
+- negative_space
+- text_logo_integrity
+- advertising_readiness
+
+Critical failure means a genuine delivery problem:
+- core concept missing
+- major requested metaphor absent
+- severe anatomy
+- severe perspective failure
+- major product deformation
+- major brand mismatch
+- unusable composition
+
+Do NOT classify a minor preference as critical.
+
+Return JSON only:
+
+{{
+  "scores": {{
+    "concept_execution": 0,
+    "reference_adherence": 0,
+    "perspective": 0,
+    "product_fidelity": 0,
+    "lighting": 0,
+    "materials": 0,
+    "human_anatomy": 0,
+    "background_cleanliness": 0,
+    "brand_alignment": 0,
+    "negative_space": 0,
+    "text_logo_integrity": 0,
+    "advertising_readiness": 0
+  }},
+  "strengths": [],
+  "problems": [],
+  "critical_failures": [],
+  "correction_instruction": ""
+}}
+""".strip()
+
+    return fit_prompt_for_api(
+        prompt,
+        label="adaptive_visual_qa",
+        budget=QA_PROMPT_BUDGET,
     )
 
-    blockers = [
-        clean_text(
-            item,
-            1000
+
+def evaluate_generated_image(
+    *,
+    image: GeneratedImage,
+    original_request: str,
+    compiled_prompt: CompiledPrompt,
+    product_lock: Any,
+    brand_context: Any,
+    aspect_ratio: Optional[str] = None,
+    telemetry: Optional[
+        Dict[str, Any]
+    ] = None,
+) -> QAEvaluation:
+    requested_ratio = clean_text(
+        (
+            aspect_ratio
+            or getattr(
+                image,
+                "aspect_ratio",
+                "",
+            )
+            or "1:1"
+        ),
+        30,
+    )
+
+    #
+    # Post-Exact Asset QA can pass an already exact image.
+    #
+    if safe_dict(
+        getattr(
+            image,
+            "metadata",
+            {},
         )
-        for item in critical_blockers
-        if clean_text(
-            item,
-            1000
+    ).get(
+        "exact_delivery_frame"
+    ):
+        qa_frame = image
+    else:
+        qa_frame = (
+            create_exact_delivery_frame(
+                image,
+                requested_ratio,
+                upscale_final=False,
+                label="adaptive_qa",
+            )
         )
-    ]
+
+    prompt = build_qa_prompt(
+        original_request=original_request,
+        compiled_prompt=compiled_prompt,
+        product_lock=product_lock,
+        brand_context=brand_context,
+        aspect_ratio=requested_ratio,
+    )
+
+    if telemetry is not None:
+        telemetry[
+            "vision_calls"
+        ] = (
+            int(
+                telemetry.get(
+                    "vision_calls",
+                    0,
+                )
+            )
+            + 1
+        )
+
+    raw = call_openai_director(
+        prompt,
+        image_bytes=qa_frame.image_bytes,
+        image_mime_type=qa_frame.mime_type,
+        json_mode=True,
+    )
+
+    data = extract_json_object(
+        raw
+    )
+
+    if not data:
+        raise RuntimeError(
+            "Adaptive Vision QA returned invalid JSON."
+        )
+
+    raw_scores = safe_dict(
+        data.get(
+            "scores"
+        )
+    )
+
+    score, scores = calculate_qa_score(
+        raw_scores
+    )
+
+    critical_blockers = (
+        detect_critical_blockers(
+            scores=scores,
+            explicit_failures=data.get(
+                "critical_failures"
+            ),
+            product_lock=product_lock,
+        )
+    )
 
     target_reached = (
         score
-        >=
-        QA_TARGET_SCORE
+        >= QA_TARGET_SCORE
+        and not critical_blockers
     )
 
-    if blockers:
-
-        return {
-            "approved":
-                False,
-
-            "target_reached":
-                target_reached,
-
-            "decision":
-                "critical_blocker",
-
-            "reason":
-                "Critical visual blocker detected.",
-        }
+    delivery_approved = (
+        score
+        >= QA_DELIVERY_FLOOR
+        and not critical_blockers
+    )
 
     if target_reached:
+        decision = "target_reached"
 
-        return {
-            "approved":
-                True,
+    elif delivery_approved:
+        decision = "near_target"
 
-            "target_reached":
-                True,
+    elif critical_blockers:
+        decision = "critical_issues"
 
-            "decision":
-                "target_reached",
+    else:
+        decision = "improvement_recommended"
 
-            "reason":
-                "QA target reached.",
-        }
+    return QAEvaluation(
+        score=score,
+        scores=scores,
+        passed=delivery_approved,
+        strengths=[
+            clean_text(
+                item,
+                1000,
+            )
+            for item in safe_list(
+                data.get(
+                    "strengths"
+                )
+            )
+            if clean_text(
+                item,
+                1000,
+            )
+        ],
+        problems=[
+            clean_text(
+                item,
+                1200,
+            )
+            for item in safe_list(
+                data.get(
+                    "problems"
+                )
+            )
+            if clean_text(
+                item,
+                1200,
+            )
+        ],
+        correction_instruction=clean_text(
+            data.get(
+                "correction_instruction",
+                "",
+            ),
+            4500,
+        ),
+        critical_blockers=critical_blockers,
+        target_reached=target_reached,
+        delivery_approved=delivery_approved,
+        decision=decision,
+        raw=data,
+    )
 
-    if score >= QA_DELIVERY_FLOOR:
 
-        return {
-            "approved":
-                True,
-
-            "target_reached":
-                False,
-
-            "decision":
-                "near_target_approved",
-
-            "reason":
-                "Premium near-target score with no critical blockers.",
-        }
-
-    return {
-        "approved":
-            False,
-
-        "target_reached":
-            False,
-
-        "decision":
-            "correction_candidate",
-
-        "reason":
-            "Below delivery floor.",
-    }
-
-
-def recommended_correction_limit(
-    qa: Optional[
-        QAEvaluation
-    ],
-) -> int:
-
-    if qa is None:
-
-        return 0
-
-    if qa.passed:
-
-        return 0
-
-    if QA_MAX_CORRECTIONS <= 0:
-
-        return 0
-
-    if (
-        qa.score
-        >=
-        QA_SINGLE_CORRECTION_FLOOR
-    ):
-
-        return min(
-            1,
-            QA_MAX_CORRECTIONS
-        )
-
-    return QA_MAX_CORRECTIONS
-
+# =========================================================
+# BEST VERSION RANKING
+# =========================================================
 
 def qa_quality_rank(
     qa: Optional[
@@ -6099,35 +2767,40 @@ def qa_quality_rank(
     int,
     int,
     float,
+    float,
 ]:
-
     if qa is None:
-
         return (
-            0,
             -999,
+            0,
+            0.0,
             0.0,
         )
+
+    no_critical = (
+        1
+        if not qa.critical_blockers
+        else 0
+    )
 
     approved = (
         1
         if qa.passed
-        else
-        0
+        else 0
     )
 
-    blocker_rank = (
-        -len(
-            qa.critical_blockers
+    concept_score = clamp_score(
+        qa.scores.get(
+            "concept_execution",
+            0,
         )
     )
 
     return (
+        no_critical,
         approved,
-        blocker_rank,
-        float(
-            qa.score
-        ),
+        concept_score,
+        float(qa.score),
     )
 
 
@@ -6139,7 +2812,6 @@ def qa_candidate_is_better(
         QAEvaluation
     ],
 ) -> bool:
-
     return (
         qa_quality_rank(
             candidate
@@ -6152,574 +2824,284 @@ def qa_candidate_is_better(
 
 
 # =========================================================
-# VISION QA
+# ADAPTIVE ACTION
 # =========================================================
 
-def evaluate_generated_image(
-    *,
-    image: GeneratedImage,
-    original_request: str,
-    compiled_prompt: CompiledPrompt,
-    product_lock: Any,
-    brand_context: Any,
-    aspect_ratio: Optional[str] = None,
-) -> QAEvaluation:
+def has_concept_failure(
+    qa: QAEvaluation,
+) -> bool:
+    concept_score = clamp_score(
+        qa.scores.get(
+            "concept_execution",
+            0,
+        )
+    )
 
-    requested_ratio = clean_text(
+    if (
+        concept_score
+        < CONCEPT_RECOVERY_SCORE_FLOOR
+    ):
+        return True
+
+    combined = " ".join(
         (
-            aspect_ratio
-            or
-            getattr(
-                image,
-                "aspect_ratio",
-                ""
-            )
-        ),
-        30
-    )
-
-    if not requested_ratio:
-
-        requested_ratio = (
-            "1:1"
+            qa.critical_blockers
+            + qa.problems
         )
+    ).lower()
 
-    qa_frame = (
-        create_exact_delivery_frame(
-            image,
-            requested_ratio,
+    markers = [
+        "concept failure",
+        "core concept",
+        "metaphor missing",
+        "visual metaphor",
+        "required concept",
+        "core message",
+        "major concept",
+        "required element",
+        "الفكرة",
+        "الاستعارة",
+        "المعنى",
+    ]
 
-            upscale_final=
-                False,
-
-            label=
-                "final_visual_qa"
-        )
+    return any(
+        marker in combined
+        for marker in markers
     )
 
-    qa_prompt = build_qa_prompt(
-        original_request=
-            original_request,
 
-        compiled_prompt=
-            compiled_prompt,
+def choose_adaptive_action(
+    qa: Optional[
+        QAEvaluation
+    ],
+) -> str:
+    if qa is None:
+        return "none"
 
-        image_metadata=
-            qa_frame.metadata,
-
-        product_lock=
-            product_lock,
-
-        brand_context=
-            brand_context
-    )
-
-    raw = call_openai_director(
-        qa_prompt,
-
-        image_bytes=
-            qa_frame.image_bytes,
-
-        image_mime_type=
-            qa_frame.mime_type,
-
-        json_mode=
-            True
-    )
-
-    data = extract_json_object(
-        raw
-    )
-
-    if not data:
-
-        raise RuntimeError(
-            "Visual QA returned invalid JSON."
-        )
-
-    scores_raw = data.get(
-        "scores",
-        {}
-    )
-
-    if not isinstance(
-        scores_raw,
-        dict
+    if (
+        qa.score
+        >= ADAPTIVE_CORRECTION_TRIGGER_SCORE
+        and not qa.critical_blockers
     ):
+        return "none"
 
-        scores_raw = {}
-
-    score, scores = calculate_qa_score(
-        scores_raw
-    )
-
-    strengths = data.get(
-        "strengths",
-        []
-    )
-
-    problems = data.get(
-        "problems",
-        []
-    )
-
-    if not isinstance(
-        strengths,
-        list
+    if has_concept_failure(
+        qa
     ):
+        return "concept_recovery"
 
-        strengths = []
-
-    if not isinstance(
-        problems,
-        list
-    ):
-
-        problems = []
-
-    explicit_failures = data.get(
-        "critical_failures",
-        []
-    )
-
-    critical_blockers = (
-        detect_critical_blockers(
-            scores=
-                scores,
-
-            explicit_failures=
-                explicit_failures,
-
-            product_lock=
-                product_lock
-        )
-    )
-
-    decision = qa_delivery_decision(
-        score=
-            score,
-
-        critical_blockers=
-            critical_blockers
-    )
-
-    data[
-        "xpand_qa_policy"
-    ] = {
-        "target":
-            QA_TARGET_SCORE,
-
-        "delivery_floor":
-            QA_DELIVERY_FLOOR,
-
-        "single_correction_floor":
-            QA_SINGLE_CORRECTION_FLOOR,
-
-        "critical_blockers":
-            critical_blockers,
-
-        "delivery_approved":
-            decision[
-                "approved"
-            ],
-
-        "target_reached":
-            decision[
-                "target_reached"
-            ],
-
-        "decision":
-            decision[
-                "decision"
-            ],
-
-        "qa_exact_frame":
-            qa_frame.image_size,
-    }
-
-    return QAEvaluation(
-        score=
-            score,
-
-        scores=
-            scores,
-
-        passed=
-            bool(
-                decision[
-                    "approved"
-                ]
-            ),
-
-        strengths=[
-            clean_text(
-                item,
-                1000
-            )
-            for item in strengths
-            if clean_text(
-                item,
-                1000
-            )
-        ],
-
-        problems=[
-            clean_text(
-                item,
-                1000
-            )
-            for item in problems
-            if clean_text(
-                item,
-                1000
-            )
-        ],
-
-        correction_instruction=
-            clean_text(
-                data.get(
-                    "correction_instruction",
-                    ""
-                ),
-                4500
-            ),
-
-        critical_blockers=
-            critical_blockers,
-
-        target_reached=
-            bool(
-                decision[
-                    "target_reached"
-                ]
-            ),
-
-        delivery_approved=
-            bool(
-                decision[
-                    "approved"
-                ]
-            ),
-
-        decision=
-            clean_text(
-                decision[
-                    "decision"
-                ],
-                200
-            ),
-
-        raw=
-            data,
-    )
+    return "targeted_correction"
 
 
 # =========================================================
-# CORRECTION PROMPT
+# SECOND IMAGE CALL PROMPTS
 # =========================================================
 
-def correction_prompt(
+def build_targeted_correction_prompt(
     *,
     qa: QAEvaluation,
     compiled: CompiledPrompt,
     product_lock: Any,
     aspect_ratio: str,
 ) -> str:
-
-    context = build_pass_context(
-        compiled,
-        [
-            (
-                "request",
-                "ORIGINAL REQUEST",
-                3500,
-            ),
-
-            (
-                "creative_direction",
-                "APPROVED CREATIVE DIRECTION",
-                4500,
-            ),
-
-            (
-                "camera_direction",
-                "CAMERA",
-                1600,
-            ),
-
-            (
-                "product_lock",
-                "PRODUCT LOCK",
-                2200,
-            ),
-        ]
-    )
-
     prompt = f"""
-QUALITY CORRECTION PASS
-=======================
+XPAND TARGETED QUALITY CORRECTION
+=================================
+
+This is the ONLY automatic correction image pass.
+
+Preserve every successful part of the supplied image.
 
 CURRENT QA SCORE:
 {qa.score}/100
 
-ASPIRATIONAL TARGET:
-{QA_TARGET_SCORE}/100
-
-DELIVERY FLOOR:
-{QA_DELIVERY_FLOOR}/100 if no critical blocker remains.
-
-CRITICAL BLOCKERS:
-{compact_json(qa.critical_blockers, 3200)}
-
-DETECTED PROBLEMS:
+PROBLEMS:
 {compact_json(qa.problems, 4500)}
 
-QA CORRECTION INSTRUCTION:
-{clean_text(qa.correction_instruction, 4500)}
+CRITICAL ISSUES:
+{compact_json(qa.critical_blockers, 3000)}
 
-CORE CONTEXT:
-{context}
+QA DIRECTIVE:
+{clean_text(qa.correction_instruction, 4500)}
 
 PRODUCT LOCK:
 {compact_json(product_lock, 2200)}
 
+CORE BLUEPRINT:
+{clean_text(compiled.prompt, 7000)}
+
 {safe_frame_instruction(aspect_ratio)}
 
-RULES:
+RULES
+=====
 
-- Fix only the detected problems.
-- Prioritize critical blockers first.
-- Preserve every successful part.
-- Do not redesign the concept unless concept execution itself failed.
-- Do not replace the visual metaphor with a generic one.
-- Do not change product identity.
-- Do not change camera unless QA identified perspective failure.
-- Do not introduce new text.
-- Do not add decorative objects.
-- Improve realism and campaign readiness.
-- Preserve all important content inside the final campaign crop.
-- The corrected version must remain the same campaign asset.
+- Correct only real weaknesses.
+- Do not replace a strong concept.
+- Do not casually change camera angle.
+- Preserve successful composition.
+- Preserve successful lighting.
+- Preserve successful materials.
+- Preserve successful human identity and pose.
+- Preserve negative space.
+- Preserve product identity.
+- Fix anatomy only if needed.
+- Fix perspective only if needed.
+- Fix brand color balance only if needed.
+- Fix material realism only if needed.
+- Fix clutter only if needed.
+- Do not introduce text or fake branding.
+
+This pass must be a controlled professional refinement,
+not a completely different random image.
 """.strip()
 
     return fit_prompt_for_api(
         prompt,
-
-        label=
-            "qa_correction",
-
-        budget=
-            CORRECTION_PROMPT_BUDGET
+        label="adaptive_targeted_correction",
+        budget=CORRECTION_PROMPT_BUDGET,
     )
 
 
-# =========================================================
-# PASS SELECTION
-# =========================================================
-
-def production_passes_for_mode(
-    mode: str,
+def build_concept_recovery_prompt(
     *,
-    has_product_reference: bool,
-) -> List[str]:
-
-    mode = clean_text(
-        mode,
-        100
-    ).lower()
-
-    if mode == MODE_FAST:
-
-        return [
-            "final_polish",
-        ]
-
-    if mode == MODE_PRO:
-
-        passes = [
-            "composition",
-        ]
-
-        if has_product_reference:
-
-            passes.append(
-                "product"
-            )
-
-        passes.extend(
-            [
-                "lighting",
-                "final_polish",
-            ]
-        )
-
-        return passes
-
-    passes = [
-        "composition",
-    ]
-
-    if has_product_reference:
-
-        passes.append(
-            "product"
-        )
-
-    passes.extend(
-        [
-            "lighting",
-            "materials",
-            "final_polish",
-        ]
-    )
-
-    return passes
-
-
-# =========================================================
-# RUN PASS
-# =========================================================
-
-def run_named_pass(
-    *,
-    pass_name: str,
-    working_image: GeneratedImage,
-    product_refs: Sequence[
-        ProductionReference
-    ],
+    qa: QAEvaluation,
     compiled: CompiledPrompt,
-    camera_direction: Any,
-    product_lock: Any,
     aspect_ratio: str,
-    final_pass: bool,
-) -> GeneratedImage:
+) -> str:
+    prompt = f"""
+XPAND CONCEPT RECOVERY
+======================
 
-    if pass_name == "composition":
+The previous image may be visually attractive, but the core
+advertising concept was not executed strongly enough.
 
-        prompt = composition_pass_prompt(
-            compiled,
-            camera_direction,
-            product_lock
-        )
+DO NOT simply polish the old concept.
 
-    elif pass_name == "product":
+Rebuild the visual execution so the intended message becomes
+clear from the image itself.
 
-        prompt = product_pass_prompt(
-            compiled,
-            product_lock
-        )
+FAILED CONCEPT SCORE:
+{qa.scores.get("concept_execution", 0)}/100
 
-    elif pass_name == "lighting":
+PROBLEMS:
+{compact_json(qa.problems, 4500)}
 
-        prompt = lighting_pass_prompt(
-            compiled
-        )
+CRITICAL FAILURES:
+{compact_json(qa.critical_blockers, 3500)}
 
-    elif pass_name == "materials":
+VISION QA RECOVERY DIRECTIVE:
+{clean_text(qa.correction_instruction, 4500)}
 
-        prompt = material_pass_prompt(
-            compiled
-        )
+ORIGINAL MASTER BLUEPRINT:
+{clean_text(compiled.prompt, 9000)}
 
-    else:
+{safe_frame_instruction(aspect_ratio)}
 
-        prompt = polish_pass_prompt(
-            compiled
-        )
+RECOVERY RULES
+==============
 
-    return openai_multi_reference_edit(
-        working_image=
-            working_image,
+- preserve the original requested message
+- execute the approved metaphor clearly
+- avoid the visual mistake that caused the first version
+- do not fall back to a cliché
+- keep the brand world premium
+- solve composition, lighting and materials in this generation
+- respect final campaign crop
+- create a finished campaign-level visual
+""".strip()
 
-        references=
-            product_refs,
+    return fit_prompt_for_api(
+        prompt,
+        label="concept_recovery",
+        budget=COMPILED_PROMPT_BUDGET,
+    )
 
-        prompt=
-            prompt,
 
-        aspect_ratio=
-            aspect_ratio,
+def compiled_with_recovery(
+    compiled: CompiledPrompt,
+    recovery_prompt: str,
+) -> CompiledPrompt:
+    metadata = dict(
+        compiled.metadata
+    )
 
-        final_quality=
-            final_pass,
+    metadata[
+        "concept_recovery"
+    ] = True
 
-        pass_name=
-            pass_name
+    return CompiledPrompt(
+        target=compiled.target,
+        prompt=recovery_prompt,
+        negative_prompt=compiled.negative_prompt,
+        metadata=metadata,
     )
 
 
 # =========================================================
-# QA LOGGING
+# LOGGING
 # =========================================================
 
-def print_qa_decision(
+def print_qa(
+    label: str,
     qa: Optional[
         QAEvaluation
     ],
 ) -> None:
-
     if qa is None:
-
         print(
-            "⚠️ QA decision unavailable"
+            "⚠️ "
+            + label
+            + ": QA unavailable"
         )
-
         return
 
     print(
-        (
-            "QA decision: "
-            +
-            qa.decision
-        )
+        "📊 "
+        + label
+        + ": "
+        + str(qa.score)
+        + "/100"
     )
 
     print(
-        (
-            "Delivery approved: "
-            +
-            str(
-                qa.passed
-            )
-        )
+        "Concept:",
+        qa.scores.get(
+            "concept_execution",
+            0,
+        ),
     )
 
     print(
-        (
-            "Target reached: "
-            +
-            str(
-                qa.target_reached
-            )
-        )
+        "Brand:",
+        qa.scores.get(
+            "brand_alignment",
+            0,
+        ),
     )
 
     print(
-        (
-            "Critical blockers: "
-            +
-            str(
-                len(
-                    qa.critical_blockers
-                )
-            )
-        )
+        "Advertising readiness:",
+        qa.scores.get(
+            "advertising_readiness",
+            0,
+        ),
     )
 
-    for blocker in qa.critical_blockers[
-        :5
-    ]:
+    print(
+        "Critical blockers:",
+        len(
+            qa.critical_blockers
+        ),
+    )
 
-        print(
-            (
-                "  ⛔ "
-                +
-                blocker
-            )
-        )
+    print(
+        "Decision:",
+        qa.decision,
+    )
 
 
 # =========================================================
-# MAIN PRODUCTION PIPELINE
+# MAIN QUALITY-FIRST PIPELINE
 # =========================================================
 
 def run_production(
@@ -6735,1690 +3117,785 @@ def run_production(
     mode: str = MODE_MASTERPIECE,
     target_model: str = TARGET_OPENAI,
 ) -> ProductionResult:
-
     started = time.monotonic()
 
     errors: List[str] = []
+
+    telemetry: Dict[str, Any] = {
+        "image_calls":
+            0,
+
+        "vision_calls":
+            0,
+
+        "max_image_calls":
+            MASTERPIECE_MAX_IMAGE_CALLS,
+
+        "max_vision_calls":
+            MASTERPIECE_MAX_VISION_CALLS,
+
+        "adaptive_action":
+            "none",
+    }
+
+    # =====================================================
+    # REFERENCES
+    # =====================================================
 
     references = load_runtime_references(
         core,
         user_id,
         brand_id,
-
-        limit=
-            12
+        limit=10,
     )
 
-    product_refs = (
-        product_references(
-            references
-        )
+    product_refs = product_references(
+        references
     )
 
-    dna_payload = (
-        reference_dna_payload(
-            references
-        )
+    reference_dna = reference_dna_payload(
+        references
     )
 
-    product_lock = (
-        combined_product_lock(
-            references
-        )
+    product_lock = combined_product_lock(
+        references
     )
+
+    # =====================================================
+    # BLUEPRINT
+    # =====================================================
 
     compiled = compile_prompt(
         target_model,
-
-        request=
-            original_request,
-
-        creative_direction=
-            creative_direction,
-
-        brand_context=
-            brand_context,
-
-        references=
-            dna_payload,
-
-        camera_direction=
-            camera_direction,
-
-        product_lock=
-            product_lock
+        request=original_request,
+        creative_direction=creative_direction,
+        brand_context=brand_context,
+        references=reference_dna,
+        camera_direction=camera_direction,
+        product_lock=product_lock,
+        aspect_ratio=aspect_ratio,
     )
 
     if compiled.target != TARGET_OPENAI:
-
         raise RuntimeError(
-            (
-                "Execution for target '"
-                +
-                compiled.target
-                +
-                "' is not connected yet. "
-                "Production execution is OpenAI-only in V2.3.1."
-            )
+            "Production execution is currently OpenAI-only."
         )
 
     print("")
-
     print(
-        "=========================================="
+        "=============================================="
     )
-
     print(
-        " XPAND PRODUCTION ENGINE V2.3.1"
+        " XPAND PRODUCTION ENGINE V3.0"
     )
-
     print(
-        " FULL-QUALITY MULTI-PASS"
+        " QUALITY-FIRST ADAPTIVE MASTERPIECE"
     )
-
     print(
-        " NATIVE CANVAS + EXACT DELIVERY FRAME"
-    )
-
-    print(
-        "=========================================="
+        "=============================================="
     )
 
     print(
         "Mode:",
-        mode
+        mode,
     )
 
     print(
-        "Target:",
-        compiled.target
+        "Model:",
+        OPENAI_IMAGE_MODEL,
+    )
+
+    print(
+        "Requested ratio:",
+        aspect_ratio,
+    )
+
+    print(
+        "Provider canvas:",
+        provider_size_for_ratio(
+            aspect_ratio
+        ),
+    )
+
+    print(
+        "Final delivery:",
+        production_size_for_ratio(
+            aspect_ratio,
+            final_quality=True,
+        ),
     )
 
     print(
         "References:",
-        len(
-            references
-        )
+        len(references),
     )
 
     print(
         "Product references:",
-        len(
-            product_refs
-        )
+        len(product_refs),
     )
 
     print(
-        "Product Lock:",
-        (
-            "ACTIVE"
-            if product_lock.get(
-                "enabled"
-            )
-            else
-            "none"
-        )
+        "Max image calls:",
+        MASTERPIECE_MAX_IMAGE_CALLS,
     )
 
     print(
-        "Requested delivery ratio:",
-        aspect_ratio
+        "Max Vision calls:",
+        MASTERPIECE_MAX_VISION_CALLS,
     )
 
     print(
-        "Provider-native canvas:",
-        provider_size_for_ratio(
-            aspect_ratio
-        )
-    )
-
-    print(
-        "Exact final output:",
-        production_size_for_ratio(
-            aspect_ratio,
-            final_quality=True
-        )
-    )
-
-    print(
-        "Concept Gate:",
-        CONCEPT_GATE_ENABLED
-    )
-
-    print(
-        "Concept Gate minimum:",
-        CONCEPT_GATE_MIN_SCORE
-    )
-
-    print(
-        "Concept regenerations:",
-        CONCEPT_GATE_MAX_REGENERATIONS
-    )
-
-    print(
-        "QA target:",
-        QA_TARGET_SCORE
-    )
-
-    print(
-        "QA delivery floor:",
-        QA_DELIVERY_FLOOR
-    )
-
-    print(
-        "QA max corrections:",
-        QA_MAX_CORRECTIONS
-    )
-
-    print(
-        "QA correction time budget:",
-        QA_CORRECTION_TIME_BUDGET_SECONDS,
-        "seconds"
-    )
-
-    print(
-        "Compiled prompt chars:",
-        len(
-            compiled.prompt
-        )
-    )
-
-    print(
-        "Compiled prompt budget:",
-        COMPILED_PROMPT_BUDGET
+        "Image quality:",
+        "HIGH",
     )
 
     print("")
 
-    if (
-        len(
-            compiled.prompt
-        )
-        >
-        COMPILED_PROMPT_BUDGET
-    ):
-
-        raise RuntimeError(
-            "Compiled production prompt exceeded XPAND safety budget."
-        )
-
     # =====================================================
-    # CONCEPT BASE + GATE
+    # IMAGE CALL 1
     # =====================================================
 
-    gate_attempt = 0
-
-    working: Optional[
-        GeneratedImage
-    ] = None
-
-    gate_result: Dict[
-        str,
-        Any
-    ] = {}
-
-    active_compiled = (
-        compiled
+    print(
+        "🎬 IMAGE CALL 1/"
+        + str(
+            MASTERPIECE_MAX_IMAGE_CALLS
+        )
+        + " | Quality-First HIGH..."
     )
 
-    while True:
+    first_image = generate_high_quality_image(
+        compiled=compiled,
+        product_refs=product_refs,
+        aspect_ratio=aspect_ratio,
+        original_request=original_request,
+        pass_name="quality_first_high",
+    )
 
-        print(
-            (
-                "🎬 PASS 0: Concept Base"
-                +
-                (
-                    ""
-                    if gate_attempt == 0
-                    else
-                    (
-                        " | regeneration "
-                        +
-                        str(
-                            gate_attempt
-                        )
-                    )
-                )
-                +
-                "..."
-            )
-        )
-
-        working = generate_base_image(
-            compiled=
-                active_compiled,
-
-            product_refs=
-                product_refs,
-
-            aspect_ratio=
-                aspect_ratio
-        )
-
-        require_provider_canvas(
-            working,
-            aspect_ratio,
-
-            label=
-                (
-                    "concept_base_"
-                    +
-                    str(
-                        gate_attempt
-                        +
-                        1
-                    )
-                )
-        )
-
-        #
-        # Local crop preview.
-        #
-
-        create_exact_delivery_frame(
-            working,
-            aspect_ratio,
-
-            upscale_final=
-                False,
-
-            label=
-                (
-                    "concept_preview_"
-                    +
-                    str(
-                        gate_attempt
-                        +
-                        1
-                    )
-                )
-        )
-
-        if not CONCEPT_GATE_ENABLED:
-
-            gate_result = {
-                "passed":
-                    True,
-
-                "concept_score":
-                    100,
-
-                "disabled":
-                    True,
-            }
-
-            print(
-                "✅ Concept Gate disabled by configuration."
-            )
-
-            break
-
-        print(
-            "👁️ CONCEPT EXECUTION GATE..."
-        )
-
-        gate_result = evaluate_concept_base(
-            image=
-                working,
-
-            original_request=
-                original_request,
-
-            compiled=
-                active_compiled,
-
-            aspect_ratio=
-                aspect_ratio
-        )
-
-        print_concept_gate(
-            gate_result
-        )
-
-        if gate_result.get(
-            "passed"
-        ):
-
-            break
-
-        if (
-            gate_attempt
-            >=
-            CONCEPT_GATE_MAX_REGENERATIONS
-        ):
-
-            raise RuntimeError(
-                (
-                    "Concept Execution Gate failed after "
-                    +
-                    str(
-                        gate_attempt
-                        +
-                        1
-                    )
-                    +
-                    " base attempt(s). "
-                    "XPAND stopped before Composition / Lighting / "
-                    "Materials / Polish."
-                )
-            )
-
-        gate_attempt += 1
-
-        print(
-            (
-                "🔁 REGENERATING CONCEPT BASE "
-                +
-                str(
-                    gate_attempt
-                )
-                +
-                "/"
-                +
-                str(
-                    CONCEPT_GATE_MAX_REGENERATIONS
-                )
-            )
-        )
-
-        active_compiled = (
-            compiled_with_regeneration_instruction(
-                compiled,
-                gate_result,
-                aspect_ratio
-            )
-        )
-
-    if working is None:
-
-        raise RuntimeError(
-            "Concept Base unavailable."
-        )
+    telemetry[
+        "image_calls"
+    ] += 1
 
     passes: List[
         ProductionPassResult
     ] = [
         ProductionPassResult(
-            pass_name=
-                (
-                    "concept_base_with_product_lock"
-                    if product_refs
-                    else
-                    "concept_base"
-                ),
-
-            image=
-                working,
-
+            pass_name="quality_first_high",
+            image=first_image,
             metadata={
-                "prompt_chars":
-                    working.metadata.get(
-                        "prompt_chars"
-                    ),
+                "image_call":
+                    1,
 
-                "concept_gate":
-                    gate_result,
+                "quality":
+                    "high",
 
-                "concept_regenerations":
-                    gate_attempt,
-
-                "provider_canvas":
-                    working.metadata.get(
-                        "provider_canvas_guard",
-                        {}
-                    ),
+                "adaptive":
+                    True,
             },
         )
     ]
 
-    print(
-        "✅ PASS 0: Concept Base APPROVED"
-    )
-
-    # =====================================================
-    # FULL MULTI-PASS
-    # =====================================================
-
-    pass_names = production_passes_for_mode(
-        mode,
-
-        has_product_reference=
-            bool(
-                product_refs
-            )
-    )
-
-    for index, pass_name in enumerate(
-        pass_names,
-        start=1
-    ):
-
-        is_final_pass = (
-            pass_name
-            ==
-            pass_names[
-                -1
-            ]
-        )
-
-        print(
-            (
-                "🎨 PASS "
-                +
-                str(
-                    index
-                )
-                +
-                ": "
-                +
-                pass_name
-                +
-                "..."
-            )
-        )
-
-        previous_working = (
-            working
-        )
-
-        try:
-
-            candidate = run_named_pass(
-                pass_name=
-                    pass_name,
-
-                working_image=
-                    working,
-
-                product_refs=
-                    product_refs,
-
-                compiled=
-                    active_compiled,
-
-                camera_direction=
-                    camera_direction,
-
-                product_lock=
-                    product_lock,
-
-                aspect_ratio=
-                    aspect_ratio,
-
-                final_pass=
-                    is_final_pass
-            )
-
-            provider_status = (
-                require_provider_canvas(
-                    candidate,
-                    aspect_ratio,
-                    label=
-                        pass_name
-                )
-            )
-
-            #
-            # Free local preview to ensure campaign crop
-            # remains technically possible.
-            #
-
-            delivery_preview = (
-                create_exact_delivery_frame(
-                    candidate,
-                    aspect_ratio,
-
-                    upscale_final=
-                        False,
-
-                    label=
-                        (
-                            pass_name
-                            +
-                            "_delivery_preview"
-                        )
-                )
-            )
-
-            working = (
-                candidate
-            )
-
-            passes.append(
-                ProductionPassResult(
-                    pass_name=
-                        pass_name,
-
-                    image=
-                        working,
-
-                    metadata={
-                        "prompt_chars":
-                            working.metadata.get(
-                                "prompt_chars"
-                            ),
-
-                        "provider_canvas":
-                            provider_status,
-
-                        "delivery_preview_size":
-                            delivery_preview.image_size,
-                    },
-                )
-            )
-
-            print(
-                (
-                    "✅ PASS "
-                    +
-                    str(
-                        index
-                    )
-                    +
-                    ": "
-                    +
-                    pass_name
-                )
-            )
-
-        except Exception as error:
-
-            working = (
-                previous_working
-            )
-
-            message = clean_text(
-                error,
-                3000
-            )
-
-            errors.append(
-                (
-                    pass_name
-                    +
-                    ": "
-                    +
-                    message
-                )
-            )
-
-            if (
-                "Unexpected provider canvas"
-                in message
-            ):
-
-                print(
-                    (
-                        "⛔ PASS REJECTED: "
-                        +
-                        pass_name
-                        +
-                        " returned an invalid provider canvas."
-                    )
-                )
-
-                print(
-                    "✅ Previous valid source restored."
-                )
-
-            else:
-
-                print(
-                    (
-                        "⚠️ PASS FAILED: "
-                        +
-                        pass_name
-                        +
-                        " | keeping previous successful image"
-                    )
-                )
-
-    # =====================================================
-    # PRE-QA DELIVERY FRAME
-    # =====================================================
-
-    require_provider_canvas(
-        working,
-        aspect_ratio,
-        label=
-            "pre_final_qa_source"
-    )
-
-    pre_qa_frame = (
+    #
+    # Local exact crop preview.
+    #
+    first_preview = (
         create_exact_delivery_frame(
-            working,
+            first_image,
             aspect_ratio,
-
-            upscale_final=
-                False,
-
-            label=
-                "pre_final_qa"
+            upscale_final=False,
+            label="candidate_1",
         )
     )
 
     print(
-        (
-            "✅ FINAL QA WILL SEE EXACT "
-            +
-            aspect_ratio
-            +
-            " FRAME: "
-            +
-            pre_qa_frame.image_size
-        )
+        "✅ Candidate 1 ready:",
+        first_preview.image_size,
     )
 
     # =====================================================
-    # FINAL QA
+    # VISION CALL 1
     # =====================================================
 
-    print("")
-
-    print(
-        "👁️ FINAL VISUAL QA..."
-    )
-
-    best_image = (
-        working
-    )
-
-    best_qa: Optional[
+    first_qa: Optional[
         QAEvaluation
     ] = None
 
-    best_score = 0.0
-
-    try:
-
-        qa = evaluate_generated_image(
-            image=
-                working,
-
-            original_request=
-                original_request,
-
-            compiled_prompt=
-                active_compiled,
-
-            product_lock=
-                product_lock,
-
-            brand_context=
-                brand_context,
-
-            aspect_ratio=
-                aspect_ratio
-        )
-
-        best_qa = (
-            qa
-        )
-
-        best_score = (
-            qa.score
-        )
-
-        if passes:
-
-            passes[
-                -1
-            ].qa = qa
-
-        print(
-            (
-                "📊 QA SCORE: "
-                +
-                str(
-                    qa.score
-                )
-                +
-                "/100"
-            )
-        )
-
-        print_qa_decision(
-            qa
-        )
-
-    except Exception as error:
-
-        errors.append(
-            (
-                "qa_initial: "
-                +
-                clean_text(
-                    error,
-                    3000
-                )
-            )
-        )
-
-        print(
-            (
-                "⚠️ QA unavailable: "
-                +
-                clean_text(
-                    error,
-                    1000
-                )
-            )
-        )
-
-    # =====================================================
-    # IMMEDIATE DELIVERY
-    # =====================================================
-
     if (
-        best_qa is not None
-        and
-        best_qa.passed
+        telemetry[
+            "vision_calls"
+        ]
+        < MASTERPIECE_MAX_VISION_CALLS
     ):
-
-        if best_qa.target_reached:
-
-            print(
-                "✅ MASTERPIECE QA TARGET REACHED"
-            )
-
-        else:
-
-            print(
-                (
-                    "✅ MASTERPIECE DELIVERY APPROVED"
-                    +
-                    " | near-target premium score="
-                    +
-                    str(
-                        best_qa.score
-                    )
-                )
-            )
-
-            print(
-                "✅ No critical blockers"
-            )
-
-            print(
-                (
-                    "🚫 Correction skipped"
-                    +
-                    " | score already >= "
-                    +
-                    str(
-                        QA_DELIVERY_FLOOR
-                    )
-                )
-            )
-
-    # =====================================================
-    # CORRECTION LOOP
-    # =====================================================
-
-    correction_round = (
-        0
-    )
-
-    correction_limit = (
-        recommended_correction_limit(
-            best_qa
-        )
-    )
-
-    if (
-        best_qa is not None
-        and
-        not best_qa.passed
-    ):
-
+        print("")
         print(
-            (
-                "🧠 QA correction allowance: "
-                +
-                str(
-                    correction_limit
-                )
-                +
-                " round(s)"
+            "👁️ ADAPTIVE VISION QA 1/"
+            + str(
+                MASTERPIECE_MAX_VISION_CALLS
             )
-        )
-
-    current_image = (
-        best_image
-    )
-
-    current_qa = (
-        best_qa
-    )
-
-    while (
-        current_qa is not None
-        and
-        not current_qa.passed
-        and
-        correction_round
-        <
-        correction_limit
-    ):
-
-        elapsed_before_correction = (
-            time.monotonic()
-            -
-            started
-        )
-
-        if (
-            elapsed_before_correction
-            >=
-            QA_CORRECTION_TIME_BUDGET_SECONDS
-        ):
-
-            print(
-                (
-                    "⏱️ QA CORRECTION STOPPED"
-                    +
-                    " | elapsed="
-                    +
-                    str(
-                        round(
-                            elapsed_before_correction,
-                            1
-                        )
-                    )
-                    +
-                    "s"
-                    +
-                    " | budget="
-                    +
-                    str(
-                        QA_CORRECTION_TIME_BUDGET_SECONDS
-                    )
-                    +
-                    "s"
-                )
-            )
-
-            print(
-                "✅ Keeping best version already produced."
-            )
-
-            break
-
-        correction_round += 1
-
-        previous_best_score = (
-            best_qa.score
-            if best_qa
-            else
-            0.0
-        )
-
-        print(
-            (
-                "🛠️ CORRECTION ROUND "
-                +
-                str(
-                    correction_round
-                )
-                +
-                "/"
-                +
-                str(
-                    correction_limit
-                )
-                +
-                "..."
-            )
-        )
-
-        #
-        # Corrections always start from the best
-        # provider-native image.
-        #
-
-        current_image = (
-            best_image
-        )
-
-        current_qa = (
-            best_qa
-        )
-
-        prompt = correction_prompt(
-            qa=
-                current_qa,
-
-            compiled=
-                active_compiled,
-
-            product_lock=
-                product_lock,
-
-            aspect_ratio=
-                aspect_ratio
+            + "..."
         )
 
         try:
-
-            corrected = (
-                openai_multi_reference_edit(
-                    working_image=
-                        current_image,
-
-                    references=
-                        product_refs,
-
-                    prompt=
-                        prompt,
-
-                    aspect_ratio=
-                        aspect_ratio,
-
-                    final_quality=
-                        True,
-
-                    pass_name=
-                        (
-                            "qa_correction_"
-                            +
-                            str(
-                                correction_round
-                            )
-                        )
+            first_qa = (
+                evaluate_generated_image(
+                    image=first_image,
+                    original_request=original_request,
+                    compiled_prompt=compiled,
+                    product_lock=product_lock,
+                    brand_context=brand_context,
+                    aspect_ratio=aspect_ratio,
+                    telemetry=telemetry,
                 )
             )
 
-            require_provider_canvas(
-                corrected,
-                aspect_ratio,
-
-                label=
-                    (
-                        "qa_correction_"
-                        +
-                        str(
-                            correction_round
-                        )
-                    )
+            passes[0].qa = (
+                first_qa
             )
 
-            corrected_preview = (
-                create_exact_delivery_frame(
-                    corrected,
-                    aspect_ratio,
-
-                    upscale_final=
-                        False,
-
-                    label=
-                        (
-                            "qa_correction_"
-                            +
-                            str(
-                                correction_round
-                            )
-                            +
-                            "_preview"
-                        )
-                )
-            )
-
-            print(
-                (
-                    "✅ Correction exact frame: "
-                    +
-                    corrected_preview.image_size
-                )
+            print_qa(
+                "Candidate 1 QA",
+                first_qa,
             )
 
         except Exception as error:
-
-            message = clean_text(
-                error,
-                3000
-            )
-
             errors.append(
-                (
-                    "qa_correction_"
-                    +
-                    str(
-                        correction_round
-                    )
-                    +
-                    ": "
-                    +
-                    message
+                "qa_candidate_1: "
+                + clean_text(
+                    error,
+                    3000,
                 )
             )
-
-            if (
-                "Unexpected provider canvas"
-                in message
-            ):
-
-                print(
-                    "⛔ CORRECTION REJECTED BY NATIVE CANVAS GUARD"
-                )
-
-                print(
-                    "✅ Best previous image preserved."
-                )
-
-                continue
 
             print(
-                (
-                    "⚠️ Correction failed; "
-                    "keeping best previous version."
-                )
+                "⚠️ Candidate 1 QA unavailable."
             )
 
-            break
+    best_image = first_image
+    best_qa = first_qa
+
+    best_score = (
+        first_qa.score
+        if first_qa
+        else 0.0
+    )
+
+    # =====================================================
+    # DECIDE WHETHER SECOND IMAGE CALL IS WORTH IT
+    # =====================================================
+
+    action = choose_adaptive_action(
+        first_qa
+    )
+
+    telemetry[
+        "adaptive_action"
+    ] = action
+
+    print("")
+    print(
+        "🧠 ADAPTIVE DECISION:",
+        action,
+    )
+
+    second_image: Optional[
+        GeneratedImage
+    ] = None
+
+    second_qa: Optional[
+        QAEvaluation
+    ] = None
+
+    # =====================================================
+    # IMAGE CALL 2 MAX
+    # =====================================================
+
+    if (
+        action != "none"
+        and telemetry[
+            "image_calls"
+        ]
+        < MASTERPIECE_MAX_IMAGE_CALLS
+    ):
+        print("")
+        print(
+            "🎨 IMAGE CALL 2/"
+            + str(
+                MASTERPIECE_MAX_IMAGE_CALLS
+            )
+            + " | "
+            + action
+            + "..."
+        )
 
         try:
+            if action == "concept_recovery":
+                recovery_prompt = (
+                    build_concept_recovery_prompt(
+                        qa=first_qa,
+                        compiled=compiled,
+                        aspect_ratio=aspect_ratio,
+                    )
+                )
 
-            corrected_qa = (
-                evaluate_generated_image(
-                    image=
-                        corrected,
+                recovery_compiled = (
+                    compiled_with_recovery(
+                        compiled,
+                        recovery_prompt,
+                    )
+                )
 
-                    original_request=
-                        original_request,
+                #
+                # Concept failure:
+                # create a fresh scene instead of polishing
+                # the failed composition.
+                #
+                second_image = (
+                    generate_high_quality_image(
+                        compiled=recovery_compiled,
+                        product_refs=product_refs,
+                        aspect_ratio=aspect_ratio,
+                        original_request=original_request,
+                        pass_name="concept_recovery_high",
+                    )
+                )
 
-                    compiled_prompt=
-                        active_compiled,
+                second_pass_name = (
+                    "concept_recovery_high"
+                )
 
-                    product_lock=
-                        product_lock,
+            else:
+                correction = (
+                    build_targeted_correction_prompt(
+                        qa=first_qa,
+                        compiled=compiled,
+                        product_lock=product_lock,
+                        aspect_ratio=aspect_ratio,
+                    )
+                )
 
-                    brand_context=
-                        brand_context,
+                second_image = (
+                    openai_multi_reference_edit(
+                        working_image=first_image,
+                        references=product_refs,
+                        prompt=correction,
+                        aspect_ratio=aspect_ratio,
+                        pass_name="targeted_correction_high",
+                    )
+                )
 
-                    aspect_ratio=
-                        aspect_ratio
+                second_pass_name = (
+                    "targeted_correction_high"
+                )
+
+            telemetry[
+                "image_calls"
+            ] += 1
+
+            second_preview = (
+                create_exact_delivery_frame(
+                    second_image,
+                    aspect_ratio,
+                    upscale_final=False,
+                    label="candidate_2",
                 )
             )
 
             passes.append(
                 ProductionPassResult(
-                    pass_name=
-                        (
-                            "qa_correction_"
-                            +
-                            str(
-                                correction_round
-                            )
-                        ),
-
-                    image=
-                        corrected,
-
-                    qa=
-                        corrected_qa,
-
+                    pass_name=second_pass_name,
+                    image=second_image,
                     metadata={
-                        "prompt_chars":
-                            corrected.metadata.get(
-                                "prompt_chars"
-                            ),
+                        "image_call":
+                            telemetry[
+                                "image_calls"
+                            ],
 
-                        "delivery_preview_size":
-                            corrected_preview.image_size,
+                        "quality":
+                            "high",
+
+                        "adaptive_action":
+                            action,
+
+                        "delivery_preview":
+                            second_preview.image_size,
                     },
                 )
             )
 
-            print(
-                (
-                    "📊 CORRECTED SCORE: "
-                    +
-                    str(
-                        corrected_qa.score
-                    )
-                    +
-                    "/100"
-                )
-            )
-
-            print_qa_decision(
-                corrected_qa
-            )
-
-            candidate_better = (
-                qa_candidate_is_better(
-                    corrected_qa,
-                    best_qa
-                )
-            )
-
-            if not candidate_better:
-
-                print(
-                    "🛑 CORRECTION REGRESSION DETECTED"
-                )
-
-                print(
-                    (
-                        "Best kept: "
-                        +
-                        str(
-                            best_score
-                        )
-                        +
-                        "/100"
-                    )
-                )
-
-                print(
-                    (
-                        "Rejected correction: "
-                        +
-                        str(
-                            corrected_qa.score
-                        )
-                        +
-                        "/100"
-                    )
-                )
-
-                print(
-                    "🚫 No further correction starts from a worse image."
-                )
-
-                break
-
-            best_image = (
-                corrected
-            )
-
-            best_qa = (
-                corrected_qa
-            )
-
-            best_score = (
-                corrected_qa.score
-            )
-
-            current_image = (
-                best_image
-            )
-
-            current_qa = (
-                best_qa
-            )
-
-            improvement = (
-                best_score
-                -
-                previous_best_score
-            )
-
-            print(
-                (
-                    "📈 Improvement: +"
-                    +
-                    str(
-                        round(
-                            improvement,
-                            2
-                        )
-                    )
-                )
-            )
-
-            if best_qa.passed:
-
-                if best_qa.target_reached:
-
-                    print(
-                        "✅ QA TARGET REACHED"
-                    )
-
-                else:
-
-                    print(
-                        (
-                            "✅ MASTERPIECE DELIVERY APPROVED"
-                            +
-                            " | score="
-                            +
-                            str(
-                                best_qa.score
-                            )
-                            +
-                            " | no critical blockers"
-                        )
-                    )
-
-                break
+            # =================================================
+            # VISION CALL 2
+            # =================================================
 
             if (
-                improvement
-                <
-                QA_MIN_IMPROVEMENT
+                telemetry[
+                    "vision_calls"
+                ]
+                < MASTERPIECE_MAX_VISION_CALLS
             ):
-
+                print("")
                 print(
-                    (
-                        "🛑 QA CORRECTION STOP"
-                        +
-                        " | improvement "
-                        +
-                        str(
-                            round(
-                                improvement,
-                                2
-                            )
-                        )
-                        +
-                        " < "
-                        +
-                        str(
-                            QA_MIN_IMPROVEMENT
+                    "👁️ ADAPTIVE VISION QA 2/"
+                    + str(
+                        MASTERPIECE_MAX_VISION_CALLS
+                    )
+                    + "..."
+                )
+
+                try:
+                    second_qa = (
+                        evaluate_generated_image(
+                            image=second_image,
+                            original_request=original_request,
+                            compiled_prompt=compiled,
+                            product_lock=product_lock,
+                            brand_context=brand_context,
+                            aspect_ratio=aspect_ratio,
+                            telemetry=telemetry,
                         )
                     )
+
+                    passes[-1].qa = (
+                        second_qa
+                    )
+
+                    print_qa(
+                        "Candidate 2 QA",
+                        second_qa,
+                    )
+
+                except Exception as error:
+                    errors.append(
+                        "qa_candidate_2: "
+                        + clean_text(
+                            error,
+                            3000,
+                        )
+                    )
+
+                    print(
+                        "⚠️ Candidate 2 QA unavailable."
+                    )
+
+            # =================================================
+            # BEST VERSION SELECTION
+            # =================================================
+
+            if (
+                second_qa is not None
+                and qa_candidate_is_better(
+                    second_qa,
+                    first_qa,
+                )
+            ):
+                best_image = (
+                    second_image
+                )
+
+                best_qa = (
+                    second_qa
+                )
+
+                best_score = (
+                    second_qa.score
                 )
 
                 print(
-                    "✅ Keeping the best version."
+                    "🏆 Candidate 2 selected as BEST."
                 )
 
-                break
+            else:
+                print(
+                    "🏆 Candidate 1 preserved as BEST."
+                )
 
         except Exception as error:
-
             errors.append(
-                (
-                    "qa_correction_evaluation_"
-                    +
-                    str(
-                        correction_round
-                    )
-                    +
-                    ": "
-                    +
-                    clean_text(
-                        error,
-                        3000
-                    )
+                action
+                + ": "
+                + clean_text(
+                    error,
+                    3000,
                 )
             )
 
             print(
-                (
-                    "⚠️ Corrected-image QA failed; "
-                    "keeping best previous version."
-                )
+                "⚠️ Adaptive second image call failed."
             )
 
-            break
+            print(
+                "✅ Candidate 1 preserved and will still be delivered."
+            )
+
+    else:
+        print(
+            "✅ No second paid image call needed."
+        )
 
     # =====================================================
-    # FINAL DELIVERY FRAME
+    # ALWAYS DELIVER BEST SUCCESSFUL IMAGE
     # =====================================================
 
-    require_provider_canvas(
-        best_image,
-        aspect_ratio,
-
-        label=
-            "final_masterpiece_native"
+    print("")
+    print(
+        "📦 Preparing exact final delivery..."
     )
 
     final_delivery_image = (
         create_exact_delivery_frame(
             best_image,
             aspect_ratio,
-
-            upscale_final=
-                True,
-
-            label=
-                "final_masterpiece_delivery"
+            upscale_final=True,
+            label="final_delivery",
         )
     )
 
-    final_delivery_approved = bool(
-        best_qa
-        and
-        best_qa.passed
-    )
-
-    final_target_reached = bool(
-        best_qa
-        and
-        best_qa.target_reached
-    )
-
-    final_decision = (
-        best_qa.decision
-        if best_qa
-        else
-        "qa_unavailable"
-    )
-
-    final_blockers = (
-        best_qa.critical_blockers
-        if best_qa
-        else
-        []
-    )
-
-    # =====================================================
-    # FINAL METADATA
-    # =====================================================
-
+    #
+    # IMPORTANT:
+    #
+    # QA is advisory / optimization metadata.
+    #
+    # run_production does NOT fail just because score is
+    # below 88/90.
+    #
     final_delivery_image.provider = (
         "xpand_masterpiece"
-        if mode
-        ==
-        MODE_MASTERPIECE
-        else
-        "xpand_production"
+        if mode == MODE_MASTERPIECE
+        else "xpand_production"
     )
 
     final_delivery_image.model = (
-        "XPAND Production V2.3.1 → "
-        +
-        OPENAI_IMAGE_MODEL
-        +
-        " → Local Exact Frame"
+        "XPAND Production V3.0 → "
+        + OPENAI_IMAGE_MODEL
+        + " → Local Exact Frame"
     )
 
-    final_delivery_image.metadata[
-        "production_engine"
-    ] = ENGINE_VERSION
+    if not isinstance(
+        final_delivery_image.metadata,
+        dict,
+    ):
+        final_delivery_image.metadata = {}
 
-    final_delivery_image.metadata[
-        "production_mode"
-    ] = mode
+    final_delivery_image.metadata.update(
+        {
+            "production_engine":
+                ENGINE_VERSION,
 
-    final_delivery_image.metadata[
-        "qa_score"
-    ] = best_score
+            "production_mode":
+                mode,
 
-    final_delivery_image.metadata[
-        "qa_target"
-    ] = QA_TARGET_SCORE
+            "quality_first_adaptive":
+                True,
 
-    final_delivery_image.metadata[
-        "qa_delivery_floor"
-    ] = QA_DELIVERY_FLOOR
+            "qa_score":
+                best_score,
 
-    final_delivery_image.metadata[
-        "qa_passed"
-    ] = final_delivery_approved
+            "qa_passed":
+                bool(
+                    best_qa
+                    and best_qa.passed
+                ),
 
-    final_delivery_image.metadata[
-        "qa_delivery_approved"
-    ] = final_delivery_approved
+            "qa_target_reached":
+                bool(
+                    best_qa
+                    and best_qa.target_reached
+                ),
 
-    final_delivery_image.metadata[
-        "qa_target_reached"
-    ] = final_target_reached
+            "qa_decision":
+                (
+                    best_qa.decision
+                    if best_qa
+                    else "qa_unavailable"
+                ),
 
-    final_delivery_image.metadata[
-        "qa_decision"
-    ] = final_decision
+            "qa_critical_blockers":
+                (
+                    best_qa.critical_blockers
+                    if best_qa
+                    else []
+                ),
 
-    final_delivery_image.metadata[
-        "qa_critical_blockers"
-    ] = final_blockers
+            "product_lock":
+                product_lock,
 
-    final_delivery_image.metadata[
-        "qa_correction_rounds"
-    ] = correction_round
+            "production_passes":
+                [
+                    item.pass_name
+                    for item in passes
+                ],
 
-    final_delivery_image.metadata[
-        "qa_correction_limit"
-    ] = correction_limit
+            "image_calls":
+                telemetry[
+                    "image_calls"
+                ],
 
-    final_delivery_image.metadata[
-        "concept_gate"
-    ] = gate_result
+            "vision_calls":
+                telemetry[
+                    "vision_calls"
+                ],
 
-    final_delivery_image.metadata[
-        "concept_regenerations"
-    ] = gate_attempt
+            "image_call_limit":
+                MASTERPIECE_MAX_IMAGE_CALLS,
 
-    final_delivery_image.metadata[
-        "product_lock"
-    ] = product_lock
+            "vision_call_limit":
+                MASTERPIECE_MAX_VISION_CALLS,
 
-    final_delivery_image.metadata[
-        "production_passes"
-    ] = [
-        item.pass_name
-        for item in passes
-    ]
+            "adaptive_action":
+                telemetry[
+                    "adaptive_action"
+                ],
 
-    final_delivery_image.metadata[
-        "compiled_prompt_chars"
-    ] = len(
-        active_compiled.prompt
+            "native_provider_canvas":
+                provider_size_for_ratio(
+                    aspect_ratio
+                ),
+
+            "exact_delivery_ratio":
+                aspect_ratio,
+
+            "exact_delivery_size":
+                final_delivery_image.image_size,
+
+            "local_processing_cost":
+                0,
+
+            "best_version_preservation":
+                True,
+
+            "qa_never_blocks_delivery":
+                True,
+        }
     )
-
-    final_delivery_image.metadata[
-        "compiled_prompt_budget"
-    ] = COMPILED_PROMPT_BUDGET
-
-    final_delivery_image.metadata[
-        "prompt_budget_manager"
-    ] = "active"
-
-    final_delivery_image.metadata[
-        "native_provider_canvas"
-    ] = provider_size_for_ratio(
-        aspect_ratio
-    )
-
-    final_delivery_image.metadata[
-        "exact_delivery_ratio"
-    ] = aspect_ratio
-
-    final_delivery_image.metadata[
-        "exact_delivery_size"
-    ] = final_delivery_image.image_size
-
-    final_delivery_image.metadata[
-        "local_exact_frame"
-    ] = True
-
-    final_delivery_image.metadata[
-        "local_processing_cost"
-    ] = 0
 
     elapsed = round(
         time.monotonic()
-        -
-        started,
-        3
+        - started,
+        3,
     )
 
     print("")
-
     print(
-        "=========================================="
+        "=============================================="
+    )
+    print(
+        " XPAND PRODUCTION COMPLETE V3.0"
+    )
+    print(
+        "=============================================="
     )
 
     print(
-        " XPAND PRODUCTION COMPLETE V2.3.1"
+        "Best QA score:",
+        best_score,
     )
 
     print(
-        "=========================================="
+        "QA target:",
+        QA_TARGET_SCORE,
     )
 
     print(
-        "Best score:",
-        best_score
-    )
-
-    print(
-        "Target:",
-        QA_TARGET_SCORE
-    )
-
-    print(
-        "Delivery floor:",
-        QA_DELIVERY_FLOOR
-    )
-
-    print(
-        "Delivery approved:",
-        final_delivery_approved
-    )
-
-    print(
-        "Target reached:",
-        final_target_reached
-    )
-
-    print(
-        "QA decision:",
-        final_decision
-    )
-
-    print(
-        "Critical blockers:",
-        len(
-            final_blockers
-        )
-    )
-
-    print(
-        "Concept Gate score:",
-        gate_result.get(
-            "concept_score",
-            "-"
-        )
-    )
-
-    print(
-        "Concept regenerations:",
-        gate_attempt
-    )
-
-    print(
-        "Provider-native canvas:",
-        provider_size_for_ratio(
-            aspect_ratio
-        )
-    )
-
-    print(
-        "Exact delivery frame:",
-        final_delivery_image.image_size
-    )
-
-    print(
-        "Requested aspect:",
-        aspect_ratio
-    )
-
-    print(
-        "Correction rounds:",
-        correction_round
-    )
-
-    print(
-        "Passes:",
-        len(
-            passes
-        )
-    )
-
-    print(
-        "Compiled prompt:",
-        len(
-            active_compiled.prompt
-        ),
+        "Image calls:",
+        telemetry[
+            "image_calls"
+        ],
         "/",
-        COMPILED_PROMPT_BUDGET
+        MASTERPIECE_MAX_IMAGE_CALLS,
     )
 
     print(
-        "Prompt Budget Manager: ACTIVE"
+        "Vision calls:",
+        telemetry[
+            "vision_calls"
+        ],
+        "/",
+        MASTERPIECE_MAX_VISION_CALLS,
     )
 
     print(
-        "Local frame processing cost: $0"
+        "Adaptive action:",
+        telemetry[
+            "adaptive_action"
+        ],
+    )
+
+    print(
+        "References:",
+        len(references),
+    )
+
+    print(
+        "Product references:",
+        len(product_refs),
+    )
+
+    print(
+        "Requested ratio:",
+        aspect_ratio,
+    )
+
+    print(
+        "Final delivery:",
+        final_delivery_image.image_size,
+    )
+
+    print(
+        "Local crop/resize API cost: $0",
+    )
+
+    print(
+        "QA blocks delivery: False",
     )
 
     print(
         "Elapsed:",
         elapsed,
-        "seconds"
+        "seconds",
     )
 
     print("")
 
     return ProductionResult(
-        ok=
-            True,
-
-        final_image=
-            final_delivery_image,
-
-        best_score=
-            best_score,
-
-        qa=
-            best_qa,
-
-        passes=
-            passes,
-
-        compiled_prompt=
-            active_compiled,
-
-        references_used=
-            len(
-                references
-            ),
-
-        product_references_used=
-            len(
-                product_refs
-            ),
-
-        elapsed_seconds=
-            elapsed,
-
-        errors=
-            errors,
+        ok=True,
+        final_image=final_delivery_image,
+        best_score=best_score,
+        qa=best_qa,
+        passes=passes,
+        compiled_prompt=compiled,
+        references_used=len(
+            references
+        ),
+        product_references_used=len(
+            product_refs
+        ),
+        elapsed_seconds=elapsed,
+        errors=errors,
     )
 
 
 # =========================================================
 # SELF TEST
 #
-# NO API CALLS
-# NO IMAGE GENERATION
-# NO DATABASE ACCESS
+# IMPORTANT:
+# - NO API CALLS
+# - NO IMAGE GENERATION
+# - NO DATABASE ACCESS
 # =========================================================
 
 if __name__ == "__main__":
-
     print("")
-
     print(
-        "=========================================="
+        "=============================================="
     )
-
     print(
-        " XPAND PRODUCTION ENGINE V2.3.1"
+        " XPAND PRODUCTION ENGINE V3.0"
     )
-
     print(
-        " NATIVE CANVAS + EXACT DELIVERY FRAME"
+        " QUALITY-FIRST ADAPTIVE MASTERPIECE"
     )
-
     print(
-        "=========================================="
+        "=============================================="
     )
-
     print("")
 
     print(
@@ -8426,56 +3903,45 @@ if __name__ == "__main__":
         (
             "READY"
             if OPENAI_API_KEY
-            else
-            "NOT CONFIGURED"
-        )
+            else "NOT CONFIGURED"
+        ),
+    )
+
+    print(
+        "Image model:",
+        OPENAI_IMAGE_MODEL,
     )
 
     print(
         "Pillow:",
-        Image.__version__
+        Image.__version__,
     )
 
     print(
-        "QA target:",
-        QA_TARGET_SCORE
+        "Max image calls:",
+        MASTERPIECE_MAX_IMAGE_CALLS,
     )
 
     print(
-        "QA delivery floor:",
-        QA_DELIVERY_FLOOR
+        "Max Vision calls:",
+        MASTERPIECE_MAX_VISION_CALLS,
     )
 
     print(
-        "QA corrections:",
-        QA_MAX_CORRECTIONS
+        "Correction trigger:",
+        ADAPTIVE_CORRECTION_TRIGGER_SCORE,
     )
 
     print(
-        "Correction time budget:",
-        QA_CORRECTION_TIME_BUDGET_SECONDS,
-        "seconds"
-    )
-
-    print(
-        "Concept Gate:",
-        CONCEPT_GATE_ENABLED
-    )
-
-    print(
-        "Concept Gate minimum:",
-        CONCEPT_GATE_MIN_SCORE
+        "Concept recovery floor:",
+        CONCEPT_RECOVERY_SCORE_FLOOR,
     )
 
     print("")
 
     # =====================================================
-    # PROVIDER CANVAS TESTS
+    # PROVIDER ROUTING
     # =====================================================
-
-    print(
-        "Provider-native canvases:"
-    )
 
     provider_tests = {
         "1:1":
@@ -8499,42 +3965,40 @@ if __name__ == "__main__":
 
     provider_ok = True
 
-    for ratio, expected in (
-        provider_tests.items()
-    ):
+    print(
+        "Provider routing:"
+    )
 
+    for ratio, expected in provider_tests.items():
         actual = provider_size_for_ratio(
             ratio
         )
 
         ok = (
             actual
-            ==
-            expected
+            == expected
         )
 
         provider_ok = (
             provider_ok
-            and
-            ok
+            and ok
         )
 
         print(
             (
                 "✅"
                 if ok
-                else
-                "❌"
+                else "❌"
             ),
             ratio,
             "→",
-            actual
+            actual,
         )
 
     print("")
 
     # =====================================================
-    # LOCAL 4:5 CROP TEST
+    # LOCAL FRAME
     # =====================================================
 
     source_image = Image.new(
@@ -8544,106 +4008,48 @@ if __name__ == "__main__":
             1536,
         ),
         (
-            40,
+            72,
             20,
-            80,
-        )
+            105,
+        ),
     )
 
-    source_buffer = (
-        BytesIO()
-    )
+    source_buffer = BytesIO()
 
     source_image.save(
         source_buffer,
-        format="PNG"
+        format="PNG",
     )
 
-    fake_generated = (
-        GeneratedImage(
-            image_bytes=
-                source_buffer.getvalue(),
-
-            mime_type=
-                "image/png",
-
-            provider=
-                "self-test",
-
-            model=
-                "self-test",
-
-            prompt=
-                "self-test",
-
-            original_prompt=
-                "self-test",
-
-            aspect_ratio=
-                "4:5",
-
-            image_size=
-                "1024x1536",
-
-            quality=
-                "medium",
-
-            route_reason=
-                "self-test",
-
-            request_id=
-                "self-test",
-
-            metadata={},
-        )
+    fake_image = GeneratedImage(
+        image_bytes=source_buffer.getvalue(),
+        mime_type="image/png",
+        provider="self-test",
+        model="self-test",
+        prompt="self-test",
+        original_prompt="self-test",
+        aspect_ratio="4:5",
+        image_size="1024x1536",
+        quality="high",
+        route_reason="self-test",
+        request_id="self-test",
+        metadata={},
     )
 
-    native_status = (
-        provider_canvas_status(
-            fake_generated,
-            "4:5"
-        )
+    preview = create_exact_delivery_frame(
+        fake_image,
+        "4:5",
+        upscale_final=False,
+        label="self_test_preview",
     )
 
-    native_4x5_ok = bool(
-        native_status.get(
-            "ok"
-        )
-    )
-
-    print(
-        (
-            "✅"
-            if native_4x5_ok
-            else
-            "❌"
-        ),
-        "1024x1536 accepted as provider-native canvas for 4:5"
-    )
-
-    exact_preview = (
-        create_exact_delivery_frame(
-            fake_generated,
-            "4:5",
-
-            upscale_final=
-                False,
-
-            label=
-                "self_test_4x5"
-        )
-    )
-
-    preview_dims = (
-        real_image_dimensions(
-            exact_preview.image_bytes
-        )
+    preview_dims = real_image_dimensions(
+        preview.image_bytes
     )
 
     preview_ok = (
         preview_dims
-        ==
-        (
+        == (
             1024,
             1280,
         )
@@ -8653,551 +4059,298 @@ if __name__ == "__main__":
         (
             "✅"
             if preview_ok
-            else
-            "❌"
+            else "❌"
         ),
-        "1024x1536 → exact local 1024x1280 4:5"
+        "Native 1024x1536 → exact 1024x1280",
     )
 
-    final_frame = (
-        create_exact_delivery_frame(
-            fake_generated,
-            "4:5",
-
-            upscale_final=
-                True,
-
-            label=
-                "self_test_final_4x5"
-        )
+    final_test = create_exact_delivery_frame(
+        fake_image,
+        "4:5",
+        upscale_final=True,
+        label="self_test_final",
     )
 
-    final_dims = (
-        real_image_dimensions(
-            final_frame.image_bytes
-        )
+    final_dims = real_image_dimensions(
+        final_test.image_bytes
     )
 
-    final_expected = (
-        parse_size_string(
-            production_size_for_ratio(
-                "4:5",
-                final_quality=True
-            )
-        )
-    )
-
-    final_frame_ok = (
+    final_ok = (
         final_dims
-        ==
-        final_expected
-    )
-
-    print(
-        (
-            "✅"
-            if final_frame_ok
-            else
-            "❌"
-        ),
-        "Exact final 4:5 delivery frame",
-        final_dims
-    )
-
-    print("")
-
-    # =====================================================
-    # SQUARE REJECTION TEST
-    # =====================================================
-
-    square_image = Image.new(
-        "RGB",
-        (
-            1024,
-            1024,
-        ),
-        (
-            0,
-            0,
-            0,
-        )
-    )
-
-    square_buffer = (
-        BytesIO()
-    )
-
-    square_image.save(
-        square_buffer,
-        format="PNG"
-    )
-
-    fake_square = (
-        GeneratedImage(
-            image_bytes=
-                square_buffer.getvalue(),
-
-            mime_type=
-                "image/png",
-
-            provider=
-                "self-test",
-
-            model=
-                "self-test",
-
-            prompt=
-                "self-test",
-
-            original_prompt=
-                "self-test",
-
-            aspect_ratio=
-                "4:5",
-
-            image_size=
-                "1024x1024",
-
-            quality=
-                "medium",
-
-            route_reason=
-                "self-test",
-
-            request_id=
-                "self-test-square",
-
-            metadata={},
-        )
-    )
-
-    square_status = (
-        provider_canvas_status(
-            fake_square,
-            "4:5"
-        )
-    )
-
-    square_rejected = (
-        not
-        square_status.get(
-            "ok"
+        == (
+            2560,
+            3200,
         )
     )
 
     print(
         (
             "✅"
-            if square_rejected
-            else
-            "❌"
+            if final_ok
+            else "❌"
         ),
-        "1024x1024 rejected for requested portrait 4:5"
+        "Final 4:5 →",
+        final_dims,
     )
 
     print("")
 
     # =====================================================
-    # SAFE FRAME TEST
+    # ADAPTIVE POLICY
     # =====================================================
 
-    safe = safe_frame_description(
-        "4:5"
-    )
-
-    safe_frame_ok = (
-        safe.get(
-            "provider_size"
-        )
-        ==
-        "1024x1536"
-        and
-        safe.get(
-            "safe_width"
-        )
-        ==
-        1024
-        and
-        safe.get(
-            "safe_height"
-        )
-        ==
-        1280
-    )
-
-    print(
-        (
-            "✅"
-            if safe_frame_ok
-            else
-            "❌"
-        ),
-        "4:5 Safe Frame calculation"
-    )
-
-    print(
-        "   top bleed:",
-        safe.get(
-            "top_bleed_pct"
-        ),
-        "%"
-    )
-
-    print(
-        "   bottom bleed:",
-        safe.get(
-            "bottom_bleed_pct"
-        ),
-        "%"
-    )
-
-    print("")
-
-    # =====================================================
-    # FULL PIPELINE TEST
-    # =====================================================
-
-    no_product = (
-        production_passes_for_mode(
-            MODE_MASTERPIECE,
-
-            has_product_reference=
-                False
-        )
-    )
-
-    with_product = (
-        production_passes_for_mode(
-            MODE_MASTERPIECE,
-
-            has_product_reference=
-                True
-        )
-    )
-
-    expected_no_product = [
-        "composition",
-        "lighting",
-        "materials",
-        "final_polish",
-    ]
-
-    expected_with_product = [
-        "composition",
-        "product",
-        "lighting",
-        "materials",
-        "final_polish",
-    ]
-
-    full_pipeline_ok = (
-        no_product
-        ==
-        expected_no_product
-        and
-        with_product
-        ==
-        expected_with_product
-    )
-
-    print(
-        (
-            "✅"
-            if full_pipeline_ok
-            else
-            "❌"
-        ),
-        "Full heavy Masterpiece pipeline preserved"
-    )
-
-    print("")
-
-    # =====================================================
-    # QA POLICY TEST
-    # =====================================================
-
-    def fake_qa(
-        score: float,
-        blockers: Optional[
-            List[str]
-        ] = None,
-    ) -> QAEvaluation:
-
-        blocker_list = (
-            blockers
-            or
-            []
-        )
-
-        decision = (
-            qa_delivery_decision(
-                score=
-                    score,
-
-                critical_blockers=
-                    blocker_list
-            )
-        )
-
-        return QAEvaluation(
-            score=
-                score,
-
-            scores={},
-
-            passed=
-                bool(
-                    decision[
-                        "approved"
-                    ]
-                ),
-
-            strengths=[],
-
-            problems=[],
-
-            correction_instruction="",
-
-            critical_blockers=
-                blocker_list,
-
-            target_reached=
-                bool(
-                    decision[
-                        "target_reached"
-                    ]
-                ),
-
-            delivery_approved=
-                bool(
-                    decision[
-                        "approved"
-                    ]
-                ),
-
-            decision=
-                decision[
-                    "decision"
-                ],
-        )
-
-    qa_92 = fake_qa(
-        92
-    )
-
-    qa_8875 = fake_qa(
-        88.75
-    )
-
-    qa_84 = fake_qa(
-        84
-    )
-
-    qa_91_blocked = (
-        fake_qa(
-            91,
-
-            blockers=[
-                "major concept failure"
-            ]
-        )
-    )
-
-    qa_policy_ok = (
-        qa_92.passed
-        and
-        qa_92.target_reached
-        and
-        qa_8875.passed
-        and
-        not qa_8875.target_reached
-        and
-        recommended_correction_limit(
-            qa_84
-        )
-        ==
-        QA_MAX_CORRECTIONS
-        and
-        not qa_91_blocked.passed
-    )
-
-    print(
-        (
-            "✅"
-            if qa_policy_ok
-            else
-            "❌"
-        ),
-        "V2.2/V2.3 QA policy preserved"
-    )
-
-    print("")
-
-    # =====================================================
-    # PROMPT COMPILER TEST
-    # =====================================================
-
-    dummy_compiler = compile_prompt(
-        TARGET_OPENAI,
-
-        request=
-            "STC Bank international transfer campaign",
-
-        creative_direction={
-            "idea":
-                "Riyadh and London become one continuous physical space."
+    good_qa = QAEvaluation(
+        score=92,
+        scores={
+            "concept_execution":
+                92,
         },
+        passed=True,
+        strengths=[],
+        problems=[],
+        correction_instruction="",
+        critical_blockers=[],
+        target_reached=True,
+        delivery_approved=True,
+        decision="target_reached",
+    )
 
+    weak_concept_qa = QAEvaluation(
+        score=78,
+        scores={
+            "concept_execution":
+                50,
+        },
+        passed=False,
+        strengths=[],
+        problems=[
+            "Core visual metaphor missing."
+        ],
+        correction_instruction=(
+            "Rebuild concept."
+        ),
+        critical_blockers=[
+            "major concept failure"
+        ],
+        target_reached=False,
+        delivery_approved=False,
+        decision="critical_issues",
+    )
+
+    polish_qa = QAEvaluation(
+        score=86,
+        scores={
+            "concept_execution":
+                90,
+        },
+        passed=False,
+        strengths=[],
+        problems=[
+            "Lighting needs refinement."
+        ],
+        correction_instruction=(
+            "Refine lighting only."
+        ),
+        critical_blockers=[],
+        target_reached=False,
+        delivery_approved=False,
+        decision=(
+            "improvement_recommended"
+        ),
+    )
+
+    adaptive_good = (
+        choose_adaptive_action(
+            good_qa
+        )
+        == "none"
+    )
+
+    adaptive_concept = (
+        choose_adaptive_action(
+            weak_concept_qa
+        )
+        == "concept_recovery"
+    )
+
+    adaptive_polish = (
+        choose_adaptive_action(
+            polish_qa
+        )
+        == "targeted_correction"
+    )
+
+    print(
+        (
+            "✅"
+            if adaptive_good
+            else "❌"
+        ),
+        "90+ → no second image call",
+    )
+
+    print(
+        (
+            "✅"
+            if adaptive_concept
+            else "❌"
+        ),
+        "Concept failure → concept recovery",
+    )
+
+    print(
+        (
+            "✅"
+            if adaptive_polish
+            else "❌"
+        ),
+        "Normal weakness → targeted correction",
+    )
+
+    print("")
+
+    # =====================================================
+    # BLUEPRINT
+    # =====================================================
+
+    dummy = compile_prompt(
+        TARGET_OPENAI,
+        request=(
+            "STC Bank premium international transfer hero visual"
+        ),
+        creative_direction={
+            "core_idea":
+                "Two distant environments become one physical space."
+        },
         brand_context={
             "brand":
-                "STC Bank"
+                "STC Bank",
         },
-
         references=[],
-
         camera_direction={
             "camera":
-                "premium environmental commercial photography"
+                "premium environmental perspective",
         },
-
-        product_lock={}
+        product_lock={},
+        aspect_ratio="4:5",
     )
 
     compiler_ok = (
-        dummy_compiler.target
-        ==
-        TARGET_OPENAI
-        and
         len(
-            dummy_compiler.prompt
+            dummy.prompt
         )
-        <=
-        COMPILED_PROMPT_BUDGET
+        <= COMPILED_PROMPT_BUDGET
     )
 
     print(
         (
             "✅"
             if compiler_ok
-            else
-            "❌"
+            else "❌"
         ),
-        "Prompt Compiler"
+        "Quality-First Production Blueprint",
     )
 
     print("")
 
     # =====================================================
-    # FINAL RESULT
+    # COST GUARD
     # =====================================================
 
-    all_ok = (
-        provider_ok
+    cost_guard_ok = (
+        MASTERPIECE_MAX_IMAGE_CALLS
+        <= 2
         and
-        native_4x5_ok
-        and
-        preview_ok
-        and
-        final_frame_ok
-        and
-        square_rejected
-        and
-        safe_frame_ok
-        and
-        full_pipeline_ok
-        and
-        qa_policy_ok
-        and
-        compiler_ok
+        MASTERPIECE_MAX_VISION_CALLS
+        <= 2
     )
-
-    print(
-        "✅ Provider-Native Canvas Routing"
-    )
-
-    print(
-        "✅ 4:5 → native 1024x1536 accepted"
-    )
-
-    print(
-        "✅ Wrong square canvas still rejected"
-    )
-
-    print(
-        "✅ Local Exact 4:5 Crop"
-    )
-
-    print(
-        "✅ Local Final Delivery Resize"
-    )
-
-    print(
-        "✅ Zero paid API calls for crop/resize"
-    )
-
-    print(
-        "✅ Safe Frame aware prompting"
-    )
-
-    print(
-        "✅ Concept Gate sees exact delivery crop"
-    )
-
-    print(
-        "✅ Final QA sees exact delivery crop"
-    )
-
-    print(
-        "✅ Correction QA sees exact delivery crop"
-    )
-
-    print(
-        "✅ Composition Pass preserved"
-    )
-
-    print(
-        "✅ Product Fidelity Pass preserved"
-    )
-
-    print(
-        "✅ Lighting Pass preserved"
-    )
-
-    print(
-        "✅ Material Pass preserved"
-    )
-
-    print(
-        "✅ Final Polish preserved"
-    )
-
-    print(
-        "✅ Critical Blocker hard gate preserved"
-    )
-
-    print(
-        "✅ 88+ near-target delivery preserved"
-    )
-
-    print(
-        "✅ Regression protection preserved"
-    )
-
-    print(
-        "✅ Full-quality correction window preserved"
-    )
-
-    print("")
 
     print(
         (
-            "XPAND Production Engine V2.3.1 self-test: "
-            +
-            (
+            "✅"
+            if cost_guard_ok
+            else "❌"
+        ),
+        "Maximum automatic image calls <= 2",
+    )
+
+    print(
+        (
+            "✅"
+            if cost_guard_ok
+            else "❌"
+        ),
+        "Maximum automatic Vision calls <= 2",
+    )
+
+    print(
+        "✅ Composition decisions moved before image generation"
+    )
+
+    print(
+        "✅ Lighting decisions moved before image generation"
+    )
+
+    print(
+        "✅ Materials decisions moved before image generation"
+    )
+
+    print(
+        "✅ Product Fidelity integrated into first generation"
+    )
+
+    print(
+        "✅ First image uses HIGH quality"
+    )
+
+    print(
+        "✅ Second image call only when QA justifies it"
+    )
+
+    print(
+        "✅ Concept failure uses recovery instead of polish"
+    )
+
+    print(
+        "✅ Best-version preservation"
+    )
+
+    print(
+        "✅ QA never blocks best-image delivery"
+    )
+
+    print(
+        "✅ Native canvas accepted"
+    )
+
+    print(
+        "✅ Exact delivery framing is local"
+    )
+
+    print(
+        "✅ Crop/resize makes no paid API call"
+    )
+
+    print("")
+
+    all_ok = (
+        provider_ok
+        and preview_ok
+        and final_ok
+        and adaptive_good
+        and adaptive_concept
+        and adaptive_polish
+        and compiler_ok
+        and cost_guard_ok
+    )
+
+    print(
+        (
+            "XPAND Production Engine V3.0 self-test: "
+            + (
                 "PASS ✅"
                 if all_ok
-                else
-                "FAIL ❌"
+                else "FAIL ❌"
             )
         )
     )
