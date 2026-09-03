@@ -2636,99 +2636,26 @@ def _call_openai_response_once(
         response
     )
 
-    if not isinstance(
-    data,
-    dict
-):
-
-    raise XPANDImageProviderError(
-        "GPT-5.6 Sol returned an invalid response object."
-    )
-
-usage = (
-    data.get(
-        "usage"
-    )
-    or
-    {}
-)
-
-input_details = (
-    usage.get(
-        "input_tokens_details"
-    )
-    or
-    {}
-)
-
-output_details = (
-    usage.get(
-        "output_tokens_details"
-    )
-    or
-    {}
-)
-
-print(
-    "💰 XPAND SOL USAGE"
-    +
-    " | input="
-    +
-    str(
-        usage.get(
-            "input_tokens",
-            0
+        if not isinstance(data, dict):
+        raise XPANDImageProviderError(
+            "GPT-5.6 Sol returned an invalid response object."
         )
-    )
-    +
-    " | cached="
-    +
-    str(
-        input_details.get(
-            "cached_tokens",
-            0
-        )
-    )
-    +
-    " | cache_write="
-    +
-    str(
-        input_details.get(
-            "cache_write_tokens",
-            0
-        )
-    )
-    +
-    " | output="
-    +
-    str(
-        usage.get(
-            "output_tokens",
-            0
-        )
-    )
-    +
-    " | reasoning="
-    +
-    str(
-        output_details.get(
-            "reasoning_tokens",
-            0
-        )
-    )
-    +
-    " | total="
-    +
-    str(
-        usage.get(
-            "total_tokens",
-            0
-        )
-    )
-)
 
-return data
+    usage = data.get("usage") or {}
+    input_details = usage.get("input_tokens_details") or {}
+    output_details = usage.get("output_tokens_details") or {}
 
+    print(
+        "💰 XPAND SOL USAGE"
+        f" | input={usage.get('input_tokens', 0)}"
+        f" | cached={input_details.get('cached_tokens', 0)}"
+        f" | cache_write={input_details.get('cache_write_tokens', 0)}"
+        f" | output={usage.get('output_tokens', 0)}"
+        f" | reasoning={output_details.get('reasoning_tokens', 0)}"
+        f" | total={usage.get('total_tokens', 0)}"
+    )
+
+    return data
 
 # =========================================================
 # GPT-5.6 SOL TEXT / VISION
