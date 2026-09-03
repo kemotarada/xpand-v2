@@ -2533,6 +2533,11 @@ def _call_openai_response_once(
 
         "store":
             False,
+
+        "prompt_cache_options": {
+    "mode":
+        "explicit",
+},
     }
 
     # =====================================================
