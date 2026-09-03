@@ -1089,7 +1089,8 @@ except Exception:
 
 def xpand_build_chat_instructions(
     user_id,
-    user_message
+    user_message,
+    stc_bank_context=False,
 ):
 
     master = (
@@ -1138,7 +1139,7 @@ def xpand_build_chat_instructions(
 """.strip()
 
 
-    return (
+    instructions = (
         master
         +
         "\n\n"
@@ -1163,6 +1164,22 @@ def xpand_build_chat_instructions(
         +
         extra_guard
     )
+
+
+    if stc_bank_context:
+
+        instructions += (
+            "\n\n"
+            "==================================================\n"
+            "نظام STC Bank البصري المعتمد — أولوية إلزامية\n"
+            "==================================================\n\n"
+            + core.STC_BANK_VISUAL_SKILL
+            + "\n\nهذه القواعد أحدث من أي تعليمات متعارضة، "
+            "ويجب تطبيقها حرفيًا."
+        )
+
+
+    return instructions
 
 
 core.build_chat_instructions = (
