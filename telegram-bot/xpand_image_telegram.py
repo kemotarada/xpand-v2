@@ -1,24 +1,22 @@
 # =========================================================
-# XPAND TELEGRAM IMAGE STUDIO V1.0.1
+# XPAND TELEGRAM IMAGE STUDIO V1.1
 #
-# Connects XPAND Smart Image Engine to Telegram.
+# Compatible with:
+# - XPAND Smart Image Engine V1.3+
+# - OpenAI GPT-Image-2
+# - GPT-5.6 Sol visual director / critic
+# - Nano Banana Pro
+# - Nano Banana 2
+# - OpenAI Fusion fallback
 #
 # Supports:
-# - Natural Arabic image requests
-# - Telegram text
-# - Telegram voice after transcription
-# - AUTO / BEST / GPT / Nano Banana routing
+# - Natural Telegram text requests
+# - Telegram voice requests
+# - AUTO / FAST / PRO / BEST / COMPARE
 # - Preview image
 # - Original-quality document
-# - Image metadata persistence
-# - Foundation for "edit last image"
-#
-# Requires:
-# - xpand_image_engine.py
-# - requests
-#
-# Does NOT modify legacy main.py directly.
-# Installed from main_xpand.py.
+# - PostgreSQL image metadata
+# - Backward-compatible status keys
 # =========================================================
 
 from __future__ import annotations
@@ -26,7 +24,13 @@ from __future__ import annotations
 import io
 import os
 import re
-from typing import Any, Dict, List, Optional
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 import requests
 
@@ -38,12 +42,14 @@ from xpand_image_engine import (
 
 
 # =========================================================
-# VERSION
+# MODULE
 # =========================================================
 
-VERSION = "1.0.1"
+VERSION = "1.1"
 
-MODULE_NAME = "XPAND Telegram Image Studio"
+MODULE_NAME = (
+    "XPAND Telegram Image Studio"
+)
 
 
 # =========================================================
@@ -106,7 +112,7 @@ TELEGRAM_TIMEOUT = max(
 
 
 # =========================================================
-# NORMALIZATION
+# HELPERS
 # =========================================================
 
 def clean_text(
@@ -137,6 +143,7 @@ def normalized(
         12000
     ).lower()
 
+
     replacements = {
         "أ": "ا",
         "إ": "ا",
@@ -147,6 +154,7 @@ def normalized(
         "ئ": "ي",
     }
 
+
     for old, new in replacements.items():
 
         text = text.replace(
@@ -154,17 +162,20 @@ def normalized(
             new
         )
 
+
     text = re.sub(
         r"[\u064B-\u065F]",
         "",
         text
     )
 
+
     text = re.sub(
         r"\s+",
         " ",
         text
     )
+
 
     return text.strip()
 
@@ -177,6 +188,7 @@ def contains_any(
     source = normalized(
         text
     )
+
 
     return any(
         normalized(
@@ -226,7 +238,6 @@ IMAGE_ASSET_MARKERS = [
     "إعلان",
     "advertisement",
     "ad",
-    "بنر",
     "بانر",
     "banner",
     "ثامبنيل",
@@ -241,20 +252,22 @@ IMAGE_ASSET_MARKERS = [
     "render",
     "visual",
     "key visual",
+    "منتج",
+    "product",
 ]
 
 
 IMAGE_QUESTION_MARKERS = [
-    "شو يعني",
-    "ما معنى",
     "اشرحلي",
     "اشرح لي",
-    "كيف بتشتغل",
-    "كيف تعمل",
     "شو افضل موديل",
     "شو أفضل موديل",
     "ايش افضل موديل",
     "أي موديل",
+    "كيف بتشتغل",
+    "كيف تعمل",
+    "شو يعني",
+    "ما معنى",
 ]
 
 
@@ -267,19 +280,23 @@ def looks_like_image_generation_request(
         12000
     )
 
+
     if not value:
 
         return False
 
+
     source = normalized(
         value
     )
+
 
     if source.startswith(
         "/image"
     ):
 
         return True
+
 
     if contains_any(
         value,
@@ -288,15 +305,18 @@ def looks_like_image_generation_request(
 
         return False
 
+
     has_action = contains_any(
         value,
         IMAGE_ACTION_MARKERS
     )
 
+
     has_asset = contains_any(
         value,
         IMAGE_ASSET_MARKERS
     )
+
 
     return (
         has_action
@@ -306,7 +326,7 @@ def looks_like_image_generation_request(
 
 
 # =========================================================
-# EXPLICIT MODEL / MODE
+# MODE DETECTION
 # =========================================================
 
 def detect_generation_mode(
@@ -316,29 +336,59 @@ def detect_generation_mode(
     if contains_any(
         text,
         [
+            "compare",
+            "قارن الموديلات",
+            "قارنلي الموديلات",
+            "كل موديل لحاله",
+            "كل موديل لوحده",
+            "نسخه من كل موديل",
+            "نسخة من كل موديل",
+        ]
+    ):
+
+        return "compare"
+
+
+    if contains_any(
+        text,
+        [
             "best mode",
             "وضع best",
-            "موديلين",
-            "موديلين مختلفين",
+            "افضل نتيجه ممكنه",
+            "أفضل نتيجة ممكنة",
             "اقوى نتيجه",
             "أقوى نتيجة",
             "اقوى شيء",
             "أقوى شيء",
-            "افضل نتيجه ممكنه",
-            "أفضل نتيجة ممكنة",
             "اعلى مستوى ممكن",
             "أعلى مستوى ممكن",
+            "كل قواك",
+            "ultimate",
+            "max quality",
         ]
     ):
 
         return "best"
+
+
+    if contains_any(
+        text,
+        [
+            "pro mode",
+            "وضع pro",
+            "fusion",
+            "فيوجن",
+        ]
+    ):
+
+        return "pro"
+
 
     if contains_any(
         text,
         [
             "gpt-image-2",
             "gpt image 2",
-            "جي بي تي ايمج",
             "openai",
             "اوبن اي اي",
         ]
@@ -346,17 +396,18 @@ def detect_generation_mode(
 
         return "openai"
 
+
     if contains_any(
         text,
         [
             "nano banana pro",
             "نانو بنانا برو",
-            "نانو بنانا pro",
             "gemini 3 pro image",
         ]
     ):
 
         return "google_pro"
+
 
     if contains_any(
         text,
@@ -369,6 +420,19 @@ def detect_generation_mode(
 
         return "google_fast"
 
+
+    if contains_any(
+        text,
+        [
+            "سريع",
+            "fast mode",
+            "وضع سريع",
+        ]
+    ):
+
+        return "fast"
+
+
     return "auto"
 
 
@@ -380,13 +444,16 @@ NUMBER_WORDS = {
     "واحد": 1,
     "واحده": 1,
     "وحده": 1,
+
     "اثنين": 2,
     "اتنين": 2,
     "ثنتين": 2,
     "صورتين": 2,
+
     "ثلاث": 3,
     "ثلاثه": 3,
-    "ثلاث صور": 3,
+    "ثلاثة": 3,
+
     "اربع": 4,
     "اربعه": 4,
     "أربع": 4,
@@ -402,10 +469,19 @@ def detect_requested_image_count(
         text
     )
 
+
     patterns = [
-        r"\b([1-4])\s*(?:صور|صوره|صورة|نسخ|خيارات)\b",
-        r"\b(?:صور|نسخ|خيارات)\s*([1-4])\b",
+        (
+            r"\b([1-4])\s*"
+            r"(?:صور|صوره|صورة|نسخ|خيارات)\b"
+        ),
+
+        (
+            r"\b(?:صور|نسخ|خيارات)\s*"
+            r"([1-4])\b"
+        ),
     ]
+
 
     for pattern in patterns:
 
@@ -413,6 +489,7 @@ def detect_requested_image_count(
             pattern,
             source
         )
+
 
         if match:
 
@@ -428,13 +505,17 @@ def detect_requested_image_count(
                 )
             )
 
+
     for marker, value in NUMBER_WORDS.items():
 
-        if normalized(
-            marker
-        ) in source:
-
-            if contains_any(
+        if (
+            normalized(
+                marker
+            )
+            in
+            source
+            and
+            contains_any(
                 source,
                 [
                     "صور",
@@ -443,21 +524,23 @@ def detect_requested_image_count(
                     "نسخ",
                     "خيارات",
                 ]
-            ):
+            )
+        ):
 
-                return max(
-                    1,
-                    min(
-                        MAX_GENERATED_IMAGES,
-                        value
-                    )
+            return max(
+                1,
+                min(
+                    MAX_GENERATED_IMAGES,
+                    value
                 )
+            )
+
 
     return 1
 
 
 # =========================================================
-# PROMPT CLEANUP
+# PROMPT
 # =========================================================
 
 def extract_image_prompt(
@@ -469,6 +552,7 @@ def extract_image_prompt(
         10000
     )
 
+
     if value.lower().startswith(
         "/image"
     ):
@@ -478,6 +562,7 @@ def extract_image_prompt(
                 "/image"
             ):
         ].strip()
+
 
     return value
 
@@ -500,11 +585,13 @@ def telegram_api_url(
         1000
     )
 
+
     if not token:
 
         raise RuntimeError(
             "TELEGRAM_BOT_TOKEN missing"
         )
+
 
     return (
         "https://api.telegram.org/bot"
@@ -530,24 +617,29 @@ def send_photo_bytes(
         image_bytes
     )
 
+
     buffer.name = filename
+
 
     response = requests.post(
         telegram_api_url(
             core,
             "sendPhoto"
         ),
+
         data={
             "chat_id":
                 str(
                     chat_id
                 ),
+
             "caption":
                 clean_text(
                     caption,
                     1000
                 ),
         },
+
         files={
             "photo": (
                 filename,
@@ -557,10 +649,27 @@ def send_photo_bytes(
                 "image/png"
             )
         },
-        timeout=TELEGRAM_TIMEOUT
+
+        timeout=
+            TELEGRAM_TIMEOUT
     )
 
-    data = response.json()
+
+    try:
+
+        data = response.json()
+
+
+    except Exception:
+
+        data = {
+            "ok":
+                False,
+
+            "description":
+                response.text,
+        }
+
 
     if (
         not response.ok
@@ -581,6 +690,7 @@ def send_photo_bytes(
             )
         )
 
+
     return data
 
 
@@ -597,24 +707,29 @@ def send_document_bytes(
         image_bytes
     )
 
+
     buffer.name = filename
+
 
     response = requests.post(
         telegram_api_url(
             core,
             "sendDocument"
         ),
+
         data={
             "chat_id":
                 str(
                     chat_id
                 ),
+
             "caption":
                 clean_text(
                     caption,
                     1000
                 ),
         },
+
         files={
             "document": (
                 filename,
@@ -624,10 +739,27 @@ def send_document_bytes(
                 "application/octet-stream"
             )
         },
-        timeout=TELEGRAM_TIMEOUT
+
+        timeout=
+            TELEGRAM_TIMEOUT
     )
 
-    data = response.json()
+
+    try:
+
+        data = response.json()
+
+
+    except Exception:
+
+        data = {
+            "ok":
+                False,
+
+            "description":
+                response.text,
+        }
+
 
     if (
         not response.ok
@@ -647,6 +779,7 @@ def send_document_bytes(
                 )
             )
         )
+
 
     return data
 
@@ -671,6 +804,7 @@ def extract_photo_file_id(
         )
     )
 
+
     if (
         not isinstance(
             photos,
@@ -681,6 +815,7 @@ def extract_photo_file_id(
     ):
 
         return ""
+
 
     return clean_text(
         photos[-1].get(
@@ -706,15 +841,20 @@ def extract_document_info(
         )
     )
 
+
     if not isinstance(
         document,
         dict
     ):
 
         return {
-            "file_id": "",
-            "file_unique_id": "",
+            "file_id":
+                "",
+
+            "file_unique_id":
+                "",
         }
+
 
     return {
         "file_id":
@@ -736,7 +876,7 @@ def extract_document_info(
 
 
 # =========================================================
-# IMAGE DB
+# DATABASE
 # =========================================================
 
 def ensure_image_table(
@@ -793,6 +933,7 @@ def ensure_image_table(
                 """
             )
 
+
             cur.execute(
                 """
                 CREATE INDEX IF NOT EXISTS
@@ -824,6 +965,7 @@ def save_image_record(
             core
         )
 
+
         with core.db_connect() as conn:
 
             with conn.cursor() as cur:
@@ -851,7 +993,8 @@ def save_image_record(
                         telegram_document_file_unique_id,
                         source_channel
                     )
-                    VALUES (
+                    VALUES
+                    (
                         %s,
                         %s,
                         %s,
@@ -873,8 +1016,10 @@ def save_image_record(
                     )
                     RETURNING id;
                     """,
+
                     (
                         user_id,
+
                         chat_id,
 
                         clean_text(
@@ -884,7 +1029,7 @@ def save_image_record(
 
                         clean_text(
                             image.model,
-                            200
+                            500
                         ),
 
                         clean_text(
@@ -933,7 +1078,7 @@ def save_image_record(
 
                         clean_text(
                             image.route_reason,
-                            2000
+                            3000
                         ),
 
                         clean_text(
@@ -958,7 +1103,9 @@ def save_image_record(
                     )
                 )
 
+
                 row = cur.fetchone()
+
 
                 return (
                     int(
@@ -968,6 +1115,7 @@ def save_image_record(
                     else
                     None
                 )
+
 
     except Exception as error:
 
@@ -981,11 +1129,12 @@ def save_image_record(
             )
         )
 
+
         return None
 
 
 # =========================================================
-# LABELS
+# PROVIDER LABEL
 # =========================================================
 
 def provider_label(
@@ -993,21 +1142,54 @@ def provider_label(
     model: str
 ) -> str:
 
+    provider = clean_text(
+        provider,
+        100
+    )
+
+
     if provider == "openai":
 
         return "GPT-Image-2"
+
 
     if provider == "google_fast":
 
         return "Nano Banana 2"
 
+
     if provider == "google_pro":
 
         return "Nano Banana Pro"
 
+
+    if provider == "fusion_pro":
+
+        return (
+            "PRO Fusion | "
+            "Nano Banana Pro → GPT-Image-2"
+        )
+
+
+    if provider == "fusion_best":
+
+        return (
+            "BEST Fusion | "
+            "Nano Banana Pro + OpenAI"
+        )
+
+
+    if provider == "openai_fusion":
+
+        return (
+            "BEST OpenAI Fusion | "
+            "GPT-5.6 Sol + GPT-Image-2"
+        )
+
+
     return clean_text(
         model,
-        100
+        300
     )
 
 
@@ -1032,12 +1214,16 @@ def deliver_generated_image(
         image.model
     )
 
+
     counter = (
-        f" | {index}/{total}"
+        (
+            f" | {index}/{total}"
+        )
         if total > 1
         else
         ""
     )
+
 
     caption = (
         "🎨 XPAND Image"
@@ -1046,7 +1232,7 @@ def deliver_generated_image(
         +
         "\n\n"
         +
-        "الموديل: "
+        "المحرك: "
         +
         label
         +
@@ -1065,15 +1251,17 @@ def deliver_generated_image(
         +
         clean_text(
             image.image_size,
-            30
+            50
         )
     )
+
 
     photo_file_id = ""
 
     document_file_id = ""
 
     document_file_unique_id = ""
+
 
     # -----------------------------------------------------
     # PREVIEW
@@ -1094,13 +1282,20 @@ def deliver_generated_image(
                 )
             )
 
+
             photo_file_id = (
                 extract_photo_file_id(
                     photo_response
                 )
             )
 
+
         except Exception as error:
+
+            #
+            # Preview failure should never prevent
+            # original-quality delivery.
+            #
 
             print(
                 (
@@ -1111,6 +1306,7 @@ def deliver_generated_image(
                     )
                 )
             )
+
 
     # -----------------------------------------------------
     # ORIGINAL
@@ -1138,9 +1334,10 @@ def deliver_generated_image(
             +
             clean_text(
                 image.image_size,
-                30
+                50
             )
         )
+
 
         document_response = (
             send_document_bytes(
@@ -1153,11 +1350,13 @@ def deliver_generated_image(
             )
         )
 
+
         document_info = (
             extract_document_info(
                 document_response
             )
         )
+
 
         document_file_id = (
             document_info[
@@ -1165,39 +1364,44 @@ def deliver_generated_image(
             ]
         )
 
+
         document_file_unique_id = (
             document_info[
                 "file_unique_id"
             ]
         )
 
-    image_db_id = save_image_record(
-        core,
 
-        user_id=
-            user_id,
+    image_db_id = (
+        save_image_record(
+            core,
 
-        chat_id=
-            chat_id,
+            user_id=
+                user_id,
 
-        image=
-            image,
+            chat_id=
+                chat_id,
 
-        enhanced_prompt=
-            enhanced_prompt,
+            image=
+                image,
 
-        photo_file_id=
-            photo_file_id,
+            enhanced_prompt=
+                enhanced_prompt,
 
-        document_file_id=
-            document_file_id,
+            photo_file_id=
+                photo_file_id,
 
-        document_file_unique_id=
-            document_file_unique_id,
+            document_file_id=
+                document_file_id,
 
-        source_channel=
-            source_channel
+            document_file_unique_id=
+                document_file_unique_id,
+
+            source_channel=
+                source_channel
+        )
     )
+
 
     return {
         "image_id":
@@ -1236,25 +1440,38 @@ def generate_and_deliver(
         text
     )
 
+
     if not prompt:
 
         raise RuntimeError(
             "اكتبلي وصف الصورة اللي بدك إياها."
         )
 
+
     mode = detect_generation_mode(
         prompt
     )
+
 
     number = detect_requested_image_count(
         prompt
     )
 
-    core.send_action(
-        chat_id,
-        "upload_photo"
-    )
 
+    try:
+
+        core.send_action(
+            chat_id,
+            "upload_photo"
+        )
+
+
+    except Exception:
+
+        pass
+
+
+    print("")
     print(
         (
             "🎨 XPAND IMAGE REQUEST"
@@ -1271,12 +1488,20 @@ def generate_and_deliver(
         )
     )
 
+
     result = generate_image(
         prompt,
-        mode=mode,
-        number=number,
-        allow_fallback=True,
+
+        mode=
+            mode,
+
+        number=
+            number,
+
+        allow_fallback=
+            True,
     )
+
 
     if (
         not result.ok
@@ -1288,21 +1513,37 @@ def generate_and_deliver(
             "ما رجعت صورة من محرك التوليد."
         )
 
-    delivered = []
+
+    delivered: List[
+        Dict[
+            str,
+            Any
+        ]
+    ] = []
+
 
     total = len(
         result.images
     )
+
 
     for index, image in enumerate(
         result.images,
         start=1
     ):
 
-        core.send_action(
-            chat_id,
-            "upload_photo"
-        )
+        try:
+
+            core.send_action(
+                chat_id,
+                "upload_photo"
+            )
+
+
+        except Exception:
+
+            pass
+
 
         delivered.append(
             deliver_generated_image(
@@ -1331,7 +1572,9 @@ def generate_and_deliver(
             )
         )
 
-    models = []
+
+    models: List[str] = []
+
 
     for image in result.images:
 
@@ -1340,11 +1583,13 @@ def generate_and_deliver(
             image.model
         )
 
+
         if model_name not in models:
 
             models.append(
                 model_name
             )
+
 
     summary = (
         "تم إنشاء صورة بواسطة XPAND Image Studio. "
@@ -1356,59 +1601,101 @@ def generate_and_deliver(
             1000
         )
         +
-        " | الموديل: "
+        " | المحرك: "
         +
         ", ".join(
             models
         )
     )
 
-    core.save_message(
-        chat_id,
-        "assistant",
-        summary
-    )
 
-    core.record_event(
-        user_id,
-        chat_id,
-        "image_generated",
-        summary,
-        {
-            "mode":
-                mode,
+    try:
 
-            "number":
-                len(
-                    result.images
-                ),
+        core.save_message(
+            chat_id,
+            "assistant",
+            summary
+        )
 
-            "models":
-                models,
 
-            "source_channel":
-                source_channel,
+    except Exception as error:
 
-            "engine_version":
-                ENGINE_VERSION,
+        print(
+            (
+                "⚠️ Image conversation save: "
+                +
+                str(
+                    error
+                )
+            )
+        )
 
-            "telegram_image_module":
-                VERSION,
 
-            "image_ids":
-                [
-                    item.get(
-                        "image_id"
-                    )
-                    for item
-                    in delivered
-                    if item.get(
-                        "image_id"
-                    )
-                    is not None
-                ],
-        }
-    )
+    try:
+
+        core.record_event(
+            user_id,
+            chat_id,
+            "image_generated",
+            summary,
+            {
+                "mode":
+                    mode,
+
+                "selected_route":
+                    clean_text(
+                        getattr(
+                            result,
+                            "selected_route",
+                            ""
+                        ),
+                        100
+                    ),
+
+                "number":
+                    len(
+                        result.images
+                    ),
+
+                "models":
+                    models,
+
+                "source_channel":
+                    source_channel,
+
+                "engine_version":
+                    ENGINE_VERSION,
+
+                "telegram_image_module":
+                    VERSION,
+
+                "image_ids":
+                    [
+                        item.get(
+                            "image_id"
+                        )
+                        for item in delivered
+                        if item.get(
+                            "image_id"
+                        )
+                        is not None
+                    ],
+            }
+        )
+
+
+    except Exception as error:
+
+        print(
+            (
+                "⚠️ Image event save: "
+                +
+                str(
+                    error
+                )
+            )
+        )
+
 
     print(
         (
@@ -1422,13 +1709,14 @@ def generate_and_deliver(
                 )
             )
             +
-            " | models="
+            " | engines="
             +
             ", ".join(
                 models
             )
         )
     )
+
 
     return {
         "ok":
@@ -1450,6 +1738,13 @@ def generate_and_deliver(
 
         "errors":
             result.errors,
+
+        "selected_route":
+            getattr(
+                result,
+                "selected_route",
+                ""
+            ),
     }
 
 
@@ -1470,6 +1765,7 @@ def handle_text_image_request(
 
         return False
 
+
     try:
 
         result = generate_and_deliver(
@@ -1481,13 +1777,14 @@ def handle_text_image_request(
                 "telegram_text"
         )
 
+
         if result.get(
             "errors"
         ):
 
             print(
                 (
-                    "⚠️ Image fallback info: "
+                    "⚠️ XPAND IMAGE PIPELINE INFO: "
                     +
                     str(
                         result[
@@ -1496,6 +1793,7 @@ def handle_text_image_request(
                     )
                 )
             )
+
 
     except Exception as error:
 
@@ -1509,38 +1807,111 @@ def handle_text_image_request(
             )
         )
 
-        core.record_event(
-            user_id,
-            chat_id,
-            "image_generation_error",
-            str(
-                error
-            ),
-            {
-                "source_channel":
-                    "telegram_text"
-            }
-        )
+
+        try:
+
+            core.record_event(
+                user_id,
+                chat_id,
+                "image_generation_error",
+                str(
+                    error
+                ),
+                {
+                    "source_channel":
+                        "telegram_text"
+                }
+            )
+
+
+        except Exception:
+
+            pass
+
 
         core.send_message(
             chat_id,
             (
                 "صار خلل بتوليد الصورة.\n"
-                "ما عملت حالي إنها نجحت.\n\n"
+                "ما رح أحكيلك إنها نجحت وهي ما نجحت.\n\n"
                 "الخطأ: "
                 +
                 clean_text(
                     error,
-                    1200
+                    1500
                 )
             )
         )
+
 
     return True
 
 
 # =========================================================
-# INSTALL HOOKS
+# STATUS COMPATIBILITY
+# =========================================================
+
+def status_flag(
+    status: Dict[str, Any],
+    key: str,
+    fallback_key: str = ""
+) -> bool:
+
+    if key in status:
+
+        return bool(
+            status.get(
+                key
+            )
+        )
+
+
+    if fallback_key:
+
+        return bool(
+            status.get(
+                fallback_key
+            )
+        )
+
+
+    return False
+
+
+def provider_ready(
+    status: Dict[str, Any],
+    provider_name: str
+) -> bool:
+
+    providers = status.get(
+        "providers",
+        {}
+    )
+
+
+    provider = providers.get(
+        provider_name,
+        {}
+    )
+
+
+    if not isinstance(
+        provider,
+        dict
+    ):
+
+        return False
+
+
+    return bool(
+        provider.get(
+            "configured"
+        )
+    )
+
+
+# =========================================================
+# INSTALL
 # =========================================================
 
 def install(
@@ -1561,13 +1932,15 @@ def install(
                 True,
         }
 
-    # -----------------------------------------------------
-    # TEXT
-    # -----------------------------------------------------
+
+    # =====================================================
+    # TEXT HOOK
+    # =====================================================
 
     original_handle_command = (
         core.handle_command
     )
+
 
     def xpand_image_handle_command(
         chat_id,
@@ -1584,23 +1957,27 @@ def install(
 
             return True
 
+
         return original_handle_command(
             chat_id,
             user_id,
             text
         )
 
+
     core.handle_command = (
         xpand_image_handle_command
     )
 
-    # -----------------------------------------------------
-    # VOICE
-    # -----------------------------------------------------
+
+    # =====================================================
+    # VOICE HOOK
+    # =====================================================
 
     original_ask = (
         core.ask_kemo
     )
+
 
     def xpand_image_ask(
         chat_id,
@@ -1623,21 +2000,22 @@ def install(
                         "telegram_voice"
                 )
 
-                models = result.get(
-                    "models",
-                    []
-                )
 
-                if models:
+                if result.get(
+                    "selected_route"
+                ) == "best":
 
                     return (
-                        "تم. ولّدتلك الصورة "
-                        "وبعثتلك المعاينة والنسخة الأصلية."
+                        "تم. شغلت أقوى مسار للصور "
+                        "وبعثتلك النتيجة النهائية عالشات."
                     )
 
+
                 return (
-                    "تم، ولّدتلك الصورة وبعثتلك إياها."
+                    "تم، ولّدتلك الصورة "
+                    "وبعثتلك المعاينة والنسخة الأصلية."
                 )
+
 
             except Exception as error:
 
@@ -1651,23 +2029,33 @@ def install(
                     )
                 )
 
-                core.record_event(
-                    user_id,
-                    chat_id,
-                    "image_generation_error",
-                    str(
-                        error
-                    ),
-                    {
-                        "source_channel":
-                            "telegram_voice"
-                    }
-                )
+
+                try:
+
+                    core.record_event(
+                        user_id,
+                        chat_id,
+                        "image_generation_error",
+                        str(
+                            error
+                        ),
+                        {
+                            "source_channel":
+                                "telegram_voice"
+                        }
+                    )
+
+
+                except Exception:
+
+                    pass
+
 
                 return (
                     "صار خلل بتوليد الصورة، "
                     "وما رح أحكيلك إنها نجحت وهي ما نجحت."
                 )
+
 
         return original_ask(
             chat_id,
@@ -1675,113 +2063,203 @@ def install(
             user_message
         )
 
+
     core.ask_kemo = (
         xpand_image_ask
     )
+
 
     core._XPAND_IMAGE_TELEGRAM_INSTALLED = (
         True
     )
 
+
+    # =====================================================
+    # STATUS
+    # =====================================================
+
     status = get_image_engine_status()
+
+
+    openai_ready = provider_ready(
+        status,
+        "openai"
+    )
+
+
+    nano_fast_ready = provider_ready(
+        status,
+        "google_fast"
+    )
+
+
+    nano_pro_ready = provider_ready(
+        status,
+        "google_pro"
+    )
+
+
+    #
+    # IMPORTANT COMPATIBILITY FIX:
+    #
+    # Old engine:
+    # supports_best_mode
+    #
+    # New V1.3:
+    # supports_openai_fusion
+    #
+    best_ready = status_flag(
+        status,
+        "supports_best_mode",
+        "supports_openai_fusion"
+    )
+
+
+    google_openai_fusion_ready = (
+        status_flag(
+            status,
+            "supports_google_openai_fusion"
+        )
+    )
+
 
     print("")
     print(
         "=========================================="
     )
     print(
-        " XPAND TELEGRAM IMAGE STUDIO V1.0.1"
+        " XPAND TELEGRAM IMAGE STUDIO V1.1"
     )
     print(
         "=========================================="
     )
+
     print(
         "✅ Natural image requests"
     )
+
     print(
         "✅ Telegram text generation"
     )
+
     print(
         "✅ Telegram voice generation"
     )
+
     print(
         "✅ Preview delivery"
     )
+
     print(
         "✅ Original-quality delivery"
     )
+
     print(
         "✅ Image metadata persistence"
     )
+
     print(
         (
             "✅ OpenAI: "
             +
             (
                 "READY"
-                if status[
-                    "providers"
-                ][
-                    "openai"
-                ][
-                    "configured"
-                ]
+                if openai_ready
                 else
                 "missing"
             )
         )
     )
+
     print(
         (
             "✅ Nano Banana 2: "
             +
             (
-                "READY"
-                if status[
-                    "providers"
-                ][
-                    "google_fast"
-                ][
-                    "configured"
-                ]
+                "CONFIGURED"
+                if nano_fast_ready
                 else
                 "missing"
             )
         )
     )
+
     print(
         (
             "✅ Nano Banana Pro: "
             +
             (
-                "READY"
-                if status[
-                    "providers"
-                ][
-                    "google_pro"
-                ][
-                    "configured"
-                ]
+                "CONFIGURED"
+                if nano_pro_ready
                 else
                 "missing"
             )
         )
     )
+
     print(
         (
             "✅ BEST mode: "
             +
             (
                 "READY"
-                if status[
-                    "supports_best_mode"
-                ]
+                if best_ready
                 else
                 "not ready"
             )
         )
     )
+
+    print(
+        (
+            "✅ OpenAI Fusion fallback: "
+            +
+            (
+                "READY"
+                if status_flag(
+                    status,
+                    "supports_openai_fusion"
+                )
+                else
+                "not ready"
+            )
+        )
+    )
+
+    print(
+        (
+            "✅ Google + OpenAI Fusion: "
+            +
+            (
+                "CONFIGURED"
+                if google_openai_fusion_ready
+                else
+                "not configured"
+            )
+        )
+    )
+
+    print(
+        (
+            "✅ Google optional: "
+            +
+            str(
+                bool(
+                    status.get(
+                        "google_optional",
+                        False
+                    )
+                )
+            )
+        )
+    )
+
+    print(
+        "✅ Engine status compatibility fixed"
+    )
+
     print("")
+
 
     return {
         "ok":
@@ -1792,129 +2270,147 @@ def install(
 
         "status":
             status,
+
+        "best_ready":
+            best_ready,
     }
 
 
 # =========================================================
 # SELF TEST
+#
+# NO IMAGE GENERATION.
+# NO PAID API REQUEST.
 # =========================================================
 
 if __name__ == "__main__":
 
-    print("")
-    print(
-        "=========================================="
-    )
-    print(
-        " XPAND TELEGRAM IMAGE STUDIO V1.0.1"
-    )
-    print(
-        "=========================================="
-    )
-    print("")
-
     status = get_image_engine_status()
 
+
+    print("")
     print(
-        "Image engine:",
-        (
-            "READY"
-            if status.get(
-                "ok"
-            )
-            else
-            "NOT READY"
-        )
+        "=========================================="
     )
+    print(
+        " XPAND TELEGRAM IMAGE STUDIO V1.1"
+    )
+    print(
+        "=========================================="
+    )
+    print("")
+
+
+    print(
+        "Engine version:",
+        ENGINE_VERSION
+    )
+
 
     print(
         "OpenAI:",
         (
             "READY"
-            if status[
-                "providers"
-            ][
+            if provider_ready(
+                status,
                 "openai"
-            ][
-                "configured"
-            ]
+            )
             else
             "missing"
         )
     )
+
 
     print(
         "Nano Banana 2:",
         (
-            "READY"
-            if status[
-                "providers"
-            ][
+            "CONFIGURED"
+            if provider_ready(
+                status,
                 "google_fast"
-            ][
-                "configured"
-            ]
+            )
             else
             "missing"
         )
     )
+
 
     print(
         "Nano Banana Pro:",
         (
-            "READY"
-            if status[
-                "providers"
-            ][
+            "CONFIGURED"
+            if provider_ready(
+                status,
                 "google_pro"
-            ][
-                "configured"
-            ]
+            )
             else
             "missing"
         )
     )
 
+
+    best_ready = status_flag(
+        status,
+        "supports_best_mode",
+        "supports_openai_fusion"
+    )
+
+
     print(
-        "BEST mode:",
+        "BEST:",
         (
             "READY"
-            if status.get(
-                "supports_best_mode"
+            if best_ready
+            else
+            "not ready"
+        )
+    )
+
+
+    print(
+        "OpenAI Fusion:",
+        (
+            "READY"
+            if status_flag(
+                status,
+                "supports_openai_fusion"
             )
             else
             "not ready"
         )
     )
 
+
     print("")
+
 
     tests = [
         (
-            "اعمللي صورة إعلان عطر فاخر 4K",
+            "اعمللي صورة سيارة سوداء بالليل",
             True
         ),
+
         (
-            "صمملي بوستر احترافي لشركة XPAND",
+            "اعمللي بوستر منتج بأفضل نتيجة ممكنة",
             True
         ),
+
         (
-            "ولدلي صورة سيارة سوداء بالليل",
+            "صمملي إعلان عطر فاخر",
             True
         ),
+
         (
-            "/image قهوة عربية على طاولة خشب",
+            "/image ساعة فخمة",
             True
         ),
+
         (
-            "اشرحلي شو افضل موديل للصور",
-            False
-        ),
-        (
-            "شو رأيك بهاي الصورة؟",
+            "شو أفضل موديل للصور؟",
             False
         ),
     ]
+
 
     for text, expected in tests:
 
@@ -1923,6 +2419,7 @@ if __name__ == "__main__":
                 text
             )
         )
+
 
         print(
             (
@@ -1935,5 +2432,12 @@ if __name__ == "__main__":
             "|",
             text
         )
+
+
+    print("")
+
+    print(
+        "✅ No supports_best_mode KeyError"
+    )
 
     print("")
