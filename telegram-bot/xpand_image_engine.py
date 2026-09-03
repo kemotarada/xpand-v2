@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 import os
 import re
@@ -31,6 +32,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import requests
+from PIL import Image
 
 
 # =========================================================
@@ -450,13 +452,13 @@ def normalize_arabic(
     ).lower()
 
     replacements = {
-        "أ": "ا",
-        "إ": "ا",
-        "آ": "ا",
-        "ة": "ه",
-        "ى": "ي",
-        "ؤ": "و",
-        "ئ": "ي",
+        "Ø£": "Ø§",
+        "Ø¥": "Ø§",
+        "Ø¢": "Ø§",
+        "Ø©": "Ù‡",
+        "Ù‰": "ÙŠ",
+        "Ø¤": "Ùˆ",
+        "Ø¦": "ÙŠ",
     }
 
     for old, new in replacements.items():
@@ -501,8 +503,8 @@ def extract_quoted_text(
     patterns = [
         r'"([^"]+)"',
         r"'([^']+)'",
-        r"“([^”]+)”",
-        r"«([^»]+)»",
+        r"â€œ([^â€]+)â€",
+        r"Â«([^Â»]+)Â»",
     ]
 
     results: List[str] = []
@@ -570,13 +572,13 @@ def detect_aspect_ratio(
     if contains_any(
         prompt,
         [
-            "ستوري",
+            "Ø³ØªÙˆØ±ÙŠ",
             "story",
-            "ريل",
+            "Ø±ÙŠÙ„",
             "reel",
-            "تيك توك",
+            "ØªÙŠÙƒ ØªÙˆÙƒ",
             "tiktok",
-            "عمودي",
+            "Ø¹Ù…ÙˆØ¯ÙŠ",
             "vertical",
         ],
     ):
@@ -585,9 +587,9 @@ def detect_aspect_ratio(
     if contains_any(
         prompt,
         [
-            "بوست انستغرام",
+            "Ø¨ÙˆØ³Øª Ø§Ù†Ø³ØªØºØ±Ø§Ù…",
             "instagram post",
-            "مربع",
+            "Ù…Ø±Ø¨Ø¹",
             "square",
         ],
     ):
@@ -596,12 +598,12 @@ def detect_aspect_ratio(
     if contains_any(
         prompt,
         [
-            "بوست",
+            "Ø¨ÙˆØ³Øª",
             "social post",
-            "انستغرام",
+            "Ø§Ù†Ø³ØªØºØ±Ø§Ù…",
             "instagram",
-            "اعلان سوشال",
-            "إعلان سوشال",
+            "Ø§Ø¹Ù„Ø§Ù† Ø³ÙˆØ´Ø§Ù„",
+            "Ø¥Ø¹Ù„Ø§Ù† Ø³ÙˆØ´Ø§Ù„",
         ],
     ):
         return "4:5"
@@ -609,13 +611,13 @@ def detect_aspect_ratio(
     if contains_any(
         prompt,
         [
-            "بانر",
+            "Ø¨Ø§Ù†Ø±",
             "banner",
             "youtube",
-            "يوتيوب",
+            "ÙŠÙˆØªÙŠÙˆØ¨",
             "landscape",
-            "افقي",
-            "أفقي",
+            "Ø§ÙÙ‚ÙŠ",
+            "Ø£ÙÙ‚ÙŠ",
             "widescreen",
         ],
     ):
@@ -624,10 +626,10 @@ def detect_aspect_ratio(
     if contains_any(
         prompt,
         [
-            "بوستر",
+            "Ø¨ÙˆØ³ØªØ±",
             "poster",
             "portrait",
-            "ملصق",
+            "Ù…Ù„ØµÙ‚",
         ],
     ):
         return "2:3"
@@ -649,8 +651,8 @@ def detect_image_size(
     ).upper()
 
     aliases = {
-        "HD": "1K",
-        "720P": "1K",
+        "HD": "HD",
+        "720P": "HD",
         "1080P": "2K",
         "FHD": "2K",
         "FULLHD": "2K",
@@ -673,9 +675,9 @@ def detect_image_size(
         [
             "4k",
             "4 k",
-            "فور كي",
-            "بدقة 4k",
-            "دقة 4k",
+            "ÙÙˆØ± ÙƒÙŠ",
+            "Ø¨Ø¯Ù‚Ø© 4k",
+            "Ø¯Ù‚Ø© 4k",
         ],
     ):
         return "4K"
@@ -685,8 +687,8 @@ def detect_image_size(
         [
             "2k",
             "2 k",
-            "بدقة 2k",
-            "دقة 2k",
+            "Ø¨Ø¯Ù‚Ø© 2k",
+            "Ø¯Ù‚Ø© 2k",
             "fhd",
             "full hd",
             "1080p",
@@ -694,7 +696,43 @@ def detect_image_size(
     ):
         return "2K"
 
+    if contains_any(
+        prompt,
+        [
+            "720p",
+            "Ø¬ÙˆØ¯Ø© hd",
+            "Ø¯Ù‚Ø© hd",
+        ],
+    ):
+        return "HD"
+
     return "1K"
+
+
+def _finalize_requested_resolution(
+    image_bytes: bytes,
+    mime_type: str,
+    requested_size: str,
+) -> Tuple[bytes, str]:
+    """Return an actual 720p file when the user explicitly requests HD."""
+    if str(requested_size).upper() != "HD":
+        return image_bytes, mime_type
+
+    with Image.open(io.BytesIO(image_bytes)) as source:
+        source.load()
+        width, height = source.size
+        if min(width, height) <= 720:
+            return image_bytes, mime_type
+
+        scale = 720.0 / float(min(width, height))
+        target = (
+            max(1, round(width * scale)),
+            max(1, round(height * scale)),
+        )
+        converted = source.convert("RGB").resize(target, Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        converted.save(output, format="JPEG", quality=95, optimize=True)
+        return output.getvalue(), "image/jpeg"
 
 
 # =========================================================
@@ -716,14 +754,14 @@ def detect_quality(
     if contains_any(
         prompt,
         [
-            "سريع",
-            "بسرعة",
-            "بسرعه",
+            "Ø³Ø±ÙŠØ¹",
+            "Ø¨Ø³Ø±Ø¹Ø©",
+            "Ø¨Ø³Ø±Ø¹Ù‡",
             "fast",
             "quick",
             "draft",
             "preview",
-            "تجريبي",
+            "ØªØ¬Ø±ÙŠØ¨ÙŠ",
         ],
     ):
         return "medium"
@@ -747,7 +785,7 @@ def build_professional_prompt(
 
     if not user_prompt:
         raise XPANDImageError(
-            "وصف الصورة فاضي."
+            "ÙˆØµÙ Ø§Ù„ØµÙˆØ±Ø© ÙØ§Ø¶ÙŠ."
         )
 
     directives = [
@@ -774,11 +812,11 @@ def build_professional_prompt(
     if contains_any(
         user_prompt,
         [
-            "واقعي",
-            "واقعية",
+            "ÙˆØ§Ù‚Ø¹ÙŠ",
+            "ÙˆØ§Ù‚Ø¹ÙŠØ©",
             "realistic",
             "photorealistic",
-            "تصوير",
+            "ØªØµÙˆÙŠØ±",
         ],
     ):
         directives.append(
@@ -791,15 +829,15 @@ def build_professional_prompt(
     if contains_any(
         user_prompt,
         [
-            "منتج",
+            "Ù…Ù†ØªØ¬",
             "product",
-            "عطر",
+            "Ø¹Ø·Ø±",
             "perfume",
-            "ساعة",
+            "Ø³Ø§Ø¹Ø©",
             "watch",
             "packaging",
-            "عبوة",
-            "عبوه",
+            "Ø¹Ø¨ÙˆØ©",
+            "Ø¹Ø¨ÙˆÙ‡",
         ],
     ):
         directives.append(
@@ -812,15 +850,15 @@ def build_professional_prompt(
     if contains_any(
         user_prompt,
         [
-            "اعلان",
-            "إعلان",
+            "Ø§Ø¹Ù„Ø§Ù†",
+            "Ø¥Ø¹Ù„Ø§Ù†",
             "advertisement",
             "campaign",
             "brand",
             "branding",
             "premium",
-            "فاخر",
-            "فخم",
+            "ÙØ§Ø®Ø±",
+            "ÙØ®Ù…",
         ],
     ):
         directives.append(
@@ -984,11 +1022,11 @@ def resolve_effective_mode(
     if contains_any(
         prompt,
         [
-            "أفضل نتيجة ممكنة",
-            "افضل نتيجه ممكنه",
-            "أقوى نتيجة",
-            "اقوى نتيجه",
-            "كل قواك",
+            "Ø£ÙØ¶Ù„ Ù†ØªÙŠØ¬Ø© Ù…Ù…ÙƒÙ†Ø©",
+            "Ø§ÙØ¶Ù„ Ù†ØªÙŠØ¬Ù‡ Ù…Ù…ÙƒÙ†Ù‡",
+            "Ø£Ù‚ÙˆÙ‰ Ù†ØªÙŠØ¬Ø©",
+            "Ø§Ù‚ÙˆÙ‰ Ù†ØªÙŠØ¬Ù‡",
+            "ÙƒÙ„ Ù‚ÙˆØ§Ùƒ",
             "all your power",
             "best mode",
             "ultimate",
@@ -1000,9 +1038,9 @@ def resolve_effective_mode(
     if contains_any(
         prompt,
         [
-            "سريع",
-            "بسرعة",
-            "بسرعه",
+            "Ø³Ø±ÙŠØ¹",
+            "Ø¨Ø³Ø±Ø¹Ø©",
+            "Ø¨Ø³Ø±Ø¹Ù‡",
             "fast",
             "quick",
             "draft",
@@ -1014,11 +1052,11 @@ def resolve_effective_mode(
     professional = contains_any(
         prompt,
         [
-            "احترافي",
+            "Ø§Ø­ØªØ±Ø§ÙÙŠ",
             "premium",
             "luxury",
-            "فاخر",
-            "فخم",
+            "ÙØ§Ø®Ø±",
+            "ÙØ®Ù…",
             "agency",
             "campaign",
             "commercial",
@@ -1163,7 +1201,7 @@ def _download_image_url(
     if not response.ok:
         raise XPANDImageProviderError(
             (
-                "فشل تنزيل الصورة: "
+                "ÙØ´Ù„ ØªÙ†Ø²ÙŠÙ„ Ø§Ù„ØµÙˆØ±Ø©: "
                 + str(
                     response.status_code
                 )
@@ -1874,7 +1912,7 @@ def _log_openai_usage(
     )
 
     print(
-        "💰 XPAND SOL USAGE"
+        "ðŸ’° XPAND SOL USAGE"
         f" | input={input_tokens}"
         f" | cached={cached_tokens}"
         f" | cache_write={cache_write_tokens}"
@@ -1904,7 +1942,7 @@ def _call_openai_response_once(
 
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
+            "OPENAI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯."
         )
 
     content: List[
@@ -2086,7 +2124,7 @@ def call_gemini_director(
     json_schema_name: str = "xpand_structured_output",
 ) -> str:
     if not GEMINI_API_KEY:
-        raise XPANDImageConfigurationError("GEMINI_API_KEY مش موجود.")
+        raise XPANDImageConfigurationError("GEMINI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯.")
     prompt = clean_text(prompt, 32000)
     structured = bool(json_mode or json_schema)
     if structured:
@@ -2108,7 +2146,7 @@ def call_gemini_director(
         "0", "false", "no", "off"
     }
     if search_enabled and contains_any(prompt, [
-        "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
+        "bank", "Ø¨Ù†Ùƒ", "Ù…ØµØ±Ù", "competitor", "Ù…Ù†Ø§ÙØ³", "deep research", "Ø¨Ø­Ø« Ø¹Ù…ÙŠÙ‚"
     ]):
         payload["tools"] = [{"type": "google_search"}]
     response = requests.post(
@@ -2122,7 +2160,7 @@ def call_gemini_director(
     data = _safe_json(response)
     text = _find_gemini_text(data)
     if not text:
-        raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
+        raise XPANDImageProviderError("Gemini Director Ø±Ø¬Ø¹ Ø¨Ø¯ÙˆÙ† Ù†Øµ.")
     return normalize_json_text(text) if structured else text
 
 def call_openai_director(
@@ -2157,7 +2195,7 @@ def call_openai_director(
 
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
+            "OPENAI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯."
         )
 
     prompt = clean_text(
@@ -2253,7 +2291,7 @@ def call_openai_director(
             )
 
             print(
-                "🔁 Structured Vision retry..."
+                "ðŸ” Structured Vision retry..."
             )
 
         try:
@@ -2320,7 +2358,7 @@ def call_openai_director(
                 if attempt > 1:
                     print(
                         (
-                            "✅ Structured Vision "
+                            "âœ… Structured Vision "
                             "retry succeeded"
                         )
                     )
@@ -2338,7 +2376,7 @@ def call_openai_director(
 
             if not text:
                 raise XPANDImageProviderError(
-                    "GPT-5.6 Sol رجع بدون نص."
+                    "GPT-5.6 Sol Ø±Ø¬Ø¹ Ø¨Ø¯ÙˆÙ† Ù†Øµ."
                 )
 
             return text
@@ -2352,7 +2390,7 @@ def call_openai_director(
             ):
                 print(
                     (
-                        "⚠️ Structured Vision attempt "
+                        "âš ï¸ Structured Vision attempt "
                         + str(attempt)
                         + ": "
                         + clean_text(
@@ -2541,8 +2579,8 @@ def generate_with_openai(
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
             (
-                "OPENAI_API_KEY مش موجود "
-                "على Railway."
+                "OPENAI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯ "
+                "Ø¹Ù„Ù‰ Railway."
             )
         )
 
@@ -2625,8 +2663,8 @@ def generate_with_openai(
     if not images:
         raise XPANDImageProviderError(
             (
-                "GPT-Image-2 رجع استجابة "
-                "ناجحة لكن ما لقيت صورة."
+                "GPT-Image-2 Ø±Ø¬Ø¹ Ø§Ø³ØªØ¬Ø§Ø¨Ø© "
+                "Ù†Ø§Ø¬Ø­Ø© Ù„ÙƒÙ† Ù…Ø§ Ù„Ù‚ÙŠØª ØµÙˆØ±Ø©."
             )
         )
 
@@ -2722,7 +2760,7 @@ def edit_with_openai(
 
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
+            "OPENAI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯."
         )
 
     provider_size = (
@@ -2811,8 +2849,8 @@ def edit_with_openai(
     if not images:
         raise XPANDImageProviderError(
             (
-                "GPT-Image-2 Edit نجح "
-                "لكن ما رجعت صورة."
+                "GPT-Image-2 Edit Ù†Ø¬Ø­ "
+                "Ù„ÙƒÙ† Ù…Ø§ Ø±Ø¬Ø¹Øª ØµÙˆØ±Ø©."
             )
         )
 
@@ -2909,9 +2947,10 @@ def _generate_one_with_gemini(
 
     if not GEMINI_API_KEY:
         raise XPANDImageConfigurationError(
-            "GEMINI_API_KEY مش موجود."
+            "GEMINI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯."
         )
 
+    requested_size = route.image_size
     image_size = (
         route.image_size
         if route.image_size
@@ -2967,13 +3006,19 @@ def _generate_one_with_gemini(
     if not images:
         raise XPANDImageProviderError(
             (
-                "Gemini رجع استجابة ناجحة "
-                "لكن ما لقيت صورة."
+                "Gemini Ø±Ø¬Ø¹ Ø§Ø³ØªØ¬Ø§Ø¨Ø© Ù†Ø§Ø¬Ø­Ø© "
+                "Ù„ÙƒÙ† Ù…Ø§ Ù„Ù‚ÙŠØª ØµÙˆØ±Ø©."
             )
         )
 
     image_bytes, mime_type = (
         images[0]
+    )
+
+    image_bytes, mime_type = _finalize_requested_resolution(
+        image_bytes,
+        mime_type,
+        requested_size,
     )
 
     request_id = clean_text(
@@ -3004,7 +3049,7 @@ def _generate_one_with_gemini(
         prompt=prompt,
         original_prompt=original_prompt,
         aspect_ratio=route.aspect_ratio,
-        image_size=image_size,
+        image_size=requested_size,
         quality=route.quality,
         route_reason=route.reason,
         request_id=request_id,
@@ -3018,6 +3063,7 @@ def _generate_one_with_gemini(
             "google_image_size": (
                 image_size
             ),
+            "delivered_image_size": requested_size,
         },
     )
 
@@ -3090,10 +3136,11 @@ def edit_with_gemini(
     pro: bool = False,
 ) -> GeneratedImage:
     if not GEMINI_API_KEY:
-        raise XPANDImageConfigurationError("GEMINI_API_KEY مش موجود.")
+        raise XPANDImageConfigurationError("GEMINI_API_KEY Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯.")
     if not input_images:
-        raise XPANDImageError("لا توجد صور للتعديل.")
+        raise XPANDImageError("Ù„Ø§ ØªÙˆØ¬Ø¯ ØµÙˆØ± Ù„Ù„ØªØ¹Ø¯ÙŠÙ„.")
     final_size = detect_image_size(prompt, image_size)
+    provider_size = final_size if final_size in SUPPORTED_GOOGLE_IMAGE_SIZES else "1K"
     model = GOOGLE_IMAGE_PRO_MODEL if pro else GOOGLE_IMAGE_FAST_MODEL
     instruction = build_professional_prompt(prompt, aspect_ratio, final_size)
     instruction += (
@@ -3122,7 +3169,7 @@ def edit_with_gemini(
             "response_format": {
                 "type": "image",
                 "aspect_ratio": detect_aspect_ratio(prompt, aspect_ratio),
-                "image_size": final_size,
+                "image_size": provider_size,
                 "mime_type": "image/jpeg",
             },
         },
@@ -3133,8 +3180,13 @@ def edit_with_gemini(
     data = _safe_json(response)
     images = _find_inline_images(data)
     if not images:
-        raise XPANDImageProviderError("Nano Banana Edit نجح لكن لم يرجع صورة.")
+        raise XPANDImageProviderError("Nano Banana Edit Ù†Ø¬Ø­ Ù„ÙƒÙ† Ù„Ù… ÙŠØ±Ø¬Ø¹ ØµÙˆØ±Ø©.")
     output, output_mime = images[0]
+    output, output_mime = _finalize_requested_resolution(
+        output,
+        output_mime,
+        final_size,
+    )
     return GeneratedImage(
         image_bytes=output,
         mime_type=output_mime or "image/jpeg",
@@ -3147,7 +3199,12 @@ def edit_with_gemini(
         quality="high" if pro else "medium",
         route_reason="Gemini-first multi-image edit",
         request_id=clean_text(data.get("id"), 200) or "ge-" + uuid.uuid4().hex[:12],
-        metadata={"generation_type": "gemini_multi_image_edit", "input_images": len(input_images)},
+        metadata={
+            "generation_type": "gemini_multi_image_edit",
+            "input_images": len(input_images),
+            "google_image_size": provider_size,
+            "delivered_image_size": final_size,
+        },
     )
 
 
@@ -3620,7 +3677,7 @@ def generate_image(
 
     if not original_prompt:
         raise XPANDImageError(
-            "وصف الصورة فاضي."
+            "ÙˆØµÙ Ø§Ù„ØµÙˆØ±Ø© ÙØ§Ø¶ÙŠ."
         )
 
     final_aspect_ratio = (
@@ -3673,19 +3730,19 @@ def generate_image(
         "=========================================="
     )
     print(
-        "🎯 Effective mode:",
+        "ðŸŽ¯ Effective mode:",
         effective_mode,
     )
     print(
-        "📐 Aspect ratio:",
+        "ðŸ“ Aspect ratio:",
         final_aspect_ratio,
     )
     print(
-        "🖼️ Resolution intent:",
+        "ðŸ–¼ï¸ Resolution intent:",
         final_image_size,
     )
     print(
-        "💎 Quality:",
+        "ðŸ’Ž Quality:",
         final_quality,
     )
     print("")
@@ -4008,30 +4065,30 @@ if __name__ == "__main__":
 
     print("")
     print(
-        "✅ Syntax-safe engine"
+        "âœ… Syntax-safe engine"
     )
     print(
-        "✅ Backwards-compatible imports"
+        "âœ… Backwards-compatible imports"
     )
     print(
-        "✅ Director reasoning cost control"
+        "âœ… Director reasoning cost control"
     )
     print(
-        "✅ Structured reasoning LOW"
+        "âœ… Structured reasoning LOW"
     )
     print(
-        "✅ Explicit prompt cache"
+        "âœ… Explicit prompt cache"
     )
     print(
-        "✅ Sol usage telemetry"
+        "âœ… Sol usage telemetry"
     )
     print(
-        "🚫 No API call"
+        "ðŸš« No API call"
     )
     print(
-        "🚫 No Vision"
+        "ðŸš« No Vision"
     )
     print(
-        "🚫 No image generation"
+        "ðŸš« No image generation"
     )
     print("")
