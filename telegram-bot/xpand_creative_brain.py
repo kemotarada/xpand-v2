@@ -4,6 +4,7 @@
 # QUALITY-FIRST ADAPTIVE CREATIVE INTELLIGENCE
 #
 # =========================================================
+
 #
 # GOAL
 # ---------------------------------------------------------
@@ -91,6 +92,8 @@
 # =========================================================
 
 from __future__ import annotations
+
+from xpand_stc_bank_skill import STC_BANK_VISUAL_SKILL, is_stc_bank_request
 
 import json
 import os
@@ -1597,6 +1600,8 @@ def build_concept_generation_prompt(
         )
     )
 
+    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
+
     return f"""
 You are XPAND Creative Brain V2.
 
@@ -1775,6 +1780,12 @@ Return JSON only:
 Do NOT score the concepts.
 
 Do NOT choose a winner.
+
+==================================================
+ACTIVE BRAND SKILL
+==================================================
+
+{stc_skill or "No dedicated brand skill activated."}
 """.strip()
 
 

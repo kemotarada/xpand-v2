@@ -341,6 +341,16 @@ def load_xpand_profile():
         XPAND_SYSTEM_PROMPT
     )
 
+    stc_prompt = load_text_file(
+        XPAND_SYSTEM_PROMPT.parent / "stc_bank_system_prompt.md"
+    )
+    if stc_prompt:
+        system_prompt = (
+            system_prompt
+            + "\n\nتعليمات STC Bank التالية هي الأحدث وتتقدم على أي قاعدة سابقة متعارضة:\n\n"
+            + stc_prompt
+        ).strip()
+
     name = clean_text(
         agent_json.get(
             "name"

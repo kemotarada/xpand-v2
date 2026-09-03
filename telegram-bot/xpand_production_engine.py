@@ -143,7 +143,10 @@ from xpand_image_engine import (
     generate_with_gemini,
     generate_with_openai,
     PROVIDER_GOOGLE_FAST,
+    _finalize_requested_resolution,
 )
+
+from xpand_stc_bank_skill import STC_BANK_IMAGE_GUARD, is_stc_bank_request
 
 
 # =========================================================
@@ -3936,7 +3939,8 @@ def gemini_multi_reference_edit(
             "mime_type": reference.mime_type or "image/png",
             "data": base64.b64encode(reference.image_bytes).decode("ascii"),
         })
-    image_size = detect_image_size(safe_prompt)
+    requested_image_size = detect_image_size(safe_prompt)
+    image_size = requested_image_size if requested_image_size in {"1K", "2K", "4K"} else "1K"
     model = str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip()
     response = requests.post(
         GEMINI_INTERACTIONS_URL,
@@ -3963,6 +3967,11 @@ def gemini_multi_reference_edit(
     if not images:
         raise RuntimeError("Nano Banana returned no image.")
     image_bytes, mime_type = images[0]
+    image_bytes, mime_type = _finalize_requested_resolution(
+        image_bytes,
+        mime_type,
+        requested_image_size,
+    )
     return GeneratedImage(
         image_bytes=image_bytes,
         mime_type=mime_type or "image/jpeg",
@@ -3971,7 +3980,7 @@ def gemini_multi_reference_edit(
         prompt=safe_prompt,
         original_prompt=safe_prompt,
         aspect_ratio=aspect_ratio,
-        image_size=image_size,
+        image_size=requested_image_size,
         quality="high",
         route_reason="XPAND Gemini-first multi-reference: " + pass_name,
         request_id=clean_text(response_data.get("id"), 300) or "gem-" + uuid.uuid4().hex[:12],
@@ -3980,6 +3989,8 @@ def gemini_multi_reference_edit(
             "pass_name": pass_name,
             "physical_reference_count": len(references),
             "gemini_first": True,
+            "google_image_size": image_size,
+            "delivered_image_size": requested_image_size,
         },
     )
 
@@ -4048,6 +4059,8 @@ def generate_high_quality_image(
         ]
     )
 
+    stc_guard = STC_BANK_IMAGE_GUARD if is_stc_bank_request(original_request) else ""
+
     if physical_refs:
 
         prompt = (
@@ -4074,6 +4087,7 @@ Do not reproduce old financial information.
 Create a completely new campaign execution for the current
 user request while preserving the relevant brand visual DNA.
 """.strip()
+            + (("\n\n" + stc_guard) if stc_guard else "")
         )
 
         return (
@@ -4112,6 +4126,7 @@ user request while preserving the relevant brand visual DNA.
     images = generate_with_gemini(
         prompt=(
             compiled.prompt
+            + (("\n\n" + stc_guard) if stc_guard else "")
         ),
 
         original_prompt=(

@@ -392,6 +392,17 @@ def load_profile_directory(
         "system_prompt.md"
     )
 
+    if directory.name.lower() == "xpand":
+        stc_prompt = read_text_file(
+            directory / "stc_bank_system_prompt.md"
+        )
+        if stc_prompt:
+            system_prompt = (
+                system_prompt
+                + "\n\nتعليمات STC Bank التالية هي الأحدث وتتقدم على أي قاعدة سابقة متعارضة:\n\n"
+                + stc_prompt
+            ).strip()
+
 
     slug = clean_text(
         agent_json.get(
