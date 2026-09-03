@@ -1,7 +1,5 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.1.1
-#
-# FINAL UNIFIED VISUAL ORCHESTRATOR
+# XPAND UNIFIED VISUAL RUNTIME V3.1.2
 #
 # Telegram Text / Voice / Image
 #          ↓
@@ -15,17 +13,17 @@
 #          ↓
 # Semantic Benefit Director
 #          ↓
-# Creative Brain V1.1
+# Creative Brain
 #          ↓
 # Masterpiece Creative Quality Gate
 #          ↓
-# Campaign Visual Bible V1.1
+# Campaign Visual Bible
 #          ↓
 # Campaign Quality Gate
 #          ↓
 # MASTERPIECE INTEGRATION GUARD
 #          ↓
-# Production Engine V2.1
+# Production Engine
 #          ↓
 # Multi-Pass Production
 #          ↓
@@ -38,41 +36,49 @@
 # Telegram Preview + Original
 #
 #
-# V3.1.1
+# V3.1.2 FIX
 # ---------------------------------------------------------
 #
-# - Fixes false campaign detection.
+# Campaign intent classifier rebuilt around NORMALIZED text.
 #
-# Examples:
+# Correct behavior:
 #
-#   "اعمللي حملة STC من 5 بوستات"
+#   اعمللي حملة STC
 #       -> campaign=True
 #
-#   "اعمللي حملة STC"
+#   اعمللي حملة STC من 5 بوستات
 #       -> campaign=True
 #
-#   "حملة STC للسفر"
+#   حملة STC للسفر
 #       -> campaign=True
 #
-#   "اعمللي بوستر STC بمستوى حملة عالمية"
+#   صمم سلسلة بوستات STC
+#       -> campaign=True
+#
+#   اعمللي بوستر STC بمستوى حملة عالمية
 #       -> campaign=False
 #
-#   "اعمللي صورة STC بجودة حملة عالمية"
+#   اعمللي صورة STC بجودة حملة عالمية
 #       -> campaign=False
 #
-#   "صمم إعلان STC ستايل حملة عالمية"
+#   صمم إعلان STC ستايل حملة عالمية
 #       -> campaign=False
 #
-#   "create a poster with campaign-level quality"
+#   create a poster with campaign-level quality
 #       -> campaign=False
+#
+#   اعمللي حملة STC من 10 بوستات
+#   بمستوى حملة عالمية
+#       -> campaign=True
 #
 #
 # All V3.1 protections remain:
 #
-# - Masterpiece cannot generate without qualified creative
-# - No fake Creative fallback winner
-# - Strict Campaign Bible in Masterpiece
-# - No Smart Engine fallback after Masterpiece failure
+# - Masterpiece requires qualified Creative Winner
+# - Masterpiece quality gate >= configured threshold
+# - Failed Creative Gate blocks image generation
+# - Campaign fallback blocked in Masterpiece
+# - Masterpiece cannot silently use Smart fallback
 # - International Transfer semantic priority
 # - Final QA gate
 # - Exact Asset Lock
@@ -204,7 +210,7 @@ from xpand_exact_asset_lock import (
 # MODULE
 # =========================================================
 
-VERSION = "3.1.1"
+VERSION = "3.1.2"
 
 MODULE_NAME = (
     "XPAND Unified Visual Runtime"
@@ -688,7 +694,7 @@ def exact_lock_requested(
 
 
 # =========================================================
-# TRUE CAMPAIGN INTENT DETECTION V3.1.1
+# TRUE CAMPAIGN INTENT DETECTION V3.1.2
 # =========================================================
 
 CAMPAIGN_CREATION_ACTIONS = [
@@ -707,6 +713,8 @@ CAMPAIGN_CREATION_ACTIONS = [
     "create",
     "design",
     "make",
+    "build",
+    "develop",
 ]
 
 
@@ -718,30 +726,79 @@ CAMPAIGN_SERIES_MARKERS = [
     "سلسلة إعلانات",
     "سلسله منشورات",
     "سلسلة منشورات",
+    "مجموعه بوستات",
+    "مجموعة بوستات",
     "series of posts",
     "series of ads",
     "campaign series",
 ]
 
 
+CAMPAIGN_ASSET_WORDS = [
+    "بوست",
+    "بوستات",
+    "صوره",
+    "صور",
+    "اعلان",
+    "اعلانات",
+    "منشور",
+    "منشورات",
+    "asset",
+    "assets",
+    "post",
+    "posts",
+    "ad",
+    "ads",
+    "visual",
+    "visuals",
+]
+
+
 #
-# These phrases use the word "campaign" as a QUALITY /
-# STYLE descriptor, not as the requested deliverable.
+# IMPORTANT
+# ---------------------------------------------------------
+#
+# These expressions are written for NORMALIZED text.
+#
+# Therefore:
+#
+#   بمستوى  -> بمستوي
+#   جودة    -> جوده
+#   حملة    -> حمله
+#   عالمية  -> عالميه
 #
 
-CAMPAIGN_QUALITY_PATTERNS = [
-    r"\bبمستوى\s+(?:حمله|campaign)\b",
-    r"\bبجوده\s+(?:حمله|campaign)\b",
-    r"\bجوده\s+(?:حمله|campaign)\b",
-    r"\bبجوده\s+اعلانيه\s+(?:حمله|campaign)\b",
-    r"\bستايل\s+(?:حمله|campaign)\b",
-    r"\bاسلوب\s+(?:حمله|campaign)\b",
-    r"\bبطابع\s+(?:حمله|campaign)\b",
-    r"\bبروح\s+(?:حمله|campaign)\b",
-    r"\bكانه\s+من\s+(?:حمله|campaign)\b",
-    r"\bكأنه\s+من\s+(?:حمله|campaign)\b",
-    r"\bمثل\s+(?:حمله|campaign)\b",
-    r"\bشبيه\s+ب(?:حمله|campaign)\b",
+CAMPAIGN_QUALITY_PATTERNS_NORMALIZED = [
+    r"\bبمستوي\s+حمله\b",
+    r"\bبمستوي\s+campaign\b",
+
+    r"\bبجوده\s+حمله\b",
+    r"\bبجوده\s+campaign\b",
+
+    r"\bجوده\s+حمله\b",
+    r"\bجوده\s+campaign\b",
+
+    r"\bستايل\s+حمله\b",
+    r"\bستايل\s+campaign\b",
+
+    r"\bاسلوب\s+حمله\b",
+    r"\bاسلوب\s+campaign\b",
+
+    r"\bبطابع\s+حمله\b",
+    r"\bبطابع\s+campaign\b",
+
+    r"\bبروح\s+حمله\b",
+    r"\bبروح\s+campaign\b",
+
+    r"\bكانه\s+من\s+حمله\b",
+    r"\bكانه\s+من\s+campaign\b",
+
+    r"\bمثل\s+حمله\b",
+    r"\bمثل\s+campaign\b",
+
+    r"\bشبيه\s+بحمله\b",
+    r"\bشبيه\s+بcampaign\b",
+
     r"\bcampaign[\s-]*level\b",
     r"\bcampaign[\s-]*quality\b",
     r"\bcampaign[\s-]*grade\b",
@@ -758,7 +815,9 @@ def strip_campaign_quality_phrases(
         text
     )
 
-    for pattern in CAMPAIGN_QUALITY_PATTERNS:
+    for pattern in (
+        CAMPAIGN_QUALITY_PATTERNS_NORMALIZED
+    ):
 
         source = re.sub(
             pattern,
@@ -776,37 +835,196 @@ def strip_campaign_quality_phrases(
     return source.strip()
 
 
-def has_explicit_campaign_asset_count(
-    source: str
+def find_campaign_token(
+    text: str
+) -> Optional[re.Match]:
+
+    source = normalized(
+        text
+    )
+
+    return re.search(
+        r"(?:^|\s)(?:حمله|campaign)(?=\s|$)",
+        source,
+        flags=re.IGNORECASE
+    )
+
+
+def has_campaign_token(
+    text: str
 ) -> bool:
+
+    return (
+        find_campaign_token(
+            text
+        )
+        is not None
+    )
+
+
+def has_explicit_campaign_asset_count(
+    text: str
+) -> bool:
+
+    source = normalized(
+        text
+    )
+
+    asset_pattern = (
+        r"(?:"
+        +
+        "|".join(
+            sorted(
+                (
+                    re.escape(
+                        normalized(
+                            item
+                        )
+                    )
+                    for item
+                    in CAMPAIGN_ASSET_WORDS
+                ),
+                key=len,
+                reverse=True
+            )
+        )
+        +
+        r")"
+    )
 
     patterns = [
         (
-            r"\b(?:حمله|campaign)\b"
-            r".{0,100}"
-            r"\b(?:[2-9]|[12][0-9]|30)\b"
-            r".{0,50}"
-            r"\b(?:بوست|بوستات|صور|اعلانات|منشورات|"
-            r"assets|posts|ads|visuals)\b"
+            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
+            r".{0,120}?"
+            r"\b([2-9]|[12][0-9]|30)\b"
+            r".{0,40}?"
+            +
+            asset_pattern
         ),
 
         (
-            r"\b(?:[2-9]|[12][0-9]|30)\b"
+            r"\b([2-9]|[12][0-9]|30)\b"
             r"\s*"
-            r"(?:بوست|بوستات|صور|اعلانات|منشورات|"
-            r"assets|posts|ads|visuals)\b"
-            r".{0,100}"
-            r"\b(?:حمله|campaign)\b"
+            +
+            asset_pattern
+            +
+            r".{0,120}?"
+            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
         ),
     ]
 
-    return any(
-        re.search(
+    for pattern in patterns:
+
+        if re.search(
             pattern,
+            source,
+            flags=re.IGNORECASE
+        ):
+
+            return True
+
+    return False
+
+
+def has_campaign_series_signal(
+    text: str
+) -> bool:
+
+    return contains_any(
+        text,
+        CAMPAIGN_SERIES_MARKERS
+    )
+
+
+def has_action_before_campaign(
+    text: str
+) -> bool:
+
+    source = normalized(
+        text
+    )
+
+    campaign_match = (
+        find_campaign_token(
             source
         )
-        is not None
-        for pattern in patterns
+    )
+
+    if campaign_match is None:
+
+        return False
+
+    campaign_index = (
+        campaign_match.start()
+    )
+
+    normalized_actions = sorted(
+        {
+            normalized(
+                item
+            )
+            for item
+            in CAMPAIGN_CREATION_ACTIONS
+            if normalized(
+                item
+            )
+        },
+        key=len,
+        reverse=True
+    )
+
+    for action in normalized_actions:
+
+        action_index = (
+            source.find(
+                action
+            )
+        )
+
+        if action_index < 0:
+
+            continue
+
+        if action_index >= campaign_index:
+
+            continue
+
+        #
+        # Campaign should be reasonably close to the
+        # creation action.
+        #
+        # Example:
+        #
+        # "اعمللي حملة STC"
+        #
+
+        distance = (
+            campaign_index
+            -
+            action_index
+        )
+
+        if distance <= 90:
+
+            return True
+
+    return False
+
+
+def starts_with_campaign(
+    text: str
+) -> bool:
+
+    source = normalized(
+        text
+    )
+
+    return bool(
+        re.match(
+            r"^(?:حمله|campaign)(?:\s|$)",
+            source,
+            flags=re.IGNORECASE
+        )
     )
 
 
@@ -823,28 +1041,28 @@ def is_campaign_request(
         return False
 
     # =====================================================
-    # STRONG CAMPAIGN SIGNAL #1
-    # Series explicitly requested.
+    # SIGNAL 1
+    # Explicit series language.
     # =====================================================
 
-    if contains_any(
-        source,
-        CAMPAIGN_SERIES_MARKERS
+    if has_campaign_series_signal(
+        source
     ):
 
         return True
 
     # =====================================================
-    # STRONG CAMPAIGN SIGNAL #2
-    # Campaign + multiple requested assets.
+    # SIGNAL 2
+    # Real campaign with explicit multiple asset count.
     #
-    # This check happens BEFORE removing quality phrases.
+    # This must be checked BEFORE removing quality phrases.
     #
     # Example:
     #
-    # "اعمللي حملة من 5 بوستات بجودة حملة عالمية"
+    # اعمللي حملة STC من 10 بوستات
+    # بمستوى حملة عالمية
     #
-    # must remain a real campaign.
+    # => campaign=True
     # =====================================================
 
     if has_explicit_campaign_asset_count(
@@ -854,7 +1072,17 @@ def is_campaign_request(
         return True
 
     # =====================================================
-    # REMOVE QUALITY / STYLE USES OF "CAMPAIGN"
+    # Remove descriptive / quality use of campaign.
+    #
+    # Example:
+    #
+    # اعمللي بوستر STC بمستوى حملة عالمية
+    #
+    # becomes roughly:
+    #
+    # اعمللي بوستر stc عالميه
+    #
+    # and therefore no real campaign token remains.
     # =====================================================
 
     intent_source = (
@@ -863,73 +1091,39 @@ def is_campaign_request(
         )
     )
 
-    if not intent_source:
+    # =====================================================
+    # No real campaign token remains.
+    # =====================================================
+
+    if not has_campaign_token(
+        intent_source
+    ):
 
         return False
 
     # =====================================================
-    # DIRECT CAMPAIGN REQUEST
+    # SIGNAL 3
+    # Direct campaign request.
     #
-    # "حملة STC للسفر"
-    # "campaign for STC"
+    # حملة STC للسفر
     # =====================================================
 
-    if (
-        intent_source.startswith(
-            "حمله "
-        )
-        or
-        intent_source == "حمله"
-        or
-        intent_source.startswith(
-            "campaign "
-        )
-        or
-        intent_source == "campaign"
+    if starts_with_campaign(
+        intent_source
     ):
 
         return True
 
     # =====================================================
-    # ACTION + CAMPAIGN
+    # SIGNAL 4
+    # Creation action before real campaign noun.
     #
-    # "اعمللي حملة STC"
-    #
-    # Now safe because descriptive phrases such as:
-    #
-    # "بمستوى حملة"
-    #
-    # were already removed.
+    # اعمللي حملة STC
+    # بدي حملة STC
+    # صمم حملة STC
     # =====================================================
 
-    action_pattern = (
-        "|".join(
-            sorted(
-                (
-                    re.escape(
-                        normalized(
-                            item
-                        )
-                    )
-                    for item
-                    in CAMPAIGN_CREATION_ACTIONS
-                ),
-                key=len,
-                reverse=True
-            )
-        )
-    )
-
-    if re.search(
-        (
-            r"(?:^|\s)(?:"
-            +
-            action_pattern
-            +
-            r")(?:\s|$)"
-            r".{0,40}"
-            r"(?:^|\s)(?:حمله|campaign)(?:\s|$)"
-        ),
+    if has_action_before_campaign(
         intent_source
     ):
 
@@ -1319,7 +1513,7 @@ def detect_requested_image_count(
     patterns = [
         (
             r"\b([1-4])\s*"
-            r"(?:صور|صوره|صورة|نسخ|خيارات)\b"
+            r"(?:صور|صوره|نسخ|خيارات)\b"
         ),
 
         (
@@ -1362,7 +1556,6 @@ def detect_requested_image_count(
                 [
                     "صور",
                     "صوره",
-                    "صورة",
                     "نسخ",
                     "خيارات",
                 ]
@@ -1397,8 +1590,9 @@ def detect_campaign_asset_count(
         ),
 
         (
-            r"\b(?:حمله|campaign)\s*"
-            r"(?:من)?\s*"
+            r"(?:^|\s)(?:حمله|campaign)(?=\s|$)"
+            r".{0,30}?"
+            r"(?:من\s*)?"
             r"([1-9]|[12][0-9]|30)\b"
         ),
     ]
@@ -1522,13 +1716,13 @@ def detect_campaign_asset_number(
 
     patterns = [
         (
-            r"\b(?:بوست|صوره|صورة|اعلان)"
+            r"\b(?:بوست|صوره|اعلان)"
             r"\s*(?:رقم)?\s*"
             r"([1-9]|[12][0-9]|30)\b"
         ),
 
         (
-            r"\b(?:asset)\s*"
+            r"\basset\s*"
             r"([1-9]|[12][0-9]|30)\b"
         ),
     ]
@@ -1932,9 +2126,7 @@ def build_product_lock_instruction(
 
     if not locks:
 
-        return (
-            ""
-        )
+        return ""
 
     return (
         "\n\n"
@@ -1962,9 +2154,7 @@ def build_winner_instruction(
 
     if not creative_response:
 
-        return (
-            ""
-        )
+        return ""
 
     if not bool(
         getattr(
@@ -1974,9 +2164,7 @@ def build_winner_instruction(
         )
     ):
 
-        return (
-            ""
-        )
+        return ""
 
     winner = getattr(
         creative_response,
@@ -1986,9 +2174,7 @@ def build_winner_instruction(
 
     if winner is None:
 
-        return (
-            ""
-        )
+        return ""
 
     return (
         "\n\n"
@@ -2039,9 +2225,7 @@ def campaign_title_from_request(
 
     if source:
 
-        return (
-            source
-        )
+        return source
 
     return (
         brand_id
@@ -4683,7 +4867,9 @@ def extract_photo_file_id(
         return ""
 
     return clean_text(
-        photos[-1].get(
+        photos[
+            -1
+        ].get(
             "file_id"
         ),
         1000
@@ -5158,7 +5344,9 @@ def save_image_record(
 
                 return (
                     int(
-                        row[0]
+                        row[
+                            0
+                        ]
                     )
                     if row
                     else
@@ -5737,7 +5925,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND UNIFIED VISUAL REQUEST V3.1.1"
+        " XPAND UNIFIED VISUAL REQUEST V3.1.2"
     )
     print(
         "=========================================="
@@ -6930,7 +7118,7 @@ def handle_visual_reference_token(
         "=========================================="
     )
     print(
-        " XPAND VISUAL REFERENCE DNA V3.1.1"
+        " XPAND VISUAL REFERENCE DNA V3.1.2"
     )
     print(
         "=========================================="
@@ -8039,7 +8227,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1.1"
+        " XPAND UNIFIED VISUAL RUNTIME V3.1.2"
     )
     print(
         "=================================================="
@@ -8099,7 +8287,10 @@ def install(
         "✅ Strict Campaign no-fallback mode"
     )
     print(
-        "✅ Campaign quality-wording protection V3.1.1"
+        "✅ Normalized Campaign Intent V3.1.2"
+    )
+    print(
+        "✅ Campaign quality-wording protection"
     )
     print(
         "✅ Masterpiece Integration Guard"
@@ -8258,6 +8449,9 @@ def install(
         "campaign_strict_mode":
             True,
 
+        "campaign_normalized_intent":
+            True,
+
         "campaign_quality_phrase_protection":
             True,
 
@@ -8301,7 +8495,7 @@ if __name__ == "__main__":
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1.1"
+        " XPAND UNIFIED VISUAL RUNTIME V3.1.2"
     )
     print(
         "=================================================="
@@ -8338,6 +8532,85 @@ if __name__ == "__main__":
             else
             "not ready"
         )
+    )
+
+    print("")
+
+    # =====================================================
+    # NORMALIZATION TEST
+    # =====================================================
+
+    normalized_test = normalized(
+        "بمستوى حملة عالمية"
+    )
+
+    normalized_expected = (
+        "بمستوي حمله عالميه"
+    )
+
+    normalized_ok = (
+        normalized_test
+        ==
+        normalized_expected
+    )
+
+    print(
+        "Normalization:"
+    )
+
+    print(
+        (
+            "✅"
+            if normalized_ok
+            else
+            "❌"
+        ),
+        "| expected=",
+        normalized_expected,
+        "| actual=",
+        normalized_test
+    )
+
+    print("")
+
+    # =====================================================
+    # QUALITY PHRASE REMOVAL TEST
+    # =====================================================
+
+    quality_source = (
+        "اعمللي بوستر STC بمستوى حملة عالمية"
+    )
+
+    quality_stripped = (
+        strip_campaign_quality_phrases(
+            quality_source
+        )
+    )
+
+    quality_strip_ok = (
+        not has_campaign_token(
+            quality_stripped
+        )
+    )
+
+    print(
+        "Campaign quality phrase stripping:"
+    )
+
+    print(
+        (
+            "✅"
+            if quality_strip_ok
+            else
+            "❌"
+        ),
+        "| original=",
+        quality_source
+    )
+
+    print(
+        "   stripped=",
+        quality_stripped
     )
 
     print("")
@@ -8383,6 +8656,13 @@ if __name__ == "__main__":
         ),
 
         (
+            "بدي حملة STC للسفر",
+            True,
+            False,
+            True,
+        ),
+
+        (
             "اعمللي بوستر STC بمستوى حملة عالمية",
             True,
             False,
@@ -8413,7 +8693,7 @@ if __name__ == "__main__":
         (
             (
                 "اعمللي حملة STC من 5 بوستات "
-                "وكل بوست بجودة حملة عالمية"
+                "وكل بوست بمستوى حملة عالمية"
             ),
             True,
             False,
@@ -8521,12 +8801,22 @@ if __name__ == "__main__":
         ),
 
         (
+            "بدي حملة STC",
+            True
+        ),
+
+        (
             "حملة STC للسفر",
             True
         ),
 
         (
             "صمم سلسلة بوستات STC",
+            True
+        ),
+
+        (
+            "اعمللي حملة للبنك من 8 اعلانات",
             True
         ),
 
@@ -8556,6 +8846,11 @@ if __name__ == "__main__":
         ),
 
         (
+            "اعمللي اعلان كأنه من حملة عالمية",
+            False
+        ),
+
+        (
             "create poster campaign-level quality",
             False
         ),
@@ -8569,6 +8864,14 @@ if __name__ == "__main__":
             (
                 "اعمللي حملة STC من 10 بوستات "
                 "بمستوى حملة عالمية"
+            ),
+            True
+        ),
+
+        (
+            (
+                "بدي حملة STC فيها 6 اعلانات "
+                "وكل اعلان بجودة حملة عالمية"
             ),
             True
         ),
@@ -8852,7 +9155,7 @@ if __name__ == "__main__":
     print("")
 
     # =====================================================
-    # OTHER DETECTION
+    # OTHER TESTS
     # =====================================================
 
     print(
@@ -8922,6 +9225,38 @@ if __name__ == "__main__":
     # =====================================================
     # FINAL STATUS
     # =====================================================
+
+    print(
+        "✅ Arabic normalization-aware campaign detection"
+    )
+
+    print(
+        "✅ اعمللي حملة STC → Campaign"
+    )
+
+    print(
+        "✅ حملة STC → Campaign"
+    )
+
+    print(
+        "✅ Campaign asset count → Campaign"
+    )
+
+    print(
+        "✅ بمستوى حملة → quality descriptor only"
+    )
+
+    print(
+        "✅ بجودة حملة → quality descriptor only"
+    )
+
+    print(
+        "✅ ستايل حملة → quality descriptor only"
+    )
+
+    print(
+        "✅ campaign-level → quality descriptor only"
+    )
 
     print(
         "✅ Research → Memory → Creative Brain"
@@ -9002,6 +9337,10 @@ if __name__ == "__main__":
     print("")
 
     all_ok = (
+        normalized_ok
+        and
+        quality_strip_ok
+        and
         request_tests_ok
         and
         campaign_intent_ok
@@ -9013,7 +9352,7 @@ if __name__ == "__main__":
 
     print(
         (
-            "XPAND V3.1.1 Integration self-test: "
+            "XPAND V3.1.2 Integration self-test: "
             +
             (
                 "PASS ✅"
