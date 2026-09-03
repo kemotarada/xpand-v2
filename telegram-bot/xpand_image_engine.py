@@ -2637,15 +2637,97 @@ def _call_openai_response_once(
     )
 
     if not isinstance(
-        data,
-        dict
-    ):
+    data,
+    dict
+):
 
-        raise XPANDImageProviderError(
-            "GPT-5.6 Sol returned an invalid response object."
+    raise XPANDImageProviderError(
+        "GPT-5.6 Sol returned an invalid response object."
+    )
+
+usage = (
+    data.get(
+        "usage"
+    )
+    or
+    {}
+)
+
+input_details = (
+    usage.get(
+        "input_tokens_details"
+    )
+    or
+    {}
+)
+
+output_details = (
+    usage.get(
+        "output_tokens_details"
+    )
+    or
+    {}
+)
+
+print(
+    "💰 XPAND SOL USAGE"
+    +
+    " | input="
+    +
+    str(
+        usage.get(
+            "input_tokens",
+            0
         )
+    )
+    +
+    " | cached="
+    +
+    str(
+        input_details.get(
+            "cached_tokens",
+            0
+        )
+    )
+    +
+    " | cache_write="
+    +
+    str(
+        input_details.get(
+            "cache_write_tokens",
+            0
+        )
+    )
+    +
+    " | output="
+    +
+    str(
+        usage.get(
+            "output_tokens",
+            0
+        )
+    )
+    +
+    " | reasoning="
+    +
+    str(
+        output_details.get(
+            "reasoning_tokens",
+            0
+        )
+    )
+    +
+    " | total="
+    +
+    str(
+        usage.get(
+            "total_tokens",
+            0
+        )
+    )
+)
 
-    return data
+return data
 
 
 # =========================================================
