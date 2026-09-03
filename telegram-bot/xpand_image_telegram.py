@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.1
+# XPAND UNIFIED VISUAL RUNTIME V3.1.1
 #
 # FINAL UNIFIED VISUAL ORCHESTRATOR
 #
@@ -38,47 +38,44 @@
 # Telegram Preview + Original
 #
 #
-# V3.1 IMPORTANT CHANGES
+# V3.1.1
 # ---------------------------------------------------------
 #
-# 1. Masterpiece cannot generate an image unless the
-#    Creative Brain quality gate actually passes.
+# - Fixes false campaign detection.
 #
-# 2. A failed Creative Brain can NEVER silently fall back
-#    to the Smart Image Engine in Masterpiece mode.
+# Examples:
 #
-# 3. Campaign requests in Masterpiece use:
+#   "اعمللي حملة STC من 5 بوستات"
+#       -> campaign=True
 #
-#       allow_fallback=False
+#   "اعمللي حملة STC"
+#       -> campaign=True
 #
-#    Therefore a failed Campaign Bible cannot be replaced
-#    by a fake/default Bible and still continue production.
+#   "حملة STC للسفر"
+#       -> campaign=True
 #
-# 4. Smart fallback remains available for NORMAL non-
-#    Masterpiece image requests.
+#   "اعمللي بوستر STC بمستوى حملة عالمية"
+#       -> campaign=False
 #
-# 5. STC Bank remains Masterpiece-by-default.
+#   "اعمللي صورة STC بجودة حملة عالمية"
+#       -> campaign=False
 #
-# 6. Better campaign-intent detection:
+#   "صمم إعلان STC ستايل حملة عالمية"
+#       -> campaign=False
 #
-#       "اعمللي حملة STC من 5 بوستات"  -> campaign=True
-#       "بوستر بمستوى حملة عالمية"      -> campaign=False
+#   "create a poster with campaign-level quality"
+#       -> campaign=False
 #
-# 7. Better financial semantic routing:
 #
-#       تحويل مالي دولي سريع
+# All V3.1 protections remain:
 #
-#    is treated primarily as:
-#
-#       international_transfer
-#
-#    not merely:
-#
-#       speed
-#
-# 8. Optional strict final QA gate for Masterpiece.
-#
-# 9. No fake success.
+# - Masterpiece cannot generate without qualified creative
+# - No fake Creative fallback winner
+# - Strict Campaign Bible in Masterpiece
+# - No Smart Engine fallback after Masterpiece failure
+# - International Transfer semantic priority
+# - Final QA gate
+# - Exact Asset Lock
 #
 # =========================================================
 
@@ -207,7 +204,7 @@ from xpand_exact_asset_lock import (
 # MODULE
 # =========================================================
 
-VERSION = "3.1"
+VERSION = "3.1.1"
 
 MODULE_NAME = (
     "XPAND Unified Visual Runtime"
@@ -314,15 +311,6 @@ MASTERPIECE_REQUIRE_QA = str(
     "off",
 }
 
-
-#
-# Important:
-#
-# This deliberately defaults to FALSE.
-#
-# A Masterpiece failure must not silently create an image
-# through the lighter engine.
-#
 
 MASTERPIECE_ALLOW_SMART_FALLBACK = str(
     os.environ.get(
@@ -506,12 +494,6 @@ def safe_json_string(
     ) <= limit:
 
         return encoded
-
-    #
-    # This context is informational.
-    # Production Engine V2.1 performs its own structured
-    # prompt compaction as the final safety layer.
-    #
 
     return clean_text(
         encoded,
@@ -706,12 +688,7 @@ def exact_lock_requested(
 
 
 # =========================================================
-# TRUE CAMPAIGN INTENT DETECTION
-#
-# Avoid false positive:
-#
-# "بوستر بمستوى حملة عالمية"
-#
+# TRUE CAMPAIGN INTENT DETECTION V3.1.1
 # =========================================================
 
 CAMPAIGN_CREATION_ACTIONS = [
@@ -739,9 +716,98 @@ CAMPAIGN_SERIES_MARKERS = [
     "سلسله اعلانات",
     "سلسلة اعلانات",
     "سلسلة إعلانات",
+    "سلسله منشورات",
+    "سلسلة منشورات",
     "series of posts",
     "series of ads",
+    "campaign series",
 ]
+
+
+#
+# These phrases use the word "campaign" as a QUALITY /
+# STYLE descriptor, not as the requested deliverable.
+#
+
+CAMPAIGN_QUALITY_PATTERNS = [
+    r"\bبمستوى\s+(?:حمله|campaign)\b",
+    r"\bبجوده\s+(?:حمله|campaign)\b",
+    r"\bجوده\s+(?:حمله|campaign)\b",
+    r"\bبجوده\s+اعلانيه\s+(?:حمله|campaign)\b",
+    r"\bستايل\s+(?:حمله|campaign)\b",
+    r"\bاسلوب\s+(?:حمله|campaign)\b",
+    r"\bبطابع\s+(?:حمله|campaign)\b",
+    r"\bبروح\s+(?:حمله|campaign)\b",
+    r"\bكانه\s+من\s+(?:حمله|campaign)\b",
+    r"\bكأنه\s+من\s+(?:حمله|campaign)\b",
+    r"\bمثل\s+(?:حمله|campaign)\b",
+    r"\bشبيه\s+ب(?:حمله|campaign)\b",
+    r"\bcampaign[\s-]*level\b",
+    r"\bcampaign[\s-]*quality\b",
+    r"\bcampaign[\s-]*grade\b",
+    r"\bcampaign[\s-]*style\b",
+    r"\bcampaign[\s-]*look\b",
+]
+
+
+def strip_campaign_quality_phrases(
+    text: str
+) -> str:
+
+    source = normalized(
+        text
+    )
+
+    for pattern in CAMPAIGN_QUALITY_PATTERNS:
+
+        source = re.sub(
+            pattern,
+            " ",
+            source,
+            flags=re.IGNORECASE
+        )
+
+    source = re.sub(
+        r"\s+",
+        " ",
+        source
+    )
+
+    return source.strip()
+
+
+def has_explicit_campaign_asset_count(
+    source: str
+) -> bool:
+
+    patterns = [
+        (
+            r"\b(?:حمله|campaign)\b"
+            r".{0,100}"
+            r"\b(?:[2-9]|[12][0-9]|30)\b"
+            r".{0,50}"
+            r"\b(?:بوست|بوستات|صور|اعلانات|منشورات|"
+            r"assets|posts|ads|visuals)\b"
+        ),
+
+        (
+            r"\b(?:[2-9]|[12][0-9]|30)\b"
+            r"\s*"
+            r"(?:بوست|بوستات|صور|اعلانات|منشورات|"
+            r"assets|posts|ads|visuals)\b"
+            r".{0,100}"
+            r"\b(?:حمله|campaign)\b"
+        ),
+    ]
+
+    return any(
+        re.search(
+            pattern,
+            source
+        )
+        is not None
+        for pattern in patterns
+    )
 
 
 def is_campaign_request(
@@ -756,6 +822,11 @@ def is_campaign_request(
 
         return False
 
+    # =====================================================
+    # STRONG CAMPAIGN SIGNAL #1
+    # Series explicitly requested.
+    # =====================================================
+
     if contains_any(
         source,
         CAMPAIGN_SERIES_MARKERS
@@ -763,66 +834,103 @@ def is_campaign_request(
 
         return True
 
+    # =====================================================
+    # STRONG CAMPAIGN SIGNAL #2
+    # Campaign + multiple requested assets.
     #
-    # "حملة من 5 بوستات"
+    # This check happens BEFORE removing quality phrases.
     #
+    # Example:
+    #
+    # "اعمللي حملة من 5 بوستات بجودة حملة عالمية"
+    #
+    # must remain a real campaign.
+    # =====================================================
 
-    if re.search(
-        (
-            r"\b(?:حمله|campaign)\b"
-            r".{0,80}"
-            r"\b(?:[2-9]|[12][0-9]|30)\b"
-            r".{0,40}"
-            r"\b(?:بوست|بوستات|صور|اعلانات|منشورات|assets|posts|ads)\b"
-        ),
+    if has_explicit_campaign_asset_count(
         source
     ):
 
         return True
 
+    # =====================================================
+    # REMOVE QUALITY / STYLE USES OF "CAMPAIGN"
+    # =====================================================
+
+    intent_source = (
+        strip_campaign_quality_phrases(
+            source
+        )
+    )
+
+    if not intent_source:
+
+        return False
+
+    # =====================================================
+    # DIRECT CAMPAIGN REQUEST
+    #
+    # "حملة STC للسفر"
+    # "campaign for STC"
+    # =====================================================
+
+    if (
+        intent_source.startswith(
+            "حمله "
+        )
+        or
+        intent_source == "حمله"
+        or
+        intent_source.startswith(
+            "campaign "
+        )
+        or
+        intent_source == "campaign"
+    ):
+
+        return True
+
+    # =====================================================
+    # ACTION + CAMPAIGN
     #
     # "اعمللي حملة STC"
     #
+    # Now safe because descriptive phrases such as:
+    #
+    # "بمستوى حملة"
+    #
+    # were already removed.
+    # =====================================================
 
     action_pattern = (
         "|".join(
-            re.escape(
-                normalized(
-                    item
-                )
+            sorted(
+                (
+                    re.escape(
+                        normalized(
+                            item
+                        )
+                    )
+                    for item
+                    in CAMPAIGN_CREATION_ACTIONS
+                ),
+                key=len,
+                reverse=True
             )
-            for item in CAMPAIGN_CREATION_ACTIONS
         )
     )
 
     if re.search(
         (
-            r"\b(?:"
+            r"(?:^|\s)(?:"
             +
             action_pattern
             +
-            r")\b"
-            r".{0,30}"
-            r"\b(?:حمله|campaign)\b"
+            r")(?:\s|$)"
+            r".{0,40}"
+            r"(?:^|\s)(?:حمله|campaign)(?:\s|$)"
         ),
-        source
-    ):
-
-        return True
-
-    #
-    # Direct:
-    # "حملة STC ..."
-    #
-
-    if (
-        source.startswith(
-            "حمله "
-        )
-        or
-        source.startswith(
-            "campaign "
-        )
+        intent_source
     ):
 
         return True
@@ -909,17 +1017,6 @@ SPEED_BENEFIT_MARKERS = [
 def detect_runtime_benefit_family(
     text: str
 ) -> str:
-
-    #
-    # ORDER IS INTENTIONAL.
-    #
-    # A request can be:
-    #
-    # "تحويل مالي دولي سريع"
-    #
-    # International transfer is the PRODUCT BENEFIT.
-    # Speed is only an attribute.
-    #
 
     if contains_any(
         text,
@@ -2010,10 +2107,7 @@ def build_campaign_execution_from_memory(
 
         if number == asset_number:
 
-            selected_asset = (
-                item
-            )
-
+            selected_asset = item
             break
 
     if (
@@ -2187,9 +2281,7 @@ def creative_quality_passed(
 
     if response is None:
 
-        return (
-            False
-        )
+        return False
 
     if not bool(
         getattr(
@@ -2199,9 +2291,7 @@ def creative_quality_passed(
         )
     ):
 
-        return (
-            False
-        )
+        return False
 
     winner = getattr(
         response,
@@ -2211,9 +2301,7 @@ def creative_quality_passed(
 
     if winner is None:
 
-        return (
-            False
-        )
+        return False
 
     metadata = creative_quality_metadata(
         response
@@ -2230,9 +2318,7 @@ def creative_quality_passed(
         )
     ):
 
-        return (
-            False
-        )
+        return False
 
     try:
 
@@ -2265,14 +2351,8 @@ def creative_quality_passed(
 
         minimum = 82.0
 
-    if score < minimum:
-
-        return (
-            False
-        )
-
     return (
-        True
+        score >= minimum
     )
 
 
@@ -2538,9 +2618,7 @@ def enforce_masterpiece_guard(
         "✅ MASTERPIECE INTEGRATION GUARD: PASSED"
     )
 
-    return (
-        status
-    )
+    return status
 
 
 # =========================================================
@@ -2578,22 +2656,10 @@ def prepare_generation_input(
             brand_id
         )
 
-    # =====================================================
-    # BRAND RESEARCH
-    # =====================================================
-
     research_applied = False
-
     research_summary = ""
-
-    research_sources: List[
-        str
-    ] = []
-
-    research_prompt = (
-        original_prompt
-    )
-
+    research_sources: List[str] = []
+    research_prompt = original_prompt
     mode_override = ""
 
     if should_apply_deep_research(
@@ -2602,10 +2668,8 @@ def prepare_generation_input(
 
         try:
 
-            research = (
-                build_researched_prompt(
-                    original_prompt
-                )
+            research = build_researched_prompt(
+                original_prompt
             )
 
         except Exception as error:
@@ -2627,9 +2691,7 @@ def prepare_generation_input(
             "applied"
         ):
 
-            research_applied = (
-                True
-            )
+            research_applied = True
 
             brand_id = safe_brand_id(
                 research.get(
@@ -2698,28 +2760,17 @@ def prepare_generation_input(
                 50
             )
 
-    # =====================================================
-    # BRAND MEMORY
-    # =====================================================
-
     brand_context = {}
-
-    references: List[
-        Dict[str, Any]
-    ] = []
+    references: List[Dict[str, Any]] = []
 
     if brand_id:
 
-        brand_context = (
-            build_brand_memory_context(
-                core,
-                user_id,
-                brand_id,
-                max_rules=
-                    70,
-                max_references=
-                    14
-            )
+        brand_context = build_brand_memory_context(
+            core,
+            user_id,
+            brand_id,
+            max_rules=70,
+            max_references=14
         )
 
         references = safe_list(
@@ -2745,10 +2796,6 @@ def prepare_generation_input(
         )
     ]
 
-    # =====================================================
-    # CREATIVE MODE
-    # =====================================================
-
     if (
         brand_id == "stc_bank"
         or
@@ -2773,10 +2820,6 @@ def prepare_generation_input(
         CREATIVE_MODE_MASTERPIECE
     )
 
-    # =====================================================
-    # SEMANTIC BENEFIT
-    # =====================================================
-
     creative_request, benefit_family = (
         build_creative_request(
             original_prompt
@@ -2791,12 +2834,7 @@ def prepare_generation_input(
         )
     )
 
-    # =====================================================
-    # CREATIVE BRAIN
-    # =====================================================
-
     creative_response = None
-
     creative_error = ""
 
     try:
@@ -2853,15 +2891,11 @@ def prepare_generation_input(
                     +
                     " | "
                     +
-                    creative_response
-                    .winner
-                    .concept_id
+                    creative_response.winner.concept_id
                     +
                     " | "
                     +
-                    creative_response
-                    .winner
-                    .title
+                    creative_response.winner.title
                     +
                     " | score="
                     +
@@ -2881,11 +2915,7 @@ def prepare_generation_input(
             )
 
             print(
-                (
-                    "⛔ CREATIVE QUALITY GATE"
-                    +
-                    " | no qualified winner"
-                )
+                "⛔ CREATIVE QUALITY GATE | no qualified winner"
             )
 
     except Exception as error:
@@ -2915,10 +2945,6 @@ def prepare_generation_input(
                 )
             )
 
-    # =====================================================
-    # CAMPAIGN INTENT
-    # =====================================================
-
     campaign_required = bool(
         brand_id
         and
@@ -2928,15 +2954,10 @@ def prepare_generation_input(
     )
 
     campaign_created = False
-
     campaign_validated = False
-
     campaign_fallback_used = False
-
     campaign_error = ""
-
     campaign_bible = None
-
     campaign_execution = {}
 
     campaign_asset_number = (
@@ -2945,24 +2966,7 @@ def prepare_generation_input(
         )
     )
 
-    # =====================================================
-    # CAMPAIGN BIBLE
-    #
-    # IMPORTANT:
-    #
-    # In Masterpiece:
-    #
-    # allow_fallback=False
-    #
-    # =====================================================
-
     if campaign_required:
-
-        #
-        # Do not spend another model call building a
-        # Campaign Bible when Creative Brain has already
-        # failed its strict quality gate.
-        #
 
         if (
             strict_masterpiece
@@ -3069,9 +3073,7 @@ def prepare_generation_input(
                     )
                 )
 
-                campaign_created = (
-                    True
-                )
+                campaign_created = True
 
                 campaign_metadata = safe_dict(
                     getattr(
@@ -3146,11 +3148,6 @@ def prepare_generation_input(
                     )
                 )
 
-                #
-                # Reload Brand Memory so all later requests
-                # see the same persisted Campaign Bible.
-                #
-
                 try:
 
                     brand_context = (
@@ -3158,10 +3155,8 @@ def prepare_generation_input(
                             core,
                             user_id,
                             brand_id,
-                            max_rules=
-                                70,
-                            max_references=
-                                14
+                            max_rules=70,
+                            max_references=14
                         )
                     )
 
@@ -3205,10 +3200,6 @@ def prepare_generation_input(
                     )
                 )
 
-    # =====================================================
-    # EXISTING CAMPAIGN CONTINUITY
-    # =====================================================
-
     if (
         not campaign_execution
         and
@@ -3226,20 +3217,9 @@ def prepare_generation_input(
 
         model_brand_context[
             "campaign_execution"
-        ] = (
-            campaign_execution
-        )
+        ] = campaign_execution
 
-    # =====================================================
-    # FINAL SMART ENGINE PROMPT
-    #
-    # Used mainly by normal/fallback routes.
-    # Production V2.1 has its own prompt compiler.
-    # =====================================================
-
-    final_prompt = (
-        research_prompt
-    )
+    final_prompt = research_prompt
 
     if research_applied:
 
@@ -3288,9 +3268,7 @@ def prepare_generation_input(
         not mode_override
     ):
 
-        mode_override = (
-            "best"
-        )
+        mode_override = "best"
 
     return {
         "original_prompt":
@@ -3380,9 +3358,7 @@ def get_exact_asset_candidate(
 
     if not brand_id:
 
-        return (
-            None
-        )
+        return None
 
     try:
 
@@ -3391,8 +3367,7 @@ def get_exact_asset_candidate(
                 core,
                 user_id,
                 brand_id,
-                limit=
-                    12
+                limit=12
             )
         )
 
@@ -3409,9 +3384,7 @@ def get_exact_asset_candidate(
             )
         )
 
-        return (
-            None
-        )
+        return None
 
     explicit_request = (
         exact_lock_requested(
@@ -3504,9 +3477,7 @@ def get_exact_asset_candidate(
                 ),
         }
 
-    return (
-        None
-    )
+    return None
 
 
 # =========================================================
@@ -3588,8 +3559,7 @@ Return JSON ONLY:
         r"^```(?:json)?\s*",
         "",
         text,
-        flags=
-            re.IGNORECASE
+        flags=re.IGNORECASE
     )
 
     text = re.sub(
@@ -3870,11 +3840,8 @@ def maybe_apply_exact_asset_lock(
                 "rotation_degrees"
             ],
 
-        shadow_enabled=
-            False,
-
-        glow_enabled=
-            False,
+        shadow_enabled=False,
+        glow_enabled=False,
     )
 
     composite = composite_exact_assets(
@@ -3890,8 +3857,7 @@ def maybe_apply_exact_asset_lock(
             placement
         ],
 
-        output_format=
-            "PNG"
+        output_format="PNG"
     )
 
     image.image_bytes = (
@@ -3956,8 +3922,7 @@ def maybe_apply_exact_asset_lock(
     try:
 
         post_qa = evaluate_generated_image(
-            image=
-                image,
+            image=image,
 
             original_request=
                 request_text,
@@ -3971,8 +3936,7 @@ def maybe_apply_exact_asset_lock(
                     {}
                 ),
 
-            brand_context=
-                {}
+            brand_context={}
         )
 
         image.metadata[
@@ -4040,13 +4004,6 @@ def creative_direction_for_index(
     Dict[str, Any]
 ]:
 
-    #
-    # Critical V3.1 rule:
-    #
-    # Diagnostic concepts returned after a FAILED
-    # Masterpiece gate must NEVER enter production.
-    #
-
     if not creative_quality_passed(
         creative_response
     ):
@@ -4094,10 +4051,6 @@ def creative_direction_for_index(
             {}
         )
 
-    #
-    # Only qualified concepts may be used.
-    #
-
     if hasattr(
         concept,
         "quality_gate_passed"
@@ -4124,9 +4077,7 @@ def creative_direction_for_index(
                     {}
                 )
 
-            concept = (
-                winner
-            )
+            concept = winner
 
     direction = concept_to_dict(
         concept
@@ -4195,13 +4146,6 @@ def generate_masterpiece_images(
     List[str]
 ]:
 
-    #
-    # Double guard:
-    #
-    # Even if another caller invokes this function directly,
-    # production still cannot bypass the integration gate.
-    #
-
     enforce_masterpiece_guard(
         prepared
     )
@@ -4234,9 +4178,7 @@ def generate_masterpiece_images(
     )
 
     images = []
-
     production_metadata = []
-
     errors = []
 
     for index in range(
@@ -4273,9 +4215,7 @@ def generate_masterpiece_images(
 
             print(
                 (
-                    "🛑 MASTERPIECE BLOCKED"
-                    +
-                    " | "
+                    "🛑 MASTERPIECE BLOCKED | "
                     +
                     message
                 )
@@ -4303,14 +4243,11 @@ def generate_masterpiece_images(
             )
 
             production = run_production(
-                core=
-                    core,
+                core=core,
 
-                user_id=
-                    user_id,
+                user_id=user_id,
 
-                brand_id=
-                    brand_id,
+                brand_id=brand_id,
 
                 original_request=
                     request_text,
@@ -4333,10 +4270,6 @@ def generate_masterpiece_images(
                 target_model=
                     TARGET_OPENAI
             )
-
-            # =================================================
-            # FINAL VISUAL QA GATE
-            # =================================================
 
             qa_passed = bool(
                 production.qa
@@ -4390,20 +4323,13 @@ def generate_masterpiece_images(
 
                 continue
 
-            # =================================================
-            # EXACT ASSET
-            # =================================================
-
             exact_result = (
                 maybe_apply_exact_asset_lock(
-                    core=
-                        core,
+                    core=core,
 
-                    user_id=
-                        user_id,
+                    user_id=user_id,
 
-                    brand_id=
-                        brand_id,
+                    brand_id=brand_id,
 
                     request_text=
                         request_text,
@@ -4415,15 +4341,7 @@ def generate_masterpiece_images(
 
             production.final_image.metadata[
                 "xpand_exact_asset_result"
-            ] = (
-                exact_result
-            )
-
-            #
-            # If exact compositing was performed and its own
-            # post-composite QA definitively failed, do not
-            # present it as a final Masterpiece.
-            #
+            ] = exact_result
 
             if (
                 MASTERPIECE_REQUIRE_QA
@@ -4480,7 +4398,8 @@ def generate_masterpiece_images(
 
                     "passes": [
                         item.pass_name
-                        for item in production.passes
+                        for item
+                        in production.passes
                     ],
 
                     "references_used":
@@ -4520,9 +4439,7 @@ def generate_masterpiece_images(
 
             print(
                 (
-                    "⚠️ MASTERPIECE FAILED"
-                    +
-                    " | "
+                    "⚠️ MASTERPIECE FAILED | "
                     +
                     message
                 )
@@ -4583,9 +4500,7 @@ def send_photo_bytes(
         image_bytes
     )
 
-    buffer.name = (
-        filename
-    )
+    buffer.name = filename
 
     response = requests.post(
         telegram_api_url(
@@ -4653,9 +4568,7 @@ def send_photo_bytes(
             )
         )
 
-    return (
-        data
-    )
+    return data
 
 
 def send_document_bytes(
@@ -4671,9 +4584,7 @@ def send_document_bytes(
         image_bytes
     )
 
-    buffer.name = (
-        filename
-    )
+    buffer.name = filename
 
     response = requests.post(
         telegram_api_url(
@@ -4741,9 +4652,7 @@ def send_document_bytes(
             )
         )
 
-    return (
-        data
-    )
+    return data
 
 
 def extract_photo_file_id(
@@ -4771,14 +4680,10 @@ def extract_photo_file_id(
         not photos
     ):
 
-        return (
-            ""
-        )
+        return ""
 
     return clean_text(
-        photos[
-            -1
-        ].get(
+        photos[-1].get(
             "file_id"
         ),
         1000
@@ -5086,7 +4991,6 @@ def save_image_record(
                     """,
                     (
                         user_id,
-
                         chat_id,
 
                         clean_text(
@@ -5254,9 +5158,7 @@ def save_image_record(
 
                 return (
                     int(
-                        row[
-                            0
-                        ]
+                        row[0]
                     )
                     if row
                     else
@@ -5275,9 +5177,7 @@ def save_image_record(
             )
         )
 
-        return (
-            None
-        )
+        return None
 
 
 # =========================================================
@@ -5501,17 +5401,13 @@ def deliver_generated_image(
     if exact_applied:
 
         caption_lines.append(
-            (
-                "🔒 Exact Asset Lock: ACTIVE"
-            )
+            "🔒 Exact Asset Lock: ACTIVE"
         )
 
     if campaign_key:
 
         caption_lines.append(
-            (
-                "🎬 Campaign Bible: ACTIVE"
-            )
+            "🎬 Campaign Bible: ACTIVE"
         )
 
     caption = "\n".join(
@@ -5540,9 +5436,7 @@ def deliver_generated_image(
         )
 
     photo_file_id = ""
-
     document_file_id = ""
-
     document_file_unique_id = ""
 
     if SEND_PREVIEW:
@@ -5640,14 +5534,9 @@ def deliver_generated_image(
     image_db_id = save_image_record(
         core,
 
-        user_id=
-            user_id,
-
-        chat_id=
-            chat_id,
-
-        image=
-            image,
+        user_id=user_id,
+        chat_id=chat_id,
+        image=image,
 
         enhanced_prompt=
             enhanced_prompt,
@@ -5741,10 +5630,7 @@ def generate_and_deliver(
     if not prompt:
 
         raise RuntimeError(
-            (
-                "اكتبلي وصف الصورة "
-                "اللي بدك إياها."
-            )
+            "اكتبلي وصف الصورة اللي بدك إياها."
         )
 
     number = detect_requested_image_count(
@@ -5851,7 +5737,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND UNIFIED VISUAL REQUEST V3.1"
+        " XPAND UNIFIED VISUAL REQUEST V3.1.1"
     )
     print(
         "=========================================="
@@ -5907,11 +5793,7 @@ def generate_and_deliver(
     print("")
 
     images = []
-
-    pipeline_errors: List[
-        str
-    ] = []
-
+    pipeline_errors: List[str] = []
     production_metadata: List[
         Dict[str, Any]
     ] = []
@@ -5921,10 +5803,6 @@ def generate_and_deliver(
         ==
         CREATIVE_MODE_MASTERPIECE
     )
-
-    # =====================================================
-    # MASTERPIECE INTEGRATION GATE
-    # =====================================================
 
     if use_masterpiece:
 
@@ -5951,35 +5829,22 @@ def generate_and_deliver(
             production_metadata,
             masterpiece_errors,
         ) = generate_masterpiece_images(
-            core=
-                core,
+            core=core,
 
-            user_id=
-                user_id,
+            user_id=user_id,
 
-            request_text=
-                prompt,
+            request_text=prompt,
 
-            prepared=
-                prepared,
+            prepared=prepared,
 
-            number=
-                number,
+            number=number,
 
-            aspect_ratio=
-                aspect_ratio
+            aspect_ratio=aspect_ratio
         )
 
         pipeline_errors.extend(
             masterpiece_errors
         )
-
-        # =================================================
-        # CRITICAL V3.1 RULE
-        #
-        # A failed Masterpiece does not magically become
-        # a BEST/Fusion image.
-        # =================================================
 
         if not images:
 
@@ -6016,12 +5881,6 @@ def generate_and_deliver(
                     )
                 )
 
-    # =====================================================
-    # NORMAL SMART ENGINE
-    #
-    # Only for non-Masterpiece requests.
-    # =====================================================
-
     if not images:
 
         mode = (
@@ -6049,11 +5908,9 @@ def generate_and_deliver(
             result = generate_image(
                 final_prompt,
 
-                mode=
-                    mode,
+                mode=mode,
 
-                number=
-                    number,
+                number=number,
 
                 reference_count=
                     len(
@@ -6063,8 +5920,7 @@ def generate_and_deliver(
                         )
                     ),
 
-                allow_fallback=
-                    True,
+                allow_fallback=True,
             )
 
             if (
@@ -6074,15 +5930,10 @@ def generate_and_deliver(
             ):
 
                 raise RuntimeError(
-                    (
-                        "Smart image engine "
-                        "returned no image."
-                    )
+                    "Smart image engine returned no image."
                 )
 
-            images = (
-                result.images
-            )
+            images = result.images
 
             pipeline_errors.extend(
                 safe_list(
@@ -6114,10 +5965,6 @@ def generate_and_deliver(
                 )
             )
 
-    # =====================================================
-    # DELIVERY
-    # =====================================================
-
     delivered = []
 
     total = len(
@@ -6126,8 +5973,7 @@ def generate_and_deliver(
 
     for index, image in enumerate(
         images,
-        start=
-            1
+        start=1
     ):
 
         try:
@@ -6145,14 +5991,9 @@ def generate_and_deliver(
             deliver_generated_image(
                 core,
 
-                chat_id=
-                    chat_id,
-
-                user_id=
-                    user_id,
-
-                image=
-                    image,
+                chat_id=chat_id,
+                user_id=user_id,
+                image=image,
 
                 enhanced_prompt=
                     final_prompt,
@@ -6160,11 +6001,8 @@ def generate_and_deliver(
                 source_channel=
                     source_channel,
 
-                index=
-                    index,
-
-                total=
-                    total,
+                index=index,
+                total=total,
 
                 brand_id=
                     brand_id,
@@ -6183,14 +6021,8 @@ def generate_and_deliver(
             )
         )
 
-    # =====================================================
-    # SUMMARY
-    # =====================================================
-
     models = []
-
     qa_scores = []
-
     exact_count = 0
 
     for item in delivered:
@@ -6232,9 +6064,7 @@ def generate_and_deliver(
             "exact_asset_lock"
         ):
 
-            exact_count += (
-                1
-            )
+            exact_count += 1
 
     summary = (
         "تم إنتاج الصورة عبر XPAND Unified Visual Runtime. "
@@ -6539,9 +6369,7 @@ def create_visual_token(
 
     cleanup_visual_tokens()
 
-    token = (
-        uuid.uuid4().hex
-    )
+    token = uuid.uuid4().hex
 
     item = dict(
         metadata
@@ -6555,13 +6383,9 @@ def create_visual_token(
 
         _PENDING_VISUALS[
             token
-        ] = (
-            item
-        )
+        ] = item
 
-    return (
-        token
-    )
+    return token
 
 
 def peek_visual_token(
@@ -6626,9 +6450,7 @@ def extract_visual_token_from_text(
         VISUAL_COMMAND_PREFIX
     ):
 
-        return (
-            ""
-        )
+        return ""
 
     parts = value.split()
 
@@ -6636,9 +6458,7 @@ def extract_visual_token_from_text(
         parts
     ) < 2:
 
-        return (
-            ""
-        )
+        return ""
 
     return clean_text(
         parts[
@@ -6663,9 +6483,7 @@ def extract_visual_from_message(
         dict
     ):
 
-        return (
-            None
-        )
+        return None
 
     caption = clean_text(
         message.get(
@@ -6829,9 +6647,7 @@ def extract_visual_from_message(
                         caption,
                 }
 
-    return (
-        None
-    )
+    return None
 
 
 # =========================================================
@@ -6847,9 +6663,7 @@ def rewrite_visual_updates(
         dict
     ):
 
-        return (
-            response
-        )
+        return response
 
     updates = response.get(
         "result"
@@ -6860,9 +6674,7 @@ def rewrite_visual_updates(
         list
     ):
 
-        return (
-            response
-        )
+        return response
 
     for update in updates:
 
@@ -6944,9 +6756,7 @@ def rewrite_visual_updates(
             token
         )
 
-    return (
-        response
-    )
+    return response
 
 
 # =========================================================
@@ -7013,9 +6823,7 @@ def handle_visual_reference_token(
             )
         )
 
-        return (
-            True
-        )
+        return True
 
     caption = clean_text(
         metadata.get(
@@ -7061,14 +6869,10 @@ def handle_visual_reference_token(
 
         core.send_message(
             chat_id,
-            (
-                "ما قدرت أحدد ملف الصورة."
-            )
+            "ما قدرت أحدد ملف الصورة."
         )
 
-        return (
-            True
-        )
+        return True
 
     brand_id = detect_runtime_brand(
         core,
@@ -7099,10 +6903,8 @@ def handle_visual_reference_token(
                 core,
                 user_id,
                 brand_id,
-                max_rules=
-                    70,
-                max_references=
-                    12
+                max_rules=70,
+                max_references=12
             )
         )
 
@@ -7128,7 +6930,7 @@ def handle_visual_reference_token(
         "=========================================="
     )
     print(
-        " XPAND VISUAL REFERENCE DNA V3.1"
+        " XPAND VISUAL REFERENCE DNA V3.1.1"
     )
     print(
         "=========================================="
@@ -7150,10 +6952,6 @@ def handle_visual_reference_token(
         )
     )
     print("")
-
-    # =====================================================
-    # DOWNLOAD ORIGINAL
-    # =====================================================
 
     try:
 
@@ -7178,13 +6976,7 @@ def handle_visual_reference_token(
             )
         )
 
-        return (
-            True
-        )
-
-    # =====================================================
-    # VISION DNA
-    # =====================================================
+        return True
 
     try:
 
@@ -7233,9 +7025,7 @@ def handle_visual_reference_token(
             )
         )
 
-        return (
-            True
-        )
+        return True
 
     product_lock = safe_dict(
         dna.get(
@@ -7251,10 +7041,6 @@ def handle_visual_reference_token(
         100
     )
 
-    # =====================================================
-    # EXACT CAPABILITY TEST
-    # =====================================================
-
     if (
         reference_role
         ==
@@ -7269,8 +7055,7 @@ def handle_visual_reference_token(
                 mime_type=
                     mime_type,
 
-                role=
-                    "product",
+                role="product",
 
                 source_name=
                     (
@@ -7310,15 +7095,11 @@ def handle_visual_reference_token(
 
             product_lock[
                 "source_kind"
-            ] = (
-                source_kind
-            )
+            ] = source_kind
 
             product_lock[
                 "source_mime_type"
-            ] = (
-                mime_type
-            )
+            ] = mime_type
 
         except Exception as error:
 
@@ -7339,9 +7120,7 @@ def handle_visual_reference_token(
 
         product_lock[
             "exact_requested"
-        ] = (
-            True
-        )
+        ] = True
 
     if product_lock.get(
         "sensitive_text_present"
@@ -7349,25 +7128,15 @@ def handle_visual_reference_token(
 
         product_lock[
             "exact_requested"
-        ] = (
-            False
-        )
+        ] = False
 
         product_lock[
             "exact_blocked_sensitive_text"
-        ] = (
-            True
-        )
+        ] = True
 
     dna[
         "product_lock"
-    ] = (
-        product_lock
-    )
-
-    # =====================================================
-    # SAVE BRAND REFERENCE
-    # =====================================================
+    ] = product_lock
 
     reference_id = save_visual_reference(
         core,
@@ -7466,10 +7235,6 @@ def handle_visual_reference_token(
         )
     )
 
-    # =====================================================
-    # IMAGE + GENERATION CAPTION
-    # =====================================================
-
     if (
         caption
         and
@@ -7523,13 +7288,7 @@ def handle_visual_reference_token(
                 )
             )
 
-        return (
-            True
-        )
-
-    # =====================================================
-    # NORMAL REFERENCE RESPONSE
-    # =====================================================
+        return True
 
     summary = (
         build_visual_dna_summary(
@@ -7596,9 +7355,7 @@ def handle_visual_reference_token(
         summary
     )
 
-    return (
-        True
-    )
+    return True
 
 
 # =========================================================
@@ -7616,9 +7373,7 @@ def maybe_learn_brand_feedback(
         text
     ):
 
-        return (
-            False
-        )
+        return False
 
     brand_id = detect_runtime_brand(
         core,
@@ -7656,9 +7411,7 @@ def maybe_learn_brand_feedback(
         "saved"
     ):
 
-        return (
-            False
-        )
+        return False
 
     rule_type = result.get(
         "rule_type"
@@ -7696,9 +7449,7 @@ def maybe_learn_brand_feedback(
         reply
     )
 
-    return (
-        True
-    )
+    return True
 
 
 # =========================================================
@@ -7716,9 +7467,7 @@ def handle_text_image_request(
         text
     ):
 
-        return (
-            False
-        )
+        return False
 
     try:
 
@@ -7837,9 +7586,7 @@ def handle_text_image_request(
             )
         )
 
-    return (
-        True
-    )
+    return True
 
 
 # =========================================================
@@ -7868,9 +7615,7 @@ def status_flag(
             )
         )
 
-    return (
-        False
-    )
+    return False
 
 
 def provider_ready(
@@ -7919,10 +7664,6 @@ def install(
                 True,
         }
 
-    # =====================================================
-    # DATABASE
-    # =====================================================
-
     try:
 
         ensure_image_table(
@@ -7941,10 +7682,6 @@ def install(
             )
         )
 
-    # =====================================================
-    # TELEGRAM GETUPDATES ADAPTER
-    # =====================================================
-
     original_telegram_request = (
         core.telegram_request
     )
@@ -7954,25 +7691,17 @@ def install(
         data
     ):
 
-        response = (
-            original_telegram_request(
-                method,
-                data
-            )
+        response = original_telegram_request(
+            method,
+            data
         )
 
-        if (
-            method
-            ==
-            "getUpdates"
-        ):
+        if method == "getUpdates":
 
             try:
 
-                response = (
-                    rewrite_visual_updates(
-                        response
-                    )
+                response = rewrite_visual_updates(
+                    response
                 )
 
             except Exception as error:
@@ -7987,17 +7716,11 @@ def install(
                     )
                 )
 
-        return (
-            response
-        )
+        return response
 
     core.telegram_request = (
         xpand_telegram_request
     )
-
-    # =====================================================
-    # SAVE MESSAGE PATCH
-    # =====================================================
 
     original_save_message = (
         core.save_message
@@ -8037,10 +7760,6 @@ def install(
     core.save_message = (
         xpand_save_message
     )
-
-    # =====================================================
-    # MEMORY INGESTION PATCH
-    # =====================================================
 
     original_ingest_user_message = getattr(
         core,
@@ -8089,10 +7808,6 @@ def install(
             xpand_ingest_user_message
         )
 
-    # =====================================================
-    # COMMAND ROUTER
-    # =====================================================
-
     original_handle_command = (
         core.handle_command
     )
@@ -8125,9 +7840,7 @@ def install(
             text
         ):
 
-            return (
-                True
-            )
+            return True
 
         if handle_text_image_request(
             core,
@@ -8136,9 +7849,7 @@ def install(
             text
         ):
 
-            return (
-                True
-            )
+            return True
 
         return original_handle_command(
             chat_id,
@@ -8149,10 +7860,6 @@ def install(
     core.handle_command = (
         xpand_visual_handle_command
     )
-
-    # =====================================================
-    # VOICE ROUTER
-    # =====================================================
 
     original_ask = (
         core.ask_kemo
@@ -8298,10 +8005,6 @@ def install(
         xpand_visual_ask
     )
 
-    # =====================================================
-    # INSTALLED
-    # =====================================================
-
     core._XPAND_IMAGE_TELEGRAM_INSTALLED = (
         True
     )
@@ -8336,7 +8039,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1"
+        " XPAND UNIFIED VISUAL RUNTIME V3.1.1"
     )
     print(
         "=================================================="
@@ -8396,7 +8099,7 @@ def install(
         "✅ Strict Campaign no-fallback mode"
     )
     print(
-        "✅ Campaign intent false-positive protection"
+        "✅ Campaign quality-wording protection V3.1.1"
     )
     print(
         "✅ Masterpiece Integration Guard"
@@ -8555,6 +8258,9 @@ def install(
         "campaign_strict_mode":
             True,
 
+        "campaign_quality_phrase_protection":
+            True,
+
         "masterpiece_integration_guard":
             True,
 
@@ -8595,7 +8301,7 @@ if __name__ == "__main__":
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.1"
+        " XPAND UNIFIED VISUAL RUNTIME V3.1.1"
     )
     print(
         "=================================================="
@@ -8670,10 +8376,48 @@ if __name__ == "__main__":
         ),
 
         (
+            "اعمللي حملة STC",
+            True,
+            False,
+            True,
+        ),
+
+        (
             "اعمللي بوستر STC بمستوى حملة عالمية",
             True,
             False,
             False,
+        ),
+
+        (
+            "اعمللي صورة STC بجودة حملة عالمية",
+            True,
+            False,
+            False,
+        ),
+
+        (
+            "صمم إعلان STC ستايل حملة عالمية",
+            True,
+            False,
+            False,
+        ),
+
+        (
+            "create poster campaign-level quality",
+            True,
+            False,
+            False,
+        ),
+
+        (
+            (
+                "اعمللي حملة STC من 5 بوستات "
+                "وكل بوست بجودة حملة عالمية"
+            ),
+            True,
+            False,
+            True,
         ),
 
         (
@@ -8762,6 +8506,116 @@ if __name__ == "__main__":
     print("")
 
     # =====================================================
+    # CAMPAIGN INTENT TESTS
+    # =====================================================
+
+    campaign_tests = [
+        (
+            "اعمللي حملة STC من 5 بوستات",
+            True
+        ),
+
+        (
+            "اعمللي حملة STC",
+            True
+        ),
+
+        (
+            "حملة STC للسفر",
+            True
+        ),
+
+        (
+            "صمم سلسلة بوستات STC",
+            True
+        ),
+
+        (
+            "اعمللي بوستر STC بمستوى حملة عالمية",
+            False
+        ),
+
+        (
+            "اعمللي صورة STC بجودة حملة عالمية",
+            False
+        ),
+
+        (
+            "صمم اعلان STC ستايل حملة عالمية",
+            False
+        ),
+
+        (
+            "اعمللي مشهد STC بطابع حملة عالمية",
+            False
+        ),
+
+        (
+            "اعمللي بوستر STC بروح حملة عالمية",
+            False
+        ),
+
+        (
+            "create poster campaign-level quality",
+            False
+        ),
+
+        (
+            "design an STC image with campaign-quality visuals",
+            False
+        ),
+
+        (
+            (
+                "اعمللي حملة STC من 10 بوستات "
+                "بمستوى حملة عالمية"
+            ),
+            True
+        ),
+    ]
+
+    campaign_intent_ok = True
+
+    print(
+        "Campaign intent routing:"
+    )
+
+    for text, expected in campaign_tests:
+
+        actual = is_campaign_request(
+            text
+        )
+
+        ok = (
+            actual
+            ==
+            expected
+        )
+
+        campaign_intent_ok = (
+            campaign_intent_ok
+            and
+            ok
+        )
+
+        print(
+            (
+                "✅"
+                if ok
+                else
+                "❌"
+            ),
+            "| expected=",
+            expected,
+            "| actual=",
+            actual,
+            "|",
+            text
+        )
+
+    print("")
+
+    # =====================================================
     # SEMANTIC BENEFIT TEST
     # =====================================================
 
@@ -8840,13 +8694,11 @@ if __name__ == "__main__":
     # =====================================================
 
     good_winner = SimpleNamespace(
-        weighted_score=
-            90.5
+        weighted_score=90.5
     )
 
     good_creative = SimpleNamespace(
-        ok=
-            True,
+        ok=True,
 
         winner=
             good_winner,
@@ -8861,11 +8713,9 @@ if __name__ == "__main__":
     )
 
     bad_creative = SimpleNamespace(
-        ok=
-            False,
+        ok=False,
 
-        winner=
-            None,
+        winner=None,
 
         metadata={
             "quality_gate_passed":
@@ -9063,10 +8913,7 @@ if __name__ == "__main__":
     print(
         " -",
         detect_campaign_asset_count(
-            (
-                "اعمللي حملة "
-                "من 10 بوستات"
-            )
+            "اعمللي حملة من 10 بوستات"
         )
     )
 
@@ -9101,7 +8948,11 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ Campaign-like wording → no false Campaign"
+        "✅ Campaign quality wording → no false Campaign"
+    )
+
+    print(
+        "✅ Real campaign + quality wording → Campaign preserved"
     )
 
     print(
@@ -9153,6 +9004,8 @@ if __name__ == "__main__":
     all_ok = (
         request_tests_ok
         and
+        campaign_intent_ok
+        and
         semantic_ok
         and
         guard_ok
@@ -9160,7 +9013,7 @@ if __name__ == "__main__":
 
     print(
         (
-            "XPAND V3.1 Integration self-test: "
+            "XPAND V3.1.1 Integration self-test: "
             +
             (
                 "PASS ✅"
