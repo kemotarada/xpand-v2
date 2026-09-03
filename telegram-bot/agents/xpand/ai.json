@@ -4,19 +4,19 @@
   "agent_name": "XPAND Agent",
 
   "provider": {
-    "primary": "openai",
-    "model": "gpt-5.6-terra",
-    "api": "responses",
-    "verified": true
+    "primary": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "api": "interactions",
+    "verified": false
   },
 
   "routing_policy": {
-    "all_agent_reasoning": "openai",
+    "all_agent_reasoning": "gemini",
     "all_new_capabilities_inherit_provider": true,
     "capabilities_must_use_agent_ai_gateway": true,
-    "allow_direct_gemini_reasoning": false,
+    "allow_direct_gemini_reasoning": true,
     "allow_silent_provider_fallback": false,
-    "fallback_provider": null
+    "fallback_provider": "gemini"
   },
 
   "voice_pipeline": {
@@ -25,8 +25,8 @@
       "role": "speech_to_text_only"
     },
     "reasoning": {
-      "provider": "openai",
-      "model": "gpt-5.6-terra"
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite"
     },
     "tts": {
       "provider": "gemini",
@@ -36,21 +36,21 @@
   },
 
   "future_capability_policy": {
-    "web_search": "openai_reasoning",
-    "company_knowledge": "openai_reasoning",
-    "documents_rag": "openai_reasoning",
-    "crm": "openai_reasoning",
-    "lead_capture": "openai_reasoning",
-    "appointments": "openai_reasoning",
-    "calendar": "openai_reasoning",
-    "email": "openai_reasoning",
-    "website_builder": "openai_reasoning",
-    "image_generation": "openai_reasoning",
-    "analytics": "openai_reasoning",
-    "customer_support": "openai_reasoning",
-    "orders": "openai_reasoning",
-    "memory": "openai_reasoning",
-    "human_handoff": "openai_reasoning"
+    "web_search": "gemini_reasoning",
+    "company_knowledge": "gemini_reasoning",
+    "documents_rag": "gemini_reasoning",
+    "crm": "gemini_reasoning",
+    "lead_capture": "gemini_reasoning",
+    "appointments": "gemini_reasoning",
+    "calendar": "gemini_reasoning",
+    "email": "gemini_reasoning",
+    "website_builder": "gemini_reasoning",
+    "image_generation": "gemini_reasoning",
+    "analytics": "gemini_reasoning",
+    "customer_support": "gemini_reasoning",
+    "orders": "gemini_reasoning",
+    "memory": "gemini_reasoning",
+    "human_handoff": "gemini_reasoning"
   },
 
   "secrets": {
@@ -67,8 +67,8 @@
   },
 
   "verification": {
-    "text_openai_verified": true,
-    "voice_openai_reasoning_verified": true,
-    "verified_model": "gpt-5.6-terra"
+    "text_openai_verified": false,
+    "voice_openai_reasoning_verified": false,
+    "verified_model": null
   }
 }

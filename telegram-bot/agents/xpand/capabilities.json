@@ -15,8 +15,8 @@
     },
 
     "voice": {
-      "enabled": true,
-      "status": "verified",
+      "enabled": false,
+      "status": "disabled_image_focus",
       "description": "Receive Telegram voice messages, understand the transcribed message, generate a response and reply with voice.",
       "input": {
         "telegram_voice": true,
@@ -84,9 +84,9 @@
     },
 
     "image_generation": {
-      "enabled": false,
-      "status": "not_installed",
-      "description": "Image generation capability is not installed yet."
+      "enabled": true,
+      "status": "installed_pending_live_test",
+      "description": "Gemini-first image generation, editing and multi-reference composition."
     },
 
     "live_call": {
