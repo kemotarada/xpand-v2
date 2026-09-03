@@ -158,6 +158,8 @@ from typing import (
 
 import requests
 
+from xpand_cost_guard import budget_status
+
 
 # =========================================================
 # BASE IMAGE ENGINE
@@ -166,6 +168,8 @@ import requests
 from xpand_image_engine import (
     ENGINE_VERSION as SMART_ENGINE_VERSION,
     call_openai_director,
+    detect_image_size,
+    edit_with_gemini,
     generate_image,
     get_image_engine_status,
 )
@@ -258,6 +262,7 @@ from xpand_campaign_engine import (
 from xpand_production_engine import (
     MODE_MASTERPIECE as PRODUCTION_MODE_MASTERPIECE,
     TARGET_OPENAI,
+    TARGET_GEMINI,
     evaluate_generated_image,
     load_runtime_references,
     run_production,
@@ -419,6 +424,9 @@ _PENDING_VISUALS: Dict[
 _PENDING_VISUALS_LOCK = (
     threading.Lock()
 )
+
+_PENDING_EDIT_IMAGES: Dict[str, List[Dict[str, Any]]] = {}
+_PENDING_EDIT_LOCK = threading.Lock()
 
 
 # =========================================================
@@ -5144,7 +5152,7 @@ def generate_masterpiece_images(
                     PRODUCTION_MODE_MASTERPIECE,
 
                 target_model=
-                    TARGET_OPENAI
+                    TARGET_GEMINI
             )
 
             qa_passed = bool(
@@ -6569,6 +6577,8 @@ def generate_and_deliver(
         prompt
     )
 
+    image_size = detect_image_size(prompt)
+
     prepared = prepare_generation_input(
         core,
         user_id,
@@ -6882,7 +6892,10 @@ def generate_and_deliver(
                     ),
 
                 allow_fallback=
-                    True,
+                    False,
+
+                image_size=
+                    image_size,
             )
 
             if (
@@ -7715,6 +7728,8 @@ def rewrite_visual_updates(
             "date"
         )
 
+        visual["media_group_id"] = message.get("media_group_id")
+
         visual[
             "forward_origin"
         ] = safe_dict(
@@ -7905,6 +7920,78 @@ def library_stat_number(
 # VISUAL REFERENCE HANDLER V3.2
 # =========================================================
 
+def is_visual_library_intake(caption: str) -> bool:
+    return contains_any(caption, [
+        "مرجع", "مكتبة البراند", "احفظها", "احفظ الصورة",
+        "official reference", "brand reference", "visual library",
+    ])
+
+
+def stage_edit_image(user_id: Any, image_bytes: bytes, mime_type: str, metadata: Dict[str, Any]) -> int:
+    key = str(user_id)
+    item = {
+        "image_bytes": image_bytes,
+        "mime_type": mime_type or "image/jpeg",
+        "metadata": dict(metadata),
+        "created_at": time.time(),
+    }
+    with _PENDING_EDIT_LOCK:
+        current = [
+            value for value in _PENDING_EDIT_IMAGES.get(key, [])
+            if time.time() - float(value.get("created_at", 0)) <= VISUAL_TOKEN_TTL_SECONDS
+        ]
+        current.append(item)
+        _PENDING_EDIT_IMAGES[key] = current[-10:]
+        return len(_PENDING_EDIT_IMAGES[key])
+
+
+def pending_edit_images(user_id: Any, *, consume: bool = False) -> List[Dict[str, Any]]:
+    key = str(user_id)
+    with _PENDING_EDIT_LOCK:
+        current = [
+            value for value in _PENDING_EDIT_IMAGES.get(key, [])
+            if time.time() - float(value.get("created_at", 0)) <= VISUAL_TOKEN_TTL_SECONDS
+        ]
+        if consume:
+            _PENDING_EDIT_IMAGES.pop(key, None)
+        else:
+            _PENDING_EDIT_IMAGES[key] = current
+        return current
+
+
+def execute_pending_gemini_edit(core, chat_id, user_id, instruction: str) -> bool:
+    pending = pending_edit_images(user_id, consume=True)
+    if not pending:
+        return False
+    try:
+        core.send_action(chat_id, "upload_photo")
+    except Exception:
+        pass
+    try:
+        image = edit_with_gemini(
+            [(item["image_bytes"], item["mime_type"]) for item in pending],
+            instruction,
+            aspect_ratio=detect_aspect_ratio(instruction),
+            image_size=detect_image_size(instruction),
+            pro=contains_any(instruction, ["nano banana pro", "احترافي جدا", "أقصى دقة", "اقصى دقه"]),
+        )
+        deliver_generated_image(
+            core,
+            chat_id=chat_id,
+            user_id=user_id,
+            image=image,
+            enhanced_prompt=instruction,
+            source_channel="telegram_image_edit",
+            index=1,
+            total=1,
+            creative_mode="gemini_edit",
+        )
+        return True
+    except Exception:
+        with _PENDING_EDIT_LOCK:
+            _PENDING_EDIT_IMAGES[str(user_id)] = pending
+        raise
+
 def handle_visual_reference_token(
     core,
     chat_id,
@@ -7975,6 +8062,26 @@ def handle_visual_reference_token(
             "ما قدرت أحدد ملف الصورة."
         )
 
+        return True
+
+    # Ordinary images are edit inputs, not brand-library training material.
+    # A reference is stored only when the user explicitly labels it as such.
+    if not is_visual_library_intake(caption):
+        try:
+            image_bytes = core.get_telegram_file_bytes(file_id)
+            if not image_bytes:
+                raise RuntimeError("الصورة فارغة.")
+            count = stage_edit_image(user_id, image_bytes, mime_type, metadata)
+            if caption and not metadata.get("media_group_id"):
+                execute_pending_gemini_edit(core, chat_id, user_id, caption)
+            else:
+                core.send_message(
+                    chat_id,
+                    "استلمت الصورة" + (" والصور المرفقة" if count > 1 else "")
+                    + " ✅\nابعث الآن التعديل المطلوب، وحدد HD أو FHD أو 2K أو 4K."
+                )
+        except Exception as error:
+            core.send_message(chat_id, "تعذر تجهيز الصورة للتعديل:\n" + clean_text(error, 1200))
         return True
 
     # =====================================================
@@ -9169,6 +9276,29 @@ def handle_text_image_request(
     user_id,
     text
 ) -> bool:
+
+    if normalized(text) in {"/xpand_budget", "ميزانية اوبن اي", "ميزانيه اوبن اي", "openai budget"}:
+        status = budget_status()
+        core.send_message(
+            chat_id,
+            "💰 حد OpenAI اليومي\n"
+            + "الحالة: " + ("مفعّل" if status.get("enabled") else "مغلق بالكامل") + "\n"
+            + "الحد: $" + f"{status.get('limit_usd', 2.0):.2f}" + "\n"
+            + "المحجوز اليوم: $" + f"{status.get('reserved_usd', 0.0):.2f}" + "\n"
+            + "المتبقي: $" + f"{status.get('remaining_usd', 0.0):.2f}",
+        )
+        return True
+
+    if pending_edit_images(user_id):
+        try:
+            return execute_pending_gemini_edit(core, chat_id, user_id, text)
+        except Exception as error:
+            core.send_message(
+                chat_id,
+                "صار خلل بتعديل الصور عبر Nano Banana. الصور ما زالت محفوظة مؤقتًا.\nالخطأ: "
+                + clean_text(error, 1200),
+            )
+            return True
 
     if not looks_like_image_generation_request(
         text

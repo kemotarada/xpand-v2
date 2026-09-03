@@ -33,6 +33,10 @@
 
 import os
 
+from xpand_cost_guard import install_requests_guard
+
+install_requests_guard()
+
 import main as core
 
 import xpand_image_telegram as xpand_images

@@ -2240,6 +2240,27 @@ def generate_concept_pool(
         )
     )
 
+    prompt += """
+
+XPAND BANKING CREATIVE INTELLIGENCE
+===================================
+When the request concerns a bank, fintech, card, transfer, cashback, travel,
+payments or digital banking, study the current visual and strategic patterns
+used by leading regional and international banks through available search
+grounding. Extract patterns in art direction, camera, production design,
+human behavior, restraint, materials, copy space and product integration.
+Do not copy a campaign, slogan or composition. Convert the evidence into an
+original concept tailored to the current commercial benefit and the active
+brand's saved Visual DNA.
+
+Every shortlisted concept must be physically producible and photorealistic:
+one coherent perspective, motivated light sources, correct contact shadows,
+believable scale, real material roughness, natural depth of field and no
+generic AI decoration. Never use blue laser beams, random neon trails,
+connection lines, glowing arrows, floating cards, globes or interface icons
+unless the user explicitly requests that exact device.
+""".strip()
+
     register_model_call(
         telemetry,
         "ideation",

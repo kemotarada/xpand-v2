@@ -15,6 +15,11 @@ from __future__ import annotations
 
 import io
 import os
+
+if str(os.environ.get("XPAND_ALLOW_PAID_OPENAI_TEST", "")).strip().lower() not in {"1", "true", "yes", "on"}:
+    raise SystemExit(
+        "Paid OpenAI image test is locked. Set XPAND_ALLOW_PAID_OPENAI_TEST=true explicitly to run it."
+    )
 import sys
 import time
 

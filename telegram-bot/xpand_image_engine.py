@@ -38,7 +38,7 @@ import requests
 # =========================================================
 
 ENGINE_NAME = "XPAND Smart Image Engine"
-ENGINE_VERSION = "1.3.2"
+ENGINE_VERSION = "2.0.0"
 
 
 # =========================================================
@@ -92,6 +92,13 @@ GOOGLE_IMAGE_PRO_MODEL = str(
     )
 ).strip()
 
+GEMINI_DIRECTOR_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_DIRECTOR_MODEL",
+        "gemini-3.5-flash-lite",
+    )
+).strip()
+
 
 # =========================================================
 # DEFAULT SETTINGS
@@ -100,14 +107,14 @@ GOOGLE_IMAGE_PRO_MODEL = str(
 DEFAULT_MODE = str(
     os.environ.get(
         "XPAND_IMAGE_MODE",
-        "auto",
+        "google_fast",
     )
 ).strip().lower()
 
 DEFAULT_QUALITY = str(
     os.environ.get(
         "XPAND_IMAGE_DEFAULT_QUALITY",
-        "high",
+        "medium",
     )
 ).strip().lower()
 
@@ -642,6 +649,12 @@ def detect_image_size(
     ).upper()
 
     aliases = {
+        "HD": "1K",
+        "720P": "1K",
+        "1080P": "2K",
+        "FHD": "2K",
+        "FULLHD": "2K",
+        "FULL HD": "2K",
         "0.5K": "512",
         "512PX": "512",
         "512": "512",
@@ -661,12 +674,8 @@ def detect_image_size(
             "4k",
             "4 k",
             "فور كي",
-            "أعلى جودة",
-            "اعلى جودة",
-            "أعلى دقة",
-            "اعلى دقة",
-            "print quality",
-            "ultra high resolution",
+            "بدقة 4k",
+            "دقة 4k",
         ],
     ):
         return "4K"
@@ -676,9 +685,11 @@ def detect_image_size(
         [
             "2k",
             "2 k",
-            "دقة عالية",
-            "دقه عاليه",
-            "high quality",
+            "بدقة 2k",
+            "دقة 2k",
+            "fhd",
+            "full hd",
+            "1080p",
         ],
     ):
         return "2K"
@@ -1014,10 +1025,10 @@ def resolve_effective_mode(
         ],
     )
 
-    if professional:
-        return MODE_OPENAI
+    if professional or reference_count > 0:
+        return MODE_GOOGLE_PRO
 
-    return MODE_OPENAI
+    return MODE_GOOGLE_FAST
 
 
 # =========================================================
@@ -2046,6 +2057,74 @@ def _call_openai_response_once(
 # GPT-5.6 SOL TEXT / VISION
 # =========================================================
 
+def _find_gemini_text(value: Any) -> str:
+    if isinstance(value, dict):
+        for key in ("output_text", "text"):
+            item = value.get(key)
+            if isinstance(item, str) and item.strip():
+                return item.strip()
+        for key in ("output", "outputs", "steps", "content", "parts", "result"):
+            if key in value:
+                found = _find_gemini_text(value.get(key))
+                if found:
+                    return found
+    elif isinstance(value, list):
+        for item in value:
+            found = _find_gemini_text(item)
+            if found:
+                return found
+    return ""
+
+
+def call_gemini_director(
+    prompt: str,
+    *,
+    image_bytes: Optional[bytes] = None,
+    image_mime_type: str = "image/png",
+    json_mode: Optional[bool] = None,
+    json_schema: Optional[Dict[str, Any]] = None,
+    json_schema_name: str = "xpand_structured_output",
+) -> str:
+    if not GEMINI_API_KEY:
+        raise XPANDImageConfigurationError("GEMINI_API_KEY مش موجود.")
+    prompt = clean_text(prompt, 32000)
+    structured = bool(json_mode or json_schema)
+    if structured:
+        prompt += (
+            "\n\nOUTPUT CONTRACT: Return exactly one complete valid JSON object. "
+            "No Markdown and no explanation."
+        )
+        if json_schema:
+            prompt += "\nJSON SCHEMA:\n" + json.dumps(json_schema, ensure_ascii=False)
+    inputs: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
+    if image_bytes:
+        inputs.append({
+            "type": "image",
+            "mime_type": image_mime_type or "image/png",
+            "data": base64.b64encode(image_bytes).decode("ascii"),
+        })
+    payload: Dict[str, Any] = {"model": GEMINI_DIRECTOR_MODEL, "input": inputs}
+    search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
+        "0", "false", "no", "off"
+    }
+    if search_enabled and contains_any(prompt, [
+        "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
+    ]):
+        payload["tools"] = [{"type": "google_search"}]
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json=payload,
+        timeout=REQUEST_TIMEOUT,
+    )
+    if not response.ok:
+        raise XPANDImageProviderError(_provider_error_message("Gemini Director", response))
+    data = _safe_json(response)
+    text = _find_gemini_text(data)
+    if not text:
+        raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
+    return normalize_json_text(text) if structured else text
+
 def call_openai_director(
     prompt: str,
     *,
@@ -2063,6 +2142,18 @@ def call_openai_director(
         "xpand_structured_output"
     ),
 ) -> str:
+
+    # Backwards-compatible function name. XPAND V2 routes all creative,
+    # structured and visual direction work to Gemini by default.
+    if GEMINI_API_KEY:
+        return call_gemini_director(
+            prompt,
+            image_bytes=image_bytes,
+            image_mime_type=image_mime_type,
+            json_mode=json_mode,
+            json_schema=json_schema,
+            json_schema_name=json_schema_name,
+        )
 
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
@@ -2990,6 +3081,76 @@ def generate_with_gemini(
     return results
 
 
+def edit_with_gemini(
+    input_images: Sequence[Tuple[bytes, str]],
+    prompt: str,
+    *,
+    aspect_ratio: str = "4:5",
+    image_size: str = "",
+    pro: bool = False,
+) -> GeneratedImage:
+    if not GEMINI_API_KEY:
+        raise XPANDImageConfigurationError("GEMINI_API_KEY مش موجود.")
+    if not input_images:
+        raise XPANDImageError("لا توجد صور للتعديل.")
+    final_size = detect_image_size(prompt, image_size)
+    model = GOOGLE_IMAGE_PRO_MODEL if pro else GOOGLE_IMAGE_FAST_MODEL
+    instruction = build_professional_prompt(prompt, aspect_ratio, final_size)
+    instruction += (
+        "\n\nREFERENCE ORDER CONTRACT:\n"
+        "Image 1 is the BASE image unless the user explicitly says otherwise. "
+        "Images 2+ are reference/source images. Preserve untouched areas of the "
+        "base image. Transfer only the requested subject, product, style, color, "
+        "material or composition from each reference. Match perspective, scale, "
+        "lighting, shadows, reflections and depth so the result looks photographed "
+        "as one coherent scene. Never add blue laser beams, neon connection lines, "
+        "or generic fintech effects unless the user explicitly requests them."
+    )
+    inputs: List[Dict[str, Any]] = [{"type": "text", "text": instruction}]
+    for image_bytes, mime_type in list(input_images)[:10]:
+        inputs.append({
+            "type": "image",
+            "mime_type": mime_type or "image/png",
+            "data": base64.b64encode(image_bytes).decode("ascii"),
+        })
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json={
+            "model": model,
+            "input": inputs,
+            "response_format": {
+                "type": "image",
+                "aspect_ratio": detect_aspect_ratio(prompt, aspect_ratio),
+                "image_size": final_size,
+                "mime_type": "image/jpeg",
+            },
+        },
+        timeout=REQUEST_TIMEOUT,
+    )
+    if not response.ok:
+        raise XPANDImageProviderError(_provider_error_message("Nano Banana Edit", response))
+    data = _safe_json(response)
+    images = _find_inline_images(data)
+    if not images:
+        raise XPANDImageProviderError("Nano Banana Edit نجح لكن لم يرجع صورة.")
+    output, output_mime = images[0]
+    return GeneratedImage(
+        image_bytes=output,
+        mime_type=output_mime or "image/jpeg",
+        provider=PROVIDER_GOOGLE_PRO if pro else PROVIDER_GOOGLE_FAST,
+        model=model,
+        prompt=instruction,
+        original_prompt=prompt,
+        aspect_ratio=detect_aspect_ratio(prompt, aspect_ratio),
+        image_size=final_size,
+        quality="high" if pro else "medium",
+        route_reason="Gemini-first multi-image edit",
+        request_id=clean_text(data.get("id"), 200) or "ge-" + uuid.uuid4().hex[:12],
+        metadata={"generation_type": "gemini_multi_image_edit", "input_images": len(input_images)},
+    )
+
+
 # =========================================================
 # OPENAI DIRECT ROUTE
 # =========================================================
@@ -3055,7 +3216,7 @@ def run_google_direct(
     image_size: str,
     quality: str,
     number: int = 1,
-    allow_fallback: bool = True,
+    allow_fallback: bool = False,
 ) -> ImageGenerationResponse:
 
     started = time.monotonic()
@@ -3132,19 +3293,10 @@ def run_google_direct(
         if not allow_fallback:
             raise
 
-    fallback = run_openai_direct(
-        original_prompt,
-        aspect_ratio=aspect_ratio,
-        image_size=image_size,
-        quality=quality,
-        number=number,
+    raise XPANDImageProviderError(
+        "Gemini image generation failed and OpenAI fallback is disabled.\n"
+        + "\n".join(errors)
     )
-
-    fallback.errors.extend(
-        errors
-    )
-
-    return fallback
 
 
 # =========================================================
@@ -3539,12 +3691,14 @@ def generate_image(
     print("")
 
     if effective_mode == MODE_BEST:
-        return run_openai_best(
+        return run_google_direct(
             original_prompt,
+            pro=True,
             aspect_ratio=final_aspect_ratio,
             image_size=final_image_size,
             quality=final_quality,
             number=number,
+            allow_fallback=False,
         )
 
     if effective_mode == MODE_COMPARE:
@@ -3584,12 +3738,14 @@ def generate_image(
             allow_fallback=allow_fallback,
         )
 
-    return run_openai_direct(
+    return run_google_direct(
         original_prompt,
+        pro=False,
         aspect_ratio=final_aspect_ratio,
         image_size=final_image_size,
         quality=final_quality,
         number=number,
+        allow_fallback=False,
     )
 
 

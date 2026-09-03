@@ -128,6 +128,10 @@ from PIL import Image
 # =========================================================
 
 from xpand_image_engine import (
+    GEMINI_API_KEY,
+    GEMINI_INTERACTIONS_URL,
+    GOOGLE_IMAGE_FAST_MODEL,
+    GOOGLE_IMAGE_PRO_MODEL,
     OPENAI_API_KEY,
     OPENAI_IMAGE_MODEL,
     REQUEST_TIMEOUT,
@@ -135,7 +139,10 @@ from xpand_image_engine import (
     PROVIDER_OPENAI,
     build_route,
     call_openai_director,
+    detect_image_size,
+    generate_with_gemini,
     generate_with_openai,
+    PROVIDER_GOOGLE_FAST,
 )
 
 
@@ -199,9 +206,9 @@ MASTERPIECE_MAX_IMAGE_CALLS = max(
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_IMAGE_CALLS",
-                "2",
+                "1",
             )
-            or 2
+            or 1
         ),
     ),
 )
@@ -3898,6 +3905,89 @@ def openai_multi_reference_edit(
 # HIGH-QUALITY FIRST GENERATION
 # =========================================================
 
+def gemini_multi_reference_edit(
+    *,
+    working_image: Optional[GeneratedImage],
+    references: Sequence[ProductionReference],
+    prompt: str,
+    aspect_ratio: str,
+    pass_name: str,
+) -> GeneratedImage:
+    if not GEMINI_API_KEY:
+        raise RuntimeError("GEMINI_API_KEY missing.")
+    reference_rules = physical_reference_instruction(references)
+    safe_prompt = fit_prompt_for_api(
+        prompt
+        + (("\n\n" + reference_rules) if reference_rules else "")
+        + "\n\n" + safe_frame_instruction(aspect_ratio),
+        label=pass_name,
+        budget=CORRECTION_PROMPT_BUDGET if working_image is not None else COMPILED_PROMPT_BUDGET,
+    )
+    inputs: List[Dict[str, Any]] = [{"type": "text", "text": safe_prompt}]
+    if working_image is not None:
+        inputs.append({
+            "type": "image",
+            "mime_type": working_image.mime_type or "image/png",
+            "data": base64.b64encode(working_image.image_bytes).decode("ascii"),
+        })
+    for reference in list(references)[:10]:
+        inputs.append({
+            "type": "image",
+            "mime_type": reference.mime_type or "image/png",
+            "data": base64.b64encode(reference.image_bytes).decode("ascii"),
+        })
+    image_size = detect_image_size(safe_prompt)
+    model = str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip()
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json={
+            "model": model,
+            "input": inputs,
+            "response_format": {
+                "type": "image",
+                "aspect_ratio": aspect_ratio,
+                "image_size": image_size,
+                "mime_type": "image/jpeg",
+            },
+        },
+        timeout=REQUEST_TIMEOUT,
+    )
+    try:
+        response_data = response.json()
+    except Exception:
+        response_data = {"raw": response.text}
+    if not response.ok:
+        raise RuntimeError("Nano Banana reference edit failed: " + clean_text(response_data, 3000))
+    images = find_images_in_response(response_data)
+    if not images:
+        raise RuntimeError("Nano Banana returned no image.")
+    image_bytes, mime_type = images[0]
+    return GeneratedImage(
+        image_bytes=image_bytes,
+        mime_type=mime_type or "image/jpeg",
+        provider="google",
+        model=model,
+        prompt=safe_prompt,
+        original_prompt=safe_prompt,
+        aspect_ratio=aspect_ratio,
+        image_size=image_size,
+        quality="high",
+        route_reason="XPAND Gemini-first multi-reference: " + pass_name,
+        request_id=clean_text(response_data.get("id"), 300) or "gem-" + uuid.uuid4().hex[:12],
+        metadata={
+            "production_engine": ENGINE_VERSION,
+            "pass_name": pass_name,
+            "physical_reference_count": len(references),
+            "gemini_first": True,
+        },
+    )
+
+
+# Compatibility alias: callers keep their old function name, but the actual
+# provider is Nano Banana. No OpenAI image request is made.
+openai_multi_reference_edit = gemini_multi_reference_edit
+
 def generate_high_quality_image(
     *,
     compiled: CompiledPrompt,
@@ -4006,19 +4096,20 @@ user request while preserving the relevant brand visual DNA.
     # Use direct HIGH-quality generation.
     #
 
+    google_model = str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip()
     route = build_route(
-        PROVIDER_OPENAI,
-        OPENAI_IMAGE_MODEL,
+        PROVIDER_GOOGLE_FAST,
+        google_model,
         (
             "XPAND V3.1 Quality-First "
             "high-quality generation"
         ),
         aspect_ratio,
-        "4K",
-        "high",
+        detect_image_size(original_request),
+        "medium",
     )
 
-    images = generate_with_openai(
+    images = generate_with_gemini(
         prompt=(
             compiled.prompt
         ),
@@ -5104,7 +5195,7 @@ def run_production(
     camera_direction: Any,
     aspect_ratio: str = "4:5",
     mode: str = MODE_MASTERPIECE,
-    target_model: str = TARGET_OPENAI,
+    target_model: str = TARGET_GEMINI,
 ) -> ProductionResult:
 
     started = (
@@ -5256,15 +5347,8 @@ def run_production(
         ),
     )
 
-    if (
-        compiled.target
-        !=
-        TARGET_OPENAI
-    ):
-
-        raise RuntimeError(
-            "Production execution is currently OpenAI-only."
-        )
+    if compiled.target not in {TARGET_GEMINI, TARGET_OPENAI}:
+        raise RuntimeError("Unsupported production target.")
 
     # =====================================================
     # LOG
@@ -5291,7 +5375,7 @@ def run_production(
 
     print(
         "Model:",
-        OPENAI_IMAGE_MODEL,
+        str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip(),
     )
 
     print(
@@ -5414,13 +5498,13 @@ def run_production(
     # =====================================================
 
     print(
-        "🎬 IMAGE CALL 1/"
+        "🎬 GEMINI IMAGE CALL 1/"
         +
         str(
             MASTERPIECE_MAX_IMAGE_CALLS
         )
         +
-        " | GPT-Image-2 HIGH..."
+        " | Nano Banana..."
     )
 
     if physical_refs:
