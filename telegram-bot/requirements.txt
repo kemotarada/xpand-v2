@@ -1,3 +1,4 @@
 psycopg[binary]
 imageio-ffmpeg==0.6.0
 requests>=2.32.0,<3
+Pillow>=10.4.0,<13
