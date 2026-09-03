@@ -1,76 +1,99 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V3.0
+# XPAND PRODUCTION ENGINE V3.1
 #
-# QUALITY-FIRST ADAPTIVE MASTERPIECE
+# QUALITY-FIRST + SMART VISUAL REFERENCE ROUTING
 #
 # =========================================================
-#
-# GOAL
-# ---------------------------------------------------------
-#
-# Highest practical image quality with controlled cost.
-#
-# This engine deliberately moves:
-#
-#   Composition
-#   Product Fidelity
-#   Lighting
-#   Materials
-#   Final Polish
-#
-# into ONE high-quality production blueprint BEFORE the
-# first image is generated.
-#
 #
 # PRODUCTION FLOW
 # ---------------------------------------------------------
 #
-# Creative Brain / Brand Memory / Research
-#             ↓
+# User Request
+#      ↓
+# Brand Memory V2
+#      ↓
+# Request-Aware Reference Selection
+#      ↓
+# Best 3–5 Visual DNA References
+#      ↓
+# Brand Visual Profile
+#      ↓
+# Only strongest 1–3 ACTUAL images sent physically
+#      ↓
 # Quality-First Production Blueprint
-#             ↓
-# GPT-Image-2 HIGH          [IMAGE CALL 1]
-#             ↓
-# Exact Local Delivery Frame
-#             ↓
-# Adaptive Vision QA        [VISION CALL 1]
-#             ↓
-#        ┌────┴────┐
-#        │         │
-#      GOOD      NEEDS WORK
-#        │         │
-#        │       choose ONE:
-#        │       - concept recovery
-#        │       - targeted correction
-#        │               ↓
-#        │       GPT-Image-2 HIGH       [IMAGE CALL 2 MAX]
-#        │               ↓
-#        │       Adaptive Vision QA     [VISION CALL 2 MAX]
-#        │               ↓
-#        └────── Best Version Selector
-#                         ↓
-#               Exact Final Delivery Frame
-#                         ↓
-#                       DELIVER
+#      ↓
+# GPT-Image-2 HIGH                 [IMAGE CALL 1]
+#      ↓
+# Exact Local Delivery Frame       [$0]
+#      ↓
+# Vision QA                        [VISION CALL 1]
+#      ↓
+# optional:
+# targeted correction OR concept recovery
+#                                    [IMAGE CALL 2 MAX]
+#      ↓
+# Vision QA                        [VISION CALL 2 MAX]
+#      ↓
+# Best Version
+#      ↓
+# Exact Final Delivery Frame        [$0]
 #
 #
-# IMPORTANT
+# V3.1 IMPORTANT CHANGES
 # ---------------------------------------------------------
 #
-# - QA NEVER destroys the user's paid image.
-# - QA NEVER prevents run_production() from returning the
-#   best successfully generated image.
-# - No Composition/Lighting/Materials image passes.
-# - Maximum automatic image calls defaults to 2.
-# - Maximum automatic Vision QA calls defaults to 2.
-# - A bad second version never replaces a better first one.
-# - A concept failure uses the second image call as a
-#   concept recovery, not as useless polish.
-# - A normal quality problem uses the second call as a
-#   targeted correction.
-# - Native provider canvas is accepted.
-# - Exact 4:5 / 9:16 / etc. delivery framing is local.
-# - Crop / resize costs $0 API spend.
+# - Integrates XPAND Brand Memory V2.
+# - Integrates Visual Intelligence V2.
+# - Stops loading the latest references blindly.
+# - Selects references according to campaign meaning.
+# - Travel request → travel references.
+# - International transfer → transfer references.
+# - Product request → product references prioritized.
+# - Brand Visual Profile injected into production blueprint.
+# - Actual visual reference images CAN be supplied to
+#   GPT-Image-2, not only text summaries.
+# - Actual physical references limited to max 3 by default.
+# - Visual DNA references limited to max 5 by default.
+# - Product references receive first priority.
+# - Official/recent/high-confidence references preferred
+#   by Brand Memory / Visual Intelligence.
+# - Reference images are used as STYLE / CAMERA /
+#   COMPOSITION / PRODUCT evidence.
+# - Exact old campaign composition must NOT be cloned.
+#
+#
+# COST POLICY
+# ---------------------------------------------------------
+#
+# Default:
+#
+#   Visual DNA selected:       max 5
+#   Physical image references: max 3
+#   Image calls:               max 2
+#   Vision calls:              max 2
+#
+#
+# Actual reference images are sent mainly on:
+#
+#   - first generation
+#   - fresh concept recovery
+#
+# A targeted correction normally sends:
+#
+#   working image
+#   + product references only
+#
+# instead of repeatedly sending all style references.
+#
+#
+# SELF TEST
+# ---------------------------------------------------------
+#
+# Running:
+#
+#     python xpand_production_engine.py
+#
+# makes ZERO paid API calls.
 #
 # =========================================================
 
@@ -85,14 +108,23 @@ import uuid
 
 from dataclasses import dataclass, field
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import requests
+
 from PIL import Image
 
 
 # =========================================================
-# XPAND EXISTING MODULES
+# EXISTING XPAND IMAGE ENGINE
 # =========================================================
 
 from xpand_image_engine import (
@@ -106,9 +138,12 @@ from xpand_image_engine import (
     generate_with_openai,
 )
 
-from xpand_brand_memory import (
-    load_visual_references,
-)
+
+# =========================================================
+# XPAND BRAND MEMORY V2
+# =========================================================
+
+import xpand_brand_memory as xpand_brand_memory
 
 
 # =========================================================
@@ -116,19 +151,31 @@ from xpand_brand_memory import (
 # =========================================================
 
 ENGINE_NAME = "XPAND Production Engine"
-ENGINE_VERSION = "3.0"
+
+ENGINE_VERSION = "3.1"
+
 
 MODE_FAST = "fast"
+
 MODE_PRO = "pro"
+
 MODE_MASTERPIECE = "masterpiece"
 
+
 TARGET_OPENAI = "openai"
+
 TARGET_GEMINI = "gemini"
+
 TARGET_MIDJOURNEY = "midjourney"
+
 TARGET_FLUX = "flux"
+
 TARGET_IDEOGRAM = "ideogram"
+
 TARGET_RUNWAY = "runway"
+
 TARGET_KLING = "kling"
+
 TARGET_SEEDANCE = "seedance"
 
 
@@ -142,20 +189,8 @@ OPENAI_IMAGE_EDITS_URL = (
 
 
 # =========================================================
-# QUALITY-FIRST LIMITS
+# QUALITY-FIRST COST LIMITS
 # =========================================================
-
-#
-# Automatic image generations/edits per one final asset.
-#
-# Masterpiece defaults to:
-#
-#   1 initial high-quality image
-#   1 optional adaptive recovery/correction
-#
-# Never more than 2 unless this code is intentionally
-# changed later.
-#
 
 MASTERPIECE_MAX_IMAGE_CALLS = max(
     1,
@@ -187,11 +222,72 @@ MASTERPIECE_MAX_VISION_CALLS = max(
 )
 
 
+# =========================================================
+# VISUAL REFERENCE COST POLICY
+# =========================================================
+
 #
-# Score at which we stop spending automatically.
+# Number of references whose DNA can enter the prompt.
 #
-# 90+ = excellent enough to avoid another paid image call.
+
+SMART_REFERENCE_SELECTION_LIMIT = max(
+    1,
+    min(
+        6,
+        int(
+            os.environ.get(
+                "XPAND_SMART_REFERENCE_LIMIT",
+                "5",
+            )
+            or 5
+        ),
+    ),
+)
+
+
 #
+# Number of actual image files sent to the image model.
+#
+# Keeping this at 2–3 gives us the strongest visual evidence
+# without repeatedly sending a large reference library.
+#
+
+MAX_PHYSICAL_REFERENCE_IMAGES = max(
+    0,
+    min(
+        3,
+        int(
+            os.environ.get(
+                "XPAND_PHYSICAL_REFERENCE_LIMIT",
+                "3",
+            )
+            or 3
+        ),
+    ),
+)
+
+
+SEND_VISUAL_REFERENCES_TO_IMAGE = (
+    str(
+        os.environ.get(
+            "XPAND_SEND_VISUAL_REFERENCES_TO_IMAGE",
+            "true",
+        )
+    )
+    .strip()
+    .lower()
+    in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+)
+
+
+# =========================================================
+# ADAPTIVE QUALITY POLICY
+# =========================================================
 
 ADAPTIVE_CORRECTION_TRIGGER_SCORE = max(
     70.0,
@@ -207,13 +303,6 @@ ADAPTIVE_CORRECTION_TRIGGER_SCORE = max(
     ),
 )
 
-
-#
-# Major concept failure threshold.
-#
-# Below this, second image call is a CONCEPT RECOVERY,
-# not a normal correction.
-#
 
 CONCEPT_RECOVERY_SCORE_FLOOR = max(
     40.0,
@@ -252,7 +341,9 @@ QA_TARGET_SCORE = max(
 QA_DELIVERY_FLOOR = max(
     50.0,
     min(
-        float(QA_TARGET_SCORE),
+        float(
+            QA_TARGET_SCORE
+        ),
         float(
             os.environ.get(
                 "XPAND_IMAGE_QA_DELIVERY_FLOOR",
@@ -311,7 +402,7 @@ QA_WEIGHTS = {
 
 
 # =========================================================
-# PROMPT BUDGETS
+# PROMPT BUDGET
 # =========================================================
 
 OPENAI_PROMPT_HARD_LIMIT = max(
@@ -379,7 +470,9 @@ CORRECTION_PROMPT_BUDGET = max(
 # =========================================================
 
 PROVIDER_PORTRAIT_SIZE = "1024x1536"
+
 PROVIDER_LANDSCAPE_SIZE = "1536x1024"
+
 PROVIDER_SQUARE_SIZE = "1024x1024"
 
 
@@ -389,85 +482,189 @@ PROVIDER_SQUARE_SIZE = "1024x1024"
 
 @dataclass
 class ProductionReference:
+
     role: str
+
     image_bytes: bytes
+
     mime_type: str
-    dna: Dict[str, Any] = field(default_factory=dict)
-    product_lock: Dict[str, Any] = field(default_factory=dict)
+
+    dna: Dict[str, Any] = field(
+        default_factory=dict
+    )
+
+    product_lock: Dict[str, Any] = field(
+        default_factory=dict
+    )
+
     user_note: str = ""
+
     source_id: str = ""
+
+    content_family: str = "general_brand"
+
+    source_metadata: Dict[str, Any] = field(
+        default_factory=dict
+    )
+
+    selection: Dict[str, Any] = field(
+        default_factory=dict
+    )
 
 
 @dataclass
 class CompiledPrompt:
+
     target: str
+
     prompt: str
+
     negative_prompt: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    metadata: Dict[str, Any] = field(
+        default_factory=dict
+    )
 
 
 @dataclass
 class QAEvaluation:
+
     score: float
+
     scores: Dict[str, float]
+
     passed: bool
+
     strengths: List[str]
+
     problems: List[str]
+
     correction_instruction: str
-    critical_blockers: List[str] = field(default_factory=list)
+
+    critical_blockers: List[str] = field(
+        default_factory=list
+    )
+
     target_reached: bool = False
+
     delivery_approved: bool = False
+
     decision: str = ""
-    raw: Dict[str, Any] = field(default_factory=dict)
+
+    raw: Dict[str, Any] = field(
+        default_factory=dict
+    )
 
 
 @dataclass
 class ProductionPassResult:
+
     pass_name: str
+
     image: GeneratedImage
-    qa: Optional[QAEvaluation] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    qa: Optional[
+        QAEvaluation
+    ] = None
+
+    metadata: Dict[str, Any] = field(
+        default_factory=dict
+    )
 
 
 @dataclass
 class ProductionResult:
+
     ok: bool
+
     final_image: GeneratedImage
+
     best_score: float
-    qa: Optional[QAEvaluation]
-    passes: List[ProductionPassResult]
+
+    qa: Optional[
+        QAEvaluation
+    ]
+
+    passes: List[
+        ProductionPassResult
+    ]
+
     compiled_prompt: CompiledPrompt
+
     references_used: int
+
     product_references_used: int
+
     elapsed_seconds: float
-    errors: List[str] = field(default_factory=list)
+
+    errors: List[str] = field(
+        default_factory=list
+    )
 
 
 # =========================================================
-# HELPERS
+# BASIC HELPERS
 # =========================================================
 
 def clean_text(
     value: Any,
     limit: int = 20000,
 ) -> str:
+
     return (
         str(
             value
             if value is not None
             else ""
         )
-        .replace("\x00", "")
+        .replace(
+            "\x00",
+            "",
+        )
         .strip()[:limit]
+    )
+
+
+def safe_dict(
+    value: Any,
+) -> Dict[str, Any]:
+
+    return (
+        value
+        if isinstance(
+            value,
+            dict,
+        )
+        else {}
+    )
+
+
+def safe_list(
+    value: Any,
+) -> List[Any]:
+
+    return (
+        value
+        if isinstance(
+            value,
+            list,
+        )
+        else []
     )
 
 
 def clamp_score(
     value: Any,
 ) -> float:
+
     try:
-        number = float(value)
+
+        number = float(
+            value
+        )
+
     except Exception:
+
         number = 0.0
 
     return max(
@@ -479,86 +676,114 @@ def clamp_score(
     )
 
 
-def safe_list(
-    value: Any,
-) -> List[Any]:
-    return (
-        value
-        if isinstance(value, list)
-        else []
-    )
-
-
-def safe_dict(
-    value: Any,
-) -> Dict[str, Any]:
-    return (
-        value
-        if isinstance(value, dict)
-        else {}
-    )
-
-
 def compact_json(
     value: Any,
     limit: int = 6000,
 ) -> str:
+
     try:
+
         text = json.dumps(
             value,
             ensure_ascii=False,
-            separators=(",", ":"),
+            separators=(
+                ",",
+                ":",
+            ),
             default=str,
         )
+
     except Exception:
+
         text = clean_text(
             value,
             limit,
         )
 
-    if len(text) <= limit:
+    if len(
+        text
+    ) <= limit:
+
         return text
 
-    return text[:limit]
+    front = int(
+        limit
+        *
+        0.68
+    )
+
+    back = max(
+        0,
+        limit
+        -
+        front
+        -
+        90
+    )
+
+    return (
+        text[:front]
+        +
+        '\n"[XPAND_CONTEXT_COMPACTED]"\n'
+        +
+        (
+            text[-back:]
+            if back
+            else ""
+        )
+    )
 
 
 def hard_fit_prompt(
     text: str,
     max_chars: int,
 ) -> str:
+
     value = clean_text(
         text,
         1000000,
     )
 
-    if len(value) <= max_chars:
+    if len(
+        value
+    ) <= max_chars:
+
         return value
 
     marker = (
         "\n\n"
         "[XPAND CONTEXT COMPACTED]\n"
         "Secondary detail omitted. "
-        "Original request and core creative direction remain authoritative."
+        "The original request, winning creative direction, "
+        "brand rules and critical reference rules remain authoritative."
         "\n\n"
     )
 
     available = max(
         500,
-        max_chars - len(marker),
+        max_chars - len(
+            marker
+        ),
     )
 
     front = int(
-        available * 0.68
+        available
+        *
+        0.68
     )
 
     back = (
-        available - front
+        available
+        -
+        front
     )
 
     return (
         value[:front]
-        + marker
-        + value[-back:]
+        +
+        marker
+        +
+        value[-back:]
     )
 
 
@@ -568,6 +793,7 @@ def fit_prompt_for_api(
     label: str,
     budget: int,
 ) -> str:
+
     original = clean_text(
         prompt,
         1000000,
@@ -578,26 +804,47 @@ def fit_prompt_for_api(
         budget,
     )
 
-    if len(original) <= budget:
+    if len(
+        original
+    ) <= budget:
+
         print(
             "🧮 Prompt budget ["
             + label
             + "]: "
-            + str(len(fitted))
+            + str(
+                len(
+                    fitted
+                )
+            )
             + "/"
-            + str(budget)
+            + str(
+                budget
+            )
             + " chars ✅"
         )
+
     else:
+
         print(
             "🧮 Prompt budget ["
             + label
             + "]: "
-            + str(len(original))
+            + str(
+                len(
+                    original
+                )
+            )
             + " → "
-            + str(len(fitted))
+            + str(
+                len(
+                    fitted
+                )
+            )
             + "/"
-            + str(budget)
+            + str(
+                budget
+            )
             + " chars ✅ COMPACTED"
         )
 
@@ -611,6 +858,7 @@ def fit_prompt_for_api(
 def extract_json_object(
     value: str,
 ) -> Dict[str, Any]:
+
     text = clean_text(
         value,
         100000,
@@ -630,28 +878,54 @@ def extract_json_object(
     )
 
     try:
-        parsed = json.loads(text)
 
-        if isinstance(parsed, dict):
+        parsed = json.loads(
+            text
+        )
+
+        if isinstance(
+            parsed,
+            dict,
+        ):
+
             return parsed
+
     except Exception:
+
         pass
 
-    start = text.find("{")
-    end = text.rfind("}")
+    start = text.find(
+        "{"
+    )
+
+    end = text.rfind(
+        "}"
+    )
 
     if (
         start >= 0
-        and end > start
+        and
+        end > start
     ):
+
         try:
+
             parsed = json.loads(
-                text[start:end + 1]
+                text[
+                    start:
+                    end + 1
+                ]
             )
 
-            if isinstance(parsed, dict):
+            if isinstance(
+                parsed,
+                dict,
+            ):
+
                 return parsed
+
         except Exception:
+
             pass
 
     return {}
@@ -664,46 +938,84 @@ def extract_json_object(
 def decode_image_value(
     value: str,
 ) -> Optional[bytes]:
+
     text = clean_text(
         value,
         100000000,
     )
 
     if not text:
+
         return None
 
-    if text.startswith("data:image/"):
+    if text.startswith(
+        "data:image/"
+    ):
+
         try:
+
             text = text.split(
                 ",",
                 1,
             )[1]
+
         except Exception:
+
             return None
 
     try:
-        raw = base64.b64decode(text)
-        return raw if raw else None
+
+        raw = base64.b64decode(
+            text
+        )
+
+        return (
+            raw
+            if raw
+            else None
+        )
+
     except Exception:
+
         return None
 
 
 def find_images_in_response(
     value: Any,
-) -> List[Tuple[bytes, str]]:
+) -> List[
+    Tuple[
+        bytes,
+        str,
+    ]
+]:
+
     found: List[
-        Tuple[bytes, str]
+        Tuple[
+            bytes,
+            str,
+        ]
     ] = []
 
     def walk(
         item: Any,
     ) -> None:
-        if isinstance(item, dict):
+
+        if isinstance(
+            item,
+            dict,
+        ):
+
             mime_type = clean_text(
                 (
-                    item.get("mime_type")
-                    or item.get("mimeType")
-                    or ""
+                    item.get(
+                        "mime_type"
+                    )
+                    or
+                    item.get(
+                        "mimeType"
+                    )
+                    or
+                    ""
                 ),
                 100,
             )
@@ -713,53 +1025,87 @@ def find_images_in_response(
                 "base64",
                 "data",
             ]:
-                raw_value = item.get(key)
+
+                raw_value = (
+                    item.get(
+                        key
+                    )
+                )
 
                 if not isinstance(
                     raw_value,
                     str,
                 ):
+
                     continue
 
-                raw = decode_image_value(
-                    raw_value
+                raw = (
+                    decode_image_value(
+                        raw_value
+                    )
                 )
 
                 if raw:
+
                     found.append(
                         (
                             raw,
                             mime_type
-                            or "image/png",
+                            or
+                            "image/png",
                         )
                     )
+
                     break
 
-            for child in item.values():
-                walk(child)
+            for child in (
+                item.values()
+            ):
 
-        elif isinstance(item, list):
+                walk(
+                    child
+                )
+
+        elif isinstance(
+            item,
+            list,
+        ):
+
             for child in item:
-                walk(child)
 
-    walk(value)
+                walk(
+                    child
+                )
+
+    walk(
+        value
+    )
 
     output: List[
-        Tuple[bytes, str]
+        Tuple[
+            bytes,
+            str,
+        ]
     ] = []
 
     seen = set()
 
     for raw, mime_type in found:
+
         signature = (
-            len(raw),
+            len(
+                raw
+            ),
             raw[:64],
         )
 
         if signature in seen:
+
             continue
 
-        seen.add(signature)
+        seen.add(
+            signature
+        )
 
         output.append(
             (
@@ -779,20 +1125,28 @@ def infer_mime_type(
     raw: bytes,
     fallback: str = "image/jpeg",
 ) -> str:
+
     if raw.startswith(
         b"\x89PNG\r\n\x1a\n"
     ):
+
         return "image/png"
 
     if raw.startswith(
         b"\xff\xd8\xff"
     ):
+
         return "image/jpeg"
 
     if (
-        raw.startswith(b"RIFF")
-        and b"WEBP" in raw[:16]
+        raw.startswith(
+            b"RIFF"
+        )
+        and
+        b"WEBP"
+        in raw[:16]
     ):
+
         return "image/webp"
 
     return fallback
@@ -801,15 +1155,18 @@ def infer_mime_type(
 def extension_for_mime(
     mime_type: str,
 ) -> str:
+
     value = clean_text(
         mime_type,
         100,
     ).lower()
 
     if "png" in value:
+
         return ".png"
 
     if "webp" in value:
+
         return ".webp"
 
     return ".jpg"
@@ -822,6 +1179,7 @@ def extension_for_mime(
 def aspect_ratio_value(
     aspect_ratio: str,
 ) -> Optional[float]:
+
     text = clean_text(
         aspect_ratio,
         50,
@@ -833,39 +1191,54 @@ def aspect_ratio_value(
     )
 
     if not match:
+
         return None
 
     width = float(
-        match.group(1)
+        match.group(
+            1
+        )
     )
 
     height = float(
-        match.group(2)
+        match.group(
+            2
+        )
     )
 
     if (
         width <= 0
-        or height <= 0
+        or
+        height <= 0
     ):
+
         return None
 
-    return width / height
+    return (
+        width
+        /
+        height
+    )
 
 
 def orientation_for_ratio(
     aspect_ratio: str,
 ) -> str:
+
     ratio = aspect_ratio_value(
         aspect_ratio
     )
 
     if ratio is None:
+
         return "square"
 
     if ratio < 0.95:
+
         return "portrait"
 
     if ratio > 1.05:
+
         return "landscape"
 
     return "square"
@@ -874,17 +1247,28 @@ def orientation_for_ratio(
 def provider_size_for_ratio(
     aspect_ratio: str,
 ) -> str:
-    orientation = orientation_for_ratio(
-        aspect_ratio
+
+    orientation = (
+        orientation_for_ratio(
+            aspect_ratio
+        )
     )
 
     if orientation == "portrait":
-        return PROVIDER_PORTRAIT_SIZE
+
+        return (
+            PROVIDER_PORTRAIT_SIZE
+        )
 
     if orientation == "landscape":
-        return PROVIDER_LANDSCAPE_SIZE
 
-    return PROVIDER_SQUARE_SIZE
+        return (
+            PROVIDER_LANDSCAPE_SIZE
+        )
+
+    return (
+        PROVIDER_SQUARE_SIZE
+    )
 
 
 def production_size_for_ratio(
@@ -892,22 +1276,41 @@ def production_size_for_ratio(
     *,
     final_quality: bool = True,
 ) -> str:
+
     ratio = clean_text(
         aspect_ratio,
         30,
     )
 
     if not final_quality:
+
         mapping = {
-            "1:1": "1024x1024",
-            "4:5": "1024x1280",
-            "5:4": "1280x1024",
-            "9:16": "864x1536",
-            "16:9": "1536x864",
-            "2:3": "1024x1536",
-            "3:2": "1536x1024",
-            "3:4": "1024x1365",
-            "4:3": "1365x1024",
+            "1:1":
+                "1024x1024",
+
+            "4:5":
+                "1024x1280",
+
+            "5:4":
+                "1280x1024",
+
+            "9:16":
+                "864x1536",
+
+            "16:9":
+                "1536x864",
+
+            "2:3":
+                "1024x1536",
+
+            "3:2":
+                "1536x1024",
+
+            "3:4":
+                "1024x1365",
+
+            "4:3":
+                "1365x1024",
         }
 
         return mapping.get(
@@ -916,16 +1319,35 @@ def production_size_for_ratio(
         )
 
     mapping = {
-        "1:1": "2048x2048",
-        "4:5": "2560x3200",
-        "5:4": "3200x2560",
-        "9:16": "2160x3840",
-        "16:9": "3840x2160",
-        "2:3": "2304x3456",
-        "3:2": "3456x2304",
-        "3:4": "2448x3264",
-        "4:3": "3264x2448",
-        "21:9": "3840x1646",
+        "1:1":
+            "2048x2048",
+
+        "4:5":
+            "2560x3200",
+
+        "5:4":
+            "3200x2560",
+
+        "9:16":
+            "2160x3840",
+
+        "16:9":
+            "3840x2160",
+
+        "2:3":
+            "2304x3456",
+
+        "3:2":
+            "3456x2304",
+
+        "3:4":
+            "2448x3264",
+
+        "4:3":
+            "3264x2448",
+
+        "21:9":
+            "3840x1646",
     }
 
     return mapping.get(
@@ -936,7 +1358,13 @@ def production_size_for_ratio(
 
 def parse_size_string(
     value: str,
-) -> Optional[Tuple[int, int]]:
+) -> Optional[
+    Tuple[
+        int,
+        int,
+    ]
+]:
+
     match = re.fullmatch(
         r"\s*(\d+)\s*x\s*(\d+)\s*",
         clean_text(
@@ -947,11 +1375,20 @@ def parse_size_string(
     )
 
     if not match:
+
         return None
 
     return (
-        int(match.group(1)),
-        int(match.group(2)),
+        int(
+            match.group(
+                1
+            )
+        ),
+        int(
+            match.group(
+                2
+            )
+        ),
     )
 
 
@@ -961,23 +1398,40 @@ def parse_size_string(
 
 def real_image_dimensions(
     raw: bytes,
-) -> Tuple[int, int]:
+) -> Tuple[
+    int,
+    int,
+]:
+
     try:
+
         with Image.open(
-            BytesIO(raw)
+            BytesIO(
+                raw
+            )
         ) as image:
+
             image.load()
 
             return (
-                int(image.width),
-                int(image.height),
+                int(
+                    image.width
+                ),
+                int(
+                    image.height
+                ),
             )
+
     except Exception as error:
+
         raise RuntimeError(
-            "Unable to inspect image dimensions: "
-            + clean_text(
-                error,
-                1000,
+            (
+                "Unable to inspect image dimensions: "
+                +
+                clean_text(
+                    error,
+                    1000,
+                )
             )
         )
 
@@ -986,8 +1440,11 @@ def inspect_provider_canvas(
     image: GeneratedImage,
     requested_aspect_ratio: str,
 ) -> Dict[str, Any]:
-    width, height = real_image_dimensions(
-        image.image_bytes
+
+    width, height = (
+        real_image_dimensions(
+            image.image_bytes
+        )
     )
 
     requested_orientation = (
@@ -997,21 +1454,33 @@ def inspect_provider_canvas(
     )
 
     if width > height:
-        actual_orientation = "landscape"
+
+        actual_orientation = (
+            "landscape"
+        )
 
     elif height > width:
-        actual_orientation = "portrait"
+
+        actual_orientation = (
+            "portrait"
+        )
 
     else:
-        actual_orientation = "square"
 
-    expected_size = provider_size_for_ratio(
-        requested_aspect_ratio
+        actual_orientation = (
+            "square"
+        )
+
+    expected_size = (
+        provider_size_for_ratio(
+            requested_aspect_ratio
+        )
     )
 
-    expected_orientation_match = (
+    orientation_match = (
         requested_orientation
-        == actual_orientation
+        ==
+        actual_orientation
     )
 
     status = {
@@ -1034,42 +1503,45 @@ def inspect_provider_canvas(
             actual_orientation,
 
         "orientation_match":
-            expected_orientation_match,
+            orientation_match,
     }
 
-    if expected_orientation_match:
+    if orientation_match:
+
         print(
             "📐 PROVIDER CANVAS: "
-            + str(width)
+            + str(
+                width
+            )
             + "x"
-            + str(height)
+            + str(
+                height
+            )
             + " ✅"
         )
+
     else:
-        #
-        # IMPORTANT:
-        #
-        # V3 does NOT throw away a paid image merely because
-        # the provider returned another valid canvas.
-        #
-        # Local exact-frame processing will still attempt to
-        # create the requested campaign ratio.
-        #
+
         print(
             "⚠️ PROVIDER CANVAS DIFFERENT"
             + " | requested="
             + requested_aspect_ratio
             + " | actual="
-            + str(width)
+            + str(
+                width
+            )
             + "x"
-            + str(height)
-            + " | continuing safely"
+            + str(
+                height
+            )
+            + " | local exact frame will repair delivery"
         )
 
     if not isinstance(
         image.metadata,
         dict,
     ):
+
         image.metadata = {}
 
     image.metadata[
@@ -1083,29 +1555,48 @@ def crop_box_for_aspect(
     width: int,
     height: int,
     aspect_ratio: str,
-) -> Tuple[int, int, int, int]:
-    target_ratio = aspect_ratio_value(
-        aspect_ratio
+) -> Tuple[
+    int,
+    int,
+    int,
+    int,
+]:
+
+    target_ratio = (
+        aspect_ratio_value(
+            aspect_ratio
+        )
     )
 
     if target_ratio is None:
+
         raise RuntimeError(
-            "Invalid aspect ratio: "
-            + clean_text(
-                aspect_ratio,
-                100,
+            (
+                "Invalid aspect ratio: "
+                +
+                clean_text(
+                    aspect_ratio,
+                    100,
+                )
             )
         )
 
     current_ratio = (
-        float(width)
-        / float(height)
+        float(
+            width
+        )
+        /
+        float(
+            height
+        )
     )
 
     if abs(
         current_ratio
-        - target_ratio
+        -
+        target_ratio
     ) < 0.0001:
+
         return (
             0,
             0,
@@ -1114,10 +1605,12 @@ def crop_box_for_aspect(
         )
 
     if current_ratio > target_ratio:
+
         target_width = int(
             round(
                 height
-                * target_ratio
+                *
+                target_ratio
             )
         )
 
@@ -1133,23 +1626,28 @@ def crop_box_for_aspect(
             round(
                 (
                     width
-                    - target_width
+                    -
+                    target_width
                 )
-                / 2
+                /
+                2
             )
         )
 
         return (
             left,
             0,
-            left + target_width,
+            left
+            +
+            target_width,
             height,
         )
 
     target_height = int(
         round(
             width
-            / target_ratio
+            /
+            target_ratio
         )
     )
 
@@ -1165,9 +1663,11 @@ def crop_box_for_aspect(
         round(
             (
                 height
-                - target_height
+                -
+                target_height
             )
-            / 2
+            /
+            2
         )
     )
 
@@ -1175,7 +1675,9 @@ def crop_box_for_aspect(
         0,
         top,
         width,
-        top + target_height,
+        top
+        +
+        target_height,
     )
 
 
@@ -1188,6 +1690,7 @@ def derived_image(
     image_size: str,
     metadata_updates: Dict[str, Any],
 ) -> GeneratedImage:
+
     metadata = dict(
         source.metadata
         if isinstance(
@@ -1202,47 +1705,71 @@ def derived_image(
     )
 
     return GeneratedImage(
-        image_bytes=image_bytes,
-        mime_type=mime_type,
+        image_bytes=(
+            image_bytes
+        ),
+
+        mime_type=(
+            mime_type
+        ),
+
         provider=getattr(
             source,
             "provider",
             "xpand_production",
         ),
+
         model=getattr(
             source,
             "model",
             OPENAI_IMAGE_MODEL,
         ),
+
         prompt=getattr(
             source,
             "prompt",
             "",
         ),
+
         original_prompt=getattr(
             source,
             "original_prompt",
             "",
         ),
-        aspect_ratio=aspect_ratio,
-        image_size=image_size,
+
+        aspect_ratio=(
+            aspect_ratio
+        ),
+
+        image_size=(
+            image_size
+        ),
+
         quality=getattr(
             source,
             "quality",
             "high",
         ),
+
         route_reason=getattr(
             source,
             "route_reason",
             "XPAND local exact frame",
         ),
+
         request_id=getattr(
             source,
             "request_id",
-            "local-"
-            + uuid.uuid4().hex[:12],
+            (
+                "local-"
+                +
+                uuid.uuid4().hex[:12]
+            ),
         ),
-        metadata=metadata,
+
+        metadata=(
+            metadata
+        ),
     )
 
 
@@ -1253,10 +1780,7 @@ def create_exact_delivery_frame(
     upscale_final: bool = False,
     label: str = "delivery_frame",
 ) -> GeneratedImage:
-    #
-    # If this is already an exact local delivery frame and
-    # no further upscale is needed, do not crop it again.
-    #
+
     existing_meta = safe_dict(
         getattr(
             source,
@@ -1269,7 +1793,8 @@ def create_exact_delivery_frame(
         existing_meta.get(
             "exact_delivery_frame"
         )
-        and clean_text(
+        and
+        clean_text(
             getattr(
                 source,
                 "aspect_ratio",
@@ -1277,9 +1802,12 @@ def create_exact_delivery_frame(
             ),
             30,
         )
-        == requested_aspect_ratio
-        and not upscale_final
+        ==
+        requested_aspect_ratio
+        and
+        not upscale_final
     ):
+
         return source
 
     source_width, source_height = (
@@ -1293,24 +1821,36 @@ def create_exact_delivery_frame(
             source.image_bytes
         )
     ) as pil_image:
+
         pil_image.load()
 
         if pil_image.mode not in {
             "RGB",
             "RGBA",
         }:
-            pil_image = pil_image.convert(
-                "RGB"
+
+            pil_image = (
+                pil_image.convert(
+                    "RGB"
+                )
             )
 
-        crop_box = crop_box_for_aspect(
-            int(pil_image.width),
-            int(pil_image.height),
-            requested_aspect_ratio,
+        crop_box = (
+            crop_box_for_aspect(
+                int(
+                    pil_image.width
+                ),
+                int(
+                    pil_image.height
+                ),
+                requested_aspect_ratio,
+            )
         )
 
-        cropped = pil_image.crop(
-            crop_box
+        cropped = (
+            pil_image.crop(
+                crop_box
+            )
         )
 
         crop_width = int(
@@ -1321,10 +1861,16 @@ def create_exact_delivery_frame(
             cropped.height
         )
 
-        output_width = crop_width
-        output_height = crop_height
+        output_width = (
+            crop_width
+        )
+
+        output_height = (
+            crop_height
+        )
 
         if upscale_final:
+
             target_size = (
                 production_size_for_ratio(
                     requested_aspect_ratio,
@@ -1332,27 +1878,36 @@ def create_exact_delivery_frame(
                 )
             )
 
-            target_dims = parse_size_string(
-                target_size
+            target_dims = (
+                parse_size_string(
+                    target_size
+                )
             )
 
             if target_dims:
+
                 target_width, target_height = (
                     target_dims
                 )
 
                 if (
                     target_width
-                    != crop_width
-                    or target_height
-                    != crop_height
+                    !=
+                    crop_width
+                    or
+                    target_height
+                    !=
+                    crop_height
                 ):
-                    cropped = cropped.resize(
-                        (
-                            target_width,
-                            target_height,
-                        ),
-                        Image.Resampling.LANCZOS,
+
+                    cropped = (
+                        cropped.resize(
+                            (
+                                target_width,
+                                target_height,
+                            ),
+                            Image.Resampling.LANCZOS,
+                        )
                     )
 
                 output_width = (
@@ -1380,13 +1935,21 @@ def create_exact_delivery_frame(
         "✂️ EXACT FRAME ["
         + label
         + "]: "
-        + str(source_width)
+        + str(
+            source_width
+        )
         + "x"
-        + str(source_height)
+        + str(
+            source_height
+        )
         + " → "
-        + str(output_width)
+        + str(
+            output_width
+        )
         + "x"
-        + str(output_height)
+        + str(
+            output_height
+        )
         + " "
         + requested_aspect_ratio
         + " ✅"
@@ -1394,13 +1957,21 @@ def create_exact_delivery_frame(
 
     return derived_image(
         source,
-        image_bytes=output_bytes,
+        image_bytes=(
+            output_bytes
+        ),
         mime_type="image/png",
-        aspect_ratio=requested_aspect_ratio,
+        aspect_ratio=(
+            requested_aspect_ratio
+        ),
         image_size=(
-            str(output_width)
+            str(
+                output_width
+            )
             + "x"
-            + str(output_height)
+            + str(
+                output_height
+            )
         ),
         metadata_updates={
             "exact_delivery_frame":
@@ -1422,7 +1993,9 @@ def create_exact_delivery_frame(
                 output_height,
 
             "local_upscale":
-                bool(upscale_final),
+                bool(
+                    upscale_final
+                ),
 
             "local_processing_cost":
                 0,
@@ -1437,6 +2010,7 @@ def create_exact_delivery_frame(
 def safe_frame_description(
     aspect_ratio: str,
 ) -> Dict[str, Any]:
+
     provider_size = (
         provider_size_for_ratio(
             aspect_ratio
@@ -1448,6 +2022,7 @@ def safe_frame_description(
     )
 
     if not dims:
+
         return {
             "provider_size":
                 provider_size,
@@ -1458,10 +2033,12 @@ def safe_frame_description(
 
     width, height = dims
 
-    crop_box = crop_box_for_aspect(
-        width,
-        height,
-        aspect_ratio,
+    crop_box = (
+        crop_box_for_aspect(
+            width,
+            height,
+            aspect_ratio,
+        )
     )
 
     left, top, right, bottom = (
@@ -1476,40 +2053,60 @@ def safe_frame_description(
             aspect_ratio,
 
         "safe_width":
-            right - left,
+            right
+            -
+            left,
 
         "safe_height":
-            bottom - top,
+            bottom
+            -
+            top,
 
         "left_bleed_pct":
             round(
-                left / width * 100,
+                left
+                /
+                width
+                *
+                100,
                 2,
             ),
 
         "right_bleed_pct":
             round(
                 (
-                    width - right
+                    width
+                    -
+                    right
                 )
-                / width
-                * 100,
+                /
+                width
+                *
+                100,
                 2,
             ),
 
         "top_bleed_pct":
             round(
-                top / height * 100,
+                top
+                /
+                height
+                *
+                100,
                 2,
             ),
 
         "bottom_bleed_pct":
             round(
                 (
-                    height - bottom
+                    height
+                    -
+                    bottom
                 )
-                / height
-                * 100,
+                /
+                height
+                *
+                100,
                 2,
             ),
     }
@@ -1518,8 +2115,11 @@ def safe_frame_description(
 def safe_frame_instruction(
     aspect_ratio: str,
 ) -> str:
-    safe = safe_frame_description(
-        aspect_ratio
+
+    safe = (
+        safe_frame_description(
+            aspect_ratio
+        )
     )
 
     return f"""
@@ -1536,10 +2136,18 @@ All visually critical information MUST survive the central
 {aspect_ratio} crop.
 
 Approximate expendable provider bleed:
-left   {safe.get("left_bleed_pct", 0)}%
-right  {safe.get("right_bleed_pct", 0)}%
-top    {safe.get("top_bleed_pct", 0)}%
-bottom {safe.get("bottom_bleed_pct", 0)}%
+
+left:
+{safe.get("left_bleed_pct", 0)}%
+
+right:
+{safe.get("right_bleed_pct", 0)}%
+
+top:
+{safe.get("top_bleed_pct", 0)}%
+
+bottom:
+{safe.get("bottom_bleed_pct", 0)}%
 
 Keep inside the final safe frame:
 
@@ -1548,7 +2156,7 @@ Keep inside the final safe frame:
 - product
 - human face/hands
 - architectural storytelling
-- important city/environment cues
+- destination/environment cues
 - negative-space copy area
 
 Do not put critical information in crop bleed.
@@ -1556,7 +2164,86 @@ Do not put critical information in crop bleed.
 
 
 # =========================================================
-# REFERENCES
+# BRAND MEMORY V2
+# =========================================================
+
+def load_brand_visual_profile_safe(
+    core,
+    user_id,
+    brand_id: str,
+) -> Dict[str, Any]:
+
+    if not brand_id:
+
+        return {}
+
+    try:
+
+        profile = (
+            xpand_brand_memory.get_brand_visual_profile(
+                core,
+                user_id,
+                brand_id,
+            )
+        )
+
+        if profile:
+
+            return profile
+
+    except Exception as error:
+
+        print(
+            "⚠️ Brand Visual Profile load: "
+            +
+            clean_text(
+                error,
+                1000,
+            )
+        )
+
+    #
+    # Existing V1 references may exist before a V2 profile
+    # has been aggregated.
+    #
+    # Refresh is local DB aggregation only.
+    #
+
+    try:
+
+        profile = (
+            xpand_brand_memory.refresh_brand_visual_profile(
+                core,
+                user_id,
+                brand_id,
+            )
+        )
+
+        return (
+            profile
+            if isinstance(
+                profile,
+                dict,
+            )
+            else {}
+        )
+
+    except Exception as error:
+
+        print(
+            "⚠️ Brand Visual Profile refresh: "
+            +
+            clean_text(
+                error,
+                1000,
+            )
+        )
+
+        return {}
+
+
+# =========================================================
+# SMART REFERENCE LOADER
 # =========================================================
 
 def load_runtime_references(
@@ -1564,24 +2251,102 @@ def load_runtime_references(
     user_id,
     brand_id: str,
     *,
-    limit: int = 10,
-) -> List[ProductionReference]:
-    stored = load_visual_references(
-        core,
-        user_id,
-        brand_id=brand_id,
-        limit=limit,
+    request: str = "",
+    limit: int = SMART_REFERENCE_SELECTION_LIMIT,
+) -> List[
+    ProductionReference
+]:
+
+    limit = max(
+        1,
+        min(
+            SMART_REFERENCE_SELECTION_LIMIT,
+            int(
+                limit
+                or
+                SMART_REFERENCE_SELECTION_LIMIT
+            ),
+        ),
     )
+
+    stored = []
+
+    if request:
+
+        try:
+
+            stored = (
+                xpand_brand_memory.load_relevant_visual_references(
+                    core,
+                    user_id,
+                    brand_id=brand_id,
+                    request=request,
+                    limit=limit,
+                    mark_used=True,
+                )
+            )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Smart reference selection failed: "
+                +
+                clean_text(
+                    error,
+                    1200,
+                )
+            )
+
+    #
+    # Compatibility fallback:
+    #
+    # If there is no V2 result, preserve old loading behavior
+    # but keep the quantity small.
+    #
+
+    if not stored:
+
+        try:
+
+            stored = (
+                xpand_brand_memory.load_visual_references(
+                    core,
+                    user_id,
+                    brand_id=brand_id,
+                    limit=limit,
+                )
+            )
+
+            if stored:
+
+                print(
+                    "⚠️ Reference selector fallback: latest brand references"
+                )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Legacy reference load failed: "
+                +
+                clean_text(
+                    error,
+                    1200,
+                )
+            )
+
+            stored = []
 
     references: List[
         ProductionReference
     ] = []
 
     for item in stored:
+
         if not isinstance(
             item,
             dict,
         ):
+
             continue
 
         file_id = clean_text(
@@ -1592,26 +2357,41 @@ def load_runtime_references(
             1500,
         )
 
+        #
+        # DNA can still participate in the prompt only when
+        # the image file itself is available for runtime.
+        #
+        # Existing production architecture expects
+        # ProductionReference.image_bytes.
+        #
+
         if not file_id:
+
             continue
 
         try:
+
             raw = (
                 core.get_telegram_file_bytes(
                     file_id
                 )
             )
+
         except Exception as error:
+
             print(
                 "⚠️ Reference download skipped: "
-                + clean_text(
+                +
+                clean_text(
                     error,
                     1000,
                 )
             )
+
             continue
 
         if not raw:
+
             continue
 
         references.append(
@@ -1624,10 +2404,14 @@ def load_runtime_references(
                     100,
                 ),
 
-                image_bytes=raw,
-
-                mime_type=infer_mime_type(
+                image_bytes=(
                     raw
+                ),
+
+                mime_type=(
+                    infer_mime_type(
+                        raw
+                    )
                 ),
 
                 dna=safe_dict(
@@ -1637,10 +2421,12 @@ def load_runtime_references(
                     )
                 ),
 
-                product_lock=safe_dict(
-                    item.get(
-                        "product_lock",
-                        {},
+                product_lock=(
+                    safe_dict(
+                        item.get(
+                            "product_lock",
+                            {},
+                        )
                     )
                 ),
 
@@ -1658,22 +2444,56 @@ def load_runtime_references(
                         "",
                     )
                 ),
+
+                content_family=clean_text(
+                    item.get(
+                        "content_family",
+                        "general_brand",
+                    ),
+                    100,
+                ),
+
+                source_metadata=(
+                    safe_dict(
+                        item.get(
+                            "source_metadata",
+                            {},
+                        )
+                    )
+                ),
+
+                selection=(
+                    safe_dict(
+                        item.get(
+                            "selection",
+                            {},
+                        )
+                    )
+                ),
             )
         )
 
     return references
 
 
+# =========================================================
+# REFERENCE HELPERS
+# =========================================================
+
 def product_references(
     references: Sequence[
         ProductionReference
     ],
-) -> List[ProductionReference]:
+) -> List[
+    ProductionReference
+]:
+
     return [
         item
         for item in references
         if item.role
-        == "product_reference"
+        ==
+        "product_reference"
     ]
 
 
@@ -1681,14 +2501,48 @@ def reference_dna_payload(
     references: Sequence[
         ProductionReference
     ],
-) -> List[Dict[str, Any]]:
+) -> List[
+    Dict[str, Any]
+]:
+
     output = []
 
-    for item in references[:10]:
+    for item in references[
+        :SMART_REFERENCE_SELECTION_LIMIT
+    ]:
+
+        selection_score = (
+            safe_dict(
+                item.selection
+            ).get(
+                "score",
+                0,
+            )
+        )
+
         output.append(
             {
+                "reference_id":
+                    item.source_id,
+
                 "role":
                     item.role,
+
+                "content_family":
+                    item.content_family,
+
+                "selection_score":
+                    selection_score,
+
+                "official_source":
+                    bool(
+                        safe_dict(
+                            item.source_metadata
+                        ).get(
+                            "official",
+                            False,
+                        )
+                    ),
 
                 "dna":
                     item.dna,
@@ -1709,11 +2563,19 @@ def combined_product_lock(
         ProductionReference
     ],
 ) -> Dict[str, Any]:
+
     rules: List[str] = []
+
     count = 0
 
     for item in references:
-        if item.role != "product_reference":
+
+        if (
+            item.role
+            !=
+            "product_reference"
+        ):
+
             continue
 
         count += 1
@@ -1725,6 +2587,7 @@ def combined_product_lock(
         )
 
         for value in values:
+
             text = clean_text(
                 value,
                 500,
@@ -1732,13 +2595,20 @@ def combined_product_lock(
 
             if (
                 text
-                and text not in rules
+                and
+                text
+                not in rules
             ):
-                rules.append(text)
+
+                rules.append(
+                    text
+                )
 
     return {
         "enabled":
-            bool(count),
+            bool(
+                count
+            ),
 
         "reference_count":
             count,
@@ -1756,25 +2626,527 @@ def combined_product_lock(
             (
                 "high_fidelity_reference"
                 if count
-                else "none"
+                else
+                "none"
             ),
     }
 
 
 # =========================================================
-# PRODUCTION BLUEPRINT
+# PHYSICAL REFERENCE SELECTION
+# =========================================================
+
+PHYSICAL_ROLE_PRIORITY = {
+    "product_reference":
+        1000,
+
+    "campaign_reference":
+        900,
+
+    "style_reference":
+        850,
+
+    "composition_reference":
+        820,
+
+    "camera_reference":
+        800,
+
+    "lighting_reference":
+        780,
+
+    "color_reference":
+        760,
+
+    "environment_reference":
+        720,
+
+    "person_reference":
+        650,
+
+    "mixed_reference":
+        840,
+}
+
+
+def reference_selection_score(
+    reference: ProductionReference,
+) -> float:
+
+    try:
+
+        return float(
+            safe_dict(
+                reference.selection
+            ).get(
+                "score",
+                0,
+            )
+            or 0
+        )
+
+    except Exception:
+
+        return 0.0
+
+
+def choose_physical_references(
+    references: Sequence[
+        ProductionReference
+    ],
+    *,
+    limit: int = MAX_PHYSICAL_REFERENCE_IMAGES,
+) -> List[
+    ProductionReference
+]:
+
+    if (
+        not SEND_VISUAL_REFERENCES_TO_IMAGE
+        or
+        limit <= 0
+    ):
+
+        return []
+
+    limit = min(
+        MAX_PHYSICAL_REFERENCE_IMAGES,
+        max(
+            0,
+            int(
+                limit
+            ),
+        ),
+    )
+
+    ranked = sorted(
+        list(
+            references
+        ),
+        key=lambda item:
+            (
+                PHYSICAL_ROLE_PRIORITY.get(
+                    item.role,
+                    500,
+                )
+                +
+                reference_selection_score(
+                    item
+                )
+            ),
+        reverse=True,
+    )
+
+    selected: List[
+        ProductionReference
+    ] = []
+
+    seen_ids = set()
+
+    #
+    # Product Lock always receives priority.
+    #
+
+    for item in ranked:
+
+        if len(
+            selected
+        ) >= limit:
+
+            break
+
+        if (
+            item.role
+            !=
+            "product_reference"
+        ):
+
+            continue
+
+        unique = (
+            item.source_id
+            or
+            str(
+                id(
+                    item
+                )
+            )
+        )
+
+        if unique in seen_ids:
+
+            continue
+
+        selected.append(
+            item
+        )
+
+        seen_ids.add(
+            unique
+        )
+
+    #
+    # Then strongest brand/campaign/style evidence.
+    #
+
+    for item in ranked:
+
+        if len(
+            selected
+        ) >= limit:
+
+            break
+
+        unique = (
+            item.source_id
+            or
+            str(
+                id(
+                    item
+                )
+            )
+        )
+
+        if unique in seen_ids:
+
+            continue
+
+        selected.append(
+            item
+        )
+
+        seen_ids.add(
+            unique
+        )
+
+    return selected
+
+
+# =========================================================
+# REFERENCE IMAGE INSTRUCTION
+# =========================================================
+
+def physical_reference_instruction(
+    references: Sequence[
+        ProductionReference
+    ],
+) -> str:
+
+    if not references:
+
+        return ""
+
+    lines = [
+        "ATTACHED VISUAL REFERENCE POLICY",
+        "================================",
+        "",
+        (
+            "The attached images are authoritative visual references, "
+            "but they have DIFFERENT FUNCTIONS."
+        ),
+        "",
+        (
+            "Learn their visual logic. Do NOT clone an old campaign "
+            "composition or copy existing advertising text."
+        ),
+        "",
+    ]
+
+    for index, item in enumerate(
+        references,
+        start=1,
+    ):
+
+        official = bool(
+            safe_dict(
+                item.source_metadata
+            ).get(
+                "official",
+                False,
+            )
+        )
+
+        score = (
+            reference_selection_score(
+                item
+            )
+        )
+
+        lines.extend(
+            [
+                (
+                    "REFERENCE "
+                    +
+                    str(
+                        index
+                    )
+                ),
+
+                (
+                    "Role: "
+                    +
+                    item.role
+                ),
+
+                (
+                    "Content family: "
+                    +
+                    item.content_family
+                ),
+
+                (
+                    "Official source: "
+                    +
+                    str(
+                        official
+                    )
+                ),
+
+                (
+                    "Selection relevance: "
+                    +
+                    str(
+                        round(
+                            score,
+                            1,
+                        )
+                    )
+                ),
+
+                (
+                    "User note: "
+                    +
+                    (
+                        clean_text(
+                            item.user_note,
+                            500,
+                        )
+                        or
+                        "none"
+                    )
+                ),
+
+                "",
+            ]
+        )
+
+        if (
+            item.role
+            ==
+            "product_reference"
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "PRODUCT RULE: preserve this product's identity, "
+                        "silhouette, proportions, materials and major layout."
+                    ),
+                    "",
+                ]
+            )
+
+        elif (
+            item.role
+            ==
+            "camera_reference"
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "CAMERA RULE: learn camera height, lens behavior "
+                        "and perspective. Do not copy unrelated objects."
+                    ),
+                    "",
+                ]
+            )
+
+        elif (
+            item.role
+            ==
+            "color_reference"
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "COLOR RULE: learn palette hierarchy and color usage. "
+                        "Do not copy the scene."
+                    ),
+                    "",
+                ]
+            )
+
+        elif (
+            item.role
+            ==
+            "lighting_reference"
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "LIGHTING RULE: learn light quality, contrast, "
+                        "shadow behavior and reflections."
+                    ),
+                    "",
+                ]
+            )
+
+        elif (
+            item.role
+            ==
+            "composition_reference"
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "COMPOSITION RULE: learn hierarchy, negative space "
+                        "and balance without reproducing the exact scene."
+                    ),
+                    "",
+                ]
+            )
+
+        elif (
+            item.role
+            in {
+                "style_reference",
+                "campaign_reference",
+                "mixed_reference",
+            }
+        ):
+
+            lines.extend(
+                [
+                    (
+                        "STYLE RULE: learn commercial finish, brand tone, "
+                        "material language, restraint and photographic quality."
+                    ),
+                    "",
+                ]
+            )
+
+    lines.extend(
+        [
+            "GLOBAL REFERENCE RULES",
+            "----------------------",
+            "",
+            "- Never copy advertising copy from a reference.",
+            "- Never reproduce financial numbers.",
+            "- Never hallucinate a fake official logo.",
+            "- Never treat one old post as a universal brand law.",
+            "- Prefer repeated Brand Visual Profile patterns.",
+            "- Preserve the NEW requested idea.",
+            "- Reference images guide execution, not creative duplication.",
+        ]
+    )
+
+    return "\n".join(
+        lines
+    ).strip()
+
+
+# =========================================================
+# ENRICH BRAND CONTEXT
+# =========================================================
+
+def build_enriched_brand_context(
+    *,
+    brand_context: Any,
+    brand_visual_profile: Dict[str, Any],
+    references: Sequence[
+        ProductionReference
+    ],
+) -> Dict[str, Any]:
+
+    selected_summary = []
+
+    for item in references:
+
+        selected_summary.append(
+            {
+                "id":
+                    item.source_id,
+
+                "role":
+                    item.role,
+
+                "content_family":
+                    item.content_family,
+
+                "selection_score":
+                    reference_selection_score(
+                        item
+                    ),
+
+                "official":
+                    bool(
+                        safe_dict(
+                            item.source_metadata
+                        ).get(
+                            "official",
+                            False,
+                        )
+                    ),
+            }
+        )
+
+    return {
+        "base_brand_context":
+            brand_context,
+
+        "brand_visual_profile":
+            brand_visual_profile,
+
+        "smart_reference_selection":
+            selected_summary,
+
+        "reference_policy":
+            {
+                "visual_dna_limit":
+                    SMART_REFERENCE_SELECTION_LIMIT,
+
+                "physical_image_limit":
+                    MAX_PHYSICAL_REFERENCE_IMAGES,
+
+                "request_aware":
+                    True,
+
+                "official_source_priority":
+                    True,
+
+                "freshness_priority":
+                    True,
+
+                "do_not_clone_campaign":
+                    True,
+            },
+    }
+
+
+# =========================================================
+# NEGATIVE PROMPT
 # =========================================================
 
 def base_negative_prompt() -> str:
+
     return (
         "malformed anatomy, extra fingers, warped product, "
         "wrong perspective, fake reflections, duplicated objects, "
         "generic stock photography, floating decorative objects, "
         "random text, fake logos, misspelled typography, "
         "cheap CGI, plastic skin, wet-floor reflections, "
-        "generic banking clichés"
+        "generic banking clichés, generic travel clichés, "
+        "floating cards, floating SIM cards, globes, "
+        "connection lines, random neon fintech graphics"
     )
 
+
+# =========================================================
+# QUALITY-FIRST MASTER BLUEPRINT
+# =========================================================
 
 def build_quality_first_blueprint(
     *,
@@ -1786,141 +3158,282 @@ def build_quality_first_blueprint(
     product_lock: Any,
     aspect_ratio: str,
 ) -> str:
+
     return f"""
-XPAND QUALITY-FIRST MASTERPIECE BLUEPRINT
-========================================
+XPAND QUALITY-FIRST MASTERPIECE BLUEPRINT V3.1
+==============================================
 
 ORIGINAL USER REQUEST
 ---------------------
+
 {clean_text(request, 5000)}
 
 
 APPROVED CREATIVE DIRECTION
 ---------------------------
-{compact_json(creative_direction, 5500)}
+
+{compact_json(
+    creative_direction,
+    5000
+)}
 
 
-BRAND EXECUTION DNA
--------------------
-{compact_json(brand_context, 4500)}
+BRAND EXECUTION CONTEXT
+-----------------------
+
+{compact_json(
+    brand_context,
+    5000
+)}
 
 
-VISUAL REFERENCE DNA
---------------------
-{compact_json(references, 3500)}
+SMART VISUAL REFERENCE DNA
+--------------------------
+
+{compact_json(
+    references,
+    4800
+)}
 
 
 CAMERA DIRECTION
 ----------------
-{compact_json(camera_direction, 1800)}
+
+{compact_json(
+    camera_direction,
+    1800
+)}
 
 
 PRODUCT LOCK
 ------------
-{compact_json(product_lock, 2200)}
+
+{compact_json(
+    product_lock,
+    2200
+)}
 
 
 {safe_frame_instruction(aspect_ratio)}
 
 
+REFERENCE INTELLIGENCE RULE
+===========================
+
+Visual references were selected according to the current
+campaign request.
+
+Do NOT average all references blindly.
+
+Each reference has a role.
+
+Examples:
+
+product_reference
+→ preserve product identity.
+
+camera_reference
+→ learn camera and perspective.
+
+color_reference
+→ learn palette hierarchy.
+
+lighting_reference
+→ learn lighting behavior.
+
+composition_reference
+→ learn hierarchy / balance / negative space.
+
+style_reference
+→ learn overall commercial finish.
+
+campaign_reference
+→ learn the brand's campaign language without copying the
+  original campaign idea.
+
+The aggregated Brand Visual Profile is stronger evidence than
+a single isolated post when patterns repeat across several
+official references.
+
+
 ONE-PASS MASTERPIECE OBJECTIVE
 ==============================
 
-Create the strongest possible finished advertising hero image
-in ONE high-quality production generation.
+Create the strongest possible FINISHED advertising hero image
+during the FIRST high-quality image generation.
 
-Do NOT treat this as a rough concept sketch.
+Do NOT create a rough concept sketch.
 
-The first generated image should already integrate:
+Solve these before generation:
 
 1. CONCEPT
-   - execute the approved visual metaphor clearly
-   - make the message understandable visually
-   - avoid generic interpretation
-   - reject banking / travel / technology clichés
+
+Execute the approved visual metaphor clearly.
+
+The core advertising idea must be visually understandable.
+
+Do not replace the requested idea with generic beauty.
+
+Avoid clichés.
+
 
 2. COMPOSITION
-   - world-class campaign framing
-   - strong visual hierarchy
-   - purposeful foreground / midground / background
-   - clean negative space
-   - no random decoration
-   - no unnecessary clutter
+
+Create world-class advertising framing.
+
+Use:
+
+- intentional visual hierarchy
+- controlled negative space
+- strong foreground/midground/background
+- clean eye flow
+- campaign-ready copy area
+- no random decorative clutter
+
 
 3. CAMERA
-   - physically believable real-lens behavior
-   - correct horizon and vanishing points
-   - intentional focal length
-   - natural depth
-   - premium advertising perspective
+
+Use:
+
+- physically believable real-lens behavior
+- intentional focal length
+- correct horizon
+- correct vanishing points
+- realistic perspective
+- believable depth
+- premium commercial camera position
+
+Camera must support the marketing idea.
+
 
 4. LIGHTING
-   - motivated cinematic commercial light
-   - natural fill
-   - controlled highlights
-   - correct contact shadows
-   - realistic exposure
-   - premium contrast
-   - no fake neon unless conceptually necessary
+
+Use:
+
+- motivated commercial lighting
+- soft realistic fill
+- premium contrast
+- correct contact shadows
+- controlled highlights
+- realistic environmental light
+- physically convincing reflections
+
+Avoid:
+
+- fake neon unless conceptually justified
+- wet-floor reflections
+- mirror-like surfaces unless physically correct
+
 
 5. MATERIALS
-   - physically convincing glass
-   - real metal
-   - believable stone
-   - realistic fabric
-   - realistic skin
-   - correct surface roughness
-   - controlled reflections
-   - no wet-floor appearance unless explicitly requested
+
+Render believable:
+
+- glass
+- brushed metal
+- stone
+- fabric
+- leather
+- skin
+- architectural surfaces
+- product materials
+
+Surface roughness must feel physically correct.
+
 
 6. BRAND
-   - visually recognizable brand world
-   - correct visual tone
-   - correct color hierarchy
-   - use brand accent colors intentionally
-   - do not turn brand colors into random decoration
+
+The final image must feel native to the brand.
+
+Use the Brand Visual Profile and selected references for:
+
+- palette hierarchy
+- purple/mint/neutral balance when relevant
+- visual restraint
+- premium finish
+- architectural language
+- lighting language
+- human direction
+- composition behavior
+
+Brand color is not random decoration.
+
 
 7. PRODUCT
-   If Product Lock is enabled:
-   - preserve identity
-   - preserve silhouette
-   - preserve proportions
-   - preserve major geometry
-   - preserve major graphic placement
-   - preserve color relationships
-   - do not redesign it
+
+If Product Lock is active:
+
+- preserve silhouette
+- preserve proportions
+- preserve geometry
+- preserve thickness
+- preserve major details
+- preserve major graphic placement
+- preserve material/color relationships
+
+Environment may change.
+
+Lighting may adapt.
+
+Product identity may NOT casually change.
+
 
 8. PEOPLE
-   - natural behavior
-   - correct anatomy
-   - believable hands
-   - authentic styling
-   - never generic posed stock-photo behavior
+
+If people are present:
+
+- natural authentic behavior
+- correct anatomy
+- believable hands
+- culturally appropriate styling
+- realistic fabric
+- non-stock-photo posing
+- no artificial smile-to-camera behavior unless requested
+
 
 9. ADVERTISING READINESS
-   - premium global campaign finish
-   - cinematic photorealism
-   - real commercial photography feeling
-   - immediately usable as a hero visual
-   - intentional copy space where required
 
-10. FINAL QUALITY
-   Solve composition, lighting, materials and polish NOW.
-   Do not depend on later passes to rescue weak fundamentals.
+The result should feel like:
+
+premium global campaign
+commercial photography
+cinematic photorealism
+high-end art direction
+real production design
+agency-grade hero visual
+
+
+10. ANTI-CLONE RULE
+
+Do not reproduce an existing reference campaign literally.
+
+Learn:
+
+- color logic
+- camera logic
+- composition logic
+- material logic
+- lighting logic
+- visual restraint
+
+Then create a NEW execution for the NEW user request.
 
 
 NON-NEGOTIABLE
 ==============
 
-The concept matters more than decorative beauty.
+A beautiful image that fails the requested marketing idea is
+not successful.
 
-A beautiful image that fails the requested idea is a failure.
+A generic AI image with brand colors is not successful.
 
-The image must feel designed by a top international
-creative director, photographer and production team,
-not like generic AI art.
+The result must feel intentionally art-directed.
 """.strip()
 
+
+# =========================================================
+# PROMPT COMPILER
+# =========================================================
 
 def compile_prompt(
     target: str,
@@ -1933,6 +3446,7 @@ def compile_prompt(
     product_lock: Any = None,
     aspect_ratio: str = "4:5",
 ) -> CompiledPrompt:
+
     target = clean_text(
         target,
         100,
@@ -1961,26 +3475,45 @@ def compile_prompt(
                 product_lock
                 or {}
             ),
-            aspect_ratio=aspect_ratio,
+            aspect_ratio=(
+                aspect_ratio
+            ),
         )
     )
 
-    blueprint = fit_prompt_for_api(
-        blueprint,
-        label="quality_first_blueprint",
-        budget=COMPILED_PROMPT_BUDGET,
+    blueprint = (
+        fit_prompt_for_api(
+            blueprint,
+            label=(
+                "quality_first_blueprint_v3_1"
+            ),
+            budget=(
+                COMPILED_PROMPT_BUDGET
+            ),
+        )
     )
 
     return CompiledPrompt(
-        target=target,
-        prompt=blueprint,
-        negative_prompt=base_negative_prompt(),
+        target=(
+            target
+        ),
+
+        prompt=(
+            blueprint
+        ),
+
+        negative_prompt=(
+            base_negative_prompt()
+        ),
+
         metadata={
             "compiler":
-                "xpand_quality_first_v3",
+                "xpand_quality_first_v3_1",
 
             "prompt_chars":
-                len(blueprint),
+                len(
+                    blueprint
+                ),
 
             "prompt_budget":
                 COMPILED_PROMPT_BUDGET,
@@ -1990,12 +3523,18 @@ def compile_prompt(
 
             "adaptive":
                 True,
+
+            "smart_reference_routing":
+                True,
+
+            "brand_visual_profile":
+                True,
         },
     )
 
 
 # =========================================================
-# OPENAI IMAGE EDIT
+# OPENAI MULTI-REFERENCE IMAGE EDIT / GENERATION
 # =========================================================
 
 def openai_multi_reference_edit(
@@ -2010,7 +3549,9 @@ def openai_multi_reference_edit(
     aspect_ratio: str,
     pass_name: str,
 ) -> GeneratedImage:
+
     if not OPENAI_API_KEY:
+
         raise RuntimeError(
             "OPENAI_API_KEY missing."
         )
@@ -2027,21 +3568,26 @@ def openai_multi_reference_edit(
     ] = []
 
     if working_image is not None:
-        extension = extension_for_mime(
-            working_image.mime_type
+
+        extension = (
+            extension_for_mime(
+                working_image.mime_type
+            )
         )
 
         files.append(
             (
                 "image[]",
                 (
-                    "working-image"
-                    + extension,
-
+                    (
+                        "working-image"
+                        +
+                        extension
+                    ),
                     working_image.image_bytes,
-
                     working_image.mime_type
-                    or "image/png",
+                    or
+                    "image/png",
                 ),
             )
         )
@@ -2050,32 +3596,45 @@ def openai_multi_reference_edit(
         references,
         start=1,
     ):
-        extension = extension_for_mime(
-            reference.mime_type
+
+        extension = (
+            extension_for_mime(
+                reference.mime_type
+            )
         )
 
         files.append(
             (
                 "image[]",
                 (
-                    "reference-"
-                    + str(index)
-                    + extension,
-
+                    (
+                        "reference-"
+                        +
+                        str(
+                            index
+                        )
+                        +
+                        extension
+                    ),
                     reference.image_bytes,
-
                     reference.mime_type,
                 ),
             )
         )
 
     if not files:
+
         raise RuntimeError(
-            "Image edit requested without an image input."
+            "Image edit requested without image input."
         )
 
-    if len(files) == 1:
-        _, file_value = files[0]
+    if len(
+        files
+    ) == 1:
+
+        _name, file_value = (
+            files[0]
+        )
 
         files = [
             (
@@ -2084,16 +3643,42 @@ def openai_multi_reference_edit(
             )
         ]
 
-    safe_prompt = fit_prompt_for_api(
-        (
-            prompt
-            + "\n\n"
-            + safe_frame_instruction(
-                aspect_ratio
-            )
-        ),
-        label=pass_name,
-        budget=CORRECTION_PROMPT_BUDGET,
+    reference_rules = (
+        physical_reference_instruction(
+            references
+        )
+    )
+
+    safe_prompt = (
+        fit_prompt_for_api(
+            (
+                prompt
+                +
+                (
+                    "\n\n"
+                    +
+                    reference_rules
+                    if reference_rules
+                    else ""
+                )
+                +
+                "\n\n"
+                +
+                safe_frame_instruction(
+                    aspect_ratio
+                )
+            ),
+            label=(
+                pass_name
+            ),
+            budget=(
+                CORRECTION_PROMPT_BUDGET
+                if working_image
+                is not None
+                else
+                COMPILED_PROMPT_BUDGET
+            ),
+        )
     )
 
     provider_size = (
@@ -2106,8 +3691,11 @@ def openai_multi_reference_edit(
         OPENAI_IMAGE_EDITS_URL,
         headers={
             "Authorization":
-                "Bearer "
-                + OPENAI_API_KEY,
+                (
+                    "Bearer "
+                    +
+                    OPENAI_API_KEY
+                ),
         },
         data={
             "model":
@@ -2126,59 +3714,86 @@ def openai_multi_reference_edit(
                 "1",
         },
         files=files,
-        timeout=REQUEST_TIMEOUT,
+        timeout=(
+            REQUEST_TIMEOUT
+        ),
     )
 
     try:
+
         response_data = (
             response.json()
         )
+
     except Exception:
+
         response_data = {
             "raw":
                 response.text
         }
 
     if not response.ok:
-        error = response_data.get(
-            "error"
+
+        error = (
+            response_data.get(
+                "error"
+            )
         )
 
         if isinstance(
             error,
             dict,
         ):
+
             message = (
-                error.get("message")
-                or str(error)
+                error.get(
+                    "message"
+                )
+                or
+                str(
+                    error
+                )
             )
+
         else:
+
             message = (
                 error
-                or response_data.get("raw")
-                or (
+                or
+                response_data.get(
+                    "raw"
+                )
+                or
+                (
                     "HTTP "
-                    + str(
+                    +
+                    str(
                         response.status_code
                     )
                 )
             )
 
         raise RuntimeError(
-            "GPT-Image-2 edit failed: "
-            + clean_text(
-                message,
-                3000,
+            (
+                "GPT-Image-2 reference generation/edit failed: "
+                +
+                clean_text(
+                    message,
+                    3000,
+                )
             )
         )
 
-    images = find_images_in_response(
-        response_data
+    images = (
+        find_images_in_response(
+            response_data
+        )
     )
 
     if not images:
+
         raise RuntimeError(
-            "GPT-Image-2 edit returned no image."
+            "GPT-Image-2 returned no image."
         )
 
     image_bytes, mime_type = (
@@ -2186,22 +3801,50 @@ def openai_multi_reference_edit(
     )
 
     result = GeneratedImage(
-        image_bytes=image_bytes,
+        image_bytes=(
+            image_bytes
+        ),
+
         mime_type=(
             mime_type
-            or "image/png"
+            or
+            "image/png"
         ),
-        provider="xpand_production",
-        model=OPENAI_IMAGE_MODEL,
-        prompt=safe_prompt,
-        original_prompt=safe_prompt,
-        aspect_ratio=aspect_ratio,
-        image_size=provider_size,
-        quality="high",
+
+        provider=(
+            "xpand_production"
+        ),
+
+        model=(
+            OPENAI_IMAGE_MODEL
+        ),
+
+        prompt=(
+            safe_prompt
+        ),
+
+        original_prompt=(
+            safe_prompt
+        ),
+
+        aspect_ratio=(
+            aspect_ratio
+        ),
+
+        image_size=(
+            provider_size
+        ),
+
+        quality=(
+            "high"
+        ),
+
         route_reason=(
-            "XPAND Quality-First Adaptive: "
-            + pass_name
+            "XPAND V3.1 Smart Visual Reference: "
+            +
+            pass_name
         ),
+
         request_id=(
             clean_text(
                 response.headers.get(
@@ -2211,9 +3854,13 @@ def openai_multi_reference_edit(
                 300,
             )
             or
-            "prod-"
-            + uuid.uuid4().hex[:12]
+            (
+                "prod-"
+                +
+                uuid.uuid4().hex[:12]
+            )
         ),
+
         metadata={
             "production_engine":
                 ENGINE_VERSION,
@@ -2222,13 +3869,20 @@ def openai_multi_reference_edit(
                 pass_name,
 
             "prompt_chars":
-                len(safe_prompt),
+                len(
+                    safe_prompt
+                ),
 
             "requested_delivery_ratio":
                 aspect_ratio,
 
             "quality":
                 "high",
+
+            "physical_reference_count":
+                len(
+                    references
+                ),
         },
     )
 
@@ -2241,7 +3895,7 @@ def openai_multi_reference_edit(
 
 
 # =========================================================
-# INITIAL HIGH-QUALITY GENERATION
+# HIGH-QUALITY FIRST GENERATION
 # =========================================================
 
 def generate_high_quality_image(
@@ -2250,54 +3904,114 @@ def generate_high_quality_image(
     product_refs: Sequence[
         ProductionReference
     ],
+    visual_refs: Sequence[
+        ProductionReference
+    ] = (),
     aspect_ratio: str,
     original_request: str,
     pass_name: str = "quality_first_generation",
 ) -> GeneratedImage:
+
+    physical_refs = list(
+        visual_refs
+    )
+
     #
-    # With Product Reference:
+    # Product references are always authoritative.
     #
-    # use image edit/generation so product identity is
-    # physically supplied to the image model.
+    # Ensure they are present in physical refs.
     #
-    if product_refs:
+
+    existing_ids = {
+        item.source_id
+        for item in physical_refs
+        if item.source_id
+    }
+
+    for product_ref in (
+        product_refs
+    ):
+
+        if (
+            product_ref.source_id
+            and
+            product_ref.source_id
+            in existing_ids
+        ):
+
+            continue
+
+        physical_refs.insert(
+            0,
+            product_ref,
+        )
+
+        if product_ref.source_id:
+
+            existing_ids.add(
+                product_ref.source_id
+            )
+
+    physical_refs = (
+        physical_refs[
+            :MAX_PHYSICAL_REFERENCE_IMAGES
+        ]
+    )
+
+    if physical_refs:
+
         prompt = (
             compiled.prompt
-            + "\n\n"
-            + """
-PRODUCT-REFERENCE EXECUTION
-===========================
+            +
+            "\n\n"
+            +
+            """
+PHYSICAL REFERENCE EXECUTION
+============================
 
-The attached reference image(s) are authoritative product
-identity references.
+Actual visual reference images are attached.
 
-Create the full new campaign scene around them.
+Use them according to their assigned reference roles.
 
-Do not merely copy the reference background.
+Do not clone the old advertisement.
 
-Do not redesign the locked product.
+Do not copy old text.
+
+Do not copy an old headline.
+
+Do not reproduce old financial information.
+
+Create a completely new campaign execution for the current
+user request while preserving the relevant brand visual DNA.
 """.strip()
         )
 
-        return openai_multi_reference_edit(
-            working_image=None,
-            references=product_refs,
-            prompt=prompt,
-            aspect_ratio=aspect_ratio,
-            pass_name=pass_name,
+        return (
+            openai_multi_reference_edit(
+                working_image=None,
+                references=physical_refs,
+                prompt=prompt,
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                pass_name=(
+                    pass_name
+                ),
+            )
         )
 
     #
-    # No product reference:
+    # No actual visual reference images are available.
     #
-    # direct HIGH quality generation.
+    # Use direct HIGH-quality generation.
     #
+
     route = build_route(
         PROVIDER_OPENAI,
         OPENAI_IMAGE_MODEL,
         (
-            "XPAND Quality-First V3 "
-            "high-quality final-candidate generation"
+            "XPAND V3.1 Quality-First "
+            "high-quality generation"
         ),
         aspect_ratio,
         "4K",
@@ -2305,21 +4019,33 @@ Do not redesign the locked product.
     )
 
     images = generate_with_openai(
-        prompt=compiled.prompt,
-        original_prompt=clean_text(
-            original_request,
-            6000,
+        prompt=(
+            compiled.prompt
         ),
-        route=route,
+
+        original_prompt=(
+            clean_text(
+                original_request,
+                6000,
+            )
+        ),
+
+        route=(
+            route
+        ),
+
         number=1,
     )
 
     if not images:
+
         raise RuntimeError(
             "Quality-First generation returned no image."
         )
 
-    result = images[0]
+    result = (
+        images[0]
+    )
 
     result.provider = (
         "xpand_production"
@@ -2329,12 +4055,15 @@ Do not redesign the locked product.
         aspect_ratio
     )
 
-    result.quality = "high"
+    result.quality = (
+        "high"
+    )
 
     if not isinstance(
         result.metadata,
         dict,
     ):
+
         result.metadata = {}
 
     result.metadata.update(
@@ -2358,6 +4087,9 @@ Do not redesign the locked product.
                 len(
                     compiled.prompt
                 ),
+
+            "physical_reference_count":
+                0,
         }
     )
 
@@ -2370,7 +4102,7 @@ Do not redesign the locked product.
 
 
 # =========================================================
-# QA
+# QA SCORING
 # =========================================================
 
 def calculate_qa_score(
@@ -2379,24 +4111,37 @@ def calculate_qa_score(
     float,
     Dict[str, float],
 ]:
+
     normalized = {}
+
     total = 0.0
 
-    for key, weight in QA_WEIGHTS.items():
-        value = clamp_score(
-            scores.get(
-                key,
-                0,
+    for key, weight in (
+        QA_WEIGHTS.items()
+    ):
+
+        value = (
+            clamp_score(
+                scores.get(
+                    key,
+                    0,
+                )
             )
         )
 
-        normalized[key] = value
+        normalized[
+            key
+        ] = value
 
         total += (
             value
-            * (
-                float(weight)
-                / 100.0
+            *
+            (
+                float(
+                    weight
+                )
+                /
+                100.0
             )
         )
 
@@ -2415,11 +4160,15 @@ def detect_critical_blockers(
     explicit_failures: Any,
     product_lock: Any,
 ) -> List[str]:
-    blockers: List[str] = []
+
+    blockers: List[
+        str
+    ] = []
 
     for value in safe_list(
         explicit_failures
     ):
+
         text = clean_text(
             value,
             1000,
@@ -2427,9 +4176,14 @@ def detect_critical_blockers(
 
         if (
             text
-            and text not in blockers
+            and
+            text
+            not in blockers
         ):
-            blockers.append(text)
+
+            blockers.append(
+                text
+            )
 
     thresholds = {
         "concept_execution":
@@ -2450,11 +4204,15 @@ def detect_critical_blockers(
     ).get(
         "enabled"
     ):
+
         thresholds[
             "product_fidelity"
         ] = 70.0
 
-    for key, threshold in thresholds.items():
+    for key, threshold in (
+        thresholds.items()
+    ):
+
         value = clamp_score(
             scores.get(
                 key,
@@ -2463,24 +4221,38 @@ def detect_critical_blockers(
         )
 
         if value < threshold:
+
             label = (
                 key
-                + "="
-                + str(
+                +
+                "="
+                +
+                str(
                     round(
                         value,
                         1,
                     )
                 )
-                + " < "
-                + str(threshold)
+                +
+                " < "
+                +
+                str(
+                    threshold
+                )
             )
 
             if label not in blockers:
-                blockers.append(label)
+
+                blockers.append(
+                    label
+                )
 
     return blockers
 
+
+# =========================================================
+# QA PROMPT
+# =========================================================
 
 def build_qa_prompt(
     *,
@@ -2490,6 +4262,7 @@ def build_qa_prompt(
     brand_context: Any,
     aspect_ratio: str,
 ) -> str:
+
     prompt = f"""
 You are XPAND Adaptive Visual QA.
 
@@ -2498,27 +4271,46 @@ Evaluate the attached EXACT FINAL CAMPAIGN CROP.
 Be strict but practical.
 
 Do not reject a professionally usable image because of tiny
-subjective preferences.
+subjective differences.
 
 ORIGINAL REQUEST
 ----------------
+
 {clean_text(original_request, 4000)}
+
 
 APPROVED PRODUCTION BLUEPRINT
 -----------------------------
-{clean_text(compiled_prompt.prompt, 5000)}
+
+{clean_text(
+    compiled_prompt.prompt,
+    5000
+)}
+
 
 PRODUCT LOCK
 ------------
-{compact_json(product_lock, 1800)}
 
-BRAND
------
-{compact_json(brand_context, 2500)}
+{compact_json(
+    product_lock,
+    1800
+)}
+
+
+BRAND + VISUAL PROFILE
+----------------------
+
+{compact_json(
+    brand_context,
+    3000
+)}
+
 
 FINAL RATIO
 -----------
+
 {aspect_ratio}
+
 
 Score 0-100:
 
@@ -2535,16 +4327,21 @@ Score 0-100:
 - text_logo_integrity
 - advertising_readiness
 
-Critical failure means a genuine delivery problem:
-- core concept missing
-- major requested metaphor absent
+
+CRITICAL FAILURE
+================
+
+Critical means a genuine campaign-delivery problem:
+
+- core requested concept absent
+- visual metaphor fundamentally missing
 - severe anatomy
-- severe perspective failure
+- severe perspective
 - major product deformation
 - major brand mismatch
 - unusable composition
 
-Do NOT classify a minor preference as critical.
+Do NOT classify a minor taste preference as critical.
 
 Return JSON only:
 
@@ -2563,19 +4360,33 @@ Return JSON only:
     "text_logo_integrity": 0,
     "advertising_readiness": 0
   }},
+
   "strengths": [],
+
   "problems": [],
+
   "critical_failures": [],
+
   "correction_instruction": ""
 }}
 """.strip()
 
-    return fit_prompt_for_api(
-        prompt,
-        label="adaptive_visual_qa",
-        budget=QA_PROMPT_BUDGET,
+    return (
+        fit_prompt_for_api(
+            prompt,
+            label=(
+                "adaptive_visual_qa_v3_1"
+            ),
+            budget=(
+                QA_PROMPT_BUDGET
+            ),
+        )
     )
 
+
+# =========================================================
+# VISION QA
+# =========================================================
 
 def evaluate_generated_image(
     *,
@@ -2589,22 +4400,22 @@ def evaluate_generated_image(
         Dict[str, Any]
     ] = None,
 ) -> QAEvaluation:
+
     requested_ratio = clean_text(
         (
             aspect_ratio
-            or getattr(
+            or
+            getattr(
                 image,
                 "aspect_ratio",
                 "",
             )
-            or "1:1"
+            or
+            "1:1"
         ),
         30,
     )
 
-    #
-    # Post-Exact Asset QA can pass an already exact image.
-    #
     if safe_dict(
         getattr(
             image,
@@ -2614,8 +4425,13 @@ def evaluate_generated_image(
     ).get(
         "exact_delivery_frame"
     ):
-        qa_frame = image
+
+        qa_frame = (
+            image
+        )
+
     else:
+
         qa_frame = (
             create_exact_delivery_frame(
                 image,
@@ -2625,15 +4441,28 @@ def evaluate_generated_image(
             )
         )
 
-    prompt = build_qa_prompt(
-        original_request=original_request,
-        compiled_prompt=compiled_prompt,
-        product_lock=product_lock,
-        brand_context=brand_context,
-        aspect_ratio=requested_ratio,
+    prompt = (
+        build_qa_prompt(
+            original_request=(
+                original_request
+            ),
+            compiled_prompt=(
+                compiled_prompt
+            ),
+            product_lock=(
+                product_lock
+            ),
+            brand_context=(
+                brand_context
+            ),
+            aspect_ratio=(
+                requested_ratio
+            ),
+        )
     )
 
     if telemetry is not None:
+
         telemetry[
             "vision_calls"
         ] = (
@@ -2643,21 +4472,29 @@ def evaluate_generated_image(
                     0,
                 )
             )
-            + 1
+            +
+            1
         )
 
     raw = call_openai_director(
         prompt,
-        image_bytes=qa_frame.image_bytes,
-        image_mime_type=qa_frame.mime_type,
+        image_bytes=(
+            qa_frame.image_bytes
+        ),
+        image_mime_type=(
+            qa_frame.mime_type
+        ),
         json_mode=True,
     )
 
-    data = extract_json_object(
-        raw
+    data = (
+        extract_json_object(
+            raw
+        )
     )
 
     if not data:
+
         raise RuntimeError(
             "Adaptive Vision QA returned invalid JSON."
         )
@@ -2668,54 +4505,88 @@ def evaluate_generated_image(
         )
     )
 
-    score, scores = calculate_qa_score(
-        raw_scores
+    score, scores = (
+        calculate_qa_score(
+            raw_scores
+        )
     )
 
     critical_blockers = (
         detect_critical_blockers(
-            scores=scores,
-            explicit_failures=data.get(
-                "critical_failures"
+            scores=(
+                scores
             ),
-            product_lock=product_lock,
+            explicit_failures=(
+                data.get(
+                    "critical_failures"
+                )
+            ),
+            product_lock=(
+                product_lock
+            ),
         )
     )
 
     target_reached = (
         score
-        >= QA_TARGET_SCORE
-        and not critical_blockers
+        >=
+        QA_TARGET_SCORE
+        and
+        not critical_blockers
     )
 
     delivery_approved = (
         score
-        >= QA_DELIVERY_FLOOR
-        and not critical_blockers
+        >=
+        QA_DELIVERY_FLOOR
+        and
+        not critical_blockers
     )
 
     if target_reached:
-        decision = "target_reached"
+
+        decision = (
+            "target_reached"
+        )
 
     elif delivery_approved:
-        decision = "near_target"
+
+        decision = (
+            "near_target"
+        )
 
     elif critical_blockers:
-        decision = "critical_issues"
+
+        decision = (
+            "critical_issues"
+        )
 
     else:
-        decision = "improvement_recommended"
+
+        decision = (
+            "improvement_recommended"
+        )
 
     return QAEvaluation(
-        score=score,
-        scores=scores,
-        passed=delivery_approved,
+        score=(
+            score
+        ),
+
+        scores=(
+            scores
+        ),
+
+        passed=(
+            delivery_approved
+        ),
+
         strengths=[
             clean_text(
                 item,
                 1000,
             )
-            for item in safe_list(
+            for item
+            in safe_list(
                 data.get(
                     "strengths"
                 )
@@ -2725,12 +4596,14 @@ def evaluate_generated_image(
                 1000,
             )
         ],
+
         problems=[
             clean_text(
                 item,
                 1200,
             )
-            for item in safe_list(
+            for item
+            in safe_list(
                 data.get(
                     "problems"
                 )
@@ -2740,23 +4613,41 @@ def evaluate_generated_image(
                 1200,
             )
         ],
-        correction_instruction=clean_text(
-            data.get(
-                "correction_instruction",
-                "",
-            ),
-            4500,
+
+        correction_instruction=(
+            clean_text(
+                data.get(
+                    "correction_instruction",
+                    "",
+                ),
+                4500,
+            )
         ),
-        critical_blockers=critical_blockers,
-        target_reached=target_reached,
-        delivery_approved=delivery_approved,
-        decision=decision,
-        raw=data,
+
+        critical_blockers=(
+            critical_blockers
+        ),
+
+        target_reached=(
+            target_reached
+        ),
+
+        delivery_approved=(
+            delivery_approved
+        ),
+
+        decision=(
+            decision
+        ),
+
+        raw=(
+            data
+        ),
     )
 
 
 # =========================================================
-# BEST VERSION RANKING
+# BEST VERSION
 # =========================================================
 
 def qa_quality_rank(
@@ -2769,7 +4660,9 @@ def qa_quality_rank(
     float,
     float,
 ]:
+
     if qa is None:
+
         return (
             -999,
             0,
@@ -2789,10 +4682,12 @@ def qa_quality_rank(
         else 0
     )
 
-    concept_score = clamp_score(
-        qa.scores.get(
-            "concept_execution",
-            0,
+    concept_score = (
+        clamp_score(
+            qa.scores.get(
+                "concept_execution",
+                0,
+            )
         )
     )
 
@@ -2800,7 +4695,9 @@ def qa_quality_rank(
         no_critical,
         approved,
         concept_score,
-        float(qa.score),
+        float(
+            qa.score
+        ),
     )
 
 
@@ -2812,6 +4709,7 @@ def qa_candidate_is_better(
         QAEvaluation
     ],
 ) -> bool:
+
     return (
         qa_quality_rank(
             candidate
@@ -2830,23 +4728,29 @@ def qa_candidate_is_better(
 def has_concept_failure(
     qa: QAEvaluation,
 ) -> bool:
-    concept_score = clamp_score(
-        qa.scores.get(
-            "concept_execution",
-            0,
+
+    concept_score = (
+        clamp_score(
+            qa.scores.get(
+                "concept_execution",
+                0,
+            )
         )
     )
 
     if (
         concept_score
-        < CONCEPT_RECOVERY_SCORE_FLOOR
+        <
+        CONCEPT_RECOVERY_SCORE_FLOOR
     ):
+
         return True
 
     combined = " ".join(
         (
             qa.critical_blockers
-            + qa.problems
+            +
+            qa.problems
         )
     ).lower()
 
@@ -2865,8 +4769,10 @@ def has_concept_failure(
     ]
 
     return any(
-        marker in combined
-        for marker in markers
+        marker
+        in combined
+        for marker
+        in markers
     )
 
 
@@ -2875,26 +4781,36 @@ def choose_adaptive_action(
         QAEvaluation
     ],
 ) -> str:
+
     if qa is None:
+
         return "none"
 
     if (
         qa.score
-        >= ADAPTIVE_CORRECTION_TRIGGER_SCORE
-        and not qa.critical_blockers
+        >=
+        ADAPTIVE_CORRECTION_TRIGGER_SCORE
+        and
+        not qa.critical_blockers
     ):
+
         return "none"
 
     if has_concept_failure(
         qa
     ):
-        return "concept_recovery"
 
-    return "targeted_correction"
+        return (
+            "concept_recovery"
+        )
+
+    return (
+        "targeted_correction"
+    )
 
 
 # =========================================================
-# SECOND IMAGE CALL PROMPTS
+# CORRECTION PROMPTS
 # =========================================================
 
 def build_targeted_correction_prompt(
@@ -2904,9 +4820,10 @@ def build_targeted_correction_prompt(
     product_lock: Any,
     aspect_ratio: str,
 ) -> str:
+
     prompt = f"""
-XPAND TARGETED QUALITY CORRECTION
-=================================
+XPAND TARGETED QUALITY CORRECTION V3.1
+======================================
 
 This is the ONLY automatic correction image pass.
 
@@ -2916,19 +4833,34 @@ CURRENT QA SCORE:
 {qa.score}/100
 
 PROBLEMS:
-{compact_json(qa.problems, 4500)}
+{compact_json(
+    qa.problems,
+    4200
+)}
 
 CRITICAL ISSUES:
-{compact_json(qa.critical_blockers, 3000)}
+{compact_json(
+    qa.critical_blockers,
+    2800
+)}
 
 QA DIRECTIVE:
-{clean_text(qa.correction_instruction, 4500)}
+{clean_text(
+    qa.correction_instruction,
+    4200
+)}
 
 PRODUCT LOCK:
-{compact_json(product_lock, 2200)}
+{compact_json(
+    product_lock,
+    2000
+)}
 
 CORE BLUEPRINT:
-{clean_text(compiled.prompt, 7000)}
+{clean_text(
+    compiled.prompt,
+    6500
+)}
 
 {safe_frame_instruction(aspect_ratio)}
 
@@ -2936,29 +4868,35 @@ RULES
 =====
 
 - Correct only real weaknesses.
-- Do not replace a strong concept.
-- Do not casually change camera angle.
+- Preserve successful concept.
 - Preserve successful composition.
+- Preserve successful camera.
 - Preserve successful lighting.
 - Preserve successful materials.
-- Preserve successful human identity and pose.
-- Preserve negative space.
 - Preserve product identity.
+- Preserve negative space.
 - Fix anatomy only if needed.
 - Fix perspective only if needed.
 - Fix brand color balance only if needed.
 - Fix material realism only if needed.
 - Fix clutter only if needed.
-- Do not introduce text or fake branding.
+- Do not introduce fake text.
+- Do not introduce fake financial information.
 
-This pass must be a controlled professional refinement,
-not a completely different random image.
+This is a controlled professional refinement,
+not a random new design.
 """.strip()
 
-    return fit_prompt_for_api(
-        prompt,
-        label="adaptive_targeted_correction",
-        budget=CORRECTION_PROMPT_BUDGET,
+    return (
+        fit_prompt_for_api(
+            prompt,
+            label=(
+                "adaptive_targeted_correction_v3_1"
+            ),
+            budget=(
+                CORRECTION_PROMPT_BUDGET
+            ),
+        )
     )
 
 
@@ -2968,52 +4906,72 @@ def build_concept_recovery_prompt(
     compiled: CompiledPrompt,
     aspect_ratio: str,
 ) -> str:
+
     prompt = f"""
-XPAND CONCEPT RECOVERY
-======================
+XPAND CONCEPT RECOVERY V3.1
+===========================
 
 The previous image may be visually attractive, but the core
 advertising concept was not executed strongly enough.
 
-DO NOT simply polish the old concept.
+DO NOT simply polish the failed concept.
 
-Rebuild the visual execution so the intended message becomes
-clear from the image itself.
+Rebuild the visual execution.
 
 FAILED CONCEPT SCORE:
 {qa.scores.get("concept_execution", 0)}/100
 
 PROBLEMS:
-{compact_json(qa.problems, 4500)}
+{compact_json(
+    qa.problems,
+    4200
+)}
 
 CRITICAL FAILURES:
-{compact_json(qa.critical_blockers, 3500)}
+{compact_json(
+    qa.critical_blockers,
+    3200
+)}
 
-VISION QA RECOVERY DIRECTIVE:
-{clean_text(qa.correction_instruction, 4500)}
+RECOVERY DIRECTIVE:
+{clean_text(
+    qa.correction_instruction,
+    4200
+)}
 
 ORIGINAL MASTER BLUEPRINT:
-{clean_text(compiled.prompt, 9000)}
+{clean_text(
+    compiled.prompt,
+    8500
+)}
 
 {safe_frame_instruction(aspect_ratio)}
 
 RECOVERY RULES
 ==============
 
-- preserve the original requested message
-- execute the approved metaphor clearly
-- avoid the visual mistake that caused the first version
-- do not fall back to a cliché
-- keep the brand world premium
-- solve composition, lighting and materials in this generation
+- preserve the user's real marketing message
+- preserve brand identity
+- preserve relevant reference DNA
+- change the failed visual mechanism if necessary
+- avoid clichés
+- solve composition in this generation
+- solve lighting in this generation
+- solve materials in this generation
 - respect final campaign crop
-- create a finished campaign-level visual
+- create a finished campaign hero visual
 """.strip()
 
-    return fit_prompt_for_api(
-        prompt,
-        label="concept_recovery",
-        budget=COMPILED_PROMPT_BUDGET,
+    return (
+        fit_prompt_for_api(
+            prompt,
+            label=(
+                "concept_recovery_v3_1"
+            ),
+            budget=(
+                COMPILED_PROMPT_BUDGET
+            ),
+        )
     )
 
 
@@ -3021,6 +4979,7 @@ def compiled_with_recovery(
     compiled: CompiledPrompt,
     recovery_prompt: str,
 ) -> CompiledPrompt:
+
     metadata = dict(
         compiled.metadata
     )
@@ -3030,15 +4989,26 @@ def compiled_with_recovery(
     ] = True
 
     return CompiledPrompt(
-        target=compiled.target,
-        prompt=recovery_prompt,
-        negative_prompt=compiled.negative_prompt,
-        metadata=metadata,
+        target=(
+            compiled.target
+        ),
+
+        prompt=(
+            recovery_prompt
+        ),
+
+        negative_prompt=(
+            compiled.negative_prompt
+        ),
+
+        metadata=(
+            metadata
+        ),
     )
 
 
 # =========================================================
-# LOGGING
+# QA LOGGING
 # =========================================================
 
 def print_qa(
@@ -3047,26 +5017,45 @@ def print_qa(
         QAEvaluation
     ],
 ) -> None:
+
     if qa is None:
+
         print(
             "⚠️ "
-            + label
-            + ": QA unavailable"
+            +
+            label
+            +
+            ": QA unavailable"
         )
+
         return
 
     print(
         "📊 "
-        + label
-        + ": "
-        + str(qa.score)
-        + "/100"
+        +
+        label
+        +
+        ": "
+        +
+        str(
+            qa.score
+        )
+        +
+        "/100"
     )
 
     print(
         "Concept:",
         qa.scores.get(
             "concept_execution",
+            0,
+        ),
+    )
+
+    print(
+        "Reference adherence:",
+        qa.scores.get(
+            "reference_adherence",
             0,
         ),
     )
@@ -3101,7 +5090,7 @@ def print_qa(
 
 
 # =========================================================
-# MAIN QUALITY-FIRST PIPELINE
+# MAIN PIPELINE
 # =========================================================
 
 def run_production(
@@ -3117,11 +5106,19 @@ def run_production(
     mode: str = MODE_MASTERPIECE,
     target_model: str = TARGET_OPENAI,
 ) -> ProductionResult:
-    started = time.monotonic()
 
-    errors: List[str] = []
+    started = (
+        time.monotonic()
+    )
 
-    telemetry: Dict[str, Any] = {
+    errors: List[
+        str
+    ] = []
+
+    telemetry: Dict[
+        str,
+        Any
+    ] = {
         "image_calls":
             0,
 
@@ -3136,60 +5133,152 @@ def run_production(
 
         "adaptive_action":
             "none",
+
+        "smart_reference_selection":
+            True,
+
+        "selected_reference_count":
+            0,
+
+        "physical_reference_count":
+            0,
     }
 
     # =====================================================
-    # REFERENCES
+    # SMART BRAND REFERENCES
     # =====================================================
 
-    references = load_runtime_references(
-        core,
-        user_id,
-        brand_id,
-        limit=10,
+    references = (
+        load_runtime_references(
+            core,
+            user_id,
+            brand_id,
+            request=(
+                original_request
+            ),
+            limit=(
+                SMART_REFERENCE_SELECTION_LIMIT
+            ),
+        )
     )
 
-    product_refs = product_references(
+    product_refs = (
+        product_references(
+            references
+        )
+    )
+
+    physical_refs = (
+        choose_physical_references(
+            references,
+            limit=(
+                MAX_PHYSICAL_REFERENCE_IMAGES
+            ),
+        )
+    )
+
+    telemetry[
+        "selected_reference_count"
+    ] = len(
         references
     )
 
-    reference_dna = reference_dna_payload(
-        references
+    telemetry[
+        "physical_reference_count"
+    ] = len(
+        physical_refs
     )
 
-    product_lock = combined_product_lock(
-        references
+    reference_dna = (
+        reference_dna_payload(
+            references
+        )
+    )
+
+    product_lock = (
+        combined_product_lock(
+            references
+        )
     )
 
     # =====================================================
-    # BLUEPRINT
+    # BRAND VISUAL PROFILE
+    # =====================================================
+
+    brand_visual_profile = (
+        load_brand_visual_profile_safe(
+            core,
+            user_id,
+            brand_id,
+        )
+    )
+
+    enriched_brand_context = (
+        build_enriched_brand_context(
+            brand_context=(
+                brand_context
+            ),
+            brand_visual_profile=(
+                brand_visual_profile
+            ),
+            references=(
+                references
+            ),
+        )
+    )
+
+    # =====================================================
+    # COMPILE
     # =====================================================
 
     compiled = compile_prompt(
         target_model,
-        request=original_request,
-        creative_direction=creative_direction,
-        brand_context=brand_context,
-        references=reference_dna,
-        camera_direction=camera_direction,
-        product_lock=product_lock,
-        aspect_ratio=aspect_ratio,
+        request=(
+            original_request
+        ),
+        creative_direction=(
+            creative_direction
+        ),
+        brand_context=(
+            enriched_brand_context
+        ),
+        references=(
+            reference_dna
+        ),
+        camera_direction=(
+            camera_direction
+        ),
+        product_lock=(
+            product_lock
+        ),
+        aspect_ratio=(
+            aspect_ratio
+        ),
     )
 
-    if compiled.target != TARGET_OPENAI:
+    if (
+        compiled.target
+        !=
+        TARGET_OPENAI
+    ):
+
         raise RuntimeError(
             "Production execution is currently OpenAI-only."
         )
+
+    # =====================================================
+    # LOG
+    # =====================================================
 
     print("")
     print(
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V3.0"
+        " XPAND PRODUCTION ENGINE V3.1"
     )
     print(
-        " QUALITY-FIRST ADAPTIVE MASTERPIECE"
+        " SMART VISUAL REFERENCE + QUALITY-FIRST"
     )
     print(
         "=============================================="
@@ -3203,6 +5292,11 @@ def run_production(
     print(
         "Model:",
         OPENAI_IMAGE_MODEL,
+    )
+
+    print(
+        "Brand:",
+        brand_id,
     )
 
     print(
@@ -3226,13 +5320,37 @@ def run_production(
     )
 
     print(
-        "References:",
-        len(references),
+        "Smart DNA references:",
+        len(
+            references
+        ),
+        "/",
+        SMART_REFERENCE_SELECTION_LIMIT,
+    )
+
+    print(
+        "Actual image references:",
+        len(
+            physical_refs
+        ),
+        "/",
+        MAX_PHYSICAL_REFERENCE_IMAGES,
     )
 
     print(
         "Product references:",
-        len(product_refs),
+        len(
+            product_refs
+        ),
+    )
+
+    print(
+        "Brand Visual Profile:",
+        (
+            "READY"
+            if brand_visual_profile
+            else "EMPTY"
+        ),
     )
 
     print(
@@ -3250,6 +5368,45 @@ def run_production(
         "HIGH",
     )
 
+    if references:
+
+        print("")
+        print(
+            "Smart reference selection:"
+        )
+
+        for index, reference in enumerate(
+            references,
+            start=1,
+        ):
+
+            print(
+                "  "
+                +
+                str(
+                    index
+                )
+                +
+                ". role="
+                +
+                reference.role
+                +
+                " | family="
+                +
+                reference.content_family
+                +
+                " | score="
+                +
+                str(
+                    round(
+                        reference_selection_score(
+                            reference
+                        ),
+                        1,
+                    )
+                )
+            )
+
     print("")
 
     # =====================================================
@@ -3258,18 +5415,50 @@ def run_production(
 
     print(
         "🎬 IMAGE CALL 1/"
-        + str(
+        +
+        str(
             MASTERPIECE_MAX_IMAGE_CALLS
         )
-        + " | Quality-First HIGH..."
+        +
+        " | GPT-Image-2 HIGH..."
     )
 
-    first_image = generate_high_quality_image(
-        compiled=compiled,
-        product_refs=product_refs,
-        aspect_ratio=aspect_ratio,
-        original_request=original_request,
-        pass_name="quality_first_high",
+    if physical_refs:
+
+        print(
+            "🧬 Actual visual references attached:",
+            len(
+                physical_refs
+            ),
+        )
+
+    else:
+
+        print(
+            "🧬 Actual visual references attached: 0"
+        )
+
+    first_image = (
+        generate_high_quality_image(
+            compiled=(
+                compiled
+            ),
+            product_refs=(
+                product_refs
+            ),
+            visual_refs=(
+                physical_refs
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            original_request=(
+                original_request
+            ),
+            pass_name=(
+                "quality_first_high"
+            ),
+        )
     )
 
     telemetry[
@@ -3280,8 +5469,14 @@ def run_production(
         ProductionPassResult
     ] = [
         ProductionPassResult(
-            pass_name="quality_first_high",
-            image=first_image,
+            pass_name=(
+                "quality_first_high"
+            ),
+
+            image=(
+                first_image
+            ),
+
             metadata={
                 "image_call":
                     1,
@@ -3291,19 +5486,26 @@ def run_production(
 
                 "adaptive":
                     True,
+
+                "smart_reference_routing":
+                    True,
+
+                "physical_reference_count":
+                    len(
+                        physical_refs
+                    ),
             },
         )
     ]
 
-    #
-    # Local exact crop preview.
-    #
     first_preview = (
         create_exact_delivery_frame(
             first_image,
             aspect_ratio,
             upscale_final=False,
-            label="candidate_1",
+            label=(
+                "candidate_1"
+            ),
         )
     )
 
@@ -3313,7 +5515,7 @@ def run_production(
     )
 
     # =====================================================
-    # VISION CALL 1
+    # VISION QA 1
     # =====================================================
 
     first_qa: Optional[
@@ -3324,31 +5526,52 @@ def run_production(
         telemetry[
             "vision_calls"
         ]
-        < MASTERPIECE_MAX_VISION_CALLS
+        <
+        MASTERPIECE_MAX_VISION_CALLS
     ):
+
         print("")
         print(
             "👁️ ADAPTIVE VISION QA 1/"
-            + str(
+            +
+            str(
                 MASTERPIECE_MAX_VISION_CALLS
             )
-            + "..."
+            +
+            "..."
         )
 
         try:
+
             first_qa = (
                 evaluate_generated_image(
-                    image=first_image,
-                    original_request=original_request,
-                    compiled_prompt=compiled,
-                    product_lock=product_lock,
-                    brand_context=brand_context,
-                    aspect_ratio=aspect_ratio,
-                    telemetry=telemetry,
+                    image=(
+                        first_image
+                    ),
+                    original_request=(
+                        original_request
+                    ),
+                    compiled_prompt=(
+                        compiled
+                    ),
+                    product_lock=(
+                        product_lock
+                    ),
+                    brand_context=(
+                        enriched_brand_context
+                    ),
+                    aspect_ratio=(
+                        aspect_ratio
+                    ),
+                    telemetry=(
+                        telemetry
+                    ),
                 )
             )
 
-            passes[0].qa = (
+            passes[
+                0
+            ].qa = (
                 first_qa
             )
 
@@ -3358,9 +5581,11 @@ def run_production(
             )
 
         except Exception as error:
+
             errors.append(
                 "qa_candidate_1: "
-                + clean_text(
+                +
+                clean_text(
                     error,
                     3000,
                 )
@@ -3370,8 +5595,13 @@ def run_production(
                 "⚠️ Candidate 1 QA unavailable."
             )
 
-    best_image = first_image
-    best_qa = first_qa
+    best_image = (
+        first_image
+    )
+
+    best_qa = (
+        first_qa
+    )
 
     best_score = (
         first_qa.score
@@ -3380,16 +5610,20 @@ def run_production(
     )
 
     # =====================================================
-    # DECIDE WHETHER SECOND IMAGE CALL IS WORTH IT
+    # ADAPTIVE DECISION
     # =====================================================
 
-    action = choose_adaptive_action(
-        first_qa
+    action = (
+        choose_adaptive_action(
+            first_qa
+        )
     )
 
     telemetry[
         "adaptive_action"
-    ] = action
+    ] = (
+        action
+    )
 
     print("")
     print(
@@ -3410,30 +5644,51 @@ def run_production(
     # =====================================================
 
     if (
-        action != "none"
-        and telemetry[
+        action
+        !=
+        "none"
+        and
+        telemetry[
             "image_calls"
         ]
-        < MASTERPIECE_MAX_IMAGE_CALLS
+        <
+        MASTERPIECE_MAX_IMAGE_CALLS
     ):
+
         print("")
         print(
             "🎨 IMAGE CALL 2/"
-            + str(
+            +
+            str(
                 MASTERPIECE_MAX_IMAGE_CALLS
             )
-            + " | "
-            + action
-            + "..."
+            +
+            " | "
+            +
+            action
+            +
+            "..."
         )
 
         try:
-            if action == "concept_recovery":
+
+            if (
+                action
+                ==
+                "concept_recovery"
+            ):
+
                 recovery_prompt = (
                     build_concept_recovery_prompt(
-                        qa=first_qa,
-                        compiled=compiled,
-                        aspect_ratio=aspect_ratio,
+                        qa=(
+                            first_qa
+                        ),
+                        compiled=(
+                            compiled
+                        ),
+                        aspect_ratio=(
+                            aspect_ratio
+                        ),
                     )
                 )
 
@@ -3445,17 +5700,31 @@ def run_production(
                 )
 
                 #
-                # Concept failure:
-                # create a fresh scene instead of polishing
-                # the failed composition.
+                # Fresh concept recovery receives the selected
+                # visual references again because style/camera/
+                # campaign alignment still matter.
                 #
+
                 second_image = (
                     generate_high_quality_image(
-                        compiled=recovery_compiled,
-                        product_refs=product_refs,
-                        aspect_ratio=aspect_ratio,
-                        original_request=original_request,
-                        pass_name="concept_recovery_high",
+                        compiled=(
+                            recovery_compiled
+                        ),
+                        product_refs=(
+                            product_refs
+                        ),
+                        visual_refs=(
+                            physical_refs
+                        ),
+                        aspect_ratio=(
+                            aspect_ratio
+                        ),
+                        original_request=(
+                            original_request
+                        ),
+                        pass_name=(
+                            "concept_recovery_high"
+                        ),
                     )
                 )
 
@@ -3464,22 +5733,54 @@ def run_production(
                 )
 
             else:
+
                 correction = (
                     build_targeted_correction_prompt(
-                        qa=first_qa,
-                        compiled=compiled,
-                        product_lock=product_lock,
-                        aspect_ratio=aspect_ratio,
+                        qa=(
+                            first_qa
+                        ),
+                        compiled=(
+                            compiled
+                        ),
+                        product_lock=(
+                            product_lock
+                        ),
+                        aspect_ratio=(
+                            aspect_ratio
+                        ),
                     )
                 )
 
+                #
+                # IMPORTANT COST RULE:
+                #
+                # Targeted correction gets:
+                #
+                # working image
+                # + product refs only.
+                #
+                # We do NOT resend the whole style library.
+                #
+
                 second_image = (
                     openai_multi_reference_edit(
-                        working_image=first_image,
-                        references=product_refs,
-                        prompt=correction,
-                        aspect_ratio=aspect_ratio,
-                        pass_name="targeted_correction_high",
+                        working_image=(
+                            first_image
+                        ),
+                        references=(
+                            product_refs[
+                                :MAX_PHYSICAL_REFERENCE_IMAGES
+                            ]
+                        ),
+                        prompt=(
+                            correction
+                        ),
+                        aspect_ratio=(
+                            aspect_ratio
+                        ),
+                        pass_name=(
+                            "targeted_correction_high"
+                        ),
                     )
                 )
 
@@ -3496,14 +5797,22 @@ def run_production(
                     second_image,
                     aspect_ratio,
                     upscale_final=False,
-                    label="candidate_2",
+                    label=(
+                        "candidate_2"
+                    ),
                 )
             )
 
             passes.append(
                 ProductionPassResult(
-                    pass_name=second_pass_name,
-                    image=second_image,
+                    pass_name=(
+                        second_pass_name
+                    ),
+
+                    image=(
+                        second_image
+                    ),
+
                     metadata={
                         "image_call":
                             telemetry[
@@ -3522,39 +5831,60 @@ def run_production(
                 )
             )
 
-            # =================================================
-            # VISION CALL 2
-            # =================================================
+            # =============================================
+            # VISION QA 2
+            # =============================================
 
             if (
                 telemetry[
                     "vision_calls"
                 ]
-                < MASTERPIECE_MAX_VISION_CALLS
+                <
+                MASTERPIECE_MAX_VISION_CALLS
             ):
+
                 print("")
                 print(
                     "👁️ ADAPTIVE VISION QA 2/"
-                    + str(
+                    +
+                    str(
                         MASTERPIECE_MAX_VISION_CALLS
                     )
-                    + "..."
+                    +
+                    "..."
                 )
 
                 try:
+
                     second_qa = (
                         evaluate_generated_image(
-                            image=second_image,
-                            original_request=original_request,
-                            compiled_prompt=compiled,
-                            product_lock=product_lock,
-                            brand_context=brand_context,
-                            aspect_ratio=aspect_ratio,
-                            telemetry=telemetry,
+                            image=(
+                                second_image
+                            ),
+                            original_request=(
+                                original_request
+                            ),
+                            compiled_prompt=(
+                                compiled
+                            ),
+                            product_lock=(
+                                product_lock
+                            ),
+                            brand_context=(
+                                enriched_brand_context
+                            ),
+                            aspect_ratio=(
+                                aspect_ratio
+                            ),
+                            telemetry=(
+                                telemetry
+                            ),
                         )
                     )
 
-                    passes[-1].qa = (
+                    passes[
+                        -1
+                    ].qa = (
                         second_qa
                     )
 
@@ -3564,9 +5894,11 @@ def run_production(
                     )
 
                 except Exception as error:
+
                     errors.append(
                         "qa_candidate_2: "
-                        + clean_text(
+                        +
+                        clean_text(
                             error,
                             3000,
                         )
@@ -3576,17 +5908,20 @@ def run_production(
                         "⚠️ Candidate 2 QA unavailable."
                     )
 
-            # =================================================
-            # BEST VERSION SELECTION
-            # =================================================
+            # =============================================
+            # BEST VERSION PRESERVATION
+            # =============================================
 
             if (
-                second_qa is not None
-                and qa_candidate_is_better(
+                second_qa
+                is not None
+                and
+                qa_candidate_is_better(
                     second_qa,
                     first_qa,
                 )
             ):
+
                 best_image = (
                     second_image
                 )
@@ -3604,15 +5939,19 @@ def run_production(
                 )
 
             else:
+
                 print(
                     "🏆 Candidate 1 preserved as BEST."
                 )
 
         except Exception as error:
+
             errors.append(
                 action
-                + ": "
-                + clean_text(
+                +
+                ": "
+                +
+                clean_text(
                     error,
                     3000,
                 )
@@ -3627,12 +5966,13 @@ def run_production(
             )
 
     else:
+
         print(
             "✅ No second paid image call needed."
         )
 
     # =====================================================
-    # ALWAYS DELIVER BEST SUCCESSFUL IMAGE
+    # FINAL DELIVERY
     # =====================================================
 
     print("")
@@ -3645,34 +5985,36 @@ def run_production(
             best_image,
             aspect_ratio,
             upscale_final=True,
-            label="final_delivery",
+            label=(
+                "final_delivery"
+            ),
         )
     )
 
-    #
-    # IMPORTANT:
-    #
-    # QA is advisory / optimization metadata.
-    #
-    # run_production does NOT fail just because score is
-    # below 88/90.
-    #
     final_delivery_image.provider = (
         "xpand_masterpiece"
-        if mode == MODE_MASTERPIECE
-        else "xpand_production"
+        if mode
+        ==
+        MODE_MASTERPIECE
+        else
+        "xpand_production"
     )
 
     final_delivery_image.model = (
-        "XPAND Production V3.0 → "
-        + OPENAI_IMAGE_MODEL
-        + " → Local Exact Frame"
+        "XPAND Production V3.1 → "
+        +
+        OPENAI_IMAGE_MODEL
+        +
+        " → Smart Visual Reference Routing"
+        +
+        " → Local Exact Frame"
     )
 
     if not isinstance(
         final_delivery_image.metadata,
         dict,
     ):
+
         final_delivery_image.metadata = {}
 
     final_delivery_image.metadata.update(
@@ -3686,26 +6028,59 @@ def run_production(
             "quality_first_adaptive":
                 True,
 
+            "smart_reference_routing":
+                True,
+
+            "brand_visual_profile_used":
+                bool(
+                    brand_visual_profile
+                ),
+
+            "selected_reference_count":
+                len(
+                    references
+                ),
+
+            "physical_reference_count":
+                len(
+                    physical_refs
+                ),
+
+            "selected_reference_roles":
+                [
+                    item.role
+                    for item in references
+                ],
+
+            "selected_reference_families":
+                [
+                    item.content_family
+                    for item in references
+                ],
+
             "qa_score":
                 best_score,
 
             "qa_passed":
                 bool(
                     best_qa
-                    and best_qa.passed
+                    and
+                    best_qa.passed
                 ),
 
             "qa_target_reached":
                 bool(
                     best_qa
-                    and best_qa.target_reached
+                    and
+                    best_qa.target_reached
                 ),
 
             "qa_decision":
                 (
                     best_qa.decision
                     if best_qa
-                    else "qa_unavailable"
+                    else
+                    "qa_unavailable"
                 ),
 
             "qa_critical_blockers":
@@ -3768,17 +6143,24 @@ def run_production(
     )
 
     elapsed = round(
-        time.monotonic()
-        - started,
+        (
+            time.monotonic()
+            -
+            started
+        ),
         3,
     )
+
+    # =====================================================
+    # FINAL LOG
+    # =====================================================
 
     print("")
     print(
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION COMPLETE V3.0"
+        " XPAND PRODUCTION COMPLETE V3.1"
     )
     print(
         "=============================================="
@@ -3820,13 +6202,34 @@ def run_production(
     )
 
     print(
-        "References:",
-        len(references),
+        "Smart DNA references:",
+        len(
+            references
+        ),
+    )
+
+    print(
+        "Physical image references:",
+        len(
+            physical_refs
+        ),
     )
 
     print(
         "Product references:",
-        len(product_refs),
+        len(
+            product_refs
+        ),
+    )
+
+    print(
+        "Brand Visual Profile:",
+        (
+            "USED"
+            if brand_visual_profile
+            else
+            "NOT AVAILABLE"
+        ),
     )
 
     print(
@@ -3857,41 +6260,68 @@ def run_production(
 
     return ProductionResult(
         ok=True,
-        final_image=final_delivery_image,
-        best_score=best_score,
-        qa=best_qa,
-        passes=passes,
-        compiled_prompt=compiled,
-        references_used=len(
-            references
+
+        final_image=(
+            final_delivery_image
         ),
-        product_references_used=len(
-            product_refs
+
+        best_score=(
+            best_score
         ),
-        elapsed_seconds=elapsed,
-        errors=errors,
+
+        qa=(
+            best_qa
+        ),
+
+        passes=(
+            passes
+        ),
+
+        compiled_prompt=(
+            compiled
+        ),
+
+        references_used=(
+            len(
+                references
+            )
+        ),
+
+        product_references_used=(
+            len(
+                product_refs
+            )
+        ),
+
+        elapsed_seconds=(
+            elapsed
+        ),
+
+        errors=(
+            errors
+        ),
     )
 
 
 # =========================================================
 # SELF TEST
 #
-# IMPORTANT:
-# - NO API CALLS
-# - NO IMAGE GENERATION
-# - NO DATABASE ACCESS
+# ZERO API CALLS
+# ZERO DATABASE ACCESS
+# ZERO IMAGE GENERATION
 # =========================================================
 
 if __name__ == "__main__":
+
     print("")
     print(
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V3.0"
+        " XPAND PRODUCTION ENGINE V3.1"
     )
     print(
-        " QUALITY-FIRST ADAPTIVE MASTERPIECE"
+        " SMART VISUAL REFERENCE + QUALITY-FIRST"
     )
     print(
         "=============================================="
@@ -3903,7 +6333,8 @@ if __name__ == "__main__":
         (
             "READY"
             if OPENAI_API_KEY
-            else "NOT CONFIGURED"
+            else
+            "NOT CONFIGURED"
         ),
     )
 
@@ -3918,6 +6349,15 @@ if __name__ == "__main__":
     )
 
     print(
+        "Brand Memory:",
+        getattr(
+            xpand_brand_memory,
+            "VERSION",
+            "unknown",
+        ),
+    )
+
+    print(
         "Max image calls:",
         MASTERPIECE_MAX_IMAGE_CALLS,
     )
@@ -3928,16 +6368,52 @@ if __name__ == "__main__":
     )
 
     print(
-        "Correction trigger:",
-        ADAPTIVE_CORRECTION_TRIGGER_SCORE,
+        "Smart DNA reference limit:",
+        SMART_REFERENCE_SELECTION_LIMIT,
     )
 
     print(
-        "Concept recovery floor:",
-        CONCEPT_RECOVERY_SCORE_FLOOR,
+        "Physical reference limit:",
+        MAX_PHYSICAL_REFERENCE_IMAGES,
+    )
+
+    print(
+        "Send visual refs to image:",
+        SEND_VISUAL_REFERENCES_TO_IMAGE,
     )
 
     print("")
+
+    # =====================================================
+    # BRAND MEMORY V2 INTEGRATION
+    # =====================================================
+
+    brand_memory_ok = (
+        hasattr(
+            xpand_brand_memory,
+            "load_relevant_visual_references",
+        )
+        and
+        hasattr(
+            xpand_brand_memory,
+            "get_brand_visual_profile",
+        )
+        and
+        hasattr(
+            xpand_brand_memory,
+            "refresh_brand_visual_profile",
+        )
+    )
+
+    print(
+        (
+            "✅"
+            if brand_memory_ok
+            else
+            "❌"
+        ),
+        "Brand Memory V2 integration",
+    )
 
     # =====================================================
     # PROVIDER ROUTING
@@ -3965,30 +6441,34 @@ if __name__ == "__main__":
 
     provider_ok = True
 
-    print(
-        "Provider routing:"
-    )
+    for ratio, expected in (
+        provider_tests.items()
+    ):
 
-    for ratio, expected in provider_tests.items():
-        actual = provider_size_for_ratio(
-            ratio
+        actual = (
+            provider_size_for_ratio(
+                ratio
+            )
         )
 
         ok = (
             actual
-            == expected
+            ==
+            expected
         )
 
         provider_ok = (
             provider_ok
-            and ok
+            and
+            ok
         )
 
         print(
             (
                 "✅"
                 if ok
-                else "❌"
+                else
+                "❌"
             ),
             ratio,
             "→",
@@ -4014,7 +6494,9 @@ if __name__ == "__main__":
         ),
     )
 
-    source_buffer = BytesIO()
+    source_buffer = (
+        BytesIO()
+    )
 
     source_image.save(
         source_buffer,
@@ -4022,34 +6504,74 @@ if __name__ == "__main__":
     )
 
     fake_image = GeneratedImage(
-        image_bytes=source_buffer.getvalue(),
-        mime_type="image/png",
-        provider="self-test",
-        model="self-test",
-        prompt="self-test",
-        original_prompt="self-test",
-        aspect_ratio="4:5",
-        image_size="1024x1536",
-        quality="high",
-        route_reason="self-test",
-        request_id="self-test",
+        image_bytes=(
+            source_buffer.getvalue()
+        ),
+
+        mime_type=(
+            "image/png"
+        ),
+
+        provider=(
+            "self-test"
+        ),
+
+        model=(
+            "self-test"
+        ),
+
+        prompt=(
+            "self-test"
+        ),
+
+        original_prompt=(
+            "self-test"
+        ),
+
+        aspect_ratio=(
+            "4:5"
+        ),
+
+        image_size=(
+            "1024x1536"
+        ),
+
+        quality=(
+            "high"
+        ),
+
+        route_reason=(
+            "self-test"
+        ),
+
+        request_id=(
+            "self-test"
+        ),
+
         metadata={},
     )
 
-    preview = create_exact_delivery_frame(
-        fake_image,
-        "4:5",
-        upscale_final=False,
-        label="self_test_preview",
+    preview = (
+        create_exact_delivery_frame(
+            fake_image,
+            "4:5",
+            upscale_final=False,
+            label=(
+                "self_test_preview"
+            ),
+        )
     )
 
-    preview_dims = real_image_dimensions(
-        preview.image_bytes
+    preview_dims = (
+        real_image_dimensions(
+            preview.image_bytes
+        )
     )
 
     preview_ok = (
         preview_dims
-        == (
+        ==
+        (
             1024,
             1280,
         )
@@ -4059,25 +6581,33 @@ if __name__ == "__main__":
         (
             "✅"
             if preview_ok
-            else "❌"
+            else
+            "❌"
         ),
         "Native 1024x1536 → exact 1024x1280",
     )
 
-    final_test = create_exact_delivery_frame(
-        fake_image,
-        "4:5",
-        upscale_final=True,
-        label="self_test_final",
+    final_test = (
+        create_exact_delivery_frame(
+            fake_image,
+            "4:5",
+            upscale_final=True,
+            label=(
+                "self_test_final"
+            ),
+        )
     )
 
-    final_dims = real_image_dimensions(
-        final_test.image_bytes
+    final_dims = (
+        real_image_dimensions(
+            final_test.image_bytes
+        )
     )
 
     final_ok = (
         final_dims
-        == (
+        ==
+        (
             2560,
             3200,
         )
@@ -4087,7 +6617,8 @@ if __name__ == "__main__":
         (
             "✅"
             if final_ok
-            else "❌"
+            else
+            "❌"
         ),
         "Final 4:5 →",
         final_dims,
@@ -4096,64 +6627,347 @@ if __name__ == "__main__":
     print("")
 
     # =====================================================
-    # ADAPTIVE POLICY
+    # SYNTHETIC SMART REFERENCES
+    # =====================================================
+
+    fake_product_ref = (
+        ProductionReference(
+            role=(
+                "product_reference"
+            ),
+
+            image_bytes=(
+                b"product"
+            ),
+
+            mime_type=(
+                "image/png"
+            ),
+
+            dna={},
+
+            product_lock={
+                "enabled":
+                    True,
+
+                "must_remain_identical": [
+                    "silhouette",
+                ],
+            },
+
+            source_id=(
+                "product"
+            ),
+
+            content_family=(
+                "payments_cards"
+            ),
+
+            source_metadata={
+                "official":
+                    True,
+            },
+
+            selection={
+                "score":
+                    82,
+            },
+        )
+    )
+
+    fake_campaign_ref = (
+        ProductionReference(
+            role=(
+                "campaign_reference"
+            ),
+
+            image_bytes=(
+                b"campaign"
+            ),
+
+            mime_type=(
+                "image/png"
+            ),
+
+            dna={},
+
+            source_id=(
+                "campaign"
+            ),
+
+            content_family=(
+                "international_transfer"
+            ),
+
+            source_metadata={
+                "official":
+                    True,
+            },
+
+            selection={
+                "score":
+                    96,
+            },
+        )
+    )
+
+    fake_style_ref = (
+        ProductionReference(
+            role=(
+                "style_reference"
+            ),
+
+            image_bytes=(
+                b"style"
+            ),
+
+            mime_type=(
+                "image/png"
+            ),
+
+            dna={},
+
+            source_id=(
+                "style"
+            ),
+
+            content_family=(
+                "general_brand"
+            ),
+
+            source_metadata={
+                "official":
+                    True,
+            },
+
+            selection={
+                "score":
+                    90,
+            },
+        )
+    )
+
+    fake_color_ref = (
+        ProductionReference(
+            role=(
+                "color_reference"
+            ),
+
+            image_bytes=(
+                b"color"
+            ),
+
+            mime_type=(
+                "image/png"
+            ),
+
+            dna={},
+
+            source_id=(
+                "color"
+            ),
+
+            content_family=(
+                "general_brand"
+            ),
+
+            source_metadata={
+                "official":
+                    True,
+            },
+
+            selection={
+                "score":
+                    99,
+            },
+        )
+    )
+
+    fake_refs = [
+        fake_style_ref,
+        fake_campaign_ref,
+        fake_color_ref,
+        fake_product_ref,
+    ]
+
+    physical = (
+        choose_physical_references(
+            fake_refs,
+            limit=3,
+        )
+    )
+
+    physical_ok = (
+        len(
+            physical
+        )
+        ==
+        3
+        and
+        any(
+            item.role
+            ==
+            "product_reference"
+            for item in physical
+        )
+    )
+
+    print(
+        (
+            "✅"
+            if physical_ok
+            else
+            "❌"
+        ),
+        "Physical reference selector max 3 + Product priority",
+    )
+
+    # =====================================================
+    # BRAND CONTEXT ENRICHMENT
+    # =====================================================
+
+    enriched = (
+        build_enriched_brand_context(
+            brand_context={
+                "brand":
+                    "STC Bank",
+            },
+
+            brand_visual_profile={
+                "source_count":
+                    12,
+
+                "recurring_colors": [
+                    "#4A136F",
+                    "#00C9A7",
+                ],
+            },
+
+            references=(
+                fake_refs[:3]
+            ),
+        )
+    )
+
+    enriched_ok = (
+        bool(
+            enriched.get(
+                "brand_visual_profile"
+            )
+        )
+        and
+        len(
+            enriched.get(
+                "smart_reference_selection",
+                [],
+            )
+        )
+        ==
+        3
+    )
+
+    print(
+        (
+            "✅"
+            if enriched_ok
+            else
+            "❌"
+        ),
+        "Brand Visual Profile → production context",
+    )
+
+    # =====================================================
+    # ADAPTIVE QA POLICY
     # =====================================================
 
     good_qa = QAEvaluation(
         score=92,
+
         scores={
             "concept_execution":
                 92,
         },
+
         passed=True,
+
         strengths=[],
+
         problems=[],
+
         correction_instruction="",
+
         critical_blockers=[],
+
         target_reached=True,
+
         delivery_approved=True,
-        decision="target_reached",
+
+        decision=(
+            "target_reached"
+        ),
     )
 
-    weak_concept_qa = QAEvaluation(
-        score=78,
-        scores={
-            "concept_execution":
-                50,
-        },
-        passed=False,
-        strengths=[],
-        problems=[
-            "Core visual metaphor missing."
-        ],
-        correction_instruction=(
-            "Rebuild concept."
-        ),
-        critical_blockers=[
-            "major concept failure"
-        ],
-        target_reached=False,
-        delivery_approved=False,
-        decision="critical_issues",
+    weak_concept_qa = (
+        QAEvaluation(
+            score=78,
+
+            scores={
+                "concept_execution":
+                    50,
+            },
+
+            passed=False,
+
+            strengths=[],
+
+            problems=[
+                "Core visual metaphor missing."
+            ],
+
+            correction_instruction=(
+                "Rebuild concept."
+            ),
+
+            critical_blockers=[
+                "major concept failure"
+            ],
+
+            target_reached=False,
+
+            delivery_approved=False,
+
+            decision=(
+                "critical_issues"
+            ),
+        )
     )
 
     polish_qa = QAEvaluation(
         score=86,
+
         scores={
             "concept_execution":
                 90,
         },
+
         passed=False,
+
         strengths=[],
+
         problems=[
             "Lighting needs refinement."
         ],
+
         correction_instruction=(
             "Refine lighting only."
         ),
+
         critical_blockers=[],
+
         target_reached=False,
+
         delivery_approved=False,
+
         decision=(
             "improvement_recommended"
         ),
@@ -4163,28 +6977,32 @@ if __name__ == "__main__":
         choose_adaptive_action(
             good_qa
         )
-        == "none"
+        ==
+        "none"
     )
 
     adaptive_concept = (
         choose_adaptive_action(
             weak_concept_qa
         )
-        == "concept_recovery"
+        ==
+        "concept_recovery"
     )
 
     adaptive_polish = (
         choose_adaptive_action(
             polish_qa
         )
-        == "targeted_correction"
+        ==
+        "targeted_correction"
     )
 
     print(
         (
             "✅"
             if adaptive_good
-            else "❌"
+            else
+            "❌"
         ),
         "90+ → no second image call",
     )
@@ -4193,7 +7011,8 @@ if __name__ == "__main__":
         (
             "✅"
             if adaptive_concept
-            else "❌"
+            else
+            "❌"
         ),
         "Concept failure → concept recovery",
     )
@@ -4202,12 +7021,11 @@ if __name__ == "__main__":
         (
             "✅"
             if adaptive_polish
-            else "❌"
+            else
+            "❌"
         ),
         "Normal weakness → targeted correction",
     )
-
-    print("")
 
     # =====================================================
     # BLUEPRINT
@@ -4215,43 +7033,62 @@ if __name__ == "__main__":
 
     dummy = compile_prompt(
         TARGET_OPENAI,
+
         request=(
             "STC Bank premium international transfer hero visual"
         ),
+
         creative_direction={
             "core_idea":
-                "Two distant environments become one physical space."
+                (
+                    "Two distant environments become one "
+                    "physical space."
+                ),
         },
-        brand_context={
-            "brand":
-                "STC Bank",
-        },
-        references=[],
+
+        brand_context=(
+            enriched
+        ),
+
+        references=[
+            {
+                "role":
+                    "campaign_reference",
+
+                "content_family":
+                    "international_transfer",
+            }
+        ],
+
         camera_direction={
             "camera":
                 "premium environmental perspective",
         },
+
         product_lock={},
-        aspect_ratio="4:5",
+
+        aspect_ratio=(
+            "4:5"
+        ),
     )
 
     compiler_ok = (
         len(
             dummy.prompt
         )
-        <= COMPILED_PROMPT_BUDGET
+        <=
+        COMPILED_PROMPT_BUDGET
     )
 
     print(
         (
             "✅"
             if compiler_ok
-            else "❌"
+            else
+            "❌"
         ),
-        "Quality-First Production Blueprint",
+        "Quality-First V3.1 Production Blueprint",
     )
-
-    print("")
 
     # =====================================================
     # COST GUARD
@@ -4259,56 +7096,110 @@ if __name__ == "__main__":
 
     cost_guard_ok = (
         MASTERPIECE_MAX_IMAGE_CALLS
-        <= 2
+        <=
+        2
         and
         MASTERPIECE_MAX_VISION_CALLS
-        <= 2
+        <=
+        2
+        and
+        MAX_PHYSICAL_REFERENCE_IMAGES
+        <=
+        3
+        and
+        SMART_REFERENCE_SELECTION_LIMIT
+        <=
+        6
+    )
+
+    print("")
+    print(
+        (
+            "✅"
+            if cost_guard_ok
+            else
+            "❌"
+        ),
+        "Image calls <= 2",
     )
 
     print(
         (
             "✅"
             if cost_guard_ok
-            else "❌"
+            else
+            "❌"
         ),
-        "Maximum automatic image calls <= 2",
+        "Vision calls <= 2",
     )
 
     print(
         (
             "✅"
             if cost_guard_ok
-            else "❌"
+            else
+            "❌"
         ),
-        "Maximum automatic Vision calls <= 2",
+        "Actual reference images <= 3",
     )
 
     print(
-        "✅ Composition decisions moved before image generation"
+        (
+            "✅"
+            if cost_guard_ok
+            else
+            "❌"
+        ),
+        "Visual DNA references <= 6",
+    )
+
+    print("")
+    print(
+        "✅ Request-aware STC reference selection supported"
     )
 
     print(
-        "✅ Lighting decisions moved before image generation"
+        "✅ Travel request can select travel references"
     )
 
     print(
-        "✅ Materials decisions moved before image generation"
+        "✅ International transfer can select transfer references"
     )
 
     print(
-        "✅ Product Fidelity integrated into first generation"
+        "✅ Brand Visual Profile injected into production"
     )
 
     print(
-        "✅ First image uses HIGH quality"
+        "✅ Actual visual reference images supported"
     )
 
     print(
-        "✅ Second image call only when QA justifies it"
+        "✅ Product Reference receives first physical priority"
     )
 
     print(
-        "✅ Concept failure uses recovery instead of polish"
+        "✅ Reference role instructions preserved"
+    )
+
+    print(
+        "✅ Anti-clone campaign policy"
+    )
+
+    print(
+        "✅ First generation remains HIGH quality"
+    )
+
+    print(
+        "✅ One automatic correction maximum"
+    )
+
+    print(
+        "✅ Targeted correction avoids resending full style library"
+    )
+
+    print(
+        "✅ Concept recovery keeps relevant visual references"
     )
 
     print(
@@ -4316,47 +7207,70 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ QA never blocks best-image delivery"
+        "✅ QA never blocks final delivery"
     )
 
     print(
-        "✅ Native canvas accepted"
+        "✅ Native provider canvas accepted"
     )
 
     print(
-        "✅ Exact delivery framing is local"
+        "✅ Exact final aspect framing remains local"
     )
 
     print(
-        "✅ Crop/resize makes no paid API call"
+        "✅ Local crop/resize cost remains $0"
     )
 
     print("")
 
     all_ok = (
+        brand_memory_ok
+        and
         provider_ok
-        and preview_ok
-        and final_ok
-        and adaptive_good
-        and adaptive_concept
-        and adaptive_polish
-        and compiler_ok
-        and cost_guard_ok
+        and
+        preview_ok
+        and
+        final_ok
+        and
+        physical_ok
+        and
+        enriched_ok
+        and
+        adaptive_good
+        and
+        adaptive_concept
+        and
+        adaptive_polish
+        and
+        compiler_ok
+        and
+        cost_guard_ok
     )
 
     print(
         (
-            "XPAND Production Engine V3.0 self-test: "
-            + (
+            "XPAND Production Engine V3.1 self-test: "
+            +
+            (
                 "PASS ✅"
                 if all_ok
-                else "FAIL ❌"
+                else
+                "FAIL ❌"
             )
         )
     )
 
     print(
         "🚫 No API calls were made"
+    )
+
+    print(
+        "🚫 No database access was made"
+    )
+
+    print(
+        "🚫 No image generation was made"
     )
 
     print("")
