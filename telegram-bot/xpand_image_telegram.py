@@ -1,162 +1,101 @@
-# =========================================================
-# EXPLICIT REFERENCE CONTENT FAMILY V3.2.1
-# =========================================================
-#
-# User caption wins over Vision classification when the
-# requested family is explicit.
-#
-# Example:
-#
-# مرجع STC رسمي | تحويل مالي دولي
-# -> international_transfer
-#
-# The original Vision classification is preserved as
-# vision_family for audit/debugging.
-# =========================================================
+python - <<'PY'
+import main as core
+import xpand_brand_memory as bm
 
-EXPLICIT_REFERENCE_FAMILIES = [
-    (
-        "international_transfer",
-        [
-            "تحويل دولي",
-            "تحويل مالي دولي",
-            "تحويلات مالية دولية",
-            "حوالة مالية دولية",
-            "حواله ماليه دوليه",
-            "حوالة دولية",
-            "حواله دوليه",
-            "international transfer",
-            "international money transfer",
-            "cross border transfer",
-            "cross-border transfer",
-        ],
-    ),
+REFERENCE_ID = 2
+NEW_FAMILY = "international_transfer"
 
-    (
-        "travel_roaming",
-        [
-            "سفر",
-            "السفر",
-            "مسافر",
-            "سياحة",
-            "مطار",
-            "طيران",
-            "تجوال",
-            "روامينج",
-            "روaming",
-            "roaming",
-            "travel",
-            "airport",
-        ],
-    ),
+with core.db_connect() as conn:
+    with conn.cursor() as cur:
 
-    (
-        "cashback_rewards",
-        [
-            "كاش باك",
-            "كاشباك",
-            "استرداد نقدي",
-            "cashback",
-            "مكافآت",
-            "مكافات",
-            "rewards",
-        ],
-    ),
+        cur.execute(
+            """
+            UPDATE xpand_visual_references
+            SET
+                content_family = %s,
 
-    (
-        "payments_cards",
-        [
-            "بطاقة",
-            "بطاقه",
-            "بطاقات",
-            "بطاقة بنكية",
-            "بطاقه بنكيه",
-            "card",
-            "cards",
-            "bank card",
-            "payment card",
-        ],
-    ),
+                dna_json =
+                    COALESCE(dna_json, '{}'::jsonb)
+                    ||
+                    jsonb_build_object(
+                        'content_family',
+                        %s,
 
-    (
-        "security_trust",
-        [
-            "أمان",
-            "امان",
-            "حماية",
-            "حمايه",
-            "أمن",
-            "امن",
-            "security",
-            "secure",
-            "protection",
-            "trust",
-        ],
-    ),
+                        'content_classification',
+                        COALESCE(
+                            dna_json->'content_classification',
+                            '{}'::jsonb
+                        )
+                        ||
+                        jsonb_build_object(
+                            'vision_family',
+                            COALESCE(
+                                dna_json
+                                ->'content_classification'
+                                ->>'family',
+                                ''
+                            ),
 
-    (
-        "business_banking",
-        [
-            "أعمال",
-            "اعمال",
-            "شركات",
-            "منشآت",
-            "منشات",
-            "business banking",
-            "business",
-            "corporate",
-        ],
-    ),
+                            'family',
+                            %s,
 
-    (
-        "digital_banking",
-        [
-            "بنك رقمي",
-            "البنك الرقمي",
-            "خدمات رقمية",
-            "خدمات رقميه",
-            "تطبيق البنك",
-            "digital banking",
-            "mobile banking",
-            "banking app",
-        ],
-    ),
+                            'family_source',
+                            'user_explicit_caption',
 
-    (
-        "premium_lifestyle",
-        [
-            "بريميوم",
-            "فاخر",
-            "فخامة",
-            "فخامه",
-            "premium",
-            "luxury",
-            "lifestyle",
-        ],
-    ),
-]
+                            'family_confidence',
+                            100
+                        )
+                    ),
 
+                updated_at = NOW()
 
-def infer_explicit_reference_family(
-    text: str
-) -> str:
+            WHERE id = %s
 
-    value = clean_text(
-        text,
-        5000
+            RETURNING
+                user_id,
+                brand_id,
+                content_family;
+            """,
+            (
+                NEW_FAMILY,
+                NEW_FAMILY,
+                NEW_FAMILY,
+                REFERENCE_ID,
+            )
+        )
+
+        row = cur.fetchone()
+
+if not row:
+    raise RuntimeError(
+        "Reference #2 not found"
     )
 
-    if not value:
+user_id, brand_id, family = row
 
-        return ""
+print(
+    "✅ Reference #2 corrected:",
+    family
+)
 
-    for family, markers in EXPLICIT_REFERENCE_FAMILIES:
+try:
+    profile = bm.refresh_brand_visual_profile(
+        core,
+        user_id,
+        brand_id
+    )
 
-        if contains_any(
-            value,
-            markers
-        ):
+    print(
+        "✅ Brand Visual Profile refreshed"
+    )
 
-            return family
+except Exception as error:
+    print(
+        "⚠️ Profile refresh:",
+        error
+    )
 
-    return ""
+print("🚫 No Vision call")
+print("🚫 No image generation")
+print("🚫 No OpenAI API call")
+PY
