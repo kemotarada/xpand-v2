@@ -1,17 +1,37 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V2.0
+# XPAND PRODUCTION ENGINE V2.1
 #
 # Professional image-production orchestration for XPAND.
 #
-# FOUNDATION
+# =========================================================
+# V2.1
+# =========================================================
+#
+# MAJOR FIX:
+# Prompt Budget Manager
+#
+# Prevents GPT-Image-2 prompt overflow caused by:
+#
+# - large research context
+# - Brand Memory
+# - Visual Reference DNA
+# - Campaign Bible
+# - Creative Brain output
+# - repeated master brief in every production pass
+#
+#
+# MASTERPIECE PIPELINE
 # ---------------------------------------------------------
+#
 # Creative Brain
 #      ↓
-# Prompt Compiler
+# Prompt Budget Manager
+#      ↓
+# Model-specific Prompt Compiler
 #      ↓
 # Reference / Product Lock Loader
 #      ↓
-# Base Generation
+# Concept Base
 #      ↓
 # Composition Pass
 #      ↓
@@ -30,41 +50,32 @@
 # Best Final Image
 #
 #
-# IMPLEMENTS
-# ---------------------------------------------------------
-# 1. Model-specific Prompt Compiler
-# 2. High-Fidelity Product Reference Lock
-# 3. Multi-Pass Generation
-# 4. Camera Lock
-# 5. Brand Lock
-# 6. Composition Lock
-# 7. Lighting Pass
-# 8. Material Pass
-# 9. Final Polish
-# 10. Generated-image Vision QA
-# 11. Weighted QA score /100
-# 12. Automatic correction if score < target
-# 13. Best-version preservation
-# 14. Native high-resolution output mapping
-#
-#
 # IMPORTANT
 # ---------------------------------------------------------
-# "Product Lock" here means high-fidelity reference-constrained
-# generation/editing.
 #
-# It does NOT claim guaranteed pixel-identical reproduction.
+# V2.1 DOES NOT simply chop the final prompt.
 #
-# For truly exact logos/cards/packages:
-# a later composite/inpainting stage must preserve the
-# original asset instead of regenerating it.
+# It first compacts each information layer separately:
+#
+# - request
+# - creative direction
+# - brand context
+# - visual reference DNA
+# - camera
+# - product lock
+#
+# Then each production pass receives only the pieces
+# relevant to that pass.
+#
+# Last-resort hard fitting exists only as a safety guard.
 #
 #
 # Current executable provider:
 # - OpenAI GPT-Image-2
 #
-# Prompt compilers are also prepared for:
-# - Gemini Image
+# Prepared prompt compilers:
+# - OpenAI
+# - Gemini
 # - Midjourney
 # - FLUX
 # - Ideogram
@@ -72,14 +83,18 @@
 # - Kling
 # - Seedance
 #
-# Those compilers do not claim provider execution unless
-# an actual integration exists.
+#
+# IMPORTANT:
+#
+# Product Lock here means high-fidelity AI reference lock.
+#
+# Pixel-exact identity is handled separately by:
+# xpand_exact_asset_lock.py
 # =========================================================
 
 from __future__ import annotations
 
 import base64
-import io
 import json
 import os
 import re
@@ -93,7 +108,6 @@ from dataclasses import (
 
 from typing import (
     Any,
-    Callable,
     Dict,
     List,
     Optional,
@@ -105,7 +119,7 @@ import requests
 
 
 # =========================================================
-# XPAND EXISTING MODULES
+# XPAND MODULES
 # =========================================================
 
 from xpand_image_engine import (
@@ -113,7 +127,6 @@ from xpand_image_engine import (
     OPENAI_IMAGE_MODEL,
     REQUEST_TIMEOUT,
     GeneratedImage,
-    ImageRoute,
     PROVIDER_OPENAI,
     build_route,
     call_openai_director,
@@ -134,7 +147,7 @@ ENGINE_NAME = (
 )
 
 ENGINE_VERSION = (
-    "2.0"
+    "2.1"
 )
 
 
@@ -199,6 +212,120 @@ TARGET_KLING = (
 TARGET_SEEDANCE = (
     "seedance"
 )
+
+
+# =========================================================
+# PROMPT BUDGETS
+#
+# Observed GPT-Image-2 request hard boundary:
+# 32000 characters.
+#
+# XPAND intentionally stays comfortably below it.
+# =========================================================
+
+OPENAI_PROMPT_HARD_LIMIT = max(
+    10000,
+    min(
+        32000,
+        int(
+            os.environ.get(
+                "XPAND_OPENAI_PROMPT_HARD_LIMIT",
+                "32000"
+            )
+            or
+            32000
+        )
+    )
+)
+
+
+COMPILED_PROMPT_BUDGET = max(
+    12000,
+    min(
+        OPENAI_PROMPT_HARD_LIMIT - 1000,
+        int(
+            os.environ.get(
+                "XPAND_COMPILED_PROMPT_BUDGET",
+                "26000"
+            )
+            or
+            26000
+        )
+    )
+)
+
+
+PASS_PROMPT_BUDGET = max(
+    12000,
+    min(
+        OPENAI_PROMPT_HARD_LIMIT - 1000,
+        int(
+            os.environ.get(
+                "XPAND_PASS_PROMPT_BUDGET",
+                "27500"
+            )
+            or
+            27500
+        )
+    )
+)
+
+
+QA_PROMPT_BUDGET = max(
+    12000,
+    min(
+        OPENAI_PROMPT_HARD_LIMIT - 1000,
+        int(
+            os.environ.get(
+                "XPAND_QA_PROMPT_BUDGET",
+                "26000"
+            )
+            or
+            26000
+        )
+    )
+)
+
+
+CORRECTION_PROMPT_BUDGET = max(
+    12000,
+    min(
+        OPENAI_PROMPT_HARD_LIMIT - 1000,
+        int(
+            os.environ.get(
+                "XPAND_CORRECTION_PROMPT_BUDGET",
+                "25000"
+            )
+            or
+            25000
+        )
+    )
+)
+
+
+# =========================================================
+# SECTION BUDGETS
+# =========================================================
+
+SECTION_BUDGETS = {
+    "request":
+        5000,
+
+    "creative_direction":
+        6000,
+
+    "brand_context":
+        5000,
+
+    "references":
+        3800,
+
+    "camera_direction":
+        1800,
+
+    "product_lock":
+        2200,
+}
 
 
 # =========================================================
@@ -377,7 +504,7 @@ class ProductionResult:
 
 
 # =========================================================
-# HELPERS
+# BASIC HELPERS
 # =========================================================
 
 def clean_text(
@@ -422,30 +549,560 @@ def clamp_score(
     )
 
 
+# =========================================================
+# PROMPT VALUE COMPACTION
+# =========================================================
+
+DROP_CONTEXT_KEYS = {
+    "image_bytes",
+    "source_bytes",
+    "raw_bytes",
+    "binary",
+    "b64_json",
+    "base64",
+    "telegram_file_id",
+    "telegram_file_unique_id",
+    "photo_file_id",
+    "document_file_id",
+    "document_file_unique_id",
+}
+
+
+def reduce_prompt_value(
+    value: Any,
+    *,
+    depth: int = 0,
+    max_depth: int = 4,
+    list_limit: int = 8,
+    dict_limit: int = 40,
+    string_limit: int = 1200
+) -> Any:
+
+    if depth > max_depth:
+
+        if isinstance(
+            value,
+            dict
+        ):
+
+            return {
+                "_summary":
+                    "nested object omitted"
+            }
+
+        if isinstance(
+            value,
+            list
+        ):
+
+            return [
+                "nested list omitted"
+            ]
+
+        return clean_text(
+            value,
+            min(
+                string_limit,
+                400
+            )
+        )
+
+    if isinstance(
+        value,
+        bytes
+    ):
+
+        return (
+            "<binary image data omitted>"
+        )
+
+    if isinstance(
+        value,
+        dict
+    ):
+
+        output = {}
+
+        count = 0
+
+        for key, child in value.items():
+
+            key_text = clean_text(
+                key,
+                200
+            )
+
+            if not key_text:
+
+                continue
+
+            if key_text.lower() in DROP_CONTEXT_KEYS:
+
+                continue
+
+            if count >= dict_limit:
+
+                output[
+                    "_additional_fields_omitted"
+                ] = True
+
+                break
+
+            output[
+                key_text
+            ] = reduce_prompt_value(
+                child,
+
+                depth=
+                    depth + 1,
+
+                max_depth=
+                    max_depth,
+
+                list_limit=
+                    list_limit,
+
+                dict_limit=
+                    dict_limit,
+
+                string_limit=
+                    string_limit
+            )
+
+            count += 1
+
+        return output
+
+    if isinstance(
+        value,
+        list
+    ):
+
+        output = []
+
+        for child in value[
+            :list_limit
+        ]:
+
+            output.append(
+                reduce_prompt_value(
+                    child,
+
+                    depth=
+                        depth + 1,
+
+                    max_depth=
+                        max_depth,
+
+                    list_limit=
+                        list_limit,
+
+                    dict_limit=
+                        dict_limit,
+
+                    string_limit=
+                        string_limit
+                )
+            )
+
+        if len(
+            value
+        ) > list_limit:
+
+            output.append(
+                (
+                    "<"
+                    +
+                    str(
+                        len(
+                            value
+                        )
+                        -
+                        list_limit
+                    )
+                    +
+                    " additional items omitted>"
+                )
+            )
+
+        return output
+
+    if isinstance(
+        value,
+        (
+            int,
+            float,
+            bool,
+        )
+    ):
+
+        return value
+
+    if value is None:
+
+        return None
+
+    return clean_text(
+        value,
+        string_limit
+    )
+
+
+def compact_json(
+    value: Any,
+    limit: int
+) -> str:
+
+    limit = max(
+        100,
+        int(
+            limit
+            or
+            100
+        )
+    )
+
+    attempts = [
+        {
+            "max_depth":
+                4,
+
+            "list_limit":
+                10,
+
+            "dict_limit":
+                50,
+
+            "string_limit":
+                1400,
+        },
+
+        {
+            "max_depth":
+                4,
+
+            "list_limit":
+                7,
+
+            "dict_limit":
+                35,
+
+            "string_limit":
+                900,
+        },
+
+        {
+            "max_depth":
+                3,
+
+            "list_limit":
+                5,
+
+            "dict_limit":
+                28,
+
+            "string_limit":
+                650,
+        },
+
+        {
+            "max_depth":
+                3,
+
+            "list_limit":
+                3,
+
+            "dict_limit":
+                20,
+
+            "string_limit":
+                400,
+        },
+
+        {
+            "max_depth":
+                2,
+
+            "list_limit":
+                2,
+
+            "dict_limit":
+                14,
+
+            "string_limit":
+                250,
+        },
+    ]
+
+    for settings in attempts:
+
+        reduced = reduce_prompt_value(
+            value,
+            **settings
+        )
+
+        try:
+
+            encoded = json.dumps(
+                reduced,
+                ensure_ascii=False,
+                separators=(
+                    ",",
+                    ":"
+                ),
+                default=str
+            )
+
+        except Exception:
+
+            encoded = clean_text(
+                reduced,
+                limit
+            )
+
+        if len(
+            encoded
+        ) <= limit:
+
+            return encoded
+
+    #
+    # Last-resort logical summary.
+    #
+    # Keep JSON valid instead of slicing a JSON object
+    # halfway through.
+    #
+
+    summary_size = max(
+        50,
+        int(
+            limit
+            *
+            0.65
+        )
+    )
+
+    while summary_size > 30:
+
+        fallback = {
+            "truncated":
+                True,
+
+            "summary":
+                clean_text(
+                    value,
+                    summary_size
+                ),
+        }
+
+        encoded = json.dumps(
+            fallback,
+            ensure_ascii=False,
+            separators=(
+                ",",
+                ":"
+            ),
+            default=str
+        )
+
+        if len(
+            encoded
+        ) <= limit:
+
+            return encoded
+
+        summary_size = int(
+            summary_size
+            *
+            0.75
+        )
+
+    return json.dumps(
+        {
+            "truncated":
+                True
+        },
+        ensure_ascii=False
+    )
+
+
 def safe_json(
     value: Any,
     limit: int = 30000
 ) -> str:
 
-    try:
+    return compact_json(
+        value,
+        limit
+    )
 
-        return clean_text(
-            json.dumps(
-                value,
-                ensure_ascii=False,
-                indent=2,
-                default=str
-            ),
-            limit
+
+# =========================================================
+# FINAL PROMPT SAFETY FIT
+# =========================================================
+
+def hard_fit_prompt(
+    text: str,
+    max_chars: int
+) -> str:
+
+    text = clean_text(
+        text,
+        1000000
+    )
+
+    if len(
+        text
+    ) <= max_chars:
+
+        return text
+
+    marker = (
+        "\n\n"
+        "[XPAND PROMPT BUDGET COMPACTION]\n"
+        "Secondary context omitted to stay inside provider limits.\n"
+        "\n"
+    )
+
+    available = max(
+        100,
+        max_chars
+        -
+        len(
+            marker
+        )
+    )
+
+    #
+    # Preserve both:
+    # - beginning: user request / high priority context
+    # - ending: current pass execution rules
+    #
+
+    front_size = int(
+        available
+        *
+        0.62
+    )
+
+    back_size = (
+        available
+        -
+        front_size
+    )
+
+    return (
+        text[
+            :front_size
+        ]
+        +
+        marker
+        +
+        text[
+            -back_size:
+        ]
+    )
+
+
+def fit_prompt_for_api(
+    prompt: str,
+    *,
+    label: str,
+    budget: int
+) -> str:
+
+    original = clean_text(
+        prompt,
+        1000000
+    )
+
+    original_length = len(
+        original
+    )
+
+    fitted = hard_fit_prompt(
+        original,
+        budget
+    )
+
+    final_length = len(
+        fitted
+    )
+
+    if original_length <= budget:
+
+        print(
+            (
+                "🧮 Prompt budget ["
+                +
+                label
+                +
+                "]: "
+                +
+                str(
+                    final_length
+                )
+                +
+                "/"
+                +
+                str(
+                    budget
+                )
+                +
+                " chars ✅"
+            )
         )
 
-    except Exception:
+    else:
 
-        return clean_text(
-            value,
-            limit
+        print(
+            (
+                "🧮 Prompt budget ["
+                +
+                label
+                +
+                "]: "
+                +
+                str(
+                    original_length
+                )
+                +
+                " → "
+                +
+                str(
+                    final_length
+                )
+                +
+                "/"
+                +
+                str(
+                    budget
+                )
+                +
+                " chars ✅ COMPACTED"
+            )
         )
 
+    if len(
+        fitted
+    ) >= OPENAI_PROMPT_HARD_LIMIT:
+
+        raise RuntimeError(
+            (
+                "XPAND Prompt Budget Manager failed for "
+                +
+                label
+                +
+                "."
+            )
+        )
+
+    return fitted
+
+
+# =========================================================
+# JSON EXTRACTION
+# =========================================================
 
 def extract_json_object(
     value: str
@@ -460,7 +1117,8 @@ def extract_json_object(
         r"^```(?:json)?\s*",
         "",
         text,
-        flags=re.IGNORECASE
+        flags=
+            re.IGNORECASE
     )
 
     text = re.sub(
@@ -677,7 +1335,9 @@ def find_images_in_response(
             len(
                 raw
             ),
-            raw[:64],
+            raw[
+                :64
+            ],
         )
 
         if signature in signatures:
@@ -700,10 +1360,6 @@ def find_images_in_response(
 
 # =========================================================
 # NATIVE OUTPUT RESOLUTION
-#
-# GPT-Image-2 supports flexible valid resolutions.
-# These values keep both dimensions multiples of 16 and
-# remain within the supported total-pixel ceiling.
 # =========================================================
 
 def production_size_for_ratio(
@@ -753,10 +1409,6 @@ def production_size_for_ratio(
             "1024x1024"
         )
 
-    #
-    # High-resolution final outputs.
-    #
-
     mapping = {
         "1:1":
             "2048x2048",
@@ -796,7 +1448,7 @@ def production_size_for_ratio(
 
 
 # =========================================================
-# PROMPT COMPILER
+# NEGATIVE PROMPT
 # =========================================================
 
 def base_negative_prompt() -> str:
@@ -810,6 +1462,118 @@ def base_negative_prompt() -> str:
     )
 
 
+# =========================================================
+# COMPILED SECTION HELPERS
+# =========================================================
+
+def compiled_sections(
+    compiled: CompiledPrompt
+) -> Dict[str, str]:
+
+    metadata = (
+        compiled.metadata
+        if isinstance(
+            compiled.metadata,
+            dict
+        )
+        else
+        {}
+    )
+
+    sections = metadata.get(
+        "sections",
+        {}
+    )
+
+    return (
+        sections
+        if isinstance(
+            sections,
+            dict
+        )
+        else
+        {}
+    )
+
+
+def section_text(
+    compiled: CompiledPrompt,
+    key: str,
+    fallback_limit: int = 5000
+) -> str:
+
+    sections = compiled_sections(
+        compiled
+    )
+
+    value = sections.get(
+        key
+    )
+
+    if value:
+
+        return clean_text(
+            value,
+            fallback_limit
+        )
+
+    return clean_text(
+        compiled.prompt,
+        fallback_limit
+    )
+
+
+def build_pass_context(
+    compiled: CompiledPrompt,
+    keys: Sequence[
+        Tuple[
+            str,
+            str,
+            int
+        ]
+    ]
+) -> str:
+
+    parts = []
+
+    for key, label, limit in keys:
+
+        value = section_text(
+            compiled,
+            key,
+            limit
+        )
+
+        if not value:
+
+            continue
+
+        parts.append(
+            (
+                label
+                +
+                "\n"
+                +
+                ("-" * len(label))
+                +
+                "\n"
+                +
+                clean_text(
+                    value,
+                    limit
+                )
+            )
+        )
+
+    return "\n\n".join(
+        parts
+    )
+
+
+# =========================================================
+# OPENAI PROMPT COMPILER
+# =========================================================
+
 def compile_openai_prompt(
     *,
     request: str,
@@ -820,41 +1584,91 @@ def compile_openai_prompt(
     product_lock: Any
 ) -> CompiledPrompt:
 
+    sections = {
+        "request":
+            clean_text(
+                request,
+                SECTION_BUDGETS[
+                    "request"
+                ]
+            ),
+
+        "creative_direction":
+            compact_json(
+                creative_direction,
+                SECTION_BUDGETS[
+                    "creative_direction"
+                ]
+            ),
+
+        "brand_context":
+            compact_json(
+                brand_context,
+                SECTION_BUDGETS[
+                    "brand_context"
+                ]
+            ),
+
+        "references":
+            compact_json(
+                references,
+                SECTION_BUDGETS[
+                    "references"
+                ]
+            ),
+
+        "camera_direction":
+            compact_json(
+                camera_direction,
+                SECTION_BUDGETS[
+                    "camera_direction"
+                ]
+            ),
+
+        "product_lock":
+            compact_json(
+                product_lock,
+                SECTION_BUDGETS[
+                    "product_lock"
+                ]
+            ),
+    }
+
     prompt = f"""
 ORIGINAL REQUEST
 ================
 
-{clean_text(request, 12000)}
+{sections["request"]}
 
 
 APPROVED CREATIVE DIRECTION
 ===========================
 
-{safe_json(creative_direction, 16000)}
+{sections["creative_direction"]}
 
 
-BRAND MEMORY
-============
+BRAND EXECUTION CONTEXT
+=======================
 
-{safe_json(brand_context, 14000)}
+{sections["brand_context"]}
 
 
 VISUAL REFERENCE DNA
 ====================
 
-{safe_json(references, 14000)}
+{sections["references"]}
 
 
 CAMERA LOCK
 ===========
 
-{safe_json(camera_direction, 6000)}
+{sections["camera_direction"]}
 
 
 PRODUCT LOCK
 ============
 
-{safe_json(product_lock, 8000)}
+{sections["product_lock"]}
 
 
 OPENAI GPT-IMAGE EXECUTION RULES
@@ -862,11 +1676,16 @@ OPENAI GPT-IMAGE EXECUTION RULES
 
 Create one world-class commercial advertising image.
 
-Preserve the approved core concept.
+The APPROVED CREATIVE DIRECTION is the primary concept.
+Do not replace it with a generic advertising idea.
+
+Use brand and reference information as execution constraints,
+not as competing concepts.
 
 Use the camera direction literally and coherently.
 
 Maintain:
+
 - physically plausible camera geometry
 - premium commercial photography
 - realistic material response
@@ -880,22 +1699,37 @@ Maintain:
 - professional advertising finish
 
 If product references are supplied:
-- treat those images as the authoritative product identity
+
+- treat them as authoritative product identity
 - preserve silhouette
 - preserve proportions
 - preserve corner geometry
 - preserve material
 - preserve color relationships
 - preserve major graphic layout
-- do not invent a different card/product/package
-- redesign the environment around the product, not the product itself
+- redesign the environment around the product
+- do not redesign the product itself
 
 Do not imitate one existing advertisement exactly.
 
 Do not create a generic AI banking image.
 
-The scene should feel intentionally art-directed and physically photographed.
+Avoid visual clichés unless they are transformed into
+an original, brand-relevant visual metaphor.
+
+The final scene must feel intentionally art-directed,
+physically plausible and professionally photographed.
 """.strip()
+
+    prompt = fit_prompt_for_api(
+        prompt,
+
+        label=
+            "compiled_master_brief",
+
+        budget=
+            COMPILED_PROMPT_BUDGET
+    )
 
     return CompiledPrompt(
         target=
@@ -909,15 +1743,30 @@ The scene should feel intentionally art-directed and physically photographed.
 
         metadata={
             "compiler":
-                "openai_gpt_image",
+                "openai_gpt_image_v2_1",
 
             "product_lock":
                 bool(
                     product_lock
                 ),
+
+            "prompt_budget":
+                COMPILED_PROMPT_BUDGET,
+
+            "prompt_chars":
+                len(
+                    prompt
+                ),
+
+            "sections":
+                sections,
         }
     )
 
+
+# =========================================================
+# OTHER MODEL PROMPT COMPILERS
+# =========================================================
 
 def compile_gemini_prompt(
     *,
@@ -931,30 +1780,42 @@ def compile_gemini_prompt(
 
     prompt = f"""
 TASK:
-{clean_text(request, 12000)}
+{clean_text(request, 5000)}
 
 CREATIVE DIRECTION:
-{safe_json(creative_direction, 16000)}
+{compact_json(creative_direction, 6000)}
 
 BRAND:
-{safe_json(brand_context, 12000)}
+{compact_json(brand_context, 4500)}
 
 REFERENCE DNA:
-{safe_json(references, 12000)}
+{compact_json(references, 3500)}
 
 CAMERA:
-{safe_json(camera_direction, 5000)}
+{compact_json(camera_direction, 1800)}
 
 LOCKED PRODUCT:
-{safe_json(product_lock, 7000)}
+{compact_json(product_lock, 2200)}
 
 Generate a premium photorealistic advertising key visual.
 
-Prioritize semantic coherence and brand consistency.
+Prioritize:
+- semantic coherence
+- original concept
+- brand consistency
+- believable camera geometry
+- realistic material behavior
+- premium lighting
+
 Preserve locked product geometry and identity.
-Use clean professional composition and realistic lighting.
+
 Avoid generic banking clichés.
 """.strip()
+
+    prompt = hard_fit_prompt(
+        prompt,
+        COMPILED_PROMPT_BUDGET
+    )
 
     return CompiledPrompt(
         target=
@@ -968,7 +1829,7 @@ Avoid generic banking clichés.
 
         metadata={
             "compiler":
-                "gemini_image",
+                "gemini_image_v2_1",
         }
     )
 
@@ -986,26 +1847,32 @@ def compile_midjourney_prompt(
     prompt = (
         clean_text(
             request,
-            5000
+            4000
         )
         +
         ", "
         +
-        clean_text(
-            safe_json(
-                creative_direction,
-                5000
-            ),
-            5000
+        compact_json(
+            creative_direction,
+            4500
+        )
+        +
+        ", "
+        +
+        compact_json(
+            camera_direction,
+            1400
         )
         +
         ", commercial advertising photography, "
         +
         "precise cinematic camera geometry, "
         +
-        "premium realistic materials, controlled reflections, "
+        "premium realistic materials, "
         +
-        "professional lighting, intentional negative space"
+        "controlled reflections, professional lighting, "
+        +
+        "intentional negative space"
     )
 
     return CompiledPrompt(
@@ -1013,7 +1880,10 @@ def compile_midjourney_prompt(
             TARGET_MIDJOURNEY,
 
         prompt=
-            prompt,
+            hard_fit_prompt(
+                prompt,
+                14000
+            ),
 
         negative_prompt=
             (
@@ -1023,7 +1893,7 @@ def compile_midjourney_prompt(
 
         metadata={
             "compiler":
-                "midjourney",
+                "midjourney_v2_1",
 
             "execution_available":
                 False,
@@ -1042,16 +1912,19 @@ def compile_flux_prompt(
 ) -> CompiledPrompt:
 
     prompt = f"""
-{clean_text(request, 8000)}
+{clean_text(request, 5000)}
 
-Scene:
-{safe_json(creative_direction, 10000)}
+SCENE:
+{compact_json(creative_direction, 5500)}
 
-Camera:
-{safe_json(camera_direction, 4000)}
+BRAND:
+{compact_json(brand_context, 3000)}
 
-Product constraints:
-{safe_json(product_lock, 5000)}
+CAMERA:
+{compact_json(camera_direction, 1600)}
+
+PRODUCT:
+{compact_json(product_lock, 2000)}
 
 Photorealistic high-end advertising photography.
 Accurate geometry.
@@ -1064,14 +1937,17 @@ Clean commercial lighting.
             TARGET_FLUX,
 
         prompt=
-            prompt,
+            hard_fit_prompt(
+                prompt,
+                18000
+            ),
 
         negative_prompt=
             base_negative_prompt(),
 
         metadata={
             "compiler":
-                "flux",
+                "flux_v2_1",
 
             "execution_available":
                 False,
@@ -1089,35 +1965,41 @@ def compile_ideogram_prompt(
     product_lock: Any
 ) -> CompiledPrompt:
 
+    prompt = f"""
+Create a polished commercial campaign visual.
+
+REQUEST:
+{clean_text(request, 5000)}
+
+CREATIVE:
+{compact_json(creative_direction, 5500)}
+
+BRAND:
+{compact_json(brand_context, 3500)}
+
+CAMERA:
+{compact_json(camera_direction, 1600)}
+
+If exact headline text is specified,
+prioritize spelling, layout clarity and readable typography.
+""".strip()
+
     return CompiledPrompt(
         target=
             TARGET_IDEOGRAM,
 
-        prompt=f"""
-Create a polished commercial campaign visual.
-
-REQUEST:
-{clean_text(request, 8000)}
-
-CREATIVE:
-{safe_json(creative_direction, 10000)}
-
-BRAND:
-{safe_json(brand_context, 8000)}
-
-CAMERA:
-{safe_json(camera_direction, 4000)}
-
-If exact headline text is specified, prioritize spelling,
-layout clarity and readable typography.
-""".strip(),
+        prompt=
+            hard_fit_prompt(
+                prompt,
+                18000
+            ),
 
         negative_prompt=
             base_negative_prompt(),
 
         metadata={
             "compiler":
-                "ideogram",
+                "ideogram_v2_1",
 
             "execution_available":
                 False,
@@ -1136,20 +2018,26 @@ def compile_video_prompt(
 
     prompt = f"""
 ADVERTISING SCENE:
-{clean_text(request, 8000)}
+{clean_text(request, 5000)}
 
 VISUAL DIRECTION:
-{safe_json(creative_direction, 12000)}
+{compact_json(creative_direction, 6500)}
 
 BRAND:
-{safe_json(brand_context, 8000)}
+{compact_json(brand_context, 3500)}
 
 CAMERA:
-{safe_json(camera_direction, 5000)}
+{compact_json(camera_direction, 1800)}
 
-Describe physically coherent movement,
-camera motion, subject motion, lighting continuity,
-material consistency and a clear opening/final frame.
+Describe:
+
+- physically coherent subject motion
+- camera motion
+- lighting continuity
+- material consistency
+- product identity continuity
+- clear opening frame
+- clear final frame
 """.strip()
 
     return CompiledPrompt(
@@ -1157,7 +2045,10 @@ material consistency and a clear opening/final frame.
             target,
 
         prompt=
-            prompt,
+            hard_fit_prompt(
+                prompt,
+                19000
+            ),
 
         negative_prompt=
             (
@@ -1168,13 +2059,21 @@ material consistency and a clear opening/final frame.
 
         metadata={
             "compiler":
-                target,
+                (
+                    target
+                    +
+                    "_v2_1"
+                ),
 
             "execution_available":
                 False,
         }
     )
 
+
+# =========================================================
+# MAIN COMPILER ROUTER
+# =========================================================
 
 def compile_prompt(
     target: str,
@@ -1254,16 +2153,20 @@ def compile_prompt(
 
         return compile_video_prompt(
             target,
+
             request=
                 request,
+
             creative_direction=
                 creative_direction
                 or
                 {},
+
             brand_context=
                 brand_context
                 or
                 {},
+
             camera_direction=
                 camera_direction
                 or
@@ -1296,9 +2199,17 @@ def infer_mime_type(
 
         return "image/jpeg"
 
-    if raw.startswith(
-        b"RIFF"
-    ) and b"WEBP" in raw[:16]:
+    if (
+        raw.startswith(
+            b"RIFF"
+        )
+        and
+        b"WEBP"
+        in
+        raw[
+            :16
+        ]
+    ):
 
         return "image/webp"
 
@@ -1316,8 +2227,10 @@ def load_runtime_references(
     stored = load_visual_references(
         core,
         user_id,
+
         brand_id=
             brand_id,
+
         limit=
             limit
     )
@@ -1431,7 +2344,7 @@ def load_runtime_references(
                             "user_note",
                             ""
                         ),
-                        3000
+                        2000
                     ),
 
                 source_id=
@@ -1468,22 +2381,58 @@ def reference_dna_payload(
     ]
 ) -> List[Dict[str, Any]]:
 
-    return [
-        {
-            "role":
-                item.role,
+    output = []
 
-            "dna":
-                item.dna,
+    for item in references:
 
-            "product_lock":
-                item.product_lock,
+        output.append(
+            {
+                "role":
+                    item.role,
 
-            "user_note":
-                item.user_note,
-        }
-        for item in references
-    ]
+                "dna":
+                    reduce_prompt_value(
+                        item.dna,
+
+                        max_depth=
+                            3,
+
+                        list_limit=
+                            6,
+
+                        dict_limit=
+                            30,
+
+                        string_limit=
+                            700
+                    ),
+
+                "product_lock":
+                    reduce_prompt_value(
+                        item.product_lock,
+
+                        max_depth=
+                            3,
+
+                        list_limit=
+                            6,
+
+                        dict_limit=
+                            25,
+
+                        string_limit=
+                            500
+                    ),
+
+                "user_note":
+                    clean_text(
+                        item.user_note,
+                        1000
+                    ),
+            }
+        )
+
+    return output
 
 
 def combined_product_lock(
@@ -1552,7 +2501,9 @@ def combined_product_lock(
             source_count,
 
         "must_remain_identical":
-            locked,
+            locked[
+                :30
+            ],
 
         "environment_may_change":
             True,
@@ -1608,11 +2559,6 @@ def openai_multi_reference_edit(
         ]
     ] = []
 
-    #
-    # FIRST IMAGE:
-    # current working composition.
-    #
-
     if working_image is not None:
 
         files.append(
@@ -1631,11 +2577,6 @@ def openai_multi_reference_edit(
                 )
             )
         )
-
-    #
-    # FOLLOWING IMAGES:
-    # authoritative product references only.
-    #
 
     for index, reference in enumerate(
         references,
@@ -1678,22 +2619,13 @@ def openai_multi_reference_edit(
             "No image input supplied to edit."
         )
 
-    #
-    # Official API supports:
-    #
-    # single image:
-    #   image
-    #
-    # multiple images:
-    #   image[]
-    #
     if len(
         files
     ) == 1:
 
-        field_name, file_tuple = (
-            files[0]
-        )
+        _, file_tuple = files[
+            0
+        ]
 
         files = [
             (
@@ -1704,8 +2636,19 @@ def openai_multi_reference_edit(
 
     size = production_size_for_ratio(
         aspect_ratio,
+
         final_quality=
             final_quality
+    )
+
+    safe_prompt = fit_prompt_for_api(
+        prompt,
+
+        label=
+            pass_name,
+
+        budget=
+            PASS_PROMPT_BUDGET
     )
 
     payload = {
@@ -1713,10 +2656,7 @@ def openai_multi_reference_edit(
             OPENAI_IMAGE_MODEL,
 
         "prompt":
-            clean_text(
-                prompt,
-                30000
-            ),
+            safe_prompt,
 
         "size":
             size,
@@ -1826,9 +2766,9 @@ def openai_multi_reference_edit(
             "GPT-Image-2 edit returned no image."
         )
 
-    image_bytes, mime_type = (
-        images[0]
-    )
+    image_bytes, mime_type = images[
+        0
+    ]
 
     request_id = clean_text(
         response.headers.get(
@@ -1843,7 +2783,9 @@ def openai_multi_reference_edit(
         request_id = (
             "prod-"
             +
-            uuid.uuid4().hex[:12]
+            uuid.uuid4().hex[
+                :12
+            ]
         )
 
     return GeneratedImage(
@@ -1862,10 +2804,10 @@ def openai_multi_reference_edit(
             OPENAI_IMAGE_MODEL,
 
         prompt=
-            prompt,
+            safe_prompt,
 
         original_prompt=
-            prompt,
+            safe_prompt,
 
         aspect_ratio=
             aspect_ratio,
@@ -1907,6 +2849,14 @@ def openai_multi_reference_edit(
                 bool(
                     working_image
                 ),
+
+            "prompt_chars":
+                len(
+                    safe_prompt
+                ),
+
+            "prompt_budget":
+                PASS_PROMPT_BUDGET,
         },
     )
 
@@ -1921,34 +2871,88 @@ def composition_pass_prompt(
     product_lock: Any
 ) -> str:
 
-    return f"""
-CURRENT TASK:
+    master = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                4500
+            ),
+
+            (
+                "creative_direction",
+                "APPROVED CREATIVE DIRECTION",
+                6500
+            ),
+
+            (
+                "brand_context",
+                "BRAND CONSTRAINTS",
+                3500
+            ),
+
+            (
+                "references",
+                "REFERENCE DNA",
+                2800
+            ),
+
+            (
+                "camera_direction",
+                "CAMERA DIRECTION",
+                2200
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                2200
+            ),
+        ]
+    )
+
+    prompt = f"""
+COMPOSITION PASS
+================
+
+{master}
+
+CURRENT PASS OBJECTIVE
+======================
+
 Refine the supplied image into the approved final composition.
-
-MASTER BRIEF:
-{compiled.prompt}
-
-CAMERA LOCK:
-{safe_json(camera, 6000)}
-
-PRODUCT LOCK:
-{safe_json(product_lock, 7000)}
 
 CHANGE ONLY WHAT IMPROVES COMPOSITION:
 
+- preserve the approved concept
 - lock camera geometry
 - lock horizon
 - correct vanishing points
+- preserve physically believable perspective
 - improve foreground / midground / background separation
 - improve visual hierarchy
-- improve hero-product position
+- improve hero subject position
 - establish intentional negative space
 - remove distracting clutter
-- preserve the approved concept
+- improve visual storytelling
+- preserve brand world
+- preserve product identity if locked
 
-Do NOT add a new idea.
-Do NOT redesign the locked product.
+Do NOT create a different concept.
+
+Do NOT replace the visual metaphor.
+
+Do NOT redesign a locked product.
+
+The image after this pass must look like a stronger version
+of the same approved concept.
 """.strip()
+
+    return hard_fit_prompt(
+        prompt,
+        PASS_PROMPT_BUDGET
+    )
 
 
 def product_pass_prompt(
@@ -1956,20 +2960,52 @@ def product_pass_prompt(
     product_lock: Any
 ) -> str:
 
-    return f"""
-PRODUCT FIDELITY PASS.
+    master = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                4000
+            ),
 
-MASTER BRIEF:
-{compiled.prompt}
+            (
+                "creative_direction",
+                "APPROVED CREATIVE DIRECTION",
+                5000
+            ),
 
-LOCK:
-{safe_json(product_lock, 10000)}
+            (
+                "references",
+                "PRODUCT / REFERENCE DNA",
+                4200
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                4000
+            ),
+
+            (
+                "camera_direction",
+                "CAMERA",
+                1600
+            ),
+        ]
+    )
+
+    prompt = f"""
+PRODUCT FIDELITY PASS
+=====================
+
+{master}
 
 The supplied product reference images are authoritative.
 
-Improve the current image while preserving:
+Preserve:
 
-- product silhouette
+- silhouette
 - proportions
 - thickness
 - corners
@@ -1977,37 +3013,85 @@ Improve the current image while preserving:
 - material
 - color relationships
 - major graphic placement
+- intended product perspective
 
 Correct:
+
 - warped product edges
 - wrong perspective
 - inconsistent thickness
 - impossible reflections
 - bad hand/product contact
+- product identity drift
 
-Environment can remain as designed.
-Lighting can adapt naturally.
+Environment may remain as designed.
+
+Lighting may adapt naturally.
 
 Do NOT invent another product.
+
+Do NOT convert the product into a generic AI approximation.
 """.strip()
+
+    return hard_fit_prompt(
+        prompt,
+        PASS_PROMPT_BUDGET
+    )
 
 
 def lighting_pass_prompt(
     compiled: CompiledPrompt
 ) -> str:
 
-    return f"""
-LIGHTING PASS.
+    master = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                3500
+            ),
 
-MASTER BRIEF:
-{compiled.prompt}
+            (
+                "creative_direction",
+                "CREATIVE DIRECTION",
+                5200
+            ),
+
+            (
+                "brand_context",
+                "BRAND LIGHTING / VISUAL CONTEXT",
+                4200
+            ),
+
+            (
+                "camera_direction",
+                "CAMERA",
+                1800
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                1800
+            ),
+        ]
+    )
+
+    prompt = f"""
+LIGHTING PASS
+=============
+
+{master}
 
 Preserve:
+
 - subject identity
 - product geometry
 - camera
 - composition
 - environment structure
+- visual metaphor
 
 Improve only professional lighting behavior:
 
@@ -2021,80 +3105,182 @@ Improve only professional lighting behavior:
 - physically coherent highlights
 - premium cinematic contrast
 - brand-consistent color temperature
+- realistic exposure relationships
 
-Avoid fake glow and excessive wet-looking reflections.
+Avoid:
+
+- fake glow
+- uncontrolled neon
+- excessive wet-looking reflections
+- impossible highlights
+- flat AI lighting
+- decorative light that does not belong to the scene
 """.strip()
+
+    return hard_fit_prompt(
+        prompt,
+        PASS_PROMPT_BUDGET
+    )
 
 
 def material_pass_prompt(
     compiled: CompiledPrompt
 ) -> str:
 
-    return f"""
-MATERIAL REALISM PASS.
+    master = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                3200
+            ),
 
-MASTER BRIEF:
-{compiled.prompt}
+            (
+                "creative_direction",
+                "CREATIVE DIRECTION",
+                4500
+            ),
 
-Preserve camera and composition.
+            (
+                "brand_context",
+                "BRAND MATERIAL CONTEXT",
+                3500
+            ),
+
+            (
+                "references",
+                "REFERENCE MATERIAL DNA",
+                3000
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                2200
+            ),
+        ]
+    )
+
+    prompt = f"""
+MATERIAL REALISM PASS
+=====================
+
+{master}
+
+Preserve camera, composition and concept.
 
 Improve physical realism of:
 
 - metal
 - glass
 - plastic
-- card surfaces
+- bank-card surfaces
 - fabric
 - leather
 - skin
 - architecture
 - floors
 - walls
+- luggage
+- furniture
+- screens
 
 Correct:
+
 - plastic-looking skin
 - excessive gloss
 - impossible reflections
 - identical roughness across surfaces
 - fake CGI texture
+- over-smoothed surfaces
+- unrealistic glass
+- unnatural specular highlights
 
-Use realistic microtexture,
-roughness variation and physically believable reflections.
+Use:
+
+- realistic microtexture
+- material-specific roughness
+- physically believable reflections
+- subtle surface variation
+- premium commercial finish
 """.strip()
+
+    return hard_fit_prompt(
+        prompt,
+        PASS_PROMPT_BUDGET
+    )
 
 
 def polish_pass_prompt(
     compiled: CompiledPrompt
 ) -> str:
 
-    return f"""
-FINAL ADVERTISING POLISH.
+    master = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                3500
+            ),
 
-MASTER BRIEF:
-{compiled.prompt}
+            (
+                "creative_direction",
+                "APPROVED CREATIVE DIRECTION",
+                5000
+            ),
+
+            (
+                "brand_context",
+                "BRAND",
+                3500
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                2200
+            ),
+        ]
+    )
+
+    prompt = f"""
+FINAL ADVERTISING POLISH
+========================
+
+{master}
 
 Do NOT redesign the scene.
+
+Do NOT create a different idea.
 
 Preserve all successful elements.
 
 Final corrections only:
 
-- clean artifacts
+- clean AI artifacts
 - improve fine detail
 - correct anatomy
 - fix edges
 - remove random objects
-- refine shadows
+- refine contact shadows
 - refine reflections
 - improve commercial color grade
-- keep intentional negative space
+- preserve intentional negative space
 - preserve locked product
-- keep brand consistency
+- preserve brand consistency
+- improve realism
 - improve premium campaign finish
 
 The result must look publication-ready,
 not like unfinished AI artwork.
 """.strip()
+
+    return hard_fit_prompt(
+        prompt,
+        PASS_PROMPT_BUDGET
+    )
 
 
 # =========================================================
@@ -2110,16 +3296,38 @@ def generate_base_image(
     aspect_ratio: str
 ) -> GeneratedImage:
 
+    base_prompt = fit_prompt_for_api(
+        compiled.prompt,
+
+        label=
+            "concept_base",
+
+        budget=
+            COMPILED_PROMPT_BUDGET
+    )
+
     if product_refs:
 
         prompt = (
-            compiled.prompt
+            base_prompt
             +
             "\n\n"
-            "BASE GENERATION WITH PRODUCT REFERENCES:\n"
+            "BASE GENERATION WITH PRODUCT REFERENCES\n"
+            "=======================================\n"
             "Use the attached product reference image(s) as "
-            "the authoritative product identity. Build the new "
-            "advertising environment around that product."
+            "authoritative product identity. "
+            "Build the new advertising environment around the "
+            "product. Do not redesign the product."
+        )
+
+        prompt = fit_prompt_for_api(
+            prompt,
+
+            label=
+                "concept_base_with_product_lock",
+
+            budget=
+                PASS_PROMPT_BUDGET
         )
 
         return openai_multi_reference_edit(
@@ -2153,10 +3361,18 @@ def generate_base_image(
 
     images = generate_with_openai(
         prompt=
-            compiled.prompt,
+            base_prompt,
 
         original_prompt=
-            compiled.prompt,
+            clean_text(
+                compiled_sections(
+                    compiled
+                ).get(
+                    "request",
+                    base_prompt
+                ),
+                6000
+            ),
 
         route=
             route,
@@ -2171,7 +3387,9 @@ def generate_base_image(
             "Base generation returned no image."
         )
 
-    image = images[0]
+    image = images[
+        0
+    ]
 
     image.provider = (
         "xpand_production"
@@ -2184,6 +3402,16 @@ def generate_base_image(
     image.metadata[
         "pass_name"
     ] = "concept_base"
+
+    image.metadata[
+        "prompt_chars"
+    ] = len(
+        base_prompt
+    )
+
+    image.metadata[
+        "prompt_budget"
+    ] = COMPILED_PROMPT_BUDGET
 
     return image
 
@@ -2201,7 +3429,30 @@ def build_qa_prompt(
     brand_context: Any
 ) -> str:
 
-    return f"""
+    master_context = build_pass_context(
+        compiled_prompt,
+        [
+            (
+                "creative_direction",
+                "APPROVED CREATIVE DIRECTION",
+                5000
+            ),
+
+            (
+                "references",
+                "VISUAL REFERENCE DNA",
+                2800
+            ),
+
+            (
+                "camera_direction",
+                "CAMERA DIRECTION",
+                1800
+            ),
+        ]
+    )
+
+    prompt = f"""
 You are XPAND Final Visual QA Director.
 
 Evaluate the attached generated advertising image.
@@ -2213,19 +3464,19 @@ Do NOT expose private chain-of-thought.
 Be strict enough for a premium international advertising campaign.
 
 ORIGINAL REQUEST:
-{clean_text(original_request, 12000)}
+{clean_text(original_request, 4500)}
 
-MASTER PRODUCTION BRIEF:
-{clean_text(compiled_prompt.prompt, 16000)}
+CORE PRODUCTION CONTEXT:
+{master_context}
 
 PRODUCT LOCK:
-{safe_json(product_lock, 7000)}
+{compact_json(product_lock, 2400)}
 
 BRAND CONTEXT:
-{safe_json(brand_context, 10000)}
+{compact_json(brand_context, 4200)}
 
 IMAGE METADATA:
-{safe_json(image_metadata, 5000)}
+{compact_json(image_metadata, 1800)}
 
 Evaluate 0–100:
 
@@ -2248,7 +3499,7 @@ If no human appears:
 human_anatomy = 100 unless an anatomical object is malformed.
 
 If no readable text/logo is required:
-text_logo_integrity should evaluate absence of random/broken text.
+text_logo_integrity evaluates absence of random or broken text.
 
 If no product reference was supplied:
 product_fidelity evaluates product realism and consistency,
@@ -2256,6 +3507,8 @@ not exact reference matching.
 
 Look specifically for:
 
+- weak execution of the approved concept
+- generic or cliché interpretation
 - warped bank cards
 - wrong card thickness
 - distorted phones
@@ -2271,6 +3524,7 @@ Look specifically for:
 - fake logos
 - clutter
 - cheap CGI feeling
+- mismatch with stored visual reference DNA
 
 Return JSON only:
 
@@ -2289,20 +3543,29 @@ Return JSON only:
     "text_logo_integrity": 0,
     "advertising_readiness": 0
   }},
-
   "strengths": [],
-
   "problems": [],
-
   "correction_instruction": ""
 }}
 
 Correction instruction must:
+
 - fix only actual defects
 - preserve successful elements
 - preserve product identity
-- preserve camera and concept unless they are defective
+- preserve camera and concept unless defective
+- never replace the concept simply to increase aesthetics
 """.strip()
+
+    return fit_prompt_for_api(
+        prompt,
+
+        label=
+            "visual_qa",
+
+        budget=
+            QA_PROMPT_BUDGET
+    )
 
 
 # =========================================================
@@ -2391,7 +3654,10 @@ def evaluate_generated_image(
             image.image_bytes,
 
         image_mime_type=
-            image.mime_type
+            image.mime_type,
+
+        json_mode=
+            True
     )
 
     data = extract_json_object(
@@ -2488,7 +3754,7 @@ def evaluate_generated_image(
                     "correction_instruction",
                     ""
                 ),
-                6000
+                4500
             ),
 
         raw=
@@ -2497,7 +3763,7 @@ def evaluate_generated_image(
 
 
 # =========================================================
-# CORRECTION PASS
+# CORRECTION PROMPT
 # =========================================================
 
 def correction_prompt(
@@ -2507,8 +3773,38 @@ def correction_prompt(
     product_lock: Any
 ) -> str:
 
-    return f"""
-QUALITY CORRECTION PASS.
+    context = build_pass_context(
+        compiled,
+        [
+            (
+                "request",
+                "ORIGINAL REQUEST",
+                3500
+            ),
+
+            (
+                "creative_direction",
+                "APPROVED CREATIVE DIRECTION",
+                4500
+            ),
+
+            (
+                "camera_direction",
+                "CAMERA",
+                1600
+            ),
+
+            (
+                "product_lock",
+                "PRODUCT LOCK",
+                2200
+            ),
+        ]
+    )
+
+    prompt = f"""
+QUALITY CORRECTION PASS
+=======================
 
 CURRENT QA SCORE:
 {qa.score}/100
@@ -2517,28 +3813,39 @@ TARGET:
 {QA_TARGET_SCORE}/100 or higher.
 
 DETECTED PROBLEMS:
-{safe_json(qa.problems, 7000)}
+{compact_json(qa.problems, 4500)}
 
 QA CORRECTION INSTRUCTION:
-{clean_text(qa.correction_instruction, 7000)}
+{clean_text(qa.correction_instruction, 4500)}
+
+CORE CONTEXT:
+{context}
 
 PRODUCT LOCK:
-{safe_json(product_lock, 7000)}
-
-MASTER BRIEF:
-{clean_text(compiled.prompt, 14000)}
+{compact_json(product_lock, 2200)}
 
 RULES:
 
 - Fix only the detected problems.
 - Preserve all successful parts.
 - Do not redesign the concept.
-- Do not change the product identity.
-- Do not change camera unless QA identified camera/perspective failure.
+- Do not replace the visual metaphor.
+- Do not change product identity.
+- Do not change camera unless QA identified a perspective failure.
 - Do not introduce new text.
 - Do not add decorative objects.
 - Improve realism and campaign readiness.
 """.strip()
+
+    return fit_prompt_for_api(
+        prompt,
+
+        label=
+            "qa_correction",
+
+        budget=
+            CORRECTION_PROMPT_BUDGET
+    )
 
 
 # =========================================================
@@ -2702,6 +4009,7 @@ def run_production(
         core,
         user_id,
         brand_id,
+
         limit=
             12
     )
@@ -2750,7 +4058,7 @@ def run_production(
                 +
                 "' is not connected yet. "
                 "Prompt compilation is available, "
-                "but production execution is OpenAI-only in V2.0."
+                "but production execution is OpenAI-only in V2.1."
             )
         )
 
@@ -2759,7 +4067,7 @@ def run_production(
         "=========================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V2.0"
+        " XPAND PRODUCTION ENGINE V2.1"
     )
     print(
         "=========================================="
@@ -2806,7 +4114,48 @@ def run_production(
         QA_TARGET_SCORE
     )
 
+    print(
+        "Prompt hard limit:",
+        OPENAI_PROMPT_HARD_LIMIT
+    )
+
+    print(
+        "Compiled prompt budget:",
+        COMPILED_PROMPT_BUDGET
+    )
+
+    print(
+        "Compiled prompt chars:",
+        len(
+            compiled.prompt
+        )
+    )
+
+    print(
+        (
+            "Prompt budget status:"
+        ),
+        (
+            "OK ✅"
+            if len(
+                compiled.prompt
+            )
+            <=
+            COMPILED_PROMPT_BUDGET
+            else
+            "FAILED ❌"
+        )
+    )
+
     print("")
+
+    if len(
+        compiled.prompt
+    ) > COMPILED_PROMPT_BUDGET:
+
+        raise RuntimeError(
+            "Compiled production prompt exceeded XPAND safety budget."
+        )
 
     # =====================================================
     # BASE
@@ -2832,10 +4181,22 @@ def run_production(
     ] = [
         ProductionPassResult(
             pass_name=
-                "concept_base",
+                (
+                    "concept_base_with_product_lock"
+                    if product_refs
+                    else
+                    "concept_base"
+                ),
 
             image=
                 working,
+
+            metadata={
+                "prompt_chars":
+                    working.metadata.get(
+                        "prompt_chars"
+                    ),
+            }
         )
     ]
 
@@ -2849,6 +4210,7 @@ def run_production(
 
     pass_names = production_passes_for_mode(
         mode,
+
         has_product_reference=
             bool(
                 product_refs
@@ -2863,7 +4225,9 @@ def run_production(
         is_final_pass = (
             pass_name
             ==
-            pass_names[-1]
+            pass_names[
+                -1
+            ]
         )
 
         print(
@@ -2917,6 +4281,13 @@ def run_production(
 
                     image=
                         working,
+
+                    metadata={
+                        "prompt_chars":
+                            working.metadata.get(
+                                "prompt_chars"
+                            ),
+                    }
                 )
             )
 
@@ -2968,9 +4339,7 @@ def run_production(
         "👁️ FINAL VISUAL QA..."
     )
 
-    best_image = (
-        working
-    )
+    best_image = working
 
     best_qa: Optional[
         QAEvaluation
@@ -3001,7 +4370,11 @@ def run_production(
 
         best_score = qa.score
 
-        passes[-1].qa = qa
+        if passes:
+
+            passes[
+                -1
+            ].qa = qa
 
         print(
             (
@@ -3045,13 +4418,9 @@ def run_production(
 
     correction_round = 0
 
-    current_image = (
-        working
-    )
+    current_image = working
 
-    current_qa = (
-        best_qa
-    )
+    current_qa = best_qa
 
     while (
         current_qa is not None
@@ -3153,6 +4522,13 @@ def run_production(
 
                     qa=
                         corrected_qa,
+
+                    metadata={
+                        "prompt_chars":
+                            corrected.metadata.get(
+                                "prompt_chars"
+                            ),
+                    }
                 )
             )
 
@@ -3169,7 +4545,8 @@ def run_production(
             )
 
             #
-            # NEVER lose the better image.
+            # Best-version preservation:
+            # never throw away a better previous image.
             #
 
             if (
@@ -3246,7 +4623,7 @@ def run_production(
     )
 
     best_image.model = (
-        "XPAND Production V2 → "
+        "XPAND Production V2.1 → "
         +
         OPENAI_IMAGE_MODEL
     )
@@ -3286,6 +4663,20 @@ def run_production(
         for item in passes
     ]
 
+    best_image.metadata[
+        "compiled_prompt_chars"
+    ] = len(
+        compiled.prompt
+    )
+
+    best_image.metadata[
+        "compiled_prompt_budget"
+    ] = COMPILED_PROMPT_BUDGET
+
+    best_image.metadata[
+        "prompt_budget_manager"
+    ] = "active"
+
     elapsed = round(
         time.monotonic()
         -
@@ -3319,6 +4710,19 @@ def run_production(
         len(
             passes
         )
+    )
+
+    print(
+        "Compiled prompt:",
+        len(
+            compiled.prompt
+        ),
+        "/",
+        COMPILED_PROMPT_BUDGET
+    )
+
+    print(
+        "Prompt Budget Manager: ACTIVE"
     )
 
     print(
@@ -3369,10 +4773,9 @@ def run_production(
 # =========================================================
 # SELF TEST
 #
-# IMPORTANT:
-# - NO API calls
-# - NO image generation
-# - NO database access
+# NO API CALLS
+# NO IMAGE GENERATION
+# NO DATABASE ACCESS
 # =========================================================
 
 if __name__ == "__main__":
@@ -3382,7 +4785,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V2.0"
+        " XPAND PRODUCTION ENGINE V2.1"
     )
     print(
         "=========================================="
@@ -3409,6 +4812,32 @@ if __name__ == "__main__":
 
     print("")
 
+    print(
+        "OpenAI prompt hard limit:",
+        OPENAI_PROMPT_HARD_LIMIT
+    )
+
+    print(
+        "XPAND compiled budget:",
+        COMPILED_PROMPT_BUDGET
+    )
+
+    print(
+        "XPAND pass budget:",
+        PASS_PROMPT_BUDGET
+    )
+
+    print(
+        "XPAND QA budget:",
+        QA_PROMPT_BUDGET
+    )
+
+    print("")
+
+    # =====================================================
+    # RESOLUTION TEST
+    # =====================================================
+
     for ratio in [
         "1:1",
         "4:5",
@@ -3426,6 +4855,7 @@ if __name__ == "__main__":
                 +
                 production_size_for_ratio(
                     ratio,
+
                     final_quality=
                         True
                 )
@@ -3434,14 +4864,20 @@ if __name__ == "__main__":
 
     print("")
 
+    # =====================================================
+    # PASS TEST
+    # =====================================================
+
     no_product = production_passes_for_mode(
         MODE_MASTERPIECE,
+
         has_product_reference=
             False
     )
 
     with_product = production_passes_for_mode(
         MODE_MASTERPIECE,
+
         has_product_reference=
             True
     )
@@ -3480,6 +4916,10 @@ if __name__ == "__main__":
 
     print("")
 
+    # =====================================================
+    # NORMAL COMPILER TEST
+    # =====================================================
+
     dummy_compiler = compile_prompt(
         TARGET_OPENAI,
 
@@ -3513,6 +4953,251 @@ if __name__ == "__main__":
         dummy_compiler.target
     )
 
+    print(
+        "Normal compiled chars:",
+        len(
+            dummy_compiler.prompt
+        )
+    )
+
+    print("")
+
+    # =====================================================
+    # EXTREME CONTEXT TEST
+    #
+    # Recreates the problem that previously generated
+    # > 32,000-character prompts.
+    # =====================================================
+
+    giant_text = (
+        "STC Bank creative research and detailed campaign "
+        "visual intelligence. "
+        *
+        1000
+    )
+
+    giant_references = [
+        {
+            "role":
+                "style_reference",
+
+            "dna": {
+                "camera":
+                    giant_text,
+
+                "lighting":
+                    giant_text,
+
+                "materials":
+                    giant_text,
+
+                "composition":
+                    giant_text,
+            },
+
+            "user_note":
+                giant_text,
+        }
+        for _ in range(
+            12
+        )
+    ]
+
+    giant_brand = {
+        "profile":
+            giant_text,
+
+        "rules": [
+            giant_text
+            for _ in range(
+                30
+            )
+        ],
+
+        "campaign_execution": {
+            "visual_world":
+                giant_text,
+
+            "lighting_system":
+                giant_text,
+
+            "material_system":
+                giant_text,
+
+            "camera_system":
+                giant_text,
+        },
+    }
+
+    giant_creative = {
+        "title":
+            "Extreme Masterpiece Test",
+
+        "core_idea":
+            giant_text,
+
+        "visual_metaphor":
+            giant_text,
+
+        "camera":
+            giant_text,
+
+        "production":
+            giant_text,
+    }
+
+    giant_compiler = compile_prompt(
+        TARGET_OPENAI,
+
+        request=
+            giant_text,
+
+        creative_direction=
+            giant_creative,
+
+        brand_context=
+            giant_brand,
+
+        references=
+            giant_references,
+
+        camera_direction={
+            "camera":
+                giant_text
+        },
+
+        product_lock={
+            "enabled":
+                True,
+
+            "must_remain_identical": [
+                giant_text
+                for _ in range(
+                    10
+                )
+            ],
+        }
+    )
+
+    giant_length = len(
+        giant_compiler.prompt
+    )
+
+    giant_ok = (
+        giant_length
+        <=
+        COMPILED_PROMPT_BUDGET
+        and
+        giant_length
+        <
+        OPENAI_PROMPT_HARD_LIMIT
+    )
+
+    print(
+        "Extreme context compiled chars:",
+        giant_length
+    )
+
+    print(
+        "Extreme context budget test:",
+        (
+            "PASS ✅"
+            if giant_ok
+            else
+            "FAIL ❌"
+        )
+    )
+
+    print("")
+
+    # =====================================================
+    # PASS-PROMPT TESTS
+    # =====================================================
+
+    test_prompts = {
+        "composition":
+            composition_pass_prompt(
+                giant_compiler,
+
+                {
+                    "camera":
+                        giant_text
+                },
+
+                {
+                    "lock":
+                        giant_text
+                }
+            ),
+
+        "product":
+            product_pass_prompt(
+                giant_compiler,
+
+                {
+                    "lock":
+                        giant_text
+                }
+            ),
+
+        "lighting":
+            lighting_pass_prompt(
+                giant_compiler
+            ),
+
+        "materials":
+            material_pass_prompt(
+                giant_compiler
+            ),
+
+        "final_polish":
+            polish_pass_prompt(
+                giant_compiler
+            ),
+    }
+
+    all_passes_ok = True
+
+    print(
+        "Production pass prompt budgets:"
+    )
+
+    for name, prompt in (
+        test_prompts.items()
+    ):
+
+        length = len(
+            prompt
+        )
+
+        ok = (
+            length
+            <=
+            PASS_PROMPT_BUDGET
+            and
+            length
+            <
+            OPENAI_PROMPT_HARD_LIMIT
+        )
+
+        if not ok:
+
+            all_passes_ok = False
+
+        print(
+            (
+                " ✅ "
+                if ok
+                else
+                " ❌ "
+            ),
+            name,
+            "=",
+            length,
+            "/",
+            PASS_PROMPT_BUDGET
+        )
+
     print("")
 
     print(
@@ -3536,6 +5221,50 @@ if __name__ == "__main__":
         )
 
     print("")
+
+    print(
+        "✅ Prompt Budget Manager"
+    )
+
+    print(
+        "✅ Structured context compaction"
+    )
+
+    print(
+        "✅ Request priority preserved"
+    )
+
+    print(
+        "✅ Creative-direction priority preserved"
+    )
+
+    print(
+        "✅ Brand Memory compact execution context"
+    )
+
+    print(
+        "✅ Visual Reference DNA compaction"
+    )
+
+    print(
+        "✅ Camera context preserved"
+    )
+
+    print(
+        "✅ Product Lock preserved"
+    )
+
+    print(
+        "✅ Per-pass selective context"
+    )
+
+    print(
+        "✅ Prompt length logging before API calls"
+    )
+
+    print(
+        "✅ GPT-Image-2 overflow protection"
+    )
 
     print(
         "✅ Model-specific Prompt Compiler"
@@ -3584,6 +5313,27 @@ if __name__ == "__main__":
     print(
         "✅ High-resolution output mapping"
     )
+
+    print("")
+
+    print(
+        (
+            "Prompt Budget Manager self-test: "
+            +
+            (
+                "PASS ✅"
+                if (
+                    giant_ok
+                    and
+                    all_passes_ok
+                )
+                else
+                "FAIL ❌"
+            )
+        )
+    )
+
+    print("")
 
     print(
         "🚫 No API calls were made"
