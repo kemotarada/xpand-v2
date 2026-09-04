@@ -3290,6 +3290,13 @@ status nodes and one restrained progress path. Absolutely no words, letters,
 numbers, pseudo-writing, logo, brand mark, map, flag or decorative hologram.
 The interface must remain subordinate to the physical phone and photographic
 scene while making tracking progress understandable without copy.
+
+NON-NEGOTIABLE HIERARCHY: the phone is the sole primary hero and sharpest focal
+plane. Any path, light, architectural cue or physical metaphor is secondary
+context only. Never introduce a competing hero such as a marble, crystal cube,
+oversized slab, globe, landmark collection or freestanding tracking sculpture.
+If an approved creative direction conflicts with this hierarchy, discard that
+part of the direction and preserve the phone-first rule.
 """.strip() if tracking_requested else """
 PHONE IS A REQUIRED DOMINANT HERO: keep it completely visible, large enough
 to lead the hierarchy, physically supported, perspective-correct and sharply
@@ -4705,6 +4712,11 @@ Score 0-100:
 CONTEXT-AWARE SCORING
 =====================
 
+- When the original request describes an app-based banking service, the phone
+  is the required primary hero and sharpest focal plane. Never penalize the
+  image for focusing on the phone instead of a marble, cube, beam, track or
+  other metaphor from the creative direction. Those props are secondary and
+  must never overrule the phone-first production lock.
 - If no person, hand or body part is visible, human_anatomy MUST be 100. Do not
   assign a neutral 50 to a non-applicable dimension.
 - If no text, letters, numbers, logo or UI is visible and none was requested,
@@ -6774,6 +6786,20 @@ def run_production(
                 print("🏆 Candidate " + str(call_number) + " selected as BEST.")
             else:
                 print("🏆 Earlier stronger candidate preserved as BEST.")
+                # Cost guard: once a clean usable candidate exists, one failed
+                # deep attempt is enough evidence of stagnation. Preserve the
+                # remaining reserved budget for the Pro finishing pass instead
+                # of buying another near-duplicate recovery image.
+                if (
+                    best_score >= 75.0
+                    and best_qa is not None
+                    and not best_qa.critical_blockers
+                ):
+                    print(
+                        "💰 COST GUARD | clean best preserved after a non-improving "
+                        "deep pass; skipping redundant processing calls."
+                    )
+                    break
         except Exception as error:
             errors.append(
                 "deep_masterpiece_pass_"
