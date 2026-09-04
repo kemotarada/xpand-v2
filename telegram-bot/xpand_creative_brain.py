@@ -3140,140 +3140,70 @@ def evaluate_concept_batch(
 
     last_error = None
 
-    for attempt in range(
-        1,
-        EVALUATION_RETRIES + 1,
-    ):
-        try:
+    # Evaluate five concepts at a time. A ten-concept multimodal board produced
+    # overly large JSON and occasionally returned no usable IDs at all.
+    chunks = [concepts[index:index + 5] for index in range(0, len(concepts), 5)]
+    for chunk_index, chunk in enumerate(chunks, start=1):
+        chunk_ids = {item.concept_id for item in chunk}
+        for attempt in range(1, EVALUATION_RETRIES + 1):
             pending_concepts = [
-                concept
-                for concept in concepts
-                if concept.concept_id not in best_map
+                item for item in chunk if item.concept_id not in best_map
             ]
-
             if not pending_concepts:
-                return best_map
-
-            prompt = build_evaluation_prompt(
-                user_request=user_request,
-                concepts=pending_concepts,
-                brand_context=brand_context,
-                visual_references=visual_references,
-            )
-
-            if attempt > 1:
-                prompt += (
-                    "\n\nRETRY CONTRACT: The previous response omitted required IDs. "
-                    "Return evaluations ONLY for these still-missing IDs: "
-                    + ", ".join(item.concept_id for item in pending_concepts)
-                    + ". Do not rename IDs and do not include commentary."
+                break
+            try:
+                prompt = build_evaluation_prompt(
+                    user_request=user_request,
+                    concepts=pending_concepts,
+                    brand_context=brand_context,
+                    visual_references=visual_references,
                 )
-
-            register_model_call(
-                telemetry,
-                (
-                    "creative_review"
-                    if attempt == 1
-                    else
-                    "creative_review_retry"
-                ),
-            )
-
-            raw = call_openai_director(
-                prompt,
-                json_mode=True,
-            )
-
-            payload = (
-                extract_json_object(
-                    raw
-                )
-            )
-
-            evaluations = safe_list(
-                payload.get(
-                    "evaluations"
-                )
-            )
-
-            for item in evaluations:
-                if not isinstance(
-                    item,
-                    dict,
-                ):
-                    continue
-
-                concept_id = (
-                    clean_text(
-                        item.get(
-                            "concept_id"
-                        ),
-                        100,
+                if attempt > 1:
+                    prompt += (
+                        "\n\nRETRY CONTRACT: Return evaluations ONLY for these "
+                        "still-missing IDs: "
+                        + ", ".join(item.concept_id for item in pending_concepts)
+                        + ". Do not rename IDs or include commentary."
                     )
+                register_model_call(
+                    telemetry,
+                    "creative_review_chunk_"
+                    + str(chunk_index)
+                    + ("" if attempt == 1 else "_retry"),
+                )
+                raw = call_openai_director(prompt, json_mode=True)
+                payload = extract_json_object(raw)
+                for item in safe_list(payload.get("evaluations")):
+                    if not isinstance(item, dict):
+                        continue
+                    concept_id = clean_text(item.get("concept_id"), 100)
+                    if concept_id in chunk_ids:
+                        best_map[concept_id] = item
+                chunk_missing = chunk_ids - set(best_map.keys())
+                if not chunk_missing:
+                    break
+                last_error = RuntimeError(
+                    "Creative review missing: " + ", ".join(sorted(chunk_missing))
+                )
+                print(
+                    "⚠️ Review Board chunk incomplete"
+                    + " | chunk=" + str(chunk_index)
+                    + " | missing=" + str(len(chunk_missing))
+                )
+            except Exception as error:
+                last_error = error
+                print(
+                    "⚠️ Review Board chunk failed | chunk="
+                    + str(chunk_index)
+                    + " | " + clean_text(error, 1200)
                 )
 
-                if (
-                    concept_id
-                    and
-                    concept_id
-                    in expected_ids
-                ):
-                    best_map[
-                        concept_id
-                    ] = item
-
-            missing = (
-                expected_ids
-                -
-                set(
-                    best_map.keys()
-                )
-            )
-
-            if not missing:
-                return best_map
-
-            last_error = RuntimeError(
-                (
-                    "Creative review missing: "
-                    +
-                    ", ".join(
-                        sorted(
-                            missing
-                        )
-                    )
-                )
-            )
-
-            print(
-                (
-                    "⚠️ Review Board incomplete"
-                    +
-                    " | missing="
-                    +
-                    str(
-                        len(missing)
-                    )
-                )
-            )
-
-        except Exception as error:
-            last_error = (
-                error
-            )
-
-            print(
-                (
-                    "⚠️ Review Board failed"
-                    +
-                    " | "
-                    +
-                    clean_text(
-                        error,
-                        1200,
-                    )
-                )
-            )
+    missing = expected_ids - set(best_map.keys())
+    if not missing:
+        return best_map
+    last_error = RuntimeError(
+        "Creative review missing: " + ", ".join(sorted(missing))
+    )
 
     if best_map:
         return best_map
