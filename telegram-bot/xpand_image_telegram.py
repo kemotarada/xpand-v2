@@ -7854,7 +7854,9 @@ def library_stat_number(
 
 def is_visual_library_intake(caption: str) -> bool:
     return contains_any(caption, [
+        "app_ui_reference", "مرجع واجهة التطبيق",
         "مرجع", "مكتبة البراند", "احفظها", "احفظ الصورة",
+        "احفظ هذه الصورة", "احفظ هذه الواجهة", "احفظ الواجهة",
         "official reference", "brand reference", "visual library",
     ])
 
