@@ -396,7 +396,7 @@ MASTERPIECE_REQUIRE_QA = str(
 MASTERPIECE_ALLOW_SMART_FALLBACK = str(
     os.environ.get(
         "XPAND_MASTERPIECE_ALLOW_SMART_FALLBACK",
-        "true"
+        "false"
     )
 ).strip().lower() in {
     "1",
@@ -3161,16 +3161,16 @@ def creative_quality_passed(
     if response is None:
         return False
 
-    # Quality is advisory. Any real candidate may continue to production;
-    # the score still helps ranking and QA but never blocks an image request.
     winner = getattr(response, "winner", None)
-    top_concepts = safe_list(
-        getattr(response, "top_concepts", [])
+    if winner is None:
+        return False
+
+    metadata = creative_quality_metadata(response)
+    return bool(
+        metadata.get("quality_gate_passed")
+        and getattr(winner, "quality_gate_passed", False)
+        and getattr(winner, "evaluation_valid", False)
     )
-    concepts = safe_list(
-        getattr(response, "concepts", [])
-    )
-    return bool(winner or top_concepts or concepts)
 
 
 # =========================================================
@@ -3212,9 +3212,9 @@ def masterpiece_guard_status(
 
     if not creative_response:
         return {
-            "allowed": True,
-            "code": "creative_response_missing_fallback",
-            "message": "Creative direction unavailable; continue with Smart Engine.",
+            "allowed": False,
+            "code": "creative_response_missing",
+            "message": "Qualified Masterpiece creative direction is unavailable.",
         }
 
     if not creative_quality_passed(
@@ -3222,9 +3222,9 @@ def masterpiece_guard_status(
     ):
 
         return {
-            "allowed": True,
-            "code": "creative_quality_advisory",
-            "message": "Creative target not reached; continue with best available direction.",
+            "allowed": False,
+            "code": "creative_quality_gate_failed",
+            "message": "Creative Quality Gate did not pass after ideation and recovery.",
         }
 
     if (
@@ -3238,9 +3238,9 @@ def masterpiece_guard_status(
     ):
 
         return {
-            "allowed": True,
-            "code": "campaign_quality_advisory",
-            "message": "Campaign validation incomplete; continue with available brand context.",
+            "allowed": False,
+            "code": "campaign_quality_gate_failed",
+            "message": "Campaign validation did not pass.",
         }
 
     return {
@@ -4854,7 +4854,11 @@ def creative_direction_for_index(
             {}
         )
 
-    # A failed score is advisory; keep the strongest available direction.
+    if not (
+        getattr(concept, "quality_gate_passed", False)
+        and getattr(concept, "evaluation_valid", False)
+    ):
+        return ({}, {})
 
     direction = concept_to_dict(
         concept
@@ -5100,33 +5104,8 @@ def generate_masterpiece_images(
                     )
                 )
 
-                # HYPER: Force one more production attempt if score is critically low
-                if score < 75.0:
-                    print("🔄 HYPER RETRY: QA critically low — forcing second production pass...")
-                    try:
-                        production2 = run_production(
-                            core=core,
-                            user_id=user_id,
-                            brand_id=brand_id,
-                            original_request=request_text + " | STRICT: photorealistic STC Bank ad, ZERO text, correct brand colors, premium commercial quality",
-                            creative_direction=direction,
-                            brand_context=model_brand_context,
-                            camera_direction=camera,
-                            aspect_ratio=aspect_ratio,
-                            mode=PRODUCTION_MODE_MASTERPIECE,
-                            target_model=TARGET_GEMINI
-                        )
-                        score2 = safe_float(getattr(production2, "best_score", 0), 0)
-                        if score2 > score:
-                            production = production2
-                            qa_passed = bool(production.qa and production.qa.passed)
-                            print(f"✅ HYPER RETRY improved score: {score:.1f} → {score2:.1f}")
-                        else:
-                            print(f"⚠️ HYPER RETRY did not improve ({score2:.1f}), keeping first")
-                    except Exception as retry_err:
-                        print("⚠️ HYPER RETRY failed: " + clean_text(retry_err, 300))
-                else:
-                    print("⚠️ QA below target; delivering best available image.")
+                print("🛑 QA is strict; rejected image will not be delivered.")
+                continue
 
             exact_result = (
                 maybe_apply_exact_asset_lock(
@@ -5194,21 +5173,12 @@ def generate_masterpiece_images(
                     )
                 )
 
-                print("⚠️ Exact-asset QA advisory only; delivering the produced image.")
+                print("🛑 Exact-asset QA is strict; rejected image will not be delivered.")
+                continue
 
-            final_score = safe_float(getattr(production, "best_score", 0), 0)
-
-            # HYPER HARD GATE: Never deliver Masterpiece/STC images below 80 QA
-            if MASTERPIECE_REQUIRE_QA and final_score < 80.0:
-                print(f"🚫 HYPER HARD GATE: Blocking delivery of low-quality image (QA={final_score:.1f} < 80)")
-                errors.append(
-                    f"masterpiece_{index+1}: Blocked by hard QA gate (score={final_score:.1f})"
-                )
-                # Do NOT append the image
-            else:
-                images.append(
-                    production.final_image
-                )
+            images.append(
+                production.final_image
+            )
 
             production_metadata.append(
                 {
@@ -6736,13 +6706,16 @@ def generate_and_deliver(
         )
 
         if not images:
-            print("⚠️ Masterpiece returned no image; continuing with Smart Engine fallback.")
+            print("🛑 Masterpiece returned no qualified image.")
 
     # =====================================================
     # NORMAL SMART ENGINE
     # =====================================================
 
-    if not images:
+    if not images and (
+        not use_masterpiece
+        or MASTERPIECE_ALLOW_SMART_FALLBACK
+    ):
 
         mode = (
             prepared[
@@ -6825,6 +6798,11 @@ def generate_and_deliver(
             )
 
             raise
+
+    if not images:
+        raise MasterpieceGuardError(
+            "لم يتم تسليم صورة لأن جميع نتائج Masterpiece فشلت في بوابة الجودة."
+        )
 
     # =====================================================
     # DELIVER
