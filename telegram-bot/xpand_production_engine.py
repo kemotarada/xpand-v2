@@ -396,18 +396,21 @@ QA_AD_READINESS_CRITICAL_FLOOR = max(
 
 
 QA_WEIGHTS = {
-    "concept_execution": 15,
-    "reference_adherence": 10,
-    "perspective": 10,
-    "product_fidelity": 10,
-    "lighting": 10,
-    "materials": 10,
-    "human_anatomy": 5,
-    "background_cleanliness": 5,
+    "concept_execution": 13,
+    "reference_adherence": 8,
+    "perspective": 7,
+    "product_fidelity": 8,
+    "lighting": 7,
+    "materials": 6,
+    "human_anatomy": 4,
+    "background_cleanliness": 4,
     "brand_alignment": 10,
-    "negative_space": 5,
-    "text_logo_integrity": 3,
+    "negative_space": 4,
+    "text_logo_integrity": 10,
     "advertising_readiness": 7,
+    "stc_palette_fidelity": 6,
+    "hero_dominance": 3,
+    "message_clarity_without_text": 3,
 }
 
 
@@ -3154,6 +3157,79 @@ def base_negative_prompt() -> str:
     )
 
 
+def stc_scene_lock(request: str) -> str:
+    """Compact STC rules placed early so prompt fitting cannot drop them."""
+    if not is_stc_bank_request(request):
+        return ""
+
+    source = clean_text(request, 12000).lower()
+    studio_markers = (
+        "studio", "استوديو", "منصة", "platform", "podium",
+        "product shot", "لقطة منتج",
+    )
+    use_vivid = any(str(item).lower() in source for item in studio_markers)
+
+    if use_vivid:
+        palette = """
+SELECTED PALETTE — FAMILY A ONLY, DO NOT MIX WITH FAMILY B:
+dark edges/contact shadows #2E0053; structural transitions #440675,
+#500988 and #4D0C8C; dominant brand core behind the hero #5C0C9B;
+controlled transitions #531985, #6C2F9A and #8945B4; one motivated
+light edge #8F45C1 or #A35DC9; palest highlight #B7A5C4.
+""".strip()
+    else:
+        palette = """
+SELECTED PALETTE — FAMILY B ONLY, DO NOT MIX WITH FAMILY A:
+near-black violet edges #090114, #13012C and #19032F; primary deep
+background #1D0446 and #260845; shadow-to-light structure #310F68,
+#33165D, #401880 and #49277D; hero illumination #53249E and #623C9E;
+at most one motivated background light edge #7433C5; soft glow #825DBE;
+palest halo #AA89DD. Do not substitute blue, cyan or teal for purple.
+""".strip()
+
+    phone_required = any(
+        marker in source
+        for marker in [
+            "phone", "smartphone", "mobile", "app", "application",
+            "هاتف", "جوال", "موبايل", "تطبيق", "التطبيق",
+        ]
+    )
+    phone_rule = (
+        """
+PHONE IS A REQUIRED DOMINANT HERO: keep it completely visible, large enough
+to lead the hierarchy, physically supported, perspective-correct and sharply
+focused. If no verified UI screenshot is physically supplied, the screen must
+be blank, clean and softly reflective with absolutely no generated words,
+letters, numbers, icons, pseudo-UI or invented STC marks. The benefit must read
+from the photographed scene without relying on screen text.
+""".strip()
+        if phone_required
+        else ""
+    )
+
+    return f"""
+STC BANK PRODUCTION LOCK — HIGHEST PRIORITY
+===========================================
+{palette}
+
+Purple is dimensional: darkest at edges/recesses, brighter only around the
+hero, with violet contact shadows and physically correct restrained reflections.
+Green is not scene lighting. No green/teal cast on skin, walls or architecture.
+User-supplied STC references control perceived color, tonal roll-off, restraint
+and finish. Do not copy their literal composition.
+
+{phone_rule}
+
+IMAGE SURFACE RULE: no campaign copy, typography, letters, numbers, logo,
+watermark, invented UI, route graphics, holograms, decorative particles or
+souvenir-like landmark collections anywhere in the generated image.
+
+COMPOSITION RULE: one dominant hero, one subordinate context, clear visual
+balance, purposeful negative space, premium real-lens viewpoint, believable
+gravity, materials, anatomy, perspective, contact shadows and reflections.
+""".strip()
+
+
 # =========================================================
 # QUALITY-FIRST MASTER BLUEPRINT
 # =========================================================
@@ -3177,6 +3253,9 @@ ORIGINAL USER REQUEST
 ---------------------
 
 {clean_text(request, 5000)}
+
+
+{stc_scene_lock(request)}
 
 
 APPROVED CREATIVE DIRECTION
@@ -4265,6 +4344,7 @@ def detect_critical_blockers(
     scores: Dict[str, float],
     explicit_failures: Any,
     product_lock: Any,
+    original_request: str = "",
 ) -> List[str]:
 
     blockers: List[
@@ -4303,7 +4383,22 @@ def detect_critical_blockers(
 
         "advertising_readiness":
             QA_AD_READINESS_CRITICAL_FLOOR,
+
+        # Any invented/readable text is a delivery failure for the clean
+        # photographic base requested by this pipeline.
+        "text_logo_integrity":
+            90.0,
     }
+
+    if is_stc_bank_request(original_request):
+        thresholds.update(
+            {
+                "stc_palette_fidelity": 65.0,
+                "hero_dominance": 60.0,
+                "message_clarity_without_text": 60.0,
+                "brand_alignment": 65.0,
+            }
+        )
 
     if safe_dict(
         product_lock
@@ -4432,6 +4527,9 @@ Score 0-100:
 - negative_space
 - text_logo_integrity
 - advertising_readiness
+- stc_palette_fidelity
+- hero_dominance
+- message_clarity_without_text
 
 
 CRITICAL FAILURE
@@ -4446,6 +4544,13 @@ Critical means a genuine campaign-delivery problem:
 - major product deformation
 - major brand mismatch
 - unusable composition
+- any generated/readable words, letters, numbers, fake UI or invented logo when
+  no verified screen asset was supplied
+- for STC Bank: blue/cyan/teal replacing the selected purple family, mixing
+  both purple families, or purple identity coverage too weak to feel native
+- required phone missing, cropped, too small, visually subordinate, floating,
+  physically unsupported, or carrying invented screen content
+- the campaign benefit cannot be understood after mentally removing all text
 
 Do NOT classify a minor taste preference as critical.
 
@@ -4464,7 +4569,10 @@ Return JSON only:
     "brand_alignment": 0,
     "negative_space": 0,
     "text_logo_integrity": 0,
-    "advertising_readiness": 0
+    "advertising_readiness": 0,
+    "stc_palette_fidelity": 0,
+    "hero_dominance": 0,
+    "message_clarity_without_text": 0
   }},
 
   "strengths": [],
@@ -4629,6 +4737,9 @@ def evaluate_generated_image(
             ),
             product_lock=(
                 product_lock
+            ),
+            original_request=(
+                original_request
             ),
         )
     )
@@ -4850,6 +4961,16 @@ def has_concept_failure(
         CONCEPT_RECOVERY_SCORE_FLOOR
     ):
 
+        return True
+
+    # A visually attractive scene that communicates only through generated
+    # screen copy is a failed advertising idea, not a retouching problem.
+    if clamp_score(
+        qa.scores.get(
+            "message_clarity_without_text",
+            0,
+        )
+    ) < 70.0:
         return True
 
     combined = " ".join(
