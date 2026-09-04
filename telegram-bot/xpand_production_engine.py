@@ -253,7 +253,7 @@ MASTERPIECE_FINAL_IMAGE_MODEL = str(
 def masterpiece_model_for_pass(pass_name: str) -> str:
     name = str(pass_name or "").lower()
     # All exploration/recovery/correction candidates use Nano Banana 2 at 1K.
-    # Nano Banana Pro is reserved exclusively for the chosen 2K/4K master.
+    # Nano Banana Pro is reserved exclusively for the chosen final 1K/2K/4K master.
     if name.startswith("final_native_"):
         return MASTERPIECE_FINAL_IMAGE_MODEL
     return MASTERPIECE_EXPLORATION_MODEL
@@ -5592,9 +5592,10 @@ def run_production(
     if final_requested_size not in {"1K", "2K", "4K"}:
         final_requested_size = "1K"
 
-    # Reserve exactly one image + one QA call for a true provider-native 2K/4K
-    # final. A requested 1K result needs no extra finalization generation.
-    reserve_final_call = final_requested_size in {"2K", "4K"}
+    # Reserve exactly one image + one QA call for a true provider-native final
+    # at the user's chosen 1K/2K/4K tier. Processing stays on economical Nano
+    # Banana 2; the sixth call is the only Nano Banana Pro finishing pass.
+    reserve_final_call = True
     processing_image_limit = max(
         1,
         MASTERPIECE_MAX_IMAGE_CALLS - (1 if reserve_final_call else 0),
@@ -6726,8 +6727,9 @@ def run_production(
     # =====================================================
     # PROVIDER-NATIVE FINAL RESOLUTION PASS
     # =====================================================
-    # Processing is always 1K. For 2K/4K requests, spend the one reserved call
-    # only on the strongest surviving candidate, then QA that exact output.
+    # Processing is always economical 1K. Spend the one reserved Pro call only
+    # on the strongest surviving candidate at the requested 1K/2K/4K tier,
+    # then QA that exact output.
 
     if reserve_final_call:
         if telemetry["image_calls"] >= MASTERPIECE_MAX_IMAGE_CALLS:
