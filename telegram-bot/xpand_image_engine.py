@@ -122,6 +122,15 @@ GEMINI_VISION_MODEL = str(
     )
 ).strip()
 
+# Structured JSON work is intentionally isolated from the long-horizon Pro
+# director. Gemini 3.5 Flash is GA and more predictable for compact contracts.
+GEMINI_STRUCTURED_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_STRUCTURED_MODEL",
+        "gemini-3.5-flash",
+    )
+).strip()
+
 
 # =========================================================
 # DEFAULT SETTINGS
@@ -2183,12 +2192,19 @@ def call_gemini_director(
             "mime_type": image_mime_type or "image/png",
             "data": base64.b64encode(image_bytes).decode("ascii"),
         })
-    selected_model = GEMINI_VISION_MODEL if image_bytes else GEMINI_DIRECTOR_MODEL
+    selected_model = (
+        GEMINI_VISION_MODEL
+        if image_bytes
+        else (GEMINI_STRUCTURED_MODEL if structured else GEMINI_DIRECTOR_MODEL)
+    )
     payload: Dict[str, Any] = {"model": selected_model, "input": inputs}
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
         "0", "false", "no", "off"
     }
-    if search_enabled and contains_any(prompt, [
+    # Search grounding and strict JSON are separate phases. Enabling a search
+    # tool during a JSON review can produce tool/citation output instead of the
+    # requested object, which previously made every concept appear "missing".
+    if search_enabled and not structured and contains_any(prompt, [
         "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
     ]):
         payload["tools"] = [{"type": "google_search"}]
