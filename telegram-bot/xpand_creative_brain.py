@@ -1879,12 +1879,12 @@ Return JSON only:
       "risks": []
       ,"scene_family": "human_on_location"
       ,"human_presence": "who is present, what they are naturally doing, and how the phone is held"
-      ,"effect_plan": {
+      ,"effect_plan": {{
         "effect": "none",
         "physical_source": "",
         "purpose": "",
         "hero_remains_sharp": true
-      }
+      }}
     }}
   ]
 }}
