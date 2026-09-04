@@ -2188,6 +2188,21 @@ def detect_aspect_ratio(
         text
     )
 
+    # Normalize Arabic/Persian digits, Unicode ratio colons and optional
+    # whitespace so an explicit user ratio always wins over generic words
+    # such as "ad", "post" or "poster".
+    source = source.translate(
+        str.maketrans(
+            "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
+            "01234567890123456789"
+        )
+    )
+    source = re.sub(
+        r"\s*[：﹕︓:]\s*",
+        ":",
+        source
+    )
+
     ratios = [
         "1:1",
         "4:5",
@@ -2203,7 +2218,10 @@ def detect_aspect_ratio(
 
     for ratio in ratios:
 
-        if ratio in source:
+        if re.search(
+            rf"(?<!\d){re.escape(ratio)}(?!\d)",
+            source
+        ):
 
             return ratio
 
@@ -3764,10 +3782,7 @@ def prepare_generation_input(
                             approved_direction,
 
                         allow_fallback=
-                            (
-                                not
-                                strict_masterpiece
-                            )
+                            True
                     )
                 )
 
@@ -6733,7 +6748,7 @@ def generate_and_deliver(
                     ),
 
                 allow_fallback=
-                    False,
+                    True,
 
                 image_size=
                     image_size,
