@@ -4137,7 +4137,12 @@ def gemini_multi_reference_edit(
         raise RuntimeError("Nano Banana reference edit failed: " + clean_text(response_data, 3000))
     images = find_images_in_response(response_data)
     if not images:
-        raise RuntimeError("Nano Banana returned no image.")
+        raise RuntimeError(
+            "Nano Banana returned no image | model="
+            + model
+            + " | response="
+            + clean_text(response_data, 2400)
+        )
     image_bytes, mime_type = images[0]
     image_bytes, mime_type = _finalize_requested_resolution(
         image_bytes,
@@ -5867,39 +5872,54 @@ def run_production(
             "🧬 Actual visual references attached: 0"
         )
 
-    first_image = (
-        generate_high_quality_image(
-            compiled=(
-                compiled
-            ),
-            product_refs=(
-                product_refs
-            ),
-            visual_refs=(
-                physical_refs
-            ),
-            aspect_ratio=(
-                aspect_ratio
-            ),
-            original_request=(
-                original_request
-            ),
-            pass_name=(
-                "quality_first_high"
-            ),
-        )
-    )
+    first_image: Optional[GeneratedImage] = None
+    first_generation_error: Optional[Exception] = None
+    initial_pass_name = "quality_first_high"
+    # A provider may occasionally return text/refusal/empty output. Such a
+    # transport/model failure must consume a call but must not abort the whole
+    # Masterpiece run. Retry once on Nano Banana Pro, then once more with a
+    # clean Pro request, all inside the configured six-call ceiling.
+    for initial_pass_name in (
+        "quality_first_high",
+        "quality_first_retry_pro",
+        "quality_first_retry_pro_2",
+    ):
+        if telemetry["image_calls"] >= MASTERPIECE_MAX_IMAGE_CALLS:
+            break
+        try:
+            first_image = generate_high_quality_image(
+                compiled=compiled,
+                product_refs=product_refs,
+                visual_refs=physical_refs,
+                aspect_ratio=aspect_ratio,
+                original_request=original_request,
+                pass_name=initial_pass_name,
+            )
+            telemetry["image_calls"] += 1
+            break
+        except Exception as error:
+            telemetry["image_calls"] += 1
+            first_generation_error = error
+            errors.append(
+                initial_pass_name + ": " + clean_text(error, 3000)
+            )
+            print(
+                "⚠️ " + initial_pass_name + " failed: "
+                + clean_text(error, 1600)
+            )
 
-    telemetry[
-        "image_calls"
-    ] += 1
+    if first_image is None:
+        raise RuntimeError(
+            "All initial image-provider attempts failed: "
+            + clean_text(first_generation_error, 3000)
+        )
 
     passes: List[
         ProductionPassResult
     ] = [
         ProductionPassResult(
             pass_name=(
-                "quality_first_high"
+                initial_pass_name
             ),
 
             image=(
