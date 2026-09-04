@@ -3140,6 +3140,30 @@ def evaluate_concept_batch(
 
     last_error = None
 
+    def evaluation_items(payload: Any) -> List[Dict[str, Any]]:
+        """Accept harmless Gemini wrapper variations without weakening review."""
+        if isinstance(payload, list):
+            return [item for item in payload if isinstance(item, dict)]
+        if not isinstance(payload, dict):
+            return []
+        for key in ("evaluations", "reviews", "results", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [item for item in value if isinstance(item, dict)]
+        keyed: List[Dict[str, Any]] = []
+        for key, value in payload.items():
+            if key in expected_ids and isinstance(value, dict):
+                item = dict(value)
+                item.setdefault("concept_id", key)
+                keyed.append(item)
+        if keyed:
+            return keyed
+        for value in payload.values():
+            nested = evaluation_items(value)
+            if nested and any("concept_id" in item for item in nested):
+                return nested
+        return []
+
     # Evaluate five concepts at a time. A ten-concept multimodal board produced
     # overly large JSON and occasionally returned no usable IDs at all.
     chunks = [concepts[index:index + 5] for index in range(0, len(concepts), 5)]
@@ -3173,7 +3197,8 @@ def evaluate_concept_batch(
                 )
                 raw = call_openai_director(prompt, json_mode=True)
                 payload = extract_json_object(raw)
-                for item in safe_list(payload.get("evaluations")):
+                parsed_items = evaluation_items(payload)
+                for item in parsed_items:
                     if not isinstance(item, dict):
                         continue
                     concept_id = clean_text(item.get("concept_id"), 100)
@@ -3182,6 +3207,11 @@ def evaluate_concept_batch(
                 chunk_missing = chunk_ids - set(best_map.keys())
                 if not chunk_missing:
                     break
+                if not parsed_items:
+                    print(
+                        "⚠️ Review Board JSON shape unsupported | keys="
+                        + ",".join(list(payload.keys())[:12])
+                    )
                 last_error = RuntimeError(
                     "Creative review missing: " + ", ".join(sorted(chunk_missing))
                 )
