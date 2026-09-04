@@ -911,6 +911,12 @@ class CreativeConcept:
 
     risks: List[str]
 
+    scene_family: str = ""
+
+    human_presence: str = ""
+
+    effect_plan: Dict[str, Any] = field(default_factory=dict)
+
     scores: Dict[str, float] = field(
         default_factory=dict
     )
@@ -1512,6 +1518,10 @@ STC_FORBIDDEN_CONCEPT_MARKERS = (
     "particle", "sparkle", "hud", "ui overlay",
     "بطاقة طافية", "هاتف طائر", "هاتف يطفو", "يطفو", "تطفو",
     "هولوغرام", "مسار تحويل ضوئي", "خط اتصال", "خطوط اتصال",
+    "phone on desk", "phone on a desk", "phone on table", "phone on a table",
+    "smartphone on desk", "smartphone on table", "هاتف على طاولة",
+    "الهاتف على طاولة", "هاتف على المكتب", "الهاتف على المكتب",
+    "miniature bridge", "miniature landmark", "جسر مصغر", "مجسم جسر",
 )
 
 
@@ -1739,6 +1749,42 @@ But do not include internal reasoning.
 Use concise production-ready decisions.
 
 ==================================================
+STC BANK ORIGINALITY + SCENE DIVERSITY CONTRACT
+==================================================
+
+When the request is for STC Bank, the 20 concepts MUST span materially
+different physical situations, not renamed versions of one room:
+
+- at least 10 human_on_location concepts: a believable person actively using
+  the phone in distinct real locations relevant to the benefit
+- at least 3 architectural_frame concepts using real depth, framing or
+  foreground occlusion
+- at least 3 phone_in_hand_closeup concepts with different grips, viewpoints
+  and backgrounds
+- at least 2 motion_moment concepts with motivated environmental motion
+- at most 2 interior concepts total
+- zero office-desk concepts unless the user explicitly requests an office
+- zero phones resting on tables/desks
+- zero miniature bridges, cities, landmarks, globes or souvenir dioramas
+- zero recreation of a supplied reference's person, car, room, pose, camera
+  position or literal visual idea
+
+For app-based services, the phone in active human use is the sole primary
+hero. Locations and metaphors support it; they never become competing heroes.
+
+Set scene_family to exactly one of:
+human_on_location, architectural_frame, phone_in_hand_closeup, motion_moment,
+product_environment, bold_experimental.
+
+EFFECT DISCIPLINE:
+Use no effect by default. Add an effect only when physically motivated and
+useful to hierarchy. Allowed examples: optical depth_of_field, foreground
+occlusion, physically plausible glass reflection, atmospheric depth, restrained
+practical-light bloom, or motion blur on a genuinely moving background object.
+Never blur the phone, hand, app screen or required hero. Never add an effect
+only to appear cinematic. State the effect, physical source and purpose.
+
+==================================================
 HARD ANTI-CLICHE RULE
 ==================================================
 
@@ -1819,6 +1865,14 @@ Return JSON only:
       "production_method": "",
       "campaign_extension": "",
       "risks": []
+      ,"scene_family": "human_on_location"
+      ,"human_presence": "who is present, what they are naturally doing, and how the phone is held"
+      ,"effect_plan": {
+        "effect": "none",
+        "physical_source": "",
+        "purpose": "",
+        "hero_remains_sharp": true
+      }
     }}
   ]
 }}
@@ -1997,6 +2051,20 @@ def concept_from_dict(
                 600,
             )
         ],
+
+        scene_family=clean_text(
+            item.get("scene_family", item.get("category", "")),
+            100,
+        ),
+
+        human_presence=clean_text(
+            item.get("human_presence", ""),
+            300,
+        ),
+
+        effect_plan=safe_dict(
+            item.get("effect_plan", {})
+        ),
 
         generation_round=(
             generation_round
@@ -2402,6 +2470,42 @@ unless the user explicitly requests that exact device.
 # FREE LOCAL PREFLIGHT
 # =========================================================
 
+DESK_SCENE_MARKERS = (
+    "office", "desk", "conference room", "boardroom", "workstation",
+    "مكتب", "طاولة مكتب", "غرفة اجتماعات",
+)
+
+PHONE_ON_SURFACE_MARKERS = (
+    "phone on desk", "phone on a desk", "phone on table", "phone on a table",
+    "smartphone rests", "smartphone lying", "هاتف على طاولة",
+    "الهاتف على طاولة", "هاتف على المكتب", "الهاتف على المكتب",
+)
+
+
+def concept_search_text(concept: CreativeConcept) -> str:
+    return normalize_text(
+        "\n".join(
+            [
+                concept.title,
+                concept.core_idea,
+                concept.visual_metaphor,
+                concept.environment,
+                concept.hero_element,
+                concept.human_presence,
+                compact_json_for_prompt(concept.effect_plan, 800),
+            ]
+        )
+    )
+
+
+def inferred_scene_family(concept: CreativeConcept) -> str:
+    family = clean_text(concept.scene_family, 100).lower()
+    allowed = {
+        "human_on_location", "architectural_frame", "phone_in_hand_closeup",
+        "motion_moment", "product_environment", "bold_experimental",
+    }
+    return family if family in allowed else clean_text(concept.category, 100).lower() or "uncategorized"
+
 def local_preflight_score(
     concept: CreativeConcept,
 ) -> float:
@@ -2490,6 +2594,23 @@ def local_preflight_score(
         *
         18.0
     )
+
+    source = concept_search_text(concept)
+    if any(normalize_text(marker) in source for marker in PHONE_ON_SURFACE_MARKERS):
+        score -= 35.0
+    elif any(normalize_text(marker) in source for marker in DESK_SCENE_MARKERS):
+        score -= 18.0
+
+    if not concept.human_presence and inferred_scene_family(concept) in {
+        "human_on_location", "phone_in_hand_closeup", "motion_moment",
+    }:
+        score -= 12.0
+
+    effect = clean_text(safe_dict(concept.effect_plan).get("effect", "none"), 100).lower()
+    effect_source = clean_text(safe_dict(concept.effect_plan).get("physical_source", ""), 300)
+    effect_purpose = clean_text(safe_dict(concept.effect_plan).get("purpose", ""), 300)
+    if effect not in {"", "none"} and (not effect_source or not effect_purpose):
+        score -= 10.0
 
     return round(
         max(
@@ -2599,11 +2720,7 @@ def shortlist_concepts(
         if len(selected) >= limit:
             break
 
-        category = (
-            concept.category
-            or
-            "uncategorized"
-        )
+        category = inferred_scene_family(concept)
 
         if category in used_categories:
             continue
@@ -2626,6 +2743,11 @@ def shortlist_concepts(
         for item in selected
     }
 
+    family_counts: Dict[str, int] = {}
+    for item in selected:
+        family = inferred_scene_family(item)
+        family_counts[family] = family_counts.get(family, 0) + 1
+
     for concept in clean_pool:
         if len(selected) >= limit:
             break
@@ -2635,6 +2757,12 @@ def shortlist_concepts(
         ):
             continue
 
+        family = inferred_scene_family(concept)
+        # No scene grammar can occupy more than 30% of the paid shortlist.
+        family_cap = max(1, int(round(limit * 0.30)))
+        if family_counts.get(family, 0) >= family_cap:
+            continue
+
         selected.append(
             concept
         )
@@ -2642,6 +2770,7 @@ def shortlist_concepts(
         selected_ids.add(
             concept.concept_id
         )
+        family_counts[family] = family_counts.get(family, 0) + 1
 
     #
     # Only if the generator produced too few clean concepts,
@@ -2732,6 +2861,15 @@ def concept_payload_for_evaluation(
 
         "risks":
             concept.risks,
+
+        "scene_family":
+            concept.scene_family,
+
+        "human_presence":
+            concept.human_presence,
+
+        "effect_plan":
+            concept.effect_plan,
 
         "anti_cliche_hits":
             concept.cliche_hits,
@@ -2843,6 +2981,20 @@ SCORE CALIBRATION
 Do NOT inflate scores.
 
 A visually pretty scene with weak strategy cannot score 82+.
+
+For STC Bank, cap originality at 55 and reject the concept when it uses a
+phone resting on a desk/table, a miniature bridge/city/landmark, a generic
+office, or materially recreates a supplied reference's car, room, person, pose,
+camera or literal idea. A new background color does not make a copied layout
+original.
+
+Originality 82+ requires a distinct real-world situation, a purposeful camera
+viewpoint, immediate benefit clarity, and no overlap with another shortlisted
+concept's scene grammar. Prefer active phone use in a relevant location.
+
+Effects never earn points by themselves. Reward optical blur, reflections,
+motion or atmosphere only when effect_plan identifies a believable physical
+source, improves hierarchy, and keeps the phone/app/hand sharp.
 
 ==================================================
 SCORING
@@ -5683,96 +5835,6 @@ def run_creative_brain(
             )
 
     # =====================================================
-    # LOCAL PREFLIGHT SAFETY NET (masterpiece)
-    #
-    # Reached ONLY when zero concepts received a real model
-    # evaluation (the Director/Review model was momentarily
-    # unavailable, timed out, or its JSON could not be parsed —
-    # e.g. a large multimodal review board on a slow thinking
-    # model). Instead of hard-blocking the whole production, we
-    # release the strongest LOCALLY scored concept, clearly
-    # labeled, so image generation is never fully blocked.
-    #
-    # This is an emergency net, not the normal path. When the
-    # paid evaluation works, best_available already caught it.
-    # =====================================================
-
-    if (
-        mode == MODE_MASTERPIECE
-        and
-        winner is None
-        and
-        all_concepts
-    ):
-        local_ranked = sorted(
-            all_concepts,
-            key=lambda item: local_preflight_score(
-                item
-            ),
-            reverse=True,
-        )
-
-        fallback = local_ranked[0]
-
-        fallback.weighted_score = (
-            local_preflight_score(
-                fallback
-            )
-        )
-
-        fallback.evaluation_valid = True
-
-        fallback.quality_gate_passed = True
-
-        fallback.quality_gate_failures = []
-
-        fallback.debate[
-            "quality_release_level"
-        ] = "local_preflight_release"
-
-        fallback.debate[
-            "target_gate_passed"
-        ] = False
-
-        fallback.debate[
-            "best_available_policy"
-        ] = (
-            "Paid model evaluation was unavailable and no real "
-            "evaluations existed. Released the strongest locally "
-            "scored concept so production is not blocked. Review "
-            "the final image manually."
-        )
-
-        winner = fallback
-
-        released = [
-            winner
-        ]
-
-        release_level = (
-            "local_preflight_release"
-        )
-
-        errors.append(
-            "evaluation_unavailable_local_release_used"
-        )
-
-        print("")
-        print(
-            "⚠️ No real model evaluations — using LOCAL preflight safety net."
-        )
-        print(
-            (
-                "✅ Local safety net released strongest concept | "
-                + winner.concept_id
-                + " | local_score="
-                + str(
-                    winner.weighted_score
-                )
-            )
-        )
-
-    # =====================================================
     # FAST MODE FALLBACK
     # =====================================================
 
@@ -5980,15 +6042,6 @@ def run_creative_brain(
             release_level
             ==
             "best_available_release"
-        ):
-            effective_integration_floor = (
-                winner.weighted_score
-            )
-
-        elif (
-            release_level
-            ==
-            "local_preflight_release"
         ):
             effective_integration_floor = (
                 winner.weighted_score
