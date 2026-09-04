@@ -131,6 +131,13 @@ GEMINI_STRUCTURED_MODEL = str(
     )
 ).strip()
 
+GEMINI_VISION_STRUCTURED_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_VISION_STRUCTURED_MODEL",
+        "gemini-3.5-flash",
+    )
+).strip()
+
 
 # =========================================================
 # DEFAULT SETTINGS
@@ -2193,9 +2200,13 @@ def call_gemini_director(
             "data": base64.b64encode(image_bytes).decode("ascii"),
         })
     selected_model = (
-        GEMINI_VISION_MODEL
-        if image_bytes
-        else (GEMINI_STRUCTURED_MODEL if structured else GEMINI_DIRECTOR_MODEL)
+        GEMINI_VISION_STRUCTURED_MODEL
+        if image_bytes and structured
+        else (
+            GEMINI_VISION_MODEL
+            if image_bytes
+            else (GEMINI_STRUCTURED_MODEL if structured else GEMINI_DIRECTOR_MODEL)
+        )
     )
     payload: Dict[str, Any] = {"model": selected_model, "input": inputs}
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
