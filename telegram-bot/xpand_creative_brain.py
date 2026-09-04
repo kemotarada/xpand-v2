@@ -119,7 +119,7 @@ from xpand_image_engine import (
 # IDENTITY
 # =========================================================
 
-VERSION = "2.0"
+VERSION = "4.0"
 
 MODULE_NAME = "XPAND Creative Brain"
 
@@ -172,9 +172,9 @@ MASTERPIECE_RELEASE_FLOOR = max(
         float(
             os.environ.get(
                 "XPAND_MASTERPIECE_RELEASE_FLOOR",
-                "85",
+                "84",
             )
-            or 85
+            or 84
         ),
     ),
 )
@@ -213,7 +213,7 @@ FAST_MIN_SCORE = max(
 MASTERPIECE_MAX_IDEATION_ROUNDS = max(
     1,
     min(
-        2,
+        3,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_IDEATION_ROUNDS",
@@ -267,15 +267,15 @@ MASTERPIECE_REVISION_FLOOR = max(
 #
 
 MASTERPIECE_SHORTLIST_SIZE = max(
-    4,
+    5,
     min(
-        8,
+        10,
         int(
             os.environ.get(
                 "XPAND_CREATIVE_SHORTLIST_SIZE",
-                "6",
+                "10",
             )
-            or 6
+            or 10
         ),
     ),
 )
@@ -302,13 +302,13 @@ EVALUATION_BATCH_SIZE = (
 EVALUATION_RETRIES = max(
     1,
     min(
-        4,
+        2,
         int(
             os.environ.get(
                 "XPAND_CREATIVE_EVALUATION_RETRIES",
-                "3",
+                "2",
             )
-            or 3
+            or 2
         ),
     ),
 )
@@ -322,7 +322,7 @@ EVALUATION_RETRIES = max(
 # 1 finalizer OR recovery
 #
 
-MASTERPIECE_TARGET_DIRECTOR_CALLS = 3
+MASTERPIECE_TARGET_DIRECTOR_CALLS = 4
 
 
 # =========================================================
@@ -330,13 +330,13 @@ MASTERPIECE_TARGET_DIRECTOR_CALLS = 3
 # =========================================================
 
 MASTERPIECE_MIN_SUBSCORES = {
-    "message_clarity": 75,
-    "originality": 80,
-    "brand_fit": 80,
-    "visual_power": 80,
-    "feasibility": 65,
-    "perspective_integrity": 70,
-    "campaign_potential": 70,
+    "message_clarity": 82,
+    "originality": 85,
+    "brand_fit": 85,
+    "visual_power": 85,
+    "feasibility": 70,
+    "perspective_integrity": 75,
+    "campaign_potential": 78,
 }
 
 
@@ -3123,13 +3123,9 @@ def evaluate_concept_batch(
     Dict[str, Any]
 ]:
     #
-    # HYPER-RESILIENT Review Board (XPAND v2 Extreme)
+    # Public compatibility function.
     #
-    # - Higher retry count
-    # - Accepts partial results (minimum 3 evaluated)
-    # - If still missing concepts, runs a focused second-pass
-    #   only on the missing ones
-    # - Only raises if almost nothing came back
+    # V2 evaluates the entire supplied shortlist as ONE batch.
     #
 
     expected_ids = {
@@ -3143,20 +3139,11 @@ def evaluate_concept_batch(
     ] = {}
 
     last_error = None
-    max_attempts = max(EVALUATION_RETRIES, 3)
 
-    def _ingest(evaluations):
-        for item in evaluations:
-            if not isinstance(item, dict):
-                continue
-            concept_id = clean_text(
-                item.get("concept_id"), 100
-            )
-            if concept_id and concept_id in expected_ids:
-                best_map[concept_id] = item
-
-    # ---------- PASS 1: Full shortlist ----------
-    for attempt in range(1, max_attempts + 1):
+    for attempt in range(
+        1,
+        EVALUATION_RETRIES + 1,
+    ):
         try:
             prompt = build_evaluation_prompt(
                 user_request=user_request,
@@ -3167,7 +3154,12 @@ def evaluate_concept_batch(
 
             register_model_call(
                 telemetry,
-                "creative_review" if attempt == 1 else "creative_review_retry",
+                (
+                    "creative_review"
+                    if attempt == 1
+                    else
+                    "creative_review_retry"
+                ),
             )
 
             raw = call_openai_director(
@@ -3175,83 +3167,109 @@ def evaluate_concept_batch(
                 json_mode=True,
             )
 
-            payload = extract_json_object(raw)
-            evaluations = safe_list(payload.get("evaluations"))
-            _ingest(evaluations)
+            payload = (
+                extract_json_object(
+                    raw
+                )
+            )
 
-            missing = expected_ids - set(best_map.keys())
+            evaluations = safe_list(
+                payload.get(
+                    "evaluations"
+                )
+            )
+
+            for item in evaluations:
+                if not isinstance(
+                    item,
+                    dict,
+                ):
+                    continue
+
+                concept_id = (
+                    clean_text(
+                        item.get(
+                            "concept_id"
+                        ),
+                        100,
+                    )
+                )
+
+                if (
+                    concept_id
+                    and
+                    concept_id
+                    in expected_ids
+                ):
+                    best_map[
+                        concept_id
+                    ] = item
+
+            missing = (
+                expected_ids
+                -
+                set(
+                    best_map.keys()
+                )
+            )
 
             if not missing:
-                print("✅ Review Board complete | all concepts evaluated")
                 return best_map
 
             last_error = RuntimeError(
-                "Creative review missing: " + ", ".join(sorted(missing))
-            )
-            print(
-                f"⚠️ Review Board incomplete | missing={len(missing)} | "
-                f"got={len(best_map)}/{len(expected_ids)} | attempt={attempt}"
-            )
-
-            # If we already have a solid core, stop early
-            if len(best_map) >= max(3, len(expected_ids) // 2):
-                print(
-                    f"✅ Accepting partial Review Board "
-                    f"({len(best_map)} concepts evaluated)"
+                (
+                    "Creative review missing: "
+                    +
+                    ", ".join(
+                        sorted(
+                            missing
+                        )
+                    )
                 )
-                return best_map
+            )
+
+            print(
+                (
+                    "⚠️ Review Board incomplete"
+                    +
+                    " | missing="
+                    +
+                    str(
+                        len(missing)
+                    )
+                )
+            )
 
         except Exception as error:
-            last_error = error
-            print(
-                "⚠️ Review Board failed | "
-                + clean_text(error, 1200)
+            last_error = (
+                error
             )
 
-    # ---------- PASS 2: Focused retry on missing only ----------
-    missing_ids = expected_ids - set(best_map.keys())
-    if missing_ids and len(best_map) < 3:
-        missing_concepts = [
-            c for c in concepts if c.concept_id in missing_ids
-        ]
-        print(
-            f"🔄 Focused Review retry on {len(missing_concepts)} missing concepts..."
-        )
-        try:
-            prompt = build_evaluation_prompt(
-                user_request=user_request,
-                concepts=missing_concepts,
-                brand_context=brand_context,
-                visual_references=visual_references,
-            )
-            register_model_call(telemetry, "creative_review_focused")
-            raw = call_openai_director(prompt, json_mode=True)
-            payload = extract_json_object(raw)
-            _ingest(safe_list(payload.get("evaluations")))
-        except Exception as error:
             print(
-                "⚠️ Focused Review retry failed | "
-                + clean_text(error, 800)
+                (
+                    "⚠️ Review Board failed"
+                    +
+                    " | "
+                    +
+                    clean_text(
+                        error,
+                        1200,
+                    )
+                )
             )
-
-    # ---------- Final decision ----------
-    if len(best_map) >= 3:
-        print(
-            f"✅ Review Board accepted with {len(best_map)} evaluated concepts "
-            f"(partial OK)"
-        )
-        return best_map
 
     if best_map:
-        # Even 1-2 is better than total failure
-        print(
-            f"⚠️ Review Board very partial ({len(best_map)}) — still using them"
-        )
         return best_map
 
     raise RuntimeError(
-        "Creative Review Board failed: "
-        + clean_text(last_error, 1800)
+        (
+            "Creative Review Board failed: "
+            +
+            clean_text(
+                last_error,
+                1800,
+            )
+        )
     )
 
 
@@ -5157,6 +5175,9 @@ def run_creative_brain(
         "initial_concepts":
             0,
 
+        "challenger_concepts":
+            0,
+
         "shortlisted_concepts":
             0,
 
@@ -5322,6 +5343,54 @@ def run_creative_brain(
     )
 
     # =====================================================
+    # MODEL CALL 2 — INDEPENDENT CHALLENGER POOL
+    # =====================================================
+
+    if (
+        mode == MODE_MASTERPIECE
+        and MASTERPIECE_MAX_IDEATION_ROUNDS >= 2
+    ):
+        print("")
+        print("⚔️ Running independent Challenger ideation board...")
+        try:
+            challenger_concepts = generate_concept_pool(
+                user_request=user_request,
+                brand_context=brand_context,
+                visual_references=visual_references,
+                style_hint=style_hint,
+                mode=mode,
+                round_number=2,
+                failure_context=(
+                    "Create a radically different independent pool. Do not "
+                    "repeat obvious banking, phone, globe, portal, landmark "
+                    "or light-route mechanisms. Prioritize premium photographic "
+                    "realism, one dominant hero, natural brand color behavior, "
+                    "strong balance and defensible unusual camera viewpoints."
+                ),
+                challenger=True,
+                telemetry=telemetry,
+            )
+            challenger_concepts = deduplicate_concepts(
+                challenger_concepts,
+                all_concepts,
+            )
+            telemetry["challenger_concepts"] = len(challenger_concepts)
+            concepts.extend(challenger_concepts)
+            all_concepts.extend(challenger_concepts)
+            print(
+                "✅ Challenger concepts:",
+                len(challenger_concepts),
+                "| combined pool:",
+                len(concepts),
+            )
+        except Exception as error:
+            errors.append(
+                "challenger_ideation: "
+                + clean_text(error, 3000)
+            )
+            print("⚠️ Challenger ideation unavailable; continuing safely.")
+
+    # =====================================================
     # FREE LOCAL SHORTLIST
     # =====================================================
 
@@ -5406,34 +5475,6 @@ def run_creative_brain(
         mode=mode,
         qualified_only=True,
     )
-
-    # HYPER FIX: If strict qualified is empty, take the best
-    # evaluated concept (even if slightly under target) instead
-    # of immediately falling to Recovery. This preserves the
-    # real Review Board work and avoids weak Recovery prompts.
-    if not released:
-        evaluated = [
-            c for c in shortlist
-            if getattr(c, "evaluation_valid", False)
-            and float(getattr(c, "weighted_score", 0) or 0) >= 72.0
-        ]
-        evaluated.sort(
-            key=lambda c: float(getattr(c, "weighted_score", 0) or 0),
-            reverse=True,
-        )
-        if evaluated:
-            best = evaluated[0]
-            best.quality_gate_passed = True
-            best.debate["quality_release_level"] = "best_reviewed_adaptive"
-            best.debate["adaptive_note"] = (
-                "Strict target not met; releasing strongest Review Board concept"
-            )
-            released = [best]
-            print(
-                f"⚡ HYPER: Using best reviewed concept "
-                f"{best.concept_id} score={best.weighted_score:.2f} "
-                f"(avoiding weak Recovery)"
-            )
 
     if released:
         winner = released[0]
@@ -5699,102 +5740,14 @@ def run_creative_brain(
             )
 
     # =====================================================
-    # UNIVERSAL LOCAL-SCORE FALLBACK (free, no model call)
-    #
-    # Guarantees a real "best of N" winner even when every
-    # model evaluation fails (director model disabled, or a
-    # lite model returns unusable JSON so the review board
-    # comes back empty). Ranks by the FREE local preflight
-    # score that already produced the shortlist, so the
-    # 20 -> 1 selection still happens and production is never
-    # blocked and never depends on OpenAI.
-    # =====================================================
-
-    local_fallback_used = False
-
-    if winner is None:
-        def _local_score(item):
-            return float(
-                safe_dict(
-                    item.debate.get(
-                        "local_preflight"
-                    )
-                ).get(
-                    "score",
-                    0.0,
-                )
-            )
-
-        local_pool = (
-            list(shortlist)
-            or list(all_concepts)
-        )
-
-        clean_local = [
-            concept
-            for concept in local_pool
-            if not concept.cliche_hits
-        ] or local_pool
-
-        ranked_local = sorted(
-            clean_local,
-            key=_local_score,
-            reverse=True,
-        )
-
-        if ranked_local:
-            winner = ranked_local[0]
-
-            winner.quality_gate_passed = True
-            winner.quality_gate_failures = []
-
-            winner.weighted_score = (
-                _local_score(winner)
-            )
-
-            winner.debate[
-                "quality_release_level"
-            ] = "local_best_available"
-
-            released = [winner]
-
-            release_level = (
-                "local_best_available"
-            )
-
-            local_fallback_used = True
-
-            print("")
-            print(
-                "🛟 Model evaluation unavailable — "
-                "selecting strongest concept by FREE local scoring."
-            )
-
-            print(
-                "🏆 LOCAL WINNER | "
-                + winner.concept_id
-                + " | local_score="
-                + str(
-                    round(
-                        winner.weighted_score,
-                        1,
-                    )
-                )
-            )
-
-    # =====================================================
     # MODEL CALL 3
     # WINNER FINALIZER
     #
     # Only when Recovery did NOT already consume Call 3.
-    # Skipped for the local fallback so we never fire another
-    # model call that would fail the same way.
     # =====================================================
 
     if (
         winner is not None
-        and
-        not local_fallback_used
         and
         not telemetry[
             "recovery_used"
@@ -5960,15 +5913,6 @@ def run_creative_brain(
             release_level
             ==
             "best_available_release"
-        ):
-            effective_integration_floor = (
-                winner.weighted_score
-            )
-
-        elif (
-            release_level
-            ==
-            "local_best_available"
         ):
             effective_integration_floor = (
                 winner.weighted_score
