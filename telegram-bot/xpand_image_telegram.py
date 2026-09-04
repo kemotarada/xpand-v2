@@ -5196,9 +5196,19 @@ def generate_masterpiece_images(
 
                 print("⚠️ Exact-asset QA advisory only; delivering the produced image.")
 
-            images.append(
-                production.final_image
-            )
+            final_score = safe_float(getattr(production, "best_score", 0), 0)
+
+            # HYPER HARD GATE: Never deliver Masterpiece/STC images below 80 QA
+            if MASTERPIECE_REQUIRE_QA and final_score < 80.0:
+                print(f"🚫 HYPER HARD GATE: Blocking delivery of low-quality image (QA={final_score:.1f} < 80)")
+                errors.append(
+                    f"masterpiece_{index+1}: Blocked by hard QA gate (score={final_score:.1f})"
+                )
+                # Do NOT append the image
+            else:
+                images.append(
+                    production.final_image
+                )
 
             production_metadata.append(
                 {
