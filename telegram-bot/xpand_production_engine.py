@@ -3194,11 +3194,8 @@ def base_negative_prompt() -> str:
     )
 
 
-def stc_scene_lock(request: str) -> str:
-    """Compact STC rules placed early so prompt fitting cannot drop them."""
-    if not is_stc_bank_request(request):
-        return ""
-
+def infer_stc_palette_mode(request: str) -> str:
+    """Classify the physical scene, not generic quality words, for STC color law."""
     source = clean_text(request, 12000).lower()
     studio_markers = (
         "studio", "استوديو", "منصة", "platform", "podium",
@@ -3208,14 +3205,35 @@ def stc_scene_lock(request: str) -> str:
         "airport", "travel", "airplane", "plane", "lounge", "beach",
         "office", "home", "house", "restaurant", "cafe", "car",
         "person", "man", "woman", "family", "lifestyle", "interior",
+        "london", "paris", "riyadh", "city", "skyline", "window", "hotel",
+        "street", "destination", "international", "world", "country",
         "مطار", "سفر", "طائرة", "صالة", "شاطئ", "مكتب", "منزل",
         "بيت", "مطعم", "مقهى", "سيارة", "شخص", "رجل", "امرأة",
-        "عائلة", "لايف ستايل", "واقعي",
+        "عائلة", "لايف ستايل", "واقعي", "واقعية", "لندن", "باريس",
+        "الرياض", "مدينة", "سماء", "نافذة", "فندق", "شارع", "وجهة",
+        "دولي", "الدولية", "العالم", "دولة",
     )
     use_vivid = any(str(item).lower() in source for item in studio_markers)
     use_natural = any(str(item).lower() in source for item in natural_markers)
 
-    if use_natural and not use_vivid:
+    # A described real location/physical lifestyle scene owns the decision even
+    # if an upstream director casually says "studio-quality". Family A is used
+    # only when the actual set itself is explicitly a studio/podium/product set.
+    if use_natural:
+        return "natural"
+    if use_vivid:
+        return "family_a"
+    return "family_b"
+
+
+def stc_scene_lock(request: str) -> str:
+    """Compact STC rules placed early so prompt fitting cannot drop them."""
+    if not is_stc_bank_request(request):
+        return ""
+
+    palette_mode = infer_stc_palette_mode(request)
+
+    if palette_mode == "natural":
         palette = """
 SELECTED PALETTE — NATURAL STC LIFESTYLE MODE:
 Do not flood the environment with purple and do not apply a purple, blue,
@@ -3229,7 +3247,7 @@ physically motivated product, wardrobe, reflection or architectural accent,
 using #5C0C9B or deep #1D0446 with restrained #7433C5 highlight. Preserve
 neutral whites #FBFBFB and realistic blacks #05070F/#0E090E.
 """.strip()
-    elif use_vivid:
+    elif palette_mode == "family_a":
         palette = """
 SELECTED PALETTE — FAMILY A ONLY, DO NOT MIX WITH FAMILY B:
 dark edges/contact shadows #2E0053; structural transitions #440675,
@@ -3703,6 +3721,14 @@ def compile_prompt(
         metadata={
             "compiler":
                 "xpand_quality_first_v3_1",
+
+            "stc_palette_mode": (
+                infer_stc_palette_mode(
+                    request + "\n" + compact_json(creative_direction, 2500)
+                )
+                if is_stc_bank_request(request)
+                else "unspecified"
+            ),
 
             "prompt_chars":
                 len(
@@ -4684,8 +4710,13 @@ Critical means a genuine campaign-delivery problem:
 - unusable composition
 - any generated/readable words, letters, numbers, fake UI or invented logo when
   no verified screen asset was supplied
-- for STC Bank: blue/cyan/teal replacing the selected purple family, mixing
-  both purple families, or purple identity coverage too weak to feel native
+- for STC Bank FAMILY A/B studio mode only: blue/cyan/teal replacing the
+  selected purple family, mixing both purple families, or purple identity
+  coverage too weak to feel native
+- for STC Bank NATURAL mode: real blue sky, twilight, windows and exterior
+  depth are valid environmental colors and MUST NOT be reported as palette
+  failures. Judge only whether the restrained 5–15% purple identity accent is
+  credible; never demand studio-level purple coverage from a real location.
 - required phone missing, cropped, too small, visually subordinate, floating,
   physically unsupported, or carrying invented screen content
 - the campaign benefit cannot be understood after mentally removing all text
@@ -4826,19 +4857,28 @@ def evaluate_generated_image(
         None
     )
 
-    palette_mode = (
-        "natural"
-        if "SELECTED PALETTE — NATURAL" in compiled_prompt.prompt
-        else (
-            "family_a"
-            if "SELECTED PALETTE — FAMILY A" in compiled_prompt.prompt
+    palette_mode = clean_text(
+        safe_dict(getattr(compiled_prompt, "metadata", {})).get(
+            "stc_palette_mode",
+            "",
+        ),
+        30,
+    ).lower()
+    if palette_mode not in {"natural", "family_a", "family_b"}:
+        # Compatibility fallback for prompts compiled before palette metadata.
+        palette_mode = (
+            "natural"
+            if "SELECTED PALETTE — NATURAL" in compiled_prompt.prompt
             else (
-                "family_b"
-                if "SELECTED PALETTE — FAMILY B" in compiled_prompt.prompt
-                else "unspecified"
+                "family_a"
+                if "SELECTED PALETTE — FAMILY A" in compiled_prompt.prompt
+                else (
+                    "family_b"
+                    if "SELECTED PALETTE — FAMILY B" in compiled_prompt.prompt
+                    else "unspecified"
+                )
             )
         )
-    )
     color_analysis = (
         analyze_stc_color_balance(
             qa_frame.image_bytes,
@@ -6789,11 +6829,18 @@ def run_production(
                 },
             )
         )
-        # The requested final artifact must be judged on its own pixels. Never
-        # use a passing 1K score to silently approve a different 2K/4K output.
-        best_image = final_native_image
-        best_qa = final_native_qa
-        best_score = final_native_qa.score
+        # At 1K both candidates are valid delivery masters, so never replace a
+        # stronger exploration result with a weaker Pro edit. At 2K/4K the
+        # provider-native output must be judged and delivered on its own pixels.
+        if final_requested_size == "1K" and not qa_candidate_is_better(
+            final_native_qa,
+            best_qa,
+        ):
+            print("🏆 Earlier stronger 1K candidate preserved after final Pro pass.")
+        else:
+            best_image = final_native_image
+            best_qa = final_native_qa
+            best_score = final_native_qa.score
 
     # =====================================================
     # FINAL DELIVERY
