@@ -867,7 +867,18 @@ def build_professional_prompt(
     ]
 
     if is_stc_bank_request(user_prompt):
-        directives.append(STC_BANK_IMAGE_GUARD)
+        # HYPER STC ENFORCEMENT — highest priority
+        directives.insert(0, STC_BANK_IMAGE_GUARD)
+        directives.append(
+            "CRITICAL STC BANK RULES (non-negotiable): "
+            "1) ZERO readable text, letters, numbers, logos, Arabic or Latin typography in the image. "
+            "2) Color must follow Tier system: Tier A lifestyle = 100% natural colors no purple environment; "
+            "Tier B = natural base + purple only as ≤15% edge accent; Tier C studio = purple backdrop only, product true color. "
+            "3) Never apply global purple cast on skin, faces, or natural materials. "
+            "4) Image must feel like a real premium STC Bank advertisement (luxury, restraint, clear benefit). "
+            "5) Leave 25-40% natural empty space for later Arabic copy. "
+            "6) One clear hero, one clear message, photorealistic commercial photography quality."
+        )
 
     if contains_any(
         user_prompt,
