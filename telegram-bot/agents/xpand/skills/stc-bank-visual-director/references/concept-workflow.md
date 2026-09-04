@@ -46,7 +46,7 @@ Prefer official, awarded, curated, or credited work. Check publication date. Use
 
 Synthesis method
 
-Internally generate at least 12 raw visual metaphors across these lenses:
+Internally generate at least 20 raw visual metaphors across these lenses:
 
 everyday human truth;
 
@@ -82,7 +82,11 @@ negative-space quality;
 
 generation reliability.
 
-Select the strongest combined score. Never reveal private reasoning; provide only the concise rationale.
+Evaluate the shortlist one concept at a time, then lock exactly ONE final idea — the single strongest combined score across message, originality, brand fit, realism, and color safety. Refine the locked idea twice before production. Never reveal private reasoning; provide only the concise rationale.
+
+Color-realism gate (applies to every concept)
+
+Classify the locked scene as Tier A (real life — 100% natural color, no environment purple), Tier B (premium/night — natural base, purple only as ≤15% edge accent), or Tier C (studio product — purple backdrop only, product stays true color). Purple belongs to the background and the light, never to the subject; never tint skin or natural materials; keep neutral white balance on every person and hero product. Reject any concept that would require flooding the frame with purple to work.
 
 Originality safeguard
 
