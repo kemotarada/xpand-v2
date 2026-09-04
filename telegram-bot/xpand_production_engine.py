@@ -4760,6 +4760,32 @@ def evaluate_generated_image(
             )
         )
 
+    # Vision QA does not need the full 4K delivery payload. Sending a 3K–5K
+    # frame as base64 was causing ~60 second request failures before JSON could
+    # be returned. Use a faithful, aspect-preserving proxy for analysis only;
+    # the original full-resolution candidate remains untouched for delivery.
+    qa_image_bytes = qa_frame.image_bytes
+    qa_image_mime = qa_frame.mime_type or "image/jpeg"
+    try:
+        with Image.open(BytesIO(qa_frame.image_bytes)) as qa_source:
+            qa_source = qa_source.convert("RGB")
+            longest = max(qa_source.size)
+            if longest > 1600:
+                scale = 1600.0 / float(longest)
+                qa_source = qa_source.resize(
+                    (
+                        max(1, int(round(qa_source.width * scale))),
+                        max(1, int(round(qa_source.height * scale))),
+                    ),
+                    Image.Resampling.LANCZOS,
+                )
+            qa_buffer = BytesIO()
+            qa_source.save(qa_buffer, format="JPEG", quality=90, optimize=True)
+            qa_image_bytes = qa_buffer.getvalue()
+            qa_image_mime = "image/jpeg"
+    except Exception:
+        pass
+
     prompt = (
         # Determine the intended color behavior from the early production lock.
         # This survives prompt fitting and lets QA distinguish a natural STC
@@ -4830,10 +4856,10 @@ def evaluate_generated_image(
     raw = call_openai_director(
         prompt,
         image_bytes=(
-            qa_frame.image_bytes
+            qa_image_bytes
         ),
         image_mime_type=(
-            qa_frame.mime_type
+            qa_image_mime
         ),
         json_mode=True,
     )
@@ -5076,6 +5102,28 @@ def qa_quality_rank(
         float(
             qa.score
         ),
+    )
+
+
+def unavailable_qa_evaluation(error: Any) -> QAEvaluation:
+    """A strict non-passing marker that keeps adaptive production alive."""
+    message = clean_text(error, 1400) or "Vision QA unavailable"
+    return QAEvaluation(
+        score=0.0,
+        scores={key: 0.0 for key in QA_WEIGHTS},
+        passed=False,
+        strengths=[],
+        problems=["QA evaluator unavailable: " + message],
+        correction_instruction=(
+            "Do not assume the unreviewed candidate is acceptable. Produce a "
+            "fresh, independently executable candidate that satisfies every "
+            "brief, reference, composition, palette and fidelity constraint."
+        ),
+        critical_blockers=["qa_evaluator_unavailable"],
+        target_reached=False,
+        delivery_approved=False,
+        decision="qa_unavailable_recover",
+        raw={"error": message},
     )
 
 
@@ -5973,8 +6021,15 @@ def run_production(
             )
 
             print(
-                "⚠️ Candidate 1 QA unavailable."
+                "⚠️ Candidate 1 QA unavailable: "
+                + clean_text(error, 1200)
             )
+
+            # Never interpret an evaluator outage as "no correction needed".
+            # This strict synthetic result cannot pass delivery; it only keeps
+            # the remaining generation/review budget active.
+            first_qa = unavailable_qa_evaluation(error)
+            passes[0].qa = first_qa
 
     best_image = (
         first_image
