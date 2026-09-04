@@ -1603,6 +1603,7 @@ def build_concept_generation_prompt(
     stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
 
     return f"""
+    {stc_skill}
 You are XPAND Creative Brain V2.
 
 Act as a top international advertising concept team.
