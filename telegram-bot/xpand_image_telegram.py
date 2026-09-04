@@ -405,6 +405,30 @@ MASTERPIECE_ALLOW_SMART_FALLBACK = str(
     "on",
 }
 
+# Preserve the strict Masterpiece certification while still returning a useful
+# clean draft after an expensive run. This path never marks the image as passed:
+# it only delivers the best candidate when Vision found zero critical blockers.
+MASTERPIECE_DELIVER_CLEAN_DRAFT = str(
+    os.environ.get(
+        "XPAND_MASTERPIECE_DELIVER_CLEAN_DRAFT",
+        "true",
+    )
+).strip().lower() not in {"0", "false", "no", "off"}
+
+MASTERPIECE_CLEAN_DRAFT_FLOOR = max(
+    70.0,
+    min(
+        89.9,
+        float(
+            os.environ.get(
+                "XPAND_MASTERPIECE_CLEAN_DRAFT_FLOOR",
+                "78",
+            )
+            or 78
+        ),
+    ),
+)
+
 
 # =========================================================
 # INTERNAL VISUAL TOKEN
@@ -5072,40 +5096,72 @@ def generate_masterpiece_images(
                     0
                 )
 
-                message = (
-                    "Final Masterpiece QA gate failed"
-                    +
-                    " | score="
-                    +
-                    str(
-                        score
-                    )
+                blockers = list(
+                    getattr(production.qa, "critical_blockers", []) or []
+                ) if production.qa else ["qa_unavailable"]
+
+                clean_draft_allowed = bool(
+                    MASTERPIECE_DELIVER_CLEAN_DRAFT
+                    and score >= MASTERPIECE_CLEAN_DRAFT_FLOOR
+                    and not blockers
+                    and production.final_image is not None
                 )
 
-                errors.append(
-                    (
-                        "masterpiece_"
+                if clean_draft_allowed:
+                    if not isinstance(
+                        getattr(production.final_image, "metadata", None),
+                        dict,
+                    ):
+                        production.final_image.metadata = {}
+                    production.final_image.metadata.update(
+                        {
+                            "masterpiece_certified": False,
+                            "clean_draft_release": True,
+                            "clean_draft_score": score,
+                            "clean_draft_floor": MASTERPIECE_CLEAN_DRAFT_FLOOR,
+                        }
+                    )
+                    print(
+                        "🟡 CLEAN DRAFT RELEASE | score="
+                        + str(score)
+                        + " | zero critical blockers | Masterpiece 94 not certified"
+                    )
+                else:
+
+                    message = (
+                        "Final Masterpiece QA gate failed"
+                        +
+                        " | score="
                         +
                         str(
-                            index + 1
+                            score
                         )
-                        +
-                        ": "
-                        +
-                        message
                     )
-                )
 
-                print(
-                    (
-                        "🛑 "
-                        +
-                        message
+                    errors.append(
+                        (
+                            "masterpiece_"
+                            +
+                            str(
+                                index + 1
+                            )
+                            +
+                            ": "
+                            +
+                            message
+                        )
                     )
-                )
 
-                print("🛑 QA is strict; rejected image will not be delivered.")
-                continue
+                    print(
+                        (
+                            "🛑 "
+                            +
+                            message
+                        )
+                    )
+
+                    print("🛑 QA is strict; rejected image will not be delivered.")
+                    continue
 
             exact_result = (
                 maybe_apply_exact_asset_lock(
@@ -5187,6 +5243,12 @@ def generate_masterpiece_images(
 
                     "qa_passed":
                         qa_passed,
+
+                    "clean_draft_release": bool(
+                        safe_dict(
+                            getattr(production.final_image, "metadata", {})
+                        ).get("clean_draft_release")
+                    ),
 
                     "passes": [
                         item.pass_name
