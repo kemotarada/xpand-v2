@@ -147,9 +147,9 @@ MASTERPIECE_MIN_SCORE = max(
         float(
             os.environ.get(
                 "XPAND_MASTERPIECE_MIN_SCORE",
-                "82",
+                "88",
             )
-            or 82
+            or 88
         ),
     ),
 )
@@ -172,9 +172,9 @@ MASTERPIECE_RELEASE_FLOOR = max(
         float(
             os.environ.get(
                 "XPAND_MASTERPIECE_RELEASE_FLOOR",
-                "78",
+                "85",
             )
-            or 78
+            or 85
         ),
     ),
 )
@@ -267,15 +267,15 @@ MASTERPIECE_REVISION_FLOOR = max(
 #
 
 MASTERPIECE_SHORTLIST_SIZE = max(
-    5,
+    4,
     min(
-        10,
+        8,
         int(
             os.environ.get(
                 "XPAND_CREATIVE_SHORTLIST_SIZE",
-                "8",
+                "6",
             )
-            or 8
+            or 6
         ),
     ),
 )
@@ -302,13 +302,13 @@ EVALUATION_BATCH_SIZE = (
 EVALUATION_RETRIES = max(
     1,
     min(
-        2,
+        4,
         int(
             os.environ.get(
                 "XPAND_CREATIVE_EVALUATION_RETRIES",
-                "1",
+                "3",
             )
-            or 1
+            or 3
         ),
     ),
 )
@@ -3123,9 +3123,13 @@ def evaluate_concept_batch(
     Dict[str, Any]
 ]:
     #
-    # Public compatibility function.
+    # HYPER-RESILIENT Review Board (XPAND v2 Extreme)
     #
-    # V2 evaluates the entire supplied shortlist as ONE batch.
+    # - Higher retry count
+    # - Accepts partial results (minimum 3 evaluated)
+    # - If still missing concepts, runs a focused second-pass
+    #   only on the missing ones
+    # - Only raises if almost nothing came back
     #
 
     expected_ids = {
@@ -3139,11 +3143,20 @@ def evaluate_concept_batch(
     ] = {}
 
     last_error = None
+    max_attempts = max(EVALUATION_RETRIES, 3)
 
-    for attempt in range(
-        1,
-        EVALUATION_RETRIES + 1,
-    ):
+    def _ingest(evaluations):
+        for item in evaluations:
+            if not isinstance(item, dict):
+                continue
+            concept_id = clean_text(
+                item.get("concept_id"), 100
+            )
+            if concept_id and concept_id in expected_ids:
+                best_map[concept_id] = item
+
+    # ---------- PASS 1: Full shortlist ----------
+    for attempt in range(1, max_attempts + 1):
         try:
             prompt = build_evaluation_prompt(
                 user_request=user_request,
@@ -3154,12 +3167,7 @@ def evaluate_concept_batch(
 
             register_model_call(
                 telemetry,
-                (
-                    "creative_review"
-                    if attempt == 1
-                    else
-                    "creative_review_retry"
-                ),
+                "creative_review" if attempt == 1 else "creative_review_retry",
             )
 
             raw = call_openai_director(
@@ -3167,109 +3175,83 @@ def evaluate_concept_batch(
                 json_mode=True,
             )
 
-            payload = (
-                extract_json_object(
-                    raw
-                )
-            )
+            payload = extract_json_object(raw)
+            evaluations = safe_list(payload.get("evaluations"))
+            _ingest(evaluations)
 
-            evaluations = safe_list(
-                payload.get(
-                    "evaluations"
-                )
-            )
-
-            for item in evaluations:
-                if not isinstance(
-                    item,
-                    dict,
-                ):
-                    continue
-
-                concept_id = (
-                    clean_text(
-                        item.get(
-                            "concept_id"
-                        ),
-                        100,
-                    )
-                )
-
-                if (
-                    concept_id
-                    and
-                    concept_id
-                    in expected_ids
-                ):
-                    best_map[
-                        concept_id
-                    ] = item
-
-            missing = (
-                expected_ids
-                -
-                set(
-                    best_map.keys()
-                )
-            )
+            missing = expected_ids - set(best_map.keys())
 
             if not missing:
+                print("✅ Review Board complete | all concepts evaluated")
                 return best_map
 
             last_error = RuntimeError(
-                (
-                    "Creative review missing: "
-                    +
-                    ", ".join(
-                        sorted(
-                            missing
-                        )
-                    )
-                )
+                "Creative review missing: " + ", ".join(sorted(missing))
+            )
+            print(
+                f"⚠️ Review Board incomplete | missing={len(missing)} | "
+                f"got={len(best_map)}/{len(expected_ids)} | attempt={attempt}"
             )
 
-            print(
-                (
-                    "⚠️ Review Board incomplete"
-                    +
-                    " | missing="
-                    +
-                    str(
-                        len(missing)
-                    )
+            # If we already have a solid core, stop early
+            if len(best_map) >= max(3, len(expected_ids) // 2):
+                print(
+                    f"✅ Accepting partial Review Board "
+                    f"({len(best_map)} concepts evaluated)"
                 )
-            )
+                return best_map
 
         except Exception as error:
-            last_error = (
-                error
+            last_error = error
+            print(
+                "⚠️ Review Board failed | "
+                + clean_text(error, 1200)
             )
 
-            print(
-                (
-                    "⚠️ Review Board failed"
-                    +
-                    " | "
-                    +
-                    clean_text(
-                        error,
-                        1200,
-                    )
-                )
+    # ---------- PASS 2: Focused retry on missing only ----------
+    missing_ids = expected_ids - set(best_map.keys())
+    if missing_ids and len(best_map) < 3:
+        missing_concepts = [
+            c for c in concepts if c.concept_id in missing_ids
+        ]
+        print(
+            f"🔄 Focused Review retry on {len(missing_concepts)} missing concepts..."
+        )
+        try:
+            prompt = build_evaluation_prompt(
+                user_request=user_request,
+                concepts=missing_concepts,
+                brand_context=brand_context,
+                visual_references=visual_references,
             )
+            register_model_call(telemetry, "creative_review_focused")
+            raw = call_openai_director(prompt, json_mode=True)
+            payload = extract_json_object(raw)
+            _ingest(safe_list(payload.get("evaluations")))
+        except Exception as error:
+            print(
+                "⚠️ Focused Review retry failed | "
+                + clean_text(error, 800)
+            )
+
+    # ---------- Final decision ----------
+    if len(best_map) >= 3:
+        print(
+            f"✅ Review Board accepted with {len(best_map)} evaluated concepts "
+            f"(partial OK)"
+        )
+        return best_map
 
     if best_map:
+        # Even 1-2 is better than total failure
+        print(
+            f"⚠️ Review Board very partial ({len(best_map)}) — still using them"
+        )
         return best_map
 
     raise RuntimeError(
-        (
-            "Creative Review Board failed: "
-            +
-            clean_text(
-                last_error,
-                1800,
-            )
-        )
+        "Creative Review Board failed: "
+        + clean_text(last_error, 1800)
     )
 
 
