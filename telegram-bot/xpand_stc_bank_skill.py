@@ -1,4 +1,4 @@
-"""Loads the user-approved STC Bank Hyper Visual Direction System for every image path."""
+"""Loads the user-approved STC Bank system prompt for every image path."""
 
 from __future__ import annotations
 
@@ -10,8 +10,6 @@ STC_BANK_MARKERS = (
     "stcbank",
     "بنك stc",
     "اس تي سي بنك",
-    "stc بنك",
-    "stcbank_ksa",
 )
 
 
@@ -37,15 +35,11 @@ def load_stc_bank_system_prompt() -> str:
         pass
 
     return (
-        "Use the STC Bank Hyper Visual Direction System. "
+        "Use the user-approved STC Bank visual system prompt. "
         "Generate a clean photorealistic key visual with 25–40% natural "
         "negative space. Never render text, letters, numbers, logos, UI, "
         "watermarks, decorative graphics, particles or connection lines. "
-        "Strict color tiers: Tier A = 100% natural (no environment purple), "
-        "Tier B = natural base + ≤15% edge purple, Tier C = purple backdrop only. "
-        "Never apply global purple cast on skin or natural materials. "
-        "Use saved references as visual DNA without copying their ideas. "
-        "Spend maximum effort. Quality over speed."
+        "Use saved references as visual DNA without copying their ideas."
     )
 
 
