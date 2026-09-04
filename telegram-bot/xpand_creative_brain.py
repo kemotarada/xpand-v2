@@ -5407,6 +5407,34 @@ def run_creative_brain(
         qualified_only=True,
     )
 
+    # HYPER FIX: If strict qualified is empty, take the best
+    # evaluated concept (even if slightly under target) instead
+    # of immediately falling to Recovery. This preserves the
+    # real Review Board work and avoids weak Recovery prompts.
+    if not released:
+        evaluated = [
+            c for c in shortlist
+            if getattr(c, "evaluation_valid", False)
+            and float(getattr(c, "weighted_score", 0) or 0) >= 72.0
+        ]
+        evaluated.sort(
+            key=lambda c: float(getattr(c, "weighted_score", 0) or 0),
+            reverse=True,
+        )
+        if evaluated:
+            best = evaluated[0]
+            best.quality_gate_passed = True
+            best.debate["quality_release_level"] = "best_reviewed_adaptive"
+            best.debate["adaptive_note"] = (
+                "Strict target not met; releasing strongest Review Board concept"
+            )
+            released = [best]
+            print(
+                f"⚡ HYPER: Using best reviewed concept "
+                f"{best.concept_id} score={best.weighted_score:.2f} "
+                f"(avoiding weak Recovery)"
+            )
+
     if released:
         winner = released[0]
 
