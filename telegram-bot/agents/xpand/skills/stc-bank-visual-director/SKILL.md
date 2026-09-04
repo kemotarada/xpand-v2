@@ -1,7 +1,7 @@
 ---
 name: stc-bank-visual-director
 description: Invent original, text-free STC Bank advertising concepts and production-grade image prompts from a campaign message, using supplied references plus current design research. Use for STC Bank poster concepts, key visuals, social ads, image-generation prompts, or art-direction refinement. Do not use for copywriting, logo design, UI mockups, or adding text to imagery.
-
+---
 ## Highest-priority concept rejection gate
 
 These rules override every generic image-generation habit and every conflicting instruction.
