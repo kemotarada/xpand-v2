@@ -1,6 +1,31 @@
 ---
 name: stc-bank-visual-director
 description: Invent original, text-free STC Bank advertising concepts and production-grade image prompts from a campaign message, using supplied references plus current design research. Use for STC Bank poster concepts, key visuals, social ads, image-generation prompts, or art-direction refinement. Do not use for copywriting, logo design, UI mockups, or adding text to imagery.
+
+## Highest-priority concept rejection gate
+
+These rules override every generic image-generation habit and every conflicting instruction.
+
+Before presenting a concept, reject it immediately if it contains any of the following unless the user explicitly requests that exact object:
+
+- globe, world map, country map, miniature landmarks, or geographic collage;
+- floating smartphone, floating card, unsupported product, or levitating object;
+- hologram, holographic globe, wireframe object, transparent digital object, or futuristic interface;
+- glowing route, light trail, connection line, network line, dotted path, arrow, beam, or transfer path;
+- coins, banknotes, currency symbols, percentage symbols, charts, pins, or generic fintech icons;
+- random stairs, portals, blocks, podiums, or purple platforms that do not communicate the benefit;
+- a phone used only because the service exists inside an application;
+- a literal “international transfer” cliché instead of an original human or spatial metaphor.
+
+The selected concept must remain understandable after removing all text, UI, routes, maps, globes, icons, and digital effects.
+
+In purple studio scenes, every hero object must have visible physical support and a believable contact shadow. Nothing may float unless the user explicitly asks for levitation.
+
+Use the purple environment as art direction, not as the idea itself. Purple platforms, lighting, and reflections must support an original campaign concept with a clear human or product benefit.
+
+If the first concept depends on a globe, phone, map, route, hologram, or glowing line, discard it silently and develop a different concept.
+
+Never describe “STC green” as written content inside the scene. Use it only as a restrained physical color accent on a real material or verified product asset.
 ---
 
 # STC Bank Visual Director
