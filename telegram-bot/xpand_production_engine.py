@@ -206,13 +206,13 @@ OPENAI_IMAGE_EDITS_URL = (
 MASTERPIECE_MAX_IMAGE_CALLS = max(
     1,
     min(
-        3,
+        6,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_IMAGE_CALLS",
-                "3",
+                "6",
             )
-            or 3
+            or 6
         ),
     ),
 )
@@ -221,16 +221,40 @@ MASTERPIECE_MAX_IMAGE_CALLS = max(
 MASTERPIECE_MAX_VISION_CALLS = max(
     1,
     min(
-        3,
+        6,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_VISION_CALLS",
-                "3",
+                "6",
             )
-            or 3
+            or 6
         ),
     ),
 )
+
+# Model specialization: Nano Banana 2 explores the first visual solution;
+# Nano Banana Pro handles recovery and precision passes where fidelity matters
+# more than latency.  The strict QA gate remains provider-independent.
+MASTERPIECE_EXPLORATION_MODEL = str(
+    os.environ.get(
+        "XPAND_MASTERPIECE_EXPLORATION_MODEL",
+        "gemini-3.1-flash-image",
+    )
+).strip()
+
+MASTERPIECE_FINAL_IMAGE_MODEL = str(
+    os.environ.get(
+        "XPAND_MASTERPIECE_GOOGLE_MODEL",
+        "gemini-3-pro-image",
+    )
+).strip()
+
+
+def masterpiece_model_for_pass(pass_name: str) -> str:
+    name = str(pass_name or "").lower()
+    if name in {"quality_first_high", "quality_first_generation"}:
+        return MASTERPIECE_EXPLORATION_MODEL
+    return MASTERPIECE_FINAL_IMAGE_MODEL
 
 
 # =========================================================
@@ -4089,7 +4113,7 @@ def gemini_multi_reference_edit(
         })
     requested_image_size = detect_image_size(safe_prompt)
     image_size = requested_image_size if requested_image_size in {"1K", "2K", "4K"} else "1K"
-    model = str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip()
+    model = masterpiece_model_for_pass(pass_name)
     response = requests.post(
         GEMINI_INTERACTIONS_URL,
         headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
@@ -4258,7 +4282,7 @@ user request while preserving the relevant brand visual DNA.
     # Use direct HIGH-quality generation.
     #
 
-    google_model = str(os.environ.get("XPAND_MASTERPIECE_GOOGLE_MODEL", GOOGLE_IMAGE_FAST_MODEL)).strip()
+    google_model = masterpiece_model_for_pass(pass_name)
     route = build_route(
         PROVIDER_GOOGLE_FAST,
         google_model,
@@ -6435,6 +6459,124 @@ def run_production(
                 + clean_text(error, 3000)
             )
             print("⚠️ Final Masterpiece pass failed; preserving best candidate.")
+
+    # =====================================================
+    # DEEP MASTERPIECE LOOP — CALLS 4..N
+    # =====================================================
+    # Keep the strict delivery gate unchanged.  Extra budget is spent upstream:
+    # every remaining call reacts to the best candidate's actual QA report.
+    # Concept failures receive a genuinely new composition; execution failures
+    # receive a controlled edit of the strongest surviving image.
+
+    while (
+        best_qa is not None
+        and telemetry["image_calls"] < MASTERPIECE_MAX_IMAGE_CALLS
+        and telemetry["vision_calls"] < MASTERPIECE_MAX_VISION_CALLS
+        and (not best_qa.passed or not best_qa.target_reached or best_qa.critical_blockers)
+    ):
+        call_number = telemetry["image_calls"] + 1
+        deep_action = (
+            "concept_recovery"
+            if has_concept_failure(best_qa)
+            else "targeted_correction"
+        )
+        print("")
+        print(
+            "🎨 DEEP MASTERPIECE CALL "
+            + str(call_number)
+            + "/"
+            + str(MASTERPIECE_MAX_IMAGE_CALLS)
+            + " | "
+            + deep_action
+            + "..."
+        )
+        try:
+            if deep_action == "concept_recovery":
+                deep_prompt = build_concept_recovery_prompt(
+                    qa=best_qa,
+                    compiled=compiled,
+                    aspect_ratio=aspect_ratio,
+                )
+                deep_prompt += (
+                    "\n\nDIVERSITY REQUIREMENT: This is recovery candidate "
+                    + str(call_number)
+                    + ". Build a materially different physical scene, camera angle, "
+                      "hero arrangement and visual metaphor. Do not paraphrase or "
+                      "re-render any earlier failed composition. Preserve only the "
+                      "brief, brand DNA, product fidelity and strict QA requirements."
+                )
+                deep_compiled = compiled_with_recovery(compiled, deep_prompt)
+                deep_image = generate_high_quality_image(
+                    compiled=deep_compiled,
+                    product_refs=product_refs,
+                    visual_refs=physical_refs,
+                    aspect_ratio=aspect_ratio,
+                    original_request=original_request,
+                    pass_name="deep_concept_recovery_" + str(call_number),
+                )
+            else:
+                deep_prompt = build_targeted_correction_prompt(
+                    qa=best_qa,
+                    compiled=compiled,
+                    product_lock=product_lock,
+                    aspect_ratio=aspect_ratio,
+                )
+                deep_prompt += (
+                    "\n\nPRECISION PASS " + str(call_number) + ": Correct every listed "
+                    "blocker simultaneously. Preserve successful regions pixel-faithfully; "
+                    "do not redesign the entire scene and do not introduce new text, logos, "
+                    "objects, colors or decorative effects."
+                )
+                deep_image = gemini_multi_reference_edit(
+                    working_image=best_image,
+                    references=product_refs[:MAX_PHYSICAL_REFERENCE_IMAGES],
+                    prompt=deep_prompt,
+                    aspect_ratio=aspect_ratio,
+                    pass_name="deep_targeted_correction_" + str(call_number),
+                )
+
+            telemetry["image_calls"] += 1
+            deep_qa = evaluate_generated_image(
+                image=deep_image,
+                original_request=original_request,
+                compiled_prompt=compiled,
+                product_lock=product_lock,
+                brand_context=enriched_brand_context,
+                aspect_ratio=aspect_ratio,
+                telemetry=telemetry,
+            )
+            print_qa("Candidate " + str(call_number) + " QA", deep_qa)
+            passes.append(
+                ProductionPassResult(
+                    pass_name="deep_" + deep_action + "_" + str(call_number),
+                    image=deep_image,
+                    qa=deep_qa,
+                    metadata={
+                        "image_call": call_number,
+                        "quality": "high",
+                        "adaptive_action": deep_action,
+                        "strict_gate_unchanged": True,
+                    },
+                )
+            )
+            if qa_candidate_is_better(deep_qa, best_qa):
+                best_image = deep_image
+                best_qa = deep_qa
+                best_score = deep_qa.score
+                print("🏆 Candidate " + str(call_number) + " selected as BEST.")
+            else:
+                print("🏆 Earlier stronger candidate preserved as BEST.")
+        except Exception as error:
+            errors.append(
+                "deep_masterpiece_pass_"
+                + str(call_number)
+                + ": "
+                + clean_text(error, 3000)
+            )
+            print("⚠️ Deep Masterpiece pass failed; preserving best candidate.")
+            # Avoid an infinite loop when a provider call fails before telemetry
+            # can be advanced.
+            telemetry["image_calls"] += 1
 
     # =====================================================
     # FINAL DELIVERY
