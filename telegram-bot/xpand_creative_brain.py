@@ -1506,7 +1506,6 @@ def get_metaphor_seed(
 STC_FORBIDDEN_CONCEPT_MARKERS = (
     "globe", "world map", "country map", "geographic collage",
     "miniature landmark", "miniature city", "global skyline",
-    "phone", "smartphone", "mobile screen", "app screen",
     "floating card", "floating phone", "levitating", "unsupported product",
     "hologram", "holographic", "wireframe", "futuristic interface",
     "light trail", "light thread", "glowing thread", "glowing line",
@@ -1516,7 +1515,7 @@ STC_FORBIDDEN_CONCEPT_MARKERS = (
     "coin", "banknote", "currency symbol", "percentage symbol",
     "particle", "sparkle", "hud", "ui overlay",
     "كرة أرضية", "خريطة العالم", "خريطة دولة", "مدينة مصغرة",
-    "هاتف", "شاشة التطبيق", "بطاقة طافية", "يطفو", "تطفو",
+    "بطاقة طافية", "هاتف طائر", "هاتف يطفو", "يطفو", "تطفو",
     "هولوغرام", "مسار ضوئي", "خيط ضوئي", "خط ضوئي",
     "خط اتصال", "خطوط اتصال", "بوابة", "عملات", "أوراق نقدية",
 )
@@ -2344,16 +2343,21 @@ unless the user explicitly requests that exact device.
         generation_round=round_number,
     )
 
-    # Enforce STC rules in code, not only through prompt wording.
+    # Record STC violations for ranking and revision, but never delete every
+    # candidate or block image production. Quality rules guide selection;
+    # they are not a production stop switch.
     if is_stc_bank_request(user_request):
-        compliant_concepts = []
         for concept in concepts:
             violations = stc_concept_violations(concept)
             if violations:
                 concept.debate["stc_hard_rejection"] = violations
-                continue
-            compliant_concepts.append(concept)
-        concepts = compliant_concepts
+                concept.cliche_hits.extend(
+                    {
+                        "id": "stc_visual_violation",
+                        "reason": "STC visual rule: " + marker,
+                    }
+                    for marker in violations
+                )
 
     expected = (
         sum(
@@ -4200,11 +4204,17 @@ def run_recovery_board(
     )
 
     if is_stc_bank_request(user_request):
-        concepts = [
-            concept
-            for concept in concepts
-            if not stc_concept_violations(concept)
-        ]
+        for concept in concepts:
+            violations = stc_concept_violations(concept)
+            if violations:
+                concept.debate["stc_hard_rejection"] = violations
+                concept.cliche_hits.extend(
+                    {
+                        "id": "stc_visual_violation",
+                        "reason": "STC visual rule: " + marker,
+                    }
+                    for marker in violations
+                )
 
     concepts = concepts[:3]
 
@@ -4458,9 +4468,11 @@ Lock:
 
 Do not make the scene more complicated than necessary.
 
-For STC Bank, do not introduce any new object, light effect, route, line,
-portal, phone, map, globe, hologram, particle, UI, or financial symbol during
-finalization. Preserve only a concept that passes the dedicated hard gate.
+For STC Bank, do not introduce any unapproved light effect, route, graphic
+line, hologram, particle, floating object, or generic fintech decoration during
+finalization. A smartphone is allowed when it is relevant to the service and
+is naturally held or physically supported. Preserve only a concept that passes
+the dedicated hard gate.
 
 ==================================================
 OUTPUT
