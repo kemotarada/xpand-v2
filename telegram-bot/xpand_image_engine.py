@@ -109,36 +109,18 @@ BEST_USE_PRO = str(
 GEMINI_DIRECTOR_MODEL = str(
     os.environ.get(
         "XPAND_GEMINI_DIRECTOR_MODEL",
-        "gemini-3.5-flash-lite",
+        "gemini-3.1-pro-preview",
     )
 ).strip()
 
-# XPAND MODEL ROUTER
-# Structured / JSON reasoning (creative review board, recovery board,
-# winner finalizer, brief extraction) needs a STRONGER model than the
-# lite chat model, otherwise it returns malformed JSON and the whole
-# creative evaluation collapses. Route those tasks to a capable model
-# by default while keeping the fast lite model for lightweight text.
-GEMINI_STRUCTURED_MODEL = str(
+# Visual QA needs the strongest multimodal reasoning available.  It is kept
+# separate from the creative director so Railway can tune both independently.
+GEMINI_VISION_MODEL = str(
     os.environ.get(
-        "XPAND_GEMINI_STRUCTURED_MODEL",
-        "gemini-3.7-flash",
+        "XPAND_GEMINI_VISION_MODEL",
+        "gemini-3.1-pro-preview",
     )
 ).strip()
-
-# How many times a structured call may be re-attempted (with a JSON
-# repair instruction) before giving up and letting the caller's local
-# fallback take over. Keeps the pipeline robust instead of crashing.
-GEMINI_STRUCTURED_ATTEMPTS = max(
-    1,
-    int(
-        os.environ.get(
-            "XPAND_GEMINI_STRUCTURED_ATTEMPTS",
-            "4",
-        )
-        or 3
-    ),
-)
 
 
 # =========================================================
@@ -867,18 +849,7 @@ def build_professional_prompt(
     ]
 
     if is_stc_bank_request(user_prompt):
-        # HYPER STC ENFORCEMENT — highest priority
-        directives.insert(0, STC_BANK_IMAGE_GUARD)
-        directives.append(
-            "CRITICAL STC BANK RULES (non-negotiable): "
-            "1) ZERO readable text, letters, numbers, logos, Arabic or Latin typography in the image. "
-            "2) Color must follow Tier system: Tier A lifestyle = 100% natural colors no purple environment; "
-            "Tier B = natural base + purple only as ≤15% edge accent; Tier C studio = purple backdrop only, product true color. "
-            "3) Never apply global purple cast on skin, faces, or natural materials. "
-            "4) Image must feel like a real premium STC Bank advertisement (luxury, restraint, clear benefit). "
-            "5) Leave 25-40% natural empty space for later Arabic copy. "
-            "6) One clear hero, one clear message, photorealistic commercial photography quality."
-        )
+        directives.append(STC_BANK_IMAGE_GUARD)
 
     if contains_any(
         user_prompt,
@@ -2205,93 +2176,35 @@ def call_gemini_director(
         )
         if json_schema:
             prompt += "\nJSON SCHEMA:\n" + json.dumps(json_schema, ensure_ascii=False)
-    def _build_inputs(text_value: str) -> List[Dict[str, Any]]:
-        built: List[Dict[str, Any]] = [{"type": "text", "text": text_value}]
-        if image_bytes:
-            built.append({
-                "type": "image",
-                "mime_type": image_mime_type or "image/png",
-                "data": base64.b64encode(image_bytes).decode("ascii"),
-            })
-        return built
-
-    # XPAND MODEL ROUTER: structured/JSON reasoning runs on the stronger
-    # structured model so the creative review board returns valid JSON;
-    # lightweight free text stays on the fast director model.
-    director_model = (
-        GEMINI_STRUCTURED_MODEL
-        if structured
-        else GEMINI_DIRECTOR_MODEL
-    )
-
+    inputs: List[Dict[str, Any]] = [{"type": "text", "text": prompt}]
+    if image_bytes:
+        inputs.append({
+            "type": "image",
+            "mime_type": image_mime_type or "image/png",
+            "data": base64.b64encode(image_bytes).decode("ascii"),
+        })
+    selected_model = GEMINI_VISION_MODEL if image_bytes else GEMINI_DIRECTOR_MODEL
+    payload: Dict[str, Any] = {"model": selected_model, "input": inputs}
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
         "0", "false", "no", "off"
     }
-    # Google Search grounding must NEVER run on structured/JSON calls: the
-    # grounded answer format corrupts the JSON body and the creative review
-    # board comes back with empty evaluations. Grounding is only for free-text
-    # research calls.
-    use_search = bool(
-        search_enabled
-        and not structured
-        and contains_any(prompt, [
-            "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
-        ])
+    if search_enabled and contains_any(prompt, [
+        "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
+    ]):
+        payload["tools"] = [{"type": "google_search"}]
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
+        json=payload,
+        timeout=REQUEST_TIMEOUT,
     )
-
-    attempts = GEMINI_STRUCTURED_ATTEMPTS if structured else 1
-    last_text = ""
-
-    for attempt in range(1, attempts + 1):
-        text_value = prompt
-        if structured and attempt > 1:
-            text_value = (
-                prompt
-                + "\n\nThe previous answer was NOT valid JSON. "
-                "Return ONLY one complete, valid, minified JSON object that "
-                "fully answers the request. No markdown, no code fences, no "
-                "commentary, no text before or after the JSON."
-            )
-
-        payload: Dict[str, Any] = {
-            "model": director_model,
-            "input": _build_inputs(text_value),
-        }
-        if use_search:
-            payload["tools"] = [{"type": "google_search"}]
-
-        response = requests.post(
-            GEMINI_INTERACTIONS_URL,
-            headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-            json=payload,
-            timeout=REQUEST_TIMEOUT,
-        )
-
-        if not response.ok:
-            if structured and attempt < attempts:
-                continue
-            raise XPANDImageProviderError(_provider_error_message("Gemini Director", response))
-
-        data = _safe_json(response)
-        text = _find_gemini_text(data)
-
-        if not text:
-            if structured and attempt < attempts:
-                continue
-            raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
-
-        if not structured:
-            return text
-
-        last_text = text
-
-        if json_text_is_valid(text):
-            return normalize_json_text(text)
-
-    # Every structured attempt produced imperfect JSON. Return the best
-    # text we have; the caller's parser and local fallback handle the rest
-    # so the pipeline never hard-fails.
-    return last_text
+    if not response.ok:
+        raise XPANDImageProviderError(_provider_error_message("Gemini Director", response))
+    data = _safe_json(response)
+    text = _find_gemini_text(data)
+    if not text:
+        raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
+    return normalize_json_text(text) if structured else text
 
 def call_openai_director(
     prompt: str,
