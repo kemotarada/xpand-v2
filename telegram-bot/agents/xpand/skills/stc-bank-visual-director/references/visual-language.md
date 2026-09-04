@@ -57,6 +57,7 @@ Choose intentionally and name accurately:
 - Use motivated key light, soft fill, controlled negative fill, and restrained rim light.
 - Shadows must share direction, softness, and color temperature.
 - Reflections must match surface roughness and viewing angle; use Fresnel-appropriate edge reflections.
-- Purple spill may tint neutral objects lightly but must not destroy their true material color.
+- Purple spill may tint neutral objects lightly but must not destroy their true material color; it must never touch skin, faces, or hair, and never behave as a global filter over the frame.
+- Realism-first color: keep neutral white balance on every person and hero product; in real-life (lifestyle) scenes the environment stays 100% natural with no purple; purple belongs to the background and the light, never to the subject.
 - Prefer clean micro-contrast, smooth tonal transitions, realistic depth of field, and subtle filmic roll-off.
 - Avoid crushed blacks, neon clipping, bloom halos, metallic plastic, excessive grain, and artificial sharpness.
