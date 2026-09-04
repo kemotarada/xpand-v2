@@ -252,9 +252,11 @@ MASTERPIECE_FINAL_IMAGE_MODEL = str(
 
 def masterpiece_model_for_pass(pass_name: str) -> str:
     name = str(pass_name or "").lower()
-    if name in {"quality_first_high", "quality_first_generation"}:
-        return MASTERPIECE_EXPLORATION_MODEL
-    return MASTERPIECE_FINAL_IMAGE_MODEL
+    # All exploration/recovery/correction candidates use Nano Banana 2 at 1K.
+    # Nano Banana Pro is reserved exclusively for the chosen 2K/4K master.
+    if name.startswith("final_native_"):
+        return MASTERPIECE_FINAL_IMAGE_MODEL
+    return MASTERPIECE_EXPLORATION_MODEL
 
 
 # =========================================================
@@ -4097,6 +4099,7 @@ def gemini_multi_reference_edit(
     prompt: str,
     aspect_ratio: str,
     pass_name: str,
+    output_image_size: str = "1K",
 ) -> GeneratedImage:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY missing.")
@@ -4121,7 +4124,9 @@ def gemini_multi_reference_edit(
             "mime_type": reference.mime_type or "image/png",
             "data": base64.b64encode(reference.image_bytes).decode("ascii"),
         })
-    requested_image_size = detect_image_size(safe_prompt)
+    requested_image_size = str(output_image_size or "1K").upper().strip()
+    if requested_image_size not in {"1K", "2K", "4K"}:
+        requested_image_size = "1K"
     image_size = requested_image_size if requested_image_size in {"1K", "2K", "4K"} else "1K"
     model = masterpiece_model_for_pass(pass_name)
     response = requests.post(
@@ -4198,6 +4203,7 @@ def generate_high_quality_image(
     aspect_ratio: str,
     original_request: str,
     pass_name: str = "quality_first_generation",
+    output_image_size: str = "1K",
 ) -> GeneratedImage:
 
     physical_refs = list(
@@ -4291,6 +4297,7 @@ user request while preserving the relevant brand visual DNA.
                 pass_name=(
                     pass_name
                 ),
+                output_image_size=output_image_size,
             )
         )
 
@@ -4309,7 +4316,7 @@ user request while preserving the relevant brand visual DNA.
             "high-quality generation"
         ),
         aspect_ratio,
-        detect_image_size(original_request),
+        output_image_size if output_image_size in {"1K", "2K", "4K"} else "1K",
         "medium",
     )
 
@@ -5581,6 +5588,22 @@ def run_production(
         time.monotonic()
     )
 
+    final_requested_size = detect_image_size(original_request)
+    if final_requested_size not in {"1K", "2K", "4K"}:
+        final_requested_size = "1K"
+
+    # Reserve exactly one image + one QA call for a true provider-native 2K/4K
+    # final. A requested 1K result needs no extra finalization generation.
+    reserve_final_call = final_requested_size in {"2K", "4K"}
+    processing_image_limit = max(
+        1,
+        MASTERPIECE_MAX_IMAGE_CALLS - (1 if reserve_final_call else 0),
+    )
+    processing_vision_limit = max(
+        1,
+        MASTERPIECE_MAX_VISION_CALLS - (1 if reserve_final_call else 0),
+    )
+
     errors: List[
         str
     ] = []
@@ -5603,6 +5626,12 @@ def run_production(
 
         "adaptive_action":
             "none",
+
+        "processing_image_size":
+            "1K",
+
+        "final_requested_size":
+            final_requested_size,
 
         "smart_reference_selection":
             True,
@@ -5775,11 +5804,9 @@ def run_production(
     )
 
     print(
-        "Final delivery:",
-        production_size_for_ratio(
-            aspect_ratio,
-            final_quality=True,
-        ),
+        "Final requested quality:",
+        final_requested_size,
+        "(provider-native)" if reserve_final_call else "(processing master)",
     )
 
     print(
@@ -5906,14 +5933,14 @@ def run_production(
     initial_pass_name = "quality_first_high"
     # A provider may occasionally return text/refusal/empty output. Such a
     # transport/model failure must consume a call but must not abort the whole
-    # Masterpiece run. Retry once on Nano Banana Pro, then once more with a
-    # clean Pro request, all inside the configured six-call ceiling.
+    # Masterpiece run. Retry with clean Nano Banana 2 requests inside the
+    # configured processing-call ceiling; Pro remains reserved for the final.
     for initial_pass_name in (
         "quality_first_high",
-        "quality_first_retry_pro",
-        "quality_first_retry_pro_2",
+        "quality_first_retry_nb2",
+        "quality_first_retry_nb2_2",
     ):
-        if telemetry["image_calls"] >= MASTERPIECE_MAX_IMAGE_CALLS:
+        if telemetry["image_calls"] >= processing_image_limit:
             break
         try:
             first_image = generate_high_quality_image(
@@ -6005,7 +6032,7 @@ def run_production(
             "vision_calls"
         ]
         <
-        MASTERPIECE_MAX_VISION_CALLS
+        processing_vision_limit
     ):
 
         print("")
@@ -6137,7 +6164,7 @@ def run_production(
             "image_calls"
         ]
         <
-        MASTERPIECE_MAX_IMAGE_CALLS
+        processing_image_limit
     ):
 
         print("")
@@ -6325,7 +6352,7 @@ def run_production(
                     "vision_calls"
                 ]
                 <
-                MASTERPIECE_MAX_VISION_CALLS
+                processing_vision_limit
             ):
 
                 print("")
@@ -6462,7 +6489,7 @@ def run_production(
 
     if (
         best_qa is not None
-        and telemetry["image_calls"] < MASTERPIECE_MAX_IMAGE_CALLS
+        and telemetry["image_calls"] < processing_image_limit
         and (
             not best_qa.target_reached
             or bool(best_qa.critical_blockers)
@@ -6524,7 +6551,7 @@ def run_production(
 
             telemetry["image_calls"] += 1
             third_qa: Optional[QAEvaluation] = None
-            if telemetry["vision_calls"] < MASTERPIECE_MAX_VISION_CALLS:
+            if telemetry["vision_calls"] < processing_vision_limit:
                 print(
                     "👁️ ADAPTIVE VISION QA 3/"
                     + str(MASTERPIECE_MAX_VISION_CALLS)
@@ -6581,8 +6608,8 @@ def run_production(
 
     while (
         best_qa is not None
-        and telemetry["image_calls"] < MASTERPIECE_MAX_IMAGE_CALLS
-        and telemetry["vision_calls"] < MASTERPIECE_MAX_VISION_CALLS
+        and telemetry["image_calls"] < processing_image_limit
+        and telemetry["vision_calls"] < processing_vision_limit
         and (not best_qa.passed or not best_qa.target_reached or best_qa.critical_blockers)
     ):
         call_number = telemetry["image_calls"] + 1
@@ -6697,6 +6724,76 @@ def run_production(
             print("⚠️ Deep Masterpiece pass failed; preserving best candidate.")
 
     # =====================================================
+    # PROVIDER-NATIVE FINAL RESOLUTION PASS
+    # =====================================================
+    # Processing is always 1K. For 2K/4K requests, spend the one reserved call
+    # only on the strongest surviving candidate, then QA that exact output.
+
+    if reserve_final_call:
+        if telemetry["image_calls"] >= MASTERPIECE_MAX_IMAGE_CALLS:
+            raise RuntimeError("No reserved image call remained for final resolution.")
+        if telemetry["vision_calls"] >= MASTERPIECE_MAX_VISION_CALLS:
+            raise RuntimeError("No reserved Vision call remained for final resolution QA.")
+
+        print("")
+        print(
+            "💎 FINAL NATIVE OUTPUT | Nano Banana Pro | "
+            + final_requested_size
+        )
+        final_master_prompt = build_targeted_correction_prompt(
+            qa=best_qa,
+            compiled=compiled,
+            product_lock=product_lock,
+            aspect_ratio=aspect_ratio,
+        )
+        final_master_prompt += (
+            "\n\nFINAL RESOLUTION MASTER\n"
+            "Preserve the strongest approved composition and its natural photographic "
+            "character. Resolve every remaining listed QA defect without redesigning "
+            "successful regions. Return a genuinely native "
+            + final_requested_size
+            + " image at exact aspect ratio "
+            + aspect_ratio
+            + ". Do not add text, logos, fake UI or new decorative elements."
+        )
+        final_native_image = gemini_multi_reference_edit(
+            working_image=best_image,
+            references=physical_refs[:MAX_PHYSICAL_REFERENCE_IMAGES],
+            prompt=final_master_prompt,
+            aspect_ratio=aspect_ratio,
+            pass_name="final_native_" + final_requested_size.lower(),
+            output_image_size=final_requested_size,
+        )
+        telemetry["image_calls"] += 1
+        final_native_qa = evaluate_generated_image(
+            image=final_native_image,
+            original_request=original_request,
+            compiled_prompt=compiled,
+            product_lock=product_lock,
+            brand_context=enriched_brand_context,
+            aspect_ratio=aspect_ratio,
+            telemetry=telemetry,
+        )
+        print_qa("Final native " + final_requested_size + " QA", final_native_qa)
+        passes.append(
+            ProductionPassResult(
+                pass_name="final_native_" + final_requested_size.lower(),
+                image=final_native_image,
+                qa=final_native_qa,
+                metadata={
+                    "image_call": telemetry["image_calls"],
+                    "quality": final_requested_size,
+                    "provider_native_final": True,
+                },
+            )
+        )
+        # The requested final artifact must be judged on its own pixels. Never
+        # use a passing 1K score to silently approve a different 2K/4K output.
+        best_image = final_native_image
+        best_qa = final_native_qa
+        best_score = final_native_qa.score
+
+    # =====================================================
     # FINAL DELIVERY
     # =====================================================
 
@@ -6709,7 +6806,7 @@ def run_production(
         create_exact_delivery_frame(
             best_image,
             aspect_ratio,
-            upscale_final=True,
+            upscale_final=False,
             label=(
                 "final_delivery"
             ),
@@ -6756,6 +6853,12 @@ def run_production(
 
             "production_mode":
                 mode,
+
+            "processing_image_size":
+                "1K",
+
+            "final_requested_size":
+                final_requested_size,
 
             "quality_first_adaptive":
                 True,
