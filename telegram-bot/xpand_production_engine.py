@@ -205,13 +205,13 @@ OPENAI_IMAGE_EDITS_URL = (
 MASTERPIECE_MAX_IMAGE_CALLS = max(
     1,
     min(
-        2,
+        4,  # HYPER: allow up to 4 real image attempts
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_IMAGE_CALLS",
-                "1",
+                "3",  # default 3 for Masterpiece
             )
-            or 1
+            or 3
         ),
     ),
 )
@@ -220,13 +220,13 @@ MASTERPIECE_MAX_IMAGE_CALLS = max(
 MASTERPIECE_MAX_VISION_CALLS = max(
     1,
     min(
-        2,
+        4,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_VISION_CALLS",
-                "2",
+                "3",
             )
-            or 2
+            or 3
         ),
     ),
 )
