@@ -5250,50 +5250,77 @@ def run_creative_brain(
         )
 
     except Exception as error:
+        primary_error = clean_text(
+            error,
+            3000,
+        )
         errors.append(
             (
                 "concept_generation: "
                 +
-                clean_text(
-                    error,
-                    3000,
-                )
+                primary_error
             )
         )
-
-        return CreativeBrainResponse(
-            ok=False,
-            mode=mode,
-            request=user_request,
-            total_concepts=0,
-            concepts=[],
-            top_concepts=[],
-            winner=None,
-            metadata={
-                "version":
-                    VERSION,
-
-                "quality_gate_passed":
-                    False,
-
-                "masterpiece_min_score":
-                    MASTERPIECE_MIN_SCORE,
-
-                "masterpiece_target_score":
-                    MASTERPIECE_MIN_SCORE,
-
-                "director_calls":
-                    telemetry[
-                        "director_calls"
-                    ],
-
-                "director_call_history":
-                    telemetry[
-                        "director_call_history"
-                    ],
-            },
-            errors=errors,
+        print(
+            "⚠️ Primary ideation unavailable:",
+            primary_error,
         )
+        print(
+            "🔁 Running compact ideation recovery..."
+        )
+
+        try:
+            concepts = generate_concept_pool(
+                user_request=user_request,
+                brand_context=brand_context,
+                visual_references=visual_references,
+                style_hint=style_hint,
+                mode=MODE_FAST,
+                round_number=1,
+                failure_context=(
+                    "The full ideation response failed or was incomplete. "
+                    "Return a compact valid JSON concept batch with concise "
+                    "fields and no markdown outside the JSON object."
+                ),
+                telemetry=telemetry,
+            )
+            print(
+                "✅ Compact ideation recovery:",
+                len(concepts),
+            )
+
+        except Exception as recovery_error:
+            recovery_text = clean_text(
+                recovery_error,
+                3000,
+            )
+            errors.append(
+                "compact_ideation_recovery: "
+                + recovery_text
+            )
+            print(
+                "❌ Compact ideation recovery failed:",
+                recovery_text,
+            )
+
+            return CreativeBrainResponse(
+                ok=False,
+                mode=mode,
+                request=user_request,
+                total_concepts=0,
+                concepts=[],
+                top_concepts=[],
+                winner=None,
+                metadata={
+                    "version": VERSION,
+                    "quality_gate_passed": False,
+                    "masterpiece_min_score": MASTERPIECE_MIN_SCORE,
+                    "masterpiece_target_score": MASTERPIECE_MIN_SCORE,
+                    "director_calls": telemetry["director_calls"],
+                    "director_call_history": telemetry["director_call_history"],
+                },
+                errors=errors,
+            )
 
     concepts = deduplicate_concepts(
         concepts
