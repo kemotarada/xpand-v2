@@ -3231,6 +3231,7 @@ def stc_scene_lock(request: str) -> str:
     if not is_stc_bank_request(request):
         return ""
 
+    source = clean_text(request, 12000).lower()
     palette_mode = infer_stc_palette_mode(request)
 
     if palette_mode == "natural":
