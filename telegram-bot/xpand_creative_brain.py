@@ -1696,6 +1696,18 @@ STYLE HINT
 {clean_text(style_hint, 1000) or "Choose the strongest appropriate style."}
 
 ==================================================
+BOARD MANDATE
+==================================================
+
+Board type: {"independent_challenger" if challenger else "primary_ideation"}
+
+{clean_text(failure_context, 1800) or "Create an original, diverse concept pool."}
+
+If this is an independent_challenger board, deliberately avoid the most
+obvious locations, camera grammars and metaphors a primary board would choose.
+It must contribute alternatives, not paraphrases.
+
+==================================================
 BENEFIT FAMILY
 ==================================================
 
@@ -1752,17 +1764,17 @@ Use concise production-ready decisions.
 STC BANK ORIGINALITY + SCENE DIVERSITY CONTRACT
 ==================================================
 
-When the request is for STC Bank, the 20 concepts MUST span materially
+When the request is for STC Bank, the generated batch MUST span materially
 different physical situations, not renamed versions of one room:
 
-- at least 10 human_on_location concepts: a believable person actively using
+- at least 50% human_on_location concepts: a believable person actively using
   the phone in distinct real locations relevant to the benefit
-- at least 3 architectural_frame concepts using real depth, framing or
+- include architectural_frame concepts using real depth, framing or
   foreground occlusion
-- at least 3 phone_in_hand_closeup concepts with different grips, viewpoints
+- include phone_in_hand_closeup concepts with different grips, viewpoints
   and backgrounds
-- at least 2 motion_moment concepts with motivated environmental motion
-- at most 2 interior concepts total
+- include motion_moment concepts with motivated environmental motion
+- at most 10% interior concepts, rounded up to one when the batch is small
 - zero office-desk concepts unless the user explicitly requests an office
 - zero phones resting on tables/desks
 - zero miniature bridges, cities, landmarks, globes or souvenir dioramas
@@ -5402,50 +5414,54 @@ def run_creative_brain(
         )
 
     except Exception as error:
+        primary_error = clean_text(error, 3000)
         errors.append(
             (
                 "concept_generation: "
                 +
-                clean_text(
-                    error,
-                    3000,
-                )
+                primary_error
             )
         )
-
-        return CreativeBrainResponse(
-            ok=False,
-            mode=mode,
-            request=user_request,
-            total_concepts=0,
-            concepts=[],
-            top_concepts=[],
-            winner=None,
-            metadata={
-                "version":
-                    VERSION,
-
-                "quality_gate_passed":
-                    False,
-
-                "masterpiece_min_score":
-                    MASTERPIECE_MIN_SCORE,
-
-                "masterpiece_target_score":
-                    MASTERPIECE_MIN_SCORE,
-
-                "director_calls":
-                    telemetry[
-                        "director_calls"
-                    ],
-
-                "director_call_history":
-                    telemetry[
-                        "director_call_history"
-                    ],
-            },
-            errors=errors,
-        )
+        print("⚠️ Primary ideation unavailable:", primary_error)
+        print("🔁 Running compact ideation recovery...")
+        try:
+            concepts = generate_concept_pool(
+                user_request=user_request,
+                brand_context=brand_context,
+                visual_references=visual_references,
+                style_hint=style_hint,
+                mode=MODE_FAST,
+                round_number=1,
+                failure_context=(
+                    "The full ideation response failed or was incomplete. Return a "
+                    "compact valid JSON batch with concise fields, strong scene "
+                    "diversity, active human use and no office/table repetition."
+                ),
+                telemetry=telemetry,
+            )
+            print("✅ Compact ideation recovery:", len(concepts))
+        except Exception as recovery_error:
+            recovery_text = clean_text(recovery_error, 3000)
+            errors.append("compact_ideation_recovery: " + recovery_text)
+            print("❌ Compact ideation recovery failed:", recovery_text)
+            return CreativeBrainResponse(
+                ok=False,
+                mode=mode,
+                request=user_request,
+                total_concepts=0,
+                concepts=[],
+                top_concepts=[],
+                winner=None,
+                metadata={
+                    "version": VERSION,
+                    "quality_gate_passed": False,
+                    "masterpiece_min_score": MASTERPIECE_MIN_SCORE,
+                    "masterpiece_target_score": MASTERPIECE_MIN_SCORE,
+                    "director_calls": telemetry["director_calls"],
+                    "director_call_history": telemetry["director_call_history"],
+                },
+                errors=errors,
+            )
 
     concepts = deduplicate_concepts(
         concepts
