@@ -109,32 +109,7 @@ BEST_USE_PRO = str(
 GEMINI_DIRECTOR_MODEL = str(
     os.environ.get(
         "XPAND_GEMINI_DIRECTOR_MODEL",
-        "gemini-3.1-pro-preview",
-    )
-).strip()
-
-# Visual QA needs the strongest multimodal reasoning available.  It is kept
-# separate from the creative director so Railway can tune both independently.
-GEMINI_VISION_MODEL = str(
-    os.environ.get(
-        "XPAND_GEMINI_VISION_MODEL",
-        "gemini-3.1-pro-preview",
-    )
-).strip()
-
-# Structured JSON work is intentionally isolated from the long-horizon Pro
-# director. Gemini 3.5 Flash is GA and more predictable for compact contracts.
-GEMINI_STRUCTURED_MODEL = str(
-    os.environ.get(
-        "XPAND_GEMINI_STRUCTURED_MODEL",
-        "gemini-3.5-flash",
-    )
-).strip()
-
-GEMINI_VISION_STRUCTURED_MODEL = str(
-    os.environ.get(
-        "XPAND_GEMINI_VISION_STRUCTURED_MODEL",
-        "gemini-3.5-flash",
+        "gemini-3.5-flash-lite",
     )
 ).strip()
 
@@ -2199,22 +2174,14 @@ def call_gemini_director(
             "mime_type": image_mime_type or "image/png",
             "data": base64.b64encode(image_bytes).decode("ascii"),
         })
-    selected_model = (
-        GEMINI_VISION_STRUCTURED_MODEL
-        if image_bytes and structured
-        else (
-            GEMINI_VISION_MODEL
-            if image_bytes
-            else (GEMINI_STRUCTURED_MODEL if structured else GEMINI_DIRECTOR_MODEL)
-        )
-    )
-    payload: Dict[str, Any] = {"model": selected_model, "input": inputs}
+    payload: Dict[str, Any] = {"model": GEMINI_DIRECTOR_MODEL, "input": inputs}
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
         "0", "false", "no", "off"
     }
-    # Search grounding and strict JSON are separate phases. Enabling a search
-    # tool during a JSON review can produce tool/citation output instead of the
-    # requested object, which previously made every concept appear "missing".
+    # Google Search grounding must NEVER run on structured/JSON calls: the
+    # grounded answer format corrupts the JSON body and the creative review
+    # board comes back with empty evaluations. Grounding is only for free-text
+    # research calls.
     if search_enabled and not structured and contains_any(prompt, [
         "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
     ]):
