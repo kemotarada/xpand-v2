@@ -3273,15 +3273,31 @@ palest halo #AA89DD. Do not substitute blue, cyan or teal for purple.
             "هاتف", "جوال", "موبايل", "تطبيق", "التطبيق",
         ]
     )
+    tracking_requested = any(
+        marker in source
+        for marker in [
+            "track", "tracking", "transfer status", "progress status",
+            "تتبع", "تتبّع", "الحوالات", "حوالة", "حوالات",
+        ]
+    )
     phone_rule = (
-        """
+        ("""
+PHONE IS A REQUIRED DOMINANT HERO: keep it completely visible, large enough
+to lead the hierarchy, physically supported, perspective-correct and sharply
+focused. If no verified UI screenshot is physically supplied, use a refined,
+strictly WORDLESS tracking interface made only from three simple geometric
+status nodes and one restrained progress path. Absolutely no words, letters,
+numbers, pseudo-writing, logo, brand mark, map, flag or decorative hologram.
+The interface must remain subordinate to the physical phone and photographic
+scene while making tracking progress understandable without copy.
+""".strip() if tracking_requested else """
 PHONE IS A REQUIRED DOMINANT HERO: keep it completely visible, large enough
 to lead the hierarchy, physically supported, perspective-correct and sharply
 focused. If no verified UI screenshot is physically supplied, the screen must
 be blank, clean and softly reflective with absolutely no generated words,
 letters, numbers, icons, pseudo-UI or invented STC marks. The benefit must read
 from the photographed scene without relying on screen text.
-""".strip()
+""".strip())
         if phone_required
         else ""
     )
@@ -3300,8 +3316,10 @@ and finish. Do not copy their literal composition.
 {phone_rule}
 
 IMAGE SURFACE RULE: no campaign copy, typography, letters, numbers, logo,
-watermark, invented UI, route graphics, holograms, decorative particles or
-souvenir-like landmark collections anywhere in the generated image.
+watermark, route-map graphics, holograms, decorative particles or souvenir-like
+landmark collections anywhere in the generated image. The single exception is
+the strictly wordless three-node progress interface defined above when the
+brief explicitly requires app-based tracking.
 
 COMPOSITION RULE: one dominant hero, one subordinate context, clear visual
 balance, purposeful negative space, premium real-lens viewpoint, believable
@@ -4709,8 +4727,10 @@ Critical means a genuine campaign-delivery problem:
 - major product deformation
 - major brand mismatch
 - unusable composition
-- any generated/readable words, letters, numbers, fake UI or invented logo when
-  no verified screen asset was supplied
+- any generated/readable words, letters, numbers or invented logo when no
+  verified screen asset was supplied. A restrained wordless three-node status
+  interface is allowed only when the original brief explicitly requests
+  app-based tracking; judge its geometry and clarity instead of calling it fake UI
 - for STC Bank FAMILY A/B studio mode only: blue/cyan/teal replacing the
   selected purple family, mixing both purple families, or purple identity
   coverage too weak to feel native
@@ -5172,10 +5192,8 @@ def qa_quality_rank(
     return (
         no_critical,
         approved,
+        float(qa.score),
         concept_score,
-        float(
-            qa.score
-        ),
     )
 
 
