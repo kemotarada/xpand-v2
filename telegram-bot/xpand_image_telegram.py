@@ -422,9 +422,9 @@ MASTERPIECE_CLEAN_DRAFT_FLOOR = max(
         float(
             os.environ.get(
                 "XPAND_MASTERPIECE_CLEAN_DRAFT_FLOOR",
-                "78",
+                "75",
             )
-            or 78
+            or 75
         ),
     ),
 )
