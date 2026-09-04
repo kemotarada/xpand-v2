@@ -5689,14 +5689,102 @@ def run_creative_brain(
             )
 
     # =====================================================
+    # UNIVERSAL LOCAL-SCORE FALLBACK (free, no model call)
+    #
+    # Guarantees a real "best of N" winner even when every
+    # model evaluation fails (director model disabled, or a
+    # lite model returns unusable JSON so the review board
+    # comes back empty). Ranks by the FREE local preflight
+    # score that already produced the shortlist, so the
+    # 20 -> 1 selection still happens and production is never
+    # blocked and never depends on OpenAI.
+    # =====================================================
+
+    local_fallback_used = False
+
+    if winner is None:
+        def _local_score(item):
+            return float(
+                safe_dict(
+                    item.debate.get(
+                        "local_preflight"
+                    )
+                ).get(
+                    "score",
+                    0.0,
+                )
+            )
+
+        local_pool = (
+            list(shortlist)
+            or list(all_concepts)
+        )
+
+        clean_local = [
+            concept
+            for concept in local_pool
+            if not concept.cliche_hits
+        ] or local_pool
+
+        ranked_local = sorted(
+            clean_local,
+            key=_local_score,
+            reverse=True,
+        )
+
+        if ranked_local:
+            winner = ranked_local[0]
+
+            winner.quality_gate_passed = True
+            winner.quality_gate_failures = []
+
+            winner.weighted_score = (
+                _local_score(winner)
+            )
+
+            winner.debate[
+                "quality_release_level"
+            ] = "local_best_available"
+
+            released = [winner]
+
+            release_level = (
+                "local_best_available"
+            )
+
+            local_fallback_used = True
+
+            print("")
+            print(
+                "🛟 Model evaluation unavailable — "
+                "selecting strongest concept by FREE local scoring."
+            )
+
+            print(
+                "🏆 LOCAL WINNER | "
+                + winner.concept_id
+                + " | local_score="
+                + str(
+                    round(
+                        winner.weighted_score,
+                        1,
+                    )
+                )
+            )
+
+    # =====================================================
     # MODEL CALL 3
     # WINNER FINALIZER
     #
     # Only when Recovery did NOT already consume Call 3.
+    # Skipped for the local fallback so we never fire another
+    # model call that would fail the same way.
     # =====================================================
 
     if (
         winner is not None
+        and
+        not local_fallback_used
         and
         not telemetry[
             "recovery_used"
@@ -5862,6 +5950,15 @@ def run_creative_brain(
             release_level
             ==
             "best_available_release"
+        ):
+            effective_integration_floor = (
+                winner.weighted_score
+            )
+
+        elif (
+            release_level
+            ==
+            "local_best_available"
         ):
             effective_integration_floor = (
                 winner.weighted_score
