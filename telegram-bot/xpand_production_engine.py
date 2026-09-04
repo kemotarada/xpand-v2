@@ -2547,6 +2547,12 @@ def product_references(
     ]
 
 
+def app_ui_references(
+    references: Sequence[ProductionReference],
+) -> List[ProductionReference]:
+    return [item for item in references if item.role == "app_ui_reference"]
+
+
 def reference_dna_payload(
     references: Sequence[
         ProductionReference
@@ -2687,6 +2693,9 @@ def combined_product_lock(
 # =========================================================
 
 PHYSICAL_ROLE_PRIORITY = {
+    "app_ui_reference":
+        1100,
+
     "product_reference":
         1000,
 
@@ -3469,6 +3478,11 @@ Examples:
 
 product_reference
 → preserve product identity.
+
+app_ui_reference
+→ use only as the authoritative phone-screen appearance. Preserve the real
+  interface instead of inventing text, icons or layout; never copy the
+  screenshot's surrounding context as composition.
 
 camera_reference
 → learn camera and perspective.
@@ -4575,6 +4589,10 @@ def detect_critical_blockers(
         thresholds[
             "product_fidelity"
         ] = 70.0
+
+    if safe_dict(product_lock).get("verified_app_ui_available"):
+        thresholds["product_fidelity"] = 82.0
+        thresholds["text_logo_integrity"] = 85.0
 
     for key, threshold in (
         thresholds.items()
@@ -5739,6 +5757,9 @@ def run_production(
         )
     )
 
+    app_ui_refs = app_ui_references(references)
+    precision_refs = (app_ui_refs + product_refs)[:MAX_PHYSICAL_REFERENCE_IMAGES]
+
     physical_refs = (
         choose_physical_references(
             references,
@@ -5771,6 +5792,16 @@ def run_production(
             references
         )
     )
+
+    if app_ui_refs:
+        product_lock["app_ui_reference_count"] = len(app_ui_refs)
+        product_lock["verified_app_ui_available"] = True
+        product_lock["screen_rules"] = [
+            "Use the supplied app_ui_reference as the authoritative STC Bank screen.",
+            "Preserve its layout, colors, spacing, icons and visible content; do not invent substitute UI.",
+            "Fit it to the phone display with correct perspective, glass reflection and exposure.",
+            "Do not copy any surrounding scene from the app screenshot; only the screen pixels are authoritative.",
+        ]
 
     # =====================================================
     # BRAND VISUAL PROFILE
@@ -6615,7 +6646,7 @@ def run_production(
                 )
                 third_image = openai_multi_reference_edit(
                     working_image=best_image,
-                    references=product_refs[:MAX_PHYSICAL_REFERENCE_IMAGES],
+                    references=precision_refs,
                     prompt=third_prompt,
                     aspect_ratio=aspect_ratio,
                     pass_name="final_targeted_correction_high",
@@ -6750,7 +6781,7 @@ def run_production(
                 )
                 deep_image = gemini_multi_reference_edit(
                     working_image=best_image,
-                    references=product_refs[:MAX_PHYSICAL_REFERENCE_IMAGES],
+                    references=precision_refs,
                     prompt=deep_prompt,
                     aspect_ratio=aspect_ratio,
                     pass_name="deep_targeted_correction_" + str(call_number),
