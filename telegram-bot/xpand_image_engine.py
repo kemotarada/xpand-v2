@@ -2178,7 +2178,11 @@ def call_gemini_director(
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
         "0", "false", "no", "off"
     }
-    if search_enabled and contains_any(prompt, [
+    # Google Search grounding must NEVER run on structured/JSON calls: the
+    # grounded answer format corrupts the JSON body and the creative review
+    # board comes back with empty evaluations. Grounding is only for free-text
+    # research calls.
+    if search_enabled and not structured and contains_any(prompt, [
         "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
     ]):
         payload["tools"] = [{"type": "google_search"}]
