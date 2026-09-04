@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V3.1
+# XPAND PRODUCTION ENGINE V4.0
 #
 # QUALITY-FIRST + SMART VISUAL REFERENCE ROUTING
 #
@@ -100,6 +100,7 @@
 from __future__ import annotations
 
 import base64
+import colorsys
 import json
 import os
 import re
@@ -162,7 +163,7 @@ import xpand_brand_memory as xpand_brand_memory
 
 ENGINE_NAME = "XPAND Production Engine"
 
-ENGINE_VERSION = "3.1"
+ENGINE_VERSION = "4.0"
 
 
 MODE_FAST = "fast"
@@ -205,11 +206,11 @@ OPENAI_IMAGE_EDITS_URL = (
 MASTERPIECE_MAX_IMAGE_CALLS = max(
     1,
     min(
-        4,  # HYPER: allow up to 4 real image attempts
+        3,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_IMAGE_CALLS",
-                "3",  # default 3 for Masterpiece
+                "3",
             )
             or 3
         ),
@@ -220,7 +221,7 @@ MASTERPIECE_MAX_IMAGE_CALLS = max(
 MASTERPIECE_MAX_VISION_CALLS = max(
     1,
     min(
-        4,
+        3,
         int(
             os.environ.get(
                 "XPAND_MASTERPIECE_MAX_VISION_CALLS",
@@ -243,13 +244,13 @@ MASTERPIECE_MAX_VISION_CALLS = max(
 SMART_REFERENCE_SELECTION_LIMIT = max(
     1,
     min(
-        6,
+        12,
         int(
             os.environ.get(
                 "XPAND_SMART_REFERENCE_LIMIT",
-                "5",
+                "10",
             )
-            or 5
+            or 10
         ),
     ),
 )
@@ -265,13 +266,13 @@ SMART_REFERENCE_SELECTION_LIMIT = max(
 MAX_PHYSICAL_REFERENCE_IMAGES = max(
     0,
     min(
-        3,
+        6,
         int(
             os.environ.get(
                 "XPAND_PHYSICAL_REFERENCE_LIMIT",
-                "3",
+                "5",
             )
-            or 3
+            or 5
         ),
     ),
 )
@@ -306,9 +307,9 @@ ADAPTIVE_CORRECTION_TRIGGER_SCORE = max(
         float(
             os.environ.get(
                 "XPAND_ADAPTIVE_CORRECTION_TRIGGER_SCORE",
-                "90",
+                "95",
             )
-            or 90
+            or 95
         ),
     ),
 )
@@ -321,9 +322,9 @@ CONCEPT_RECOVERY_SCORE_FLOOR = max(
         float(
             os.environ.get(
                 "XPAND_CONCEPT_RECOVERY_SCORE_FLOOR",
-                "65",
+                "75",
             )
-            or 65
+            or 75
         ),
     ),
 )
@@ -340,9 +341,9 @@ QA_TARGET_SCORE = max(
         int(
             os.environ.get(
                 "XPAND_IMAGE_QA_TARGET",
-                "90",
+                "94",
             )
-            or 90
+            or 94
         ),
     ),
 )
@@ -357,9 +358,9 @@ QA_DELIVERY_FLOOR = max(
         float(
             os.environ.get(
                 "XPAND_IMAGE_QA_DELIVERY_FLOOR",
-                "88",
+                "90",
             )
-            or 88
+            or 90
         ),
     ),
 )
@@ -3167,9 +3168,32 @@ def stc_scene_lock(request: str) -> str:
         "studio", "استوديو", "منصة", "platform", "podium",
         "product shot", "لقطة منتج",
     )
+    natural_markers = (
+        "airport", "travel", "airplane", "plane", "lounge", "beach",
+        "office", "home", "house", "restaurant", "cafe", "car",
+        "person", "man", "woman", "family", "lifestyle", "interior",
+        "مطار", "سفر", "طائرة", "صالة", "شاطئ", "مكتب", "منزل",
+        "بيت", "مطعم", "مقهى", "سيارة", "شخص", "رجل", "امرأة",
+        "عائلة", "لايف ستايل", "واقعي",
+    )
     use_vivid = any(str(item).lower() in source for item in studio_markers)
+    use_natural = any(str(item).lower() in source for item in natural_markers)
 
-    if use_vivid:
+    if use_natural and not use_vivid:
+        palette = """
+SELECTED PALETTE — NATURAL STC LIFESTYLE MODE:
+Do not flood the environment with purple and do not apply a purple, blue,
+cyan or teal color cast. Skin, sky, wood, fabric, food, glass and architecture
+keep believable real-world color under motivated neutral light. Use warm
+neutrals only where physically present: #301F14, #52392C, #8D674C,
+#976D4D, #B79A7F, #D3A26D, #ECDFCE and #E4C1C3. Use natural travel/sky
+blues only in real sky or exterior depth: #8EC3EC, #70AADD, #5F94C9,
+#4A8BB7, #2E5F83 and #143B5C. STC purple occupies only 5–15% as a
+physically motivated product, wardrobe, reflection or architectural accent,
+using #5C0C9B or deep #1D0446 with restrained #7433C5 highlight. Preserve
+neutral whites #FBFBFB and realistic blacks #05070F/#0E090E.
+""".strip()
+    elif use_vivid:
         palette = """
 SELECTED PALETTE — FAMILY A ONLY, DO NOT MIX WITH FAMILY B:
 dark edges/contact shadows #2E0053; structural transitions #440675,
@@ -3230,6 +3254,47 @@ gravity, materials, anatomy, perspective, contact shadows and reflections.
 """.strip()
 
 
+def analyze_stc_color_balance(
+    image_bytes: bytes,
+    palette_mode: str,
+) -> Dict[str, Any]:
+    """Low-cost deterministic color evidence for Vision QA."""
+    with Image.open(BytesIO(image_bytes)) as source:
+        sample = source.convert("RGB")
+        sample.thumbnail((160, 160), Image.Resampling.LANCZOS)
+        pixels = list(sample.getdata())
+
+    total = max(1, len(pixels))
+    purple = 0
+    blue_cyan = 0
+    green = 0
+    saturated = 0
+
+    for red, green_value, blue in pixels:
+        hue, saturation, value = colorsys.rgb_to_hsv(
+            red / 255.0,
+            green_value / 255.0,
+            blue / 255.0,
+        )
+        if saturation >= 0.18 and value >= 0.05:
+            saturated += 1
+            if 0.70 <= hue <= 0.91:
+                purple += 1
+            elif 0.48 <= hue < 0.70:
+                blue_cyan += 1
+            elif 0.24 <= hue < 0.48:
+                green += 1
+
+    return {
+        "palette_mode": palette_mode,
+        "purple_pixel_ratio": round(purple / total, 4),
+        "blue_cyan_pixel_ratio": round(blue_cyan / total, 4),
+        "green_pixel_ratio": round(green / total, 4),
+        "saturated_pixel_ratio": round(saturated / total, 4),
+        "sampled_pixels": total,
+    }
+
+
 # =========================================================
 # QUALITY-FIRST MASTER BLUEPRINT
 # =========================================================
@@ -3255,7 +3320,11 @@ ORIGINAL USER REQUEST
 {clean_text(request, 5000)}
 
 
-{stc_scene_lock(request)}
+{stc_scene_lock(
+    request
+    + "\n"
+    + compact_json(creative_direction, 2500)
+)}
 
 
 APPROVED CREATIVE DIRECTION
@@ -4462,6 +4531,7 @@ def build_qa_prompt(
     product_lock: Any,
     brand_context: Any,
     aspect_ratio: str,
+    color_analysis: Any = None,
 ) -> str:
 
     prompt = f"""
@@ -4511,6 +4581,17 @@ FINAL RATIO
 -----------
 
 {aspect_ratio}
+
+
+DETERMINISTIC COLOR SAMPLE
+--------------------------
+
+{compact_json(color_analysis or {}, 1200)}
+
+Use this numerical sample as supporting evidence, together with the visible
+image and supplied references. In NATURAL mode, realistic environmental color
+is correct and purple should remain a controlled identity accent. In FAMILY A
+or FAMILY B studio mode, purple must visibly lead without becoming a flat wash.
 
 
 Score 0-100:
@@ -4656,6 +4737,35 @@ def evaluate_generated_image(
         )
 
     prompt = (
+        # Determine the intended color behavior from the early production lock.
+        # This survives prompt fitting and lets QA distinguish a natural STC
+        # lifestyle image from a purple studio/product image.
+        None
+    )
+
+    palette_mode = (
+        "natural"
+        if "SELECTED PALETTE — NATURAL" in compiled_prompt.prompt
+        else (
+            "family_a"
+            if "SELECTED PALETTE — FAMILY A" in compiled_prompt.prompt
+            else (
+                "family_b"
+                if "SELECTED PALETTE — FAMILY B" in compiled_prompt.prompt
+                else "unspecified"
+            )
+        )
+    )
+    color_analysis = (
+        analyze_stc_color_balance(
+            qa_frame.image_bytes,
+            palette_mode,
+        )
+        if is_stc_bank_request(original_request)
+        else {}
+    )
+
+    prompt = (
         build_qa_prompt(
             original_request=(
                 original_request
@@ -4671,6 +4781,9 @@ def evaluate_generated_image(
             ),
             aspect_ratio=(
                 requested_ratio
+            ),
+            color_analysis=(
+                color_analysis
             ),
         )
     )
@@ -4725,15 +4838,39 @@ def evaluate_generated_image(
         )
     )
 
+    explicit_failures = safe_list(
+        data.get("critical_failures")
+    )
+
+    if is_stc_bank_request(original_request):
+        purple_ratio = safe_float(
+            color_analysis.get("purple_pixel_ratio"),
+            0.0,
+        )
+        blue_ratio = safe_float(
+            color_analysis.get("blue_cyan_pixel_ratio"),
+            0.0,
+        )
+        if palette_mode in {"family_a", "family_b"} and purple_ratio < 0.22:
+            explicit_failures.append(
+                "deterministic_palette_failure: purple coverage too low for STC studio mode"
+            )
+        if palette_mode == "natural" and purple_ratio > 0.45:
+            explicit_failures.append(
+                "deterministic_palette_failure: unnatural purple wash in STC lifestyle mode"
+            )
+        if palette_mode in {"family_a", "family_b"} and blue_ratio > purple_ratio * 1.35:
+            explicit_failures.append(
+                "deterministic_palette_failure: blue/cyan dominates selected STC purple"
+            )
+
     critical_blockers = (
         detect_critical_blockers(
             scores=(
                 scores
             ),
             explicit_failures=(
-                data.get(
-                    "critical_failures"
-                )
+                explicit_failures
             ),
             product_lock=(
                 product_lock
@@ -6192,6 +6329,114 @@ def run_production(
         )
 
     # =====================================================
+    # IMAGE CALL 3 — FINAL MASTERPIECE RECOVERY/POLISH
+    # =====================================================
+
+    if (
+        best_qa is not None
+        and telemetry["image_calls"] < MASTERPIECE_MAX_IMAGE_CALLS
+        and (
+            not best_qa.target_reached
+            or bool(best_qa.critical_blockers)
+        )
+    ):
+        third_action = (
+            "concept_recovery"
+            if has_concept_failure(best_qa)
+            else "targeted_correction"
+        )
+        print("")
+        print(
+            "🎨 IMAGE CALL 3/"
+            + str(MASTERPIECE_MAX_IMAGE_CALLS)
+            + " | final_"
+            + third_action
+            + "..."
+        )
+        try:
+            if third_action == "concept_recovery":
+                third_prompt = build_concept_recovery_prompt(
+                    qa=best_qa,
+                    compiled=compiled,
+                    aspect_ratio=aspect_ratio,
+                )
+                third_compiled = compiled_with_recovery(
+                    compiled,
+                    third_prompt,
+                )
+                third_image = generate_high_quality_image(
+                    compiled=third_compiled,
+                    product_refs=product_refs,
+                    visual_refs=physical_refs,
+                    aspect_ratio=aspect_ratio,
+                    original_request=original_request,
+                    pass_name="final_concept_recovery_high",
+                )
+            else:
+                third_prompt = build_targeted_correction_prompt(
+                    qa=best_qa,
+                    compiled=compiled,
+                    product_lock=product_lock,
+                    aspect_ratio=aspect_ratio,
+                )
+                third_image = openai_multi_reference_edit(
+                    working_image=best_image,
+                    references=product_refs[:MAX_PHYSICAL_REFERENCE_IMAGES],
+                    prompt=third_prompt,
+                    aspect_ratio=aspect_ratio,
+                    pass_name="final_targeted_correction_high",
+                )
+
+            telemetry["image_calls"] += 1
+            third_qa: Optional[QAEvaluation] = None
+            if telemetry["vision_calls"] < MASTERPIECE_MAX_VISION_CALLS:
+                print(
+                    "👁️ ADAPTIVE VISION QA 3/"
+                    + str(MASTERPIECE_MAX_VISION_CALLS)
+                    + "..."
+                )
+                third_qa = evaluate_generated_image(
+                    image=third_image,
+                    original_request=original_request,
+                    compiled_prompt=compiled,
+                    product_lock=product_lock,
+                    brand_context=enriched_brand_context,
+                    aspect_ratio=aspect_ratio,
+                    telemetry=telemetry,
+                )
+                print_qa("Candidate 3 QA", third_qa)
+
+            passes.append(
+                ProductionPassResult(
+                    pass_name="final_" + third_action + "_high",
+                    image=third_image,
+                    qa=third_qa,
+                    metadata={
+                        "image_call": telemetry["image_calls"],
+                        "quality": "high",
+                        "adaptive_action": third_action,
+                    },
+                )
+            )
+
+            if third_qa is not None and qa_candidate_is_better(
+                third_qa,
+                best_qa,
+            ):
+                best_image = third_image
+                best_qa = third_qa
+                best_score = third_qa.score
+                print("🏆 Candidate 3 selected as BEST.")
+            else:
+                print("🏆 Earlier stronger candidate preserved as BEST.")
+        except Exception as error:
+            errors.append(
+                "final_masterpiece_pass: "
+                + clean_text(error, 3000)
+            )
+            print("⚠️ Final Masterpiece pass failed; preserving best candidate.")
+
+    # =====================================================
     # FINAL DELIVERY
     # =====================================================
 
@@ -6221,11 +6466,18 @@ def run_production(
     )
 
     final_delivery_image.model = (
-        "XPAND Production V3.1 → "
+        "XPAND Masterpiece V4 → "
         +
-        OPENAI_IMAGE_MODEL
+        str(
+            os.environ.get(
+                "XPAND_MASTERPIECE_GOOGLE_MODEL",
+                GOOGLE_IMAGE_FAST_MODEL,
+            )
+        ).strip()
         +
         " → Smart Visual Reference Routing"
+        +
+        " → 3-Pass Adaptive Vision QA"
         +
         " → Local Exact Frame"
     )
@@ -7317,19 +7569,19 @@ if __name__ == "__main__":
     cost_guard_ok = (
         MASTERPIECE_MAX_IMAGE_CALLS
         <=
-        2
+        3
         and
         MASTERPIECE_MAX_VISION_CALLS
         <=
-        2
+        3
         and
         MAX_PHYSICAL_REFERENCE_IMAGES
         <=
-        3
+        6
         and
         SMART_REFERENCE_SELECTION_LIMIT
         <=
-        6
+        12
     )
 
     print("")
@@ -7340,7 +7592,7 @@ if __name__ == "__main__":
             else
             "❌"
         ),
-        "Image calls <= 2",
+        "Image calls <= 3",
     )
 
     print(
@@ -7350,7 +7602,7 @@ if __name__ == "__main__":
             else
             "❌"
         ),
-        "Vision calls <= 2",
+        "Vision calls <= 3",
     )
 
     print(
