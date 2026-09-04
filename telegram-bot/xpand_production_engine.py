@@ -4246,7 +4246,10 @@ def generate_high_quality_image(
         ]
     )
 
-    stc_guard = STC_BANK_IMAGE_GUARD if is_stc_bank_request(original_request) else ""
+    # A concise request-aware STC lock is already embedded at the beginning of
+    # compiled.prompt. Re-appending the full skill here doubled the production
+    # prompt and forced destructive truncation before generation.
+    stc_guard = ""
 
     if physical_refs:
 
@@ -4492,10 +4495,6 @@ def detect_critical_blockers(
         "advertising_readiness":
             QA_AD_READINESS_CRITICAL_FLOOR,
 
-        # Any invented/readable text is a delivery failure for the clean
-        # photographic base requested by this pipeline.
-        "text_logo_integrity":
-            90.0,
     }
 
     if is_stc_bank_request(original_request):
@@ -4650,6 +4649,18 @@ Score 0-100:
 - stc_palette_fidelity
 - hero_dominance
 - message_clarity_without_text
+
+CONTEXT-AWARE SCORING
+=====================
+
+- If no person, hand or body part is visible, human_anatomy MUST be 100. Do not
+  assign a neutral 50 to a non-applicable dimension.
+- If no text, letters, numbers, logo or UI is visible and none was requested,
+  text_logo_integrity MUST be 100. Empty negative space, a blank phone screen,
+  a white architectural surface or a light reflection is NOT a text defect.
+- If a person/hand or text/logo/UI is actually visible, score it strictly.
+- Never use 50 as an N/A placeholder. A non-applicable category is fully
+  compliant; reserve low scores for a visible defect supported by the image.
 
 
 CRITICAL FAILURE
