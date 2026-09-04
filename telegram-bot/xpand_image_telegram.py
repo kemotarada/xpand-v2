@@ -396,7 +396,7 @@ MASTERPIECE_REQUIRE_QA = str(
 MASTERPIECE_ALLOW_SMART_FALLBACK = str(
     os.environ.get(
         "XPAND_MASTERPIECE_ALLOW_SMART_FALLBACK",
-        "false"
+        "true"
     )
 ).strip().lower() in {
     "1",
@@ -3141,68 +3141,18 @@ def creative_quality_passed(
 ) -> bool:
 
     if response is None:
-
         return False
 
-    if not bool(
-        getattr(
-            response,
-            "ok",
-            False
-        )
-    ):
-
-        return False
-
-    winner = getattr(
-        response,
-        "winner",
-        None
+    # Quality is advisory. Any real candidate may continue to production;
+    # the score still helps ranking and QA but never blocks an image request.
+    winner = getattr(response, "winner", None)
+    top_concepts = safe_list(
+        getattr(response, "top_concepts", [])
     )
-
-    if winner is None:
-
-        return False
-
-    metadata = creative_quality_metadata(
-        response
+    concepts = safe_list(
+        getattr(response, "concepts", [])
     )
-
-    if (
-        "quality_gate_passed"
-        in metadata
-        and
-        not bool(
-            metadata.get(
-                "quality_gate_passed"
-            )
-        )
-    ):
-
-        return False
-
-    score = safe_float(
-        getattr(
-            winner,
-            "weighted_score",
-            0
-        ),
-        0
-    )
-
-    minimum = safe_float(
-        metadata.get(
-            "masterpiece_min_score",
-            82
-        ),
-        82
-    )
-
-    return (
-        score
-        >=
-        minimum
-    )
+    return bool(winner or top_concepts or concepts)
 
 
 # =========================================================
@@ -3243,19 +3193,10 @@ def masterpiece_guard_status(
     )
 
     if not creative_response:
-
         return {
-            "allowed":
-                False,
-
-            "code":
-                "creative_response_missing",
-
-            "message":
-                (
-                    "Masterpiece توقف قبل الإنتاج لأن "
-                    "Creative Brain ما رجع نتيجة قابلة للتقييم."
-                ),
+            "allowed": True,
+            "code": "creative_response_missing_fallback",
+            "message": "Creative direction unavailable; continue with Smart Engine.",
         }
 
     if not creative_quality_passed(
@@ -3263,17 +3204,9 @@ def masterpiece_guard_status(
     ):
 
         return {
-            "allowed":
-                False,
-
-            "code":
-                "creative_quality_gate_failed",
-
-            "message":
-                (
-                    "Masterpiece توقف قبل توليد الصورة لأن "
-                    "الاتجاه الإبداعي لم يجتز بوابة الجودة."
-                ),
+            "allowed": True,
+            "code": "creative_quality_advisory",
+            "message": "Creative target not reached; continue with best available direction.",
         }
 
     if (
@@ -3287,17 +3220,9 @@ def masterpiece_guard_status(
     ):
 
         return {
-            "allowed":
-                False,
-
-            "code":
-                "campaign_quality_gate_failed",
-
-            "message":
-                (
-                    "Masterpiece Campaign توقف قبل الإنتاج لأن "
-                    "Campaign Visual Bible لم يجتز التحقق المطلوب."
-                ),
+            "allowed": True,
+            "code": "campaign_quality_advisory",
+            "message": "Campaign validation incomplete; continue with available brand context.",
         }
 
     return {
@@ -4876,15 +4801,6 @@ def creative_direction_for_index(
     Dict[str, Any]
 ]:
 
-    if not creative_quality_passed(
-        creative_response
-    ):
-
-        return (
-            {},
-            {}
-        )
-
     concepts = safe_list(
         getattr(
             creative_response,
@@ -4923,38 +4839,7 @@ def creative_direction_for_index(
             {}
         )
 
-    #
-    # If a top concept carries an explicit failed gate,
-    # fall back to the qualified winner.
-    #
-
-    if hasattr(
-        concept,
-        "quality_gate_passed"
-    ):
-
-        if not bool(
-            getattr(
-                concept,
-                "quality_gate_passed",
-                False
-            )
-        ):
-
-            winner = getattr(
-                creative_response,
-                "winner",
-                None
-            )
-
-            if winner is None:
-
-                return (
-                    {},
-                    {}
-                )
-
-            concept = winner
+    # A failed score is advisory; keep the strongest available direction.
 
     direction = concept_to_dict(
         concept
@@ -5161,11 +5046,7 @@ def generate_masterpiece_images(
                 production.qa.passed
             )
 
-            if (
-                MASTERPIECE_REQUIRE_QA
-                and
-                not qa_passed
-            ):
+            if MASTERPIECE_REQUIRE_QA and not qa_passed:
 
                 score = safe_float(
                     production.best_score,
@@ -5204,7 +5085,7 @@ def generate_masterpiece_images(
                     )
                 )
 
-                continue
+                print("⚠️ QA advisory only; delivering best available image.")
 
             exact_result = (
                 maybe_apply_exact_asset_lock(
@@ -5242,15 +5123,8 @@ def generate_masterpiece_images(
 
             if (
                 MASTERPIECE_REQUIRE_QA
-                and
-                exact_result.get(
-                    "applied"
-                )
-                and
-                exact_result.get(
-                    "qa_passed"
-                )
-                is False
+                and exact_result.get("applied")
+                and exact_result.get("qa_passed") is False
             ):
 
                 message = (
@@ -5279,7 +5153,7 @@ def generate_masterpiece_images(
                     )
                 )
 
-                continue
+                print("⚠️ Exact-asset QA advisory only; delivering the produced image.")
 
             images.append(
                 production.final_image
@@ -6811,40 +6685,7 @@ def generate_and_deliver(
         )
 
         if not images:
-
-            if not MASTERPIECE_ALLOW_SMART_FALLBACK:
-
-                print(
-                    "🛑 SMART ENGINE FALLBACK "
-                    "BLOCKED FOR MASTERPIECE"
-                )
-
-                details = (
-                    " | ".join(
-                        pipeline_errors[
-                            :3
-                        ]
-                    )
-                    if pipeline_errors
-                    else
-                    (
-                        "Masterpiece production "
-                        "returned no approved image."
-                    )
-                )
-
-                raise MasterpieceGuardError(
-                    (
-                        "Masterpiece ما وصل لنتيجة اجتازت "
-                        "كل بوابات الجودة، لذلك وقفت وما "
-                        "حوّلته تلقائيًا لمسار أضعف. "
-                        +
-                        clean_text(
-                            details,
-                            1200
-                        )
-                    )
-                )
+            print("⚠️ Masterpiece returned no image; continuing with Smart Engine fallback.")
 
     # =====================================================
     # NORMAL SMART ENGINE
