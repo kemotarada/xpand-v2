@@ -134,7 +134,7 @@ GEMINI_STRUCTURED_ATTEMPTS = max(
     int(
         os.environ.get(
             "XPAND_GEMINI_STRUCTURED_ATTEMPTS",
-            "3",
+            "4",
         )
         or 3
     ),
