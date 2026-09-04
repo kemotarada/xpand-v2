@@ -31,6 +31,7 @@ TAVILY_SEARCH_URL = "https://api.tavily.com/search"
 
 
 STC_INSTAGRAM_URL = "https://www.instagram.com/stcbank_ksa/"
+STC_WEBSITE_URL = "https://www.stcbank.com.sa/"
 
 
 # =========================================================
@@ -189,15 +190,20 @@ BRAND_PROFILES: Dict[str, Dict[str, Any]] = {
     "stc_bank": {
         "brand_label": "STC Bank KSA",
         "official_sources": [
+            STC_WEBSITE_URL,
             STC_INSTAGRAM_URL,
         ],
-        "default_mode": "best",
+        # Route STC production to the real Nano Banana 2 model. Pro remains
+        # available only when the user explicitly requests it.
+        "default_mode": "google_fast",
         "default_ratio": "4:5",
         "default_resolution": "4K",
         "visual_dna": [
-            "Deep STC purple as the leading brand color.",
-            "Mint / turquoise green as secondary accent color.",
-            "White typography and clean modern layout blocks.",
+            "Use exactly one STC purple family per scene; never mix the vivid and deep families.",
+            "Vivid studio purple targets: #2E0053, #440675, #500988, #4D0C8C, #5C0C9B, #531985, #6C2F9A, #8945B4, #8F45C1, #A35DC9, #B7A5C4.",
+            "Deep cinematic violet targets: #090114, #13012C, #19032F, #1D0446, #260845, #310F68, #33165D, #401880, #49277D, #53249E, #623C9E, #7433C5, #825DBE, #AA89DD.",
+            "Green is not general scene lighting; use it only in a verified supplied product/UI asset or as a tiny justified physical accent.",
+            "No generated typography, campaign copy, logo, or invented UI inside the image.",
             "Premium modern banking / fintech visual language.",
             "Cinematic but clean commercial lighting.",
             "Modern Saudi / Gulf lifestyle settings.",
@@ -236,6 +242,7 @@ BRAND_PROFILES: Dict[str, Dict[str, Any]] = {
             "adsoftheworld.com",
         ],
         "research_queries": [
+            "site:stcbank.com.sa STC Bank official brand campaign",
             "STC Bank KSA Instagram campaign visual design",
             "STC Bank KSA advertising poster",
             "STC Bank KSA travel card campaign",
@@ -342,16 +349,16 @@ def collect_brand_research(
             "sources_used": [],
         }
 
-    # 1) official leaning query
+    # 1) Official website and official social presence first.
     official_query = (
-        f"{profile.get('brand_label', brand_id)} official Instagram visual style "
+        f"{profile.get('brand_label', brand_id)} official campaign visual style "
         f"{user_prompt}"
     )
 
     official_results = run_tavily_search(
         official_query,
-        include_domains=["instagram.com"],
-        max_results=4
+        include_domains=["stcbank.com.sa", "instagram.com"],
+        max_results=6
     )
 
     if official_results:
@@ -360,8 +367,21 @@ def collect_brand_research(
             [item.get("url", "") for item in official_results if item.get("url")]
         )
 
-    # 2) broader inspiration
-    for query in queries[:6]:
+    # 2) Request-specific concept and photography research. This prevents the
+    # engine from recycling the same banking clichés for every campaign.
+    request_queries = [
+        (
+            f"premium commercial photography art direction "
+            f"{user_prompt}"
+        ),
+        (
+            f"luxury banking advertising visual metaphor camera composition "
+            f"{user_prompt}"
+        ),
+    ]
+
+    # 3) Broader brand/category inspiration from unrelated sources.
+    for query in (request_queries + list(queries))[:10]:
         results = run_tavily_search(
             query,
             include_domains=inspiration_domains,
@@ -505,6 +525,17 @@ def build_researched_prompt(
         live_research.get("results", [])
     )
 
+    research_performed = bool(
+        live_research.get("results")
+        and live_research.get("sources_used")
+    )
+
+    research_status = (
+        "LIVE RESEARCH COMPLETED"
+        if research_performed
+        else "LIVE RESEARCH UNAVAILABLE — USING VERIFIED LOCAL BRAND RULES"
+    )
+
     final_prompt = f"""
 USER REQUEST:
 {prompt}
@@ -512,8 +543,12 @@ USER REQUEST:
 XPAND BRAND RESEARCH MODE:
 Deep brand-research mode is active for STC Bank KSA.
 
+RESEARCH STATUS:
+{research_status}
+
 OFFICIAL SOURCE PRIORITY:
 - Instagram official page: {STC_INSTAGRAM_URL}
+- Official website: {STC_WEBSITE_URL}
 - Prefer official brand language first.
 - If the official page or any source is not fully accessible, do not fake access. Use indexed/public references and the brand profile below.
 
@@ -526,10 +561,14 @@ PUBLIC RESEARCH SNAPSHOTS:
 CREATIVE EXECUTION RULES:
 - This is NOT a generic image request.
 - Treat this as a premium STC Bank advertising production.
+- Before image production, explore at least 20 materially different concepts internally, shortlist five, challenge them for message clarity, originality, hierarchy, balance, photographic plausibility, brand fit, and generation reliability, then refine the winner twice.
+- Use one dominant hero, one subordinate context, and no more than one controlled visual metaphor.
+- If the request requires a phone or app, the phone is mandatory and must be physically supported, ergonomically believable, and clearly visible.
+- Do not turn international reach into souvenir-like miniature landmarks, a globe, holograms, or magical objects emerging from the phone unless the user explicitly requests that exact treatment.
 - Preserve the exact marketing intent of the user request.
 - Translate the idea into a stronger visual concept if needed.
 - Use professional art direction, premium commercial realism, strong visual hierarchy, realistic materials, believable lighting, and refined composition.
-- Match STC Bank visual language as closely as possible in spirit, tone, color logic, and campaign quality.
+- Match the supplied STC references as the controlling visual evidence. Use the exact hexadecimal purple targets in the brand profile and choose only one purple family for the scene.
 - Use Saudi / Gulf-appropriate styling where people appear.
 - Prefer a clean ad-campaign look, not a random AI-art look.
 - The output must look like a top-tier agency campaign.
@@ -544,7 +583,7 @@ OUTPUT TARGET:
 - High-end campaign quality
 - 4K intent
 - Best possible execution
-- If text is requested, render it clearly and accurately
+- Never generate campaign text, letters, numbers, logos, or invented UI inside the image unless the user supplies a verified product/UI asset that must be preserved.
 - If the user did not specify ratio, prefer 4:5 for ad/poster requests
 
 FINAL TASK:
@@ -559,6 +598,7 @@ Generate the strongest possible final advertising image for this request while s
         "final_prompt": final_prompt,
         "research_summary": live_summary,
         "sources_used": live_research.get("sources_used", []),
+        "research_performed": research_performed,
     }
 
 
