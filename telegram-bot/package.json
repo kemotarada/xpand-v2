@@ -1,0 +1,20 @@
+{
+  "name": "kemo-agent-live-call-template",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "vite build",
+    "start": "npm run build && node server.js"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "vite": "8.2.2"
+  }
+}

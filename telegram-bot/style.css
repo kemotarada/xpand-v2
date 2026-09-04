@@ -1,0 +1,1281 @@
+/* =========================================================
+   XPAND AGENT LIVE CALL UI V1.0
+   Generic realtime voice interface
+========================================================= */
+
+
+:root {
+  color-scheme: dark;
+
+  --bg: #02060d;
+  --bg-soft: #07111f;
+
+  --panel: rgba(10, 22, 38, 0.72);
+  --panel-border: rgba(255, 255, 255, 0.08);
+
+  --text: #f7fbff;
+  --text-soft: #94a3b8;
+  --text-muted: #64748b;
+
+  --cyan: #22d3ee;
+  --blue: #3b82f6;
+  --violet: #8b5cf6;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+
+  --shadow-cyan:
+    0 0 30px rgba(34, 211, 238, 0.28);
+
+  --shadow-blue:
+    0 0 50px rgba(59, 130, 246, 0.24);
+
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 16px;
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+
+  width: 100%;
+  min-height: 100%;
+
+  background: var(--bg);
+
+  color: var(--text);
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(
+      circle at 50% 16%,
+      rgba(59, 130, 246, 0.17),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 20% 78%,
+      rgba(139, 92, 246, 0.10),
+      transparent 30%
+    ),
+    linear-gradient(
+      180deg,
+      #02060d 0%,
+      #04101c 100%
+    );
+}
+
+
+button {
+  font: inherit;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.call-page {
+  width: min(
+    100%,
+    620px
+  );
+
+  min-height: 100vh;
+  min-height: 100dvh;
+
+  margin: 0 auto;
+
+  padding:
+    max(
+      20px,
+      env(safe-area-inset-top)
+    )
+    20px
+    max(
+      24px,
+      env(safe-area-inset-bottom)
+    );
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.call-header {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding-top: 4px;
+
+  text-align: center;
+}
+
+
+.agent-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 52px;
+
+  padding:
+    6px
+    12px;
+
+  margin-bottom: 14px;
+
+  border:
+    1px solid
+    rgba(34, 197, 94, 0.32);
+
+  border-radius: 999px;
+
+  background:
+    rgba(34, 197, 94, 0.10);
+
+  color: #86efac;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+
+.agent-badge::before {
+  content: "";
+
+  width: 7px;
+  height: 7px;
+
+  margin-left: 7px;
+
+  border-radius: 50%;
+
+  background: var(--green);
+
+  box-shadow:
+    0 0 10px
+    rgba(34, 197, 94, 0.85);
+}
+
+
+.agent-name {
+  margin: 0;
+
+  max-width: 100%;
+
+  color: var(--text);
+
+  font-size:
+    clamp(
+      30px,
+      7vw,
+      46px
+    );
+
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+
+  overflow-wrap: anywhere;
+}
+
+
+.call-subtitle {
+  margin:
+    10px
+    0
+    0;
+
+  color: var(--text-soft);
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   STAGE
+========================================================= */
+
+.call-stage {
+  width: 100%;
+
+  flex: 1;
+
+  min-height: 350px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding:
+    26px
+    0
+    18px;
+}
+
+
+/* =========================================================
+   ORB
+========================================================= */
+
+.orb {
+  position: relative;
+
+  width:
+    clamp(
+      154px,
+      42vw,
+      210px
+    );
+
+  aspect-ratio: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 26px;
+
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+
+.orb-core {
+  position: relative;
+  z-index: 3;
+
+  width: 54%;
+  height: 54%;
+
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle at 35% 28%,
+      #ecfeff 0%,
+      #67e8f9 9%,
+      #22d3ee 24%,
+      #3b82f6 52%,
+      #4f46e5 76%,
+      #111827 100%
+    );
+
+  box-shadow:
+    inset 0 0 28px rgba(255, 255, 255, 0.16),
+    0 0 32px rgba(34, 211, 238, 0.34),
+    0 0 70px rgba(59, 130, 246, 0.20);
+
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    filter 220ms ease;
+}
+
+
+.orb-ring {
+  position: absolute;
+
+  border-radius: 50%;
+
+  border:
+    1px solid
+    rgba(34, 211, 238, 0.19);
+
+  pointer-events: none;
+}
+
+
+.orb-ring-one {
+  width: 78%;
+  height: 78%;
+
+  box-shadow:
+    inset 0 0 26px rgba(34, 211, 238, 0.05);
+}
+
+
+.orb-ring-two {
+  width: 100%;
+  height: 100%;
+
+  border-color:
+    rgba(59, 130, 246, 0.10);
+}
+
+
+/* =========================================================
+   ORB STATES
+========================================================= */
+
+.orb.idle .orb-core {
+  animation:
+    idlePulse
+    3.2s
+    ease-in-out
+    infinite;
+}
+
+
+.orb.listening .orb-core {
+  box-shadow:
+    inset 0 0 32px rgba(255, 255, 255, 0.18),
+    0 0 42px rgba(34, 211, 238, 0.48),
+    0 0 85px rgba(34, 211, 238, 0.22);
+
+  animation:
+    listeningPulse
+    1.35s
+    ease-in-out
+    infinite;
+}
+
+
+.orb.listening .orb-ring-one {
+  animation:
+    listeningRing
+    1.4s
+    ease-out
+    infinite;
+}
+
+
+.orb.listening .orb-ring-two {
+  animation:
+    listeningRing
+    1.4s
+    0.32s
+    ease-out
+    infinite;
+}
+
+
+.orb.thinking .orb-core {
+  filter:
+    hue-rotate(
+      18deg
+    );
+
+  animation:
+    thinkingSpin
+    1.8s
+    ease-in-out
+    infinite;
+}
+
+
+.orb.thinking .orb-ring-one {
+  border-color:
+    rgba(139, 92, 246, 0.28);
+
+  animation:
+    thinkingRing
+    2s
+    linear
+    infinite;
+}
+
+
+.orb.thinking .orb-ring-two {
+  border-color:
+    rgba(59, 130, 246, 0.22);
+
+  animation:
+    thinkingRingReverse
+    2.8s
+    linear
+    infinite;
+}
+
+
+.orb.speaking .orb-core {
+  box-shadow:
+    inset 0 0 38px rgba(255, 255, 255, 0.18),
+    0 0 44px rgba(139, 92, 246, 0.45),
+    0 0 90px rgba(59, 130, 246, 0.26);
+
+  animation:
+    speakingPulse
+    0.68s
+    ease-in-out
+    infinite alternate;
+}
+
+
+.orb.speaking .orb-ring-one {
+  border-color:
+    rgba(139, 92, 246, 0.32);
+
+  animation:
+    speakingRing
+    0.9s
+    ease-out
+    infinite;
+}
+
+
+.orb.speaking .orb-ring-two {
+  border-color:
+    rgba(34, 211, 238, 0.16);
+
+  animation:
+    speakingRing
+    0.9s
+    0.22s
+    ease-out
+    infinite;
+}
+
+
+/* =========================================================
+   WAVEFORM
+========================================================= */
+
+.waveform {
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+
+  opacity: 0.45;
+
+  transition:
+    opacity 180ms ease;
+}
+
+
+.waveform span {
+  display: block;
+
+  width: 4px;
+  height: 8px;
+
+  border-radius: 999px;
+
+  background:
+    linear-gradient(
+      180deg,
+      var(--cyan),
+      var(--blue)
+    );
+
+  box-shadow:
+    0 0 10px
+    rgba(34, 211, 238, 0.25);
+
+  transform-origin: center;
+}
+
+
+.waveform.active {
+  opacity: 1;
+}
+
+
+.waveform.active span {
+  animation:
+    wave
+    850ms
+    ease-in-out
+    infinite;
+}
+
+
+.waveform.active span:nth-child(2) {
+  animation-delay: -690ms;
+}
+
+
+.waveform.active span:nth-child(3) {
+  animation-delay: -510ms;
+}
+
+
+.waveform.active span:nth-child(4) {
+  animation-delay: -330ms;
+}
+
+
+.waveform.active span:nth-child(5) {
+  animation-delay: -180ms;
+}
+
+
+.waveform.active span:nth-child(6) {
+  animation-delay: -470ms;
+}
+
+
+.waveform.active span:nth-child(7) {
+  animation-delay: -620ms;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status-area {
+  margin-top: 10px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+
+  text-align: center;
+}
+
+
+.call-status {
+  color: #dbeafe;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+.call-timer {
+  color: var(--text-muted);
+
+  font-variant-numeric:
+    tabular-nums;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  letter-spacing: 0.06em;
+}
+
+
+/* =========================================================
+   CAPTION
+========================================================= */
+
+.live-caption {
+  width: 100%;
+
+  min-height: 76px;
+
+  margin-bottom: 16px;
+
+  padding:
+    17px
+    18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border:
+    1px solid
+    var(--panel-border);
+
+  border-radius:
+    var(--radius-lg);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.72),
+      rgba(5, 13, 24, 0.76)
+    );
+
+  backdrop-filter:
+    blur(18px);
+
+  -webkit-backdrop-filter:
+    blur(18px);
+
+  color: var(--text-soft);
+
+  text-align: center;
+  line-height: 1.65;
+
+  font-size: 14px;
+
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+
+.live-caption.active {
+  color: #f8fafc;
+
+  border-color:
+    rgba(34, 211, 238, 0.18);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 30, 48, 0.82),
+      rgba(5, 14, 28, 0.84)
+    );
+
+  box-shadow:
+    inset 0 0 25px rgba(34, 211, 238, 0.03);
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error-box {
+  width: 100%;
+
+  margin-bottom: 14px;
+
+  padding:
+    14px
+    15px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  border:
+    1px solid
+    rgba(239, 68, 68, 0.28);
+
+  border-radius:
+    var(--radius-md);
+
+  background:
+    rgba(127, 29, 29, 0.18);
+
+  color: #fecaca;
+}
+
+
+.error-icon {
+  width: 26px;
+  height: 26px;
+
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background:
+    rgba(239, 68, 68, 0.16);
+
+  color: #fca5a5;
+
+  font-weight: 900;
+}
+
+
+.error-message {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+.start-area {
+  width: 100%;
+}
+
+
+.start-call-button {
+  width: 100%;
+  min-height: 62px;
+
+  border: 0;
+
+  border-radius:
+    var(--radius-lg);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
+  cursor: pointer;
+
+  color: #00111d;
+
+  background:
+    linear-gradient(
+      135deg,
+      #67e8f9 0%,
+      #22d3ee 36%,
+      #60a5fa 100%
+    );
+
+  box-shadow:
+    0 12px 40px rgba(34, 211, 238, 0.18),
+    0 0 30px rgba(59, 130, 246, 0.08);
+
+  font-size: 17px;
+  font-weight: 800;
+
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    opacity 120ms ease;
+}
+
+
+.start-call-button:active {
+  transform:
+    scale(
+      0.985
+    );
+}
+
+
+.start-call-button:disabled {
+  cursor: default;
+
+  opacity: 0.62;
+
+  filter:
+    saturate(
+      0.65
+    );
+}
+
+
+.button-icon {
+  font-size: 20px;
+}
+
+
+/* =========================================================
+   CALL CONTROLS
+========================================================= */
+
+.call-controls {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(
+        0,
+        1fr
+      )
+    );
+
+  gap: 10px;
+}
+
+
+.control-button {
+  min-height: 64px;
+
+  padding:
+    10px
+    8px;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+
+  border-radius:
+    18px;
+
+  background:
+    rgba(15, 23, 42, 0.76);
+
+  color: #e2e8f0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+
+.control-button:active {
+  transform:
+    scale(
+      0.97
+    );
+}
+
+
+.control-button:hover {
+  background:
+    rgba(30, 41, 59, 0.86);
+
+  border-color:
+    rgba(255, 255, 255, 0.14);
+}
+
+
+.control-icon {
+  font-size: 20px;
+}
+
+
+.end-call-button {
+  border-color:
+    rgba(239, 68, 68, 0.24);
+
+  background:
+    rgba(127, 29, 29, 0.20);
+
+  color: #fecaca;
+}
+
+
+.end-call-button:hover {
+  background:
+    rgba(153, 27, 27, 0.28);
+
+  border-color:
+    rgba(239, 68, 68, 0.36);
+}
+
+
+/* Dynamic speaker button */
+
+#audioOutputButton span:first-child {
+  font-size: 20px;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+.call-footer {
+  width: 100%;
+
+  padding-top: 18px;
+
+  display: flex;
+  justify-content: center;
+}
+
+
+.privacy-line {
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color: var(--text-muted);
+
+  font-size: 11px;
+}
+
+
+.privacy-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background:
+    #22c55e;
+
+  box-shadow:
+    0 0 8px
+    rgba(34, 197, 94, 0.65);
+}
+
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+
+.hidden {
+  display: none !important;
+}
+
+
+/* =========================================================
+   ANIMATIONS
+========================================================= */
+
+@keyframes idlePulse {
+
+  0%,
+  100% {
+    transform:
+      scale(
+        1
+      );
+  }
+
+  50% {
+    transform:
+      scale(
+        1.035
+      );
+  }
+}
+
+
+@keyframes listeningPulse {
+
+  0%,
+  100% {
+    transform:
+      scale(
+        0.98
+      );
+  }
+
+  50% {
+    transform:
+      scale(
+        1.07
+      );
+  }
+}
+
+
+@keyframes listeningRing {
+
+  0% {
+    transform:
+      scale(
+        0.86
+      );
+
+    opacity: 0.62;
+  }
+
+  100% {
+    transform:
+      scale(
+        1.15
+      );
+
+    opacity: 0;
+  }
+}
+
+
+@keyframes thinkingSpin {
+
+  0% {
+    transform:
+      scale(
+        1
+      )
+      rotate(
+        0deg
+      );
+  }
+
+  50% {
+    transform:
+      scale(
+        1.055
+      )
+      rotate(
+        8deg
+      );
+  }
+
+  100% {
+    transform:
+      scale(
+        1
+      )
+      rotate(
+        0deg
+      );
+  }
+}
+
+
+@keyframes thinkingRing {
+
+  from {
+    transform:
+      rotate(
+        0deg
+      )
+      scale(
+        0.94
+      );
+  }
+
+  to {
+    transform:
+      rotate(
+        360deg
+      )
+      scale(
+        1.03
+      );
+  }
+}
+
+
+@keyframes thinkingRingReverse {
+
+  from {
+    transform:
+      rotate(
+        360deg
+      )
+      scale(
+        1.02
+      );
+  }
+
+  to {
+    transform:
+      rotate(
+        0deg
+      )
+      scale(
+        0.96
+      );
+  }
+}
+
+
+@keyframes speakingPulse {
+
+  from {
+    transform:
+      scale(
+        0.96
+      );
+  }
+
+  to {
+    transform:
+      scale(
+        1.08
+      );
+  }
+}
+
+
+@keyframes speakingRing {
+
+  0% {
+    transform:
+      scale(
+        0.84
+      );
+
+    opacity: 0.55;
+  }
+
+  100% {
+    transform:
+      scale(
+        1.18
+      );
+
+    opacity: 0;
+  }
+}
+
+
+@keyframes wave {
+
+  0%,
+  100% {
+    height: 7px;
+  }
+
+  50% {
+    height: 28px;
+  }
+}
+
+
+/* =========================================================
+   SMALL DEVICES
+========================================================= */
+
+@media (
+  max-width: 390px
+) {
+
+  .call-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+
+  .call-stage {
+    min-height: 315px;
+
+    padding-top: 18px;
+  }
+
+
+  .live-caption {
+    min-height: 68px;
+
+    padding:
+      14px
+      14px;
+  }
+
+
+  .control-button {
+    min-height: 60px;
+  }
+}
+
+
+/* =========================================================
+   LANDSCAPE / SHORT SCREENS
+========================================================= */
+
+@media (
+  max-height: 650px
+) {
+
+  .call-page {
+    padding-top: 12px;
+  }
+
+
+  .agent-badge {
+    margin-bottom: 8px;
+  }
+
+
+  .agent-name {
+    font-size: 28px;
+  }
+
+
+  .call-subtitle {
+    margin-top: 5px;
+  }
+
+
+  .call-stage {
+    min-height: 250px;
+
+    padding:
+      10px
+      0;
+  }
+
+
+  .orb {
+    width: 138px;
+
+    margin-bottom: 14px;
+  }
+
+
+  .live-caption {
+    min-height: 58px;
+
+    margin-bottom: 10px;
+
+    padding:
+      11px
+      14px;
+  }
+
+
+  .call-footer {
+    padding-top: 10px;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+  prefers-reduced-motion: reduce
+) {
+
+  *,
+  *::before,
+  *::after {
+    animation-duration:
+      0.001ms
+      !important;
+
+    animation-iteration-count:
+      1
+      !important;
+
+    transition-duration:
+      0.001ms
+      !important;
+  }
+}
