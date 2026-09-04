@@ -3145,12 +3145,29 @@ def evaluate_concept_batch(
         EVALUATION_RETRIES + 1,
     ):
         try:
+            pending_concepts = [
+                concept
+                for concept in concepts
+                if concept.concept_id not in best_map
+            ]
+
+            if not pending_concepts:
+                return best_map
+
             prompt = build_evaluation_prompt(
                 user_request=user_request,
-                concepts=concepts,
+                concepts=pending_concepts,
                 brand_context=brand_context,
                 visual_references=visual_references,
             )
+
+            if attempt > 1:
+                prompt += (
+                    "\n\nRETRY CONTRACT: The previous response omitted required IDs. "
+                    "Return evaluations ONLY for these still-missing IDs: "
+                    + ", ".join(item.concept_id for item in pending_concepts)
+                    + ". Do not rename IDs and do not include commentary."
+                )
 
             register_model_call(
                 telemetry,
