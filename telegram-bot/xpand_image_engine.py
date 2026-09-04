@@ -96,6 +96,16 @@ GOOGLE_IMAGE_PRO_MODEL = str(
     )
 ).strip()
 
+# "best" used to force Nano Banana Pro. Keep Pro available as an explicit
+# mode, but make Nano Banana 2 the default BEST/STC production route as
+# requested. Set XPAND_BEST_USE_PRO=true only when Pro is deliberately wanted.
+BEST_USE_PRO = str(
+    os.environ.get(
+        "XPAND_BEST_USE_PRO",
+        "false",
+    )
+).strip().lower() in {"1", "true", "yes", "on"}
+
 GEMINI_DIRECTOR_MODEL = str(
     os.environ.get(
         "XPAND_GEMINI_DIRECTOR_MODEL",
@@ -545,11 +555,26 @@ def detect_aspect_ratio(
         20,
     )
 
+    digit_map = str.maketrans(
+        "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
+        "01234567890123456789",
+    )
+    explicit = re.sub(
+        r"\s*[：﹕︓:]\s*",
+        ":",
+        explicit.translate(digit_map),
+    )
+
     if explicit in SUPPORTED_ASPECT_RATIOS:
         return explicit
 
     source = normalize_arabic(
         prompt
+    )
+    source = re.sub(
+        r"\s*[：﹕︓:]\s*",
+        ":",
+        source.translate(digit_map),
     )
 
     for ratio in [
@@ -568,7 +593,10 @@ def detect_aspect_ratio(
         "1:8",
         "8:1",
     ]:
-        if ratio in source:
+        if re.search(
+            rf"(?<!\d){re.escape(ratio)}(?!\d)",
+            source,
+        ):
             return ratio
 
     if contains_any(
@@ -3755,7 +3783,7 @@ def generate_image(
     if effective_mode == MODE_BEST:
         return run_google_direct(
             original_prompt,
-            pro=True,
+            pro=BEST_USE_PRO,
             aspect_ratio=final_aspect_ratio,
             image_size=final_image_size,
             quality=final_quality,
