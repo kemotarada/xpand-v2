@@ -113,6 +113,22 @@ GEMINI_DIRECTOR_MODEL = str(
     )
 ).strip()
 
+# The configured Gemini name can be retired or mistyped while Railway keeps
+# the old environment value. Keep a process-local resolved model so the first
+# successful retry becomes the model used by every later Director call.
+GEMINI_DIRECTOR_RUNTIME_MODEL = GEMINI_DIRECTOR_MODEL
+
+GEMINI_DIRECTOR_FALLBACK_MODELS = [
+    item.strip()
+    for item in str(
+        os.environ.get(
+            "XPAND_GEMINI_DIRECTOR_FALLBACK_MODELS",
+            "gemini-3.5-flash-lite",
+        )
+    ).split(",")
+    if item.strip()
+]
+
 
 # =========================================================
 # DEFAULT SETTINGS
@@ -2156,6 +2172,8 @@ def call_gemini_director(
     json_schema: Optional[Dict[str, Any]] = None,
     json_schema_name: str = "xpand_structured_output",
 ) -> str:
+    global GEMINI_DIRECTOR_RUNTIME_MODEL
+
     if not GEMINI_API_KEY:
         raise XPANDImageConfigurationError("GEMINI_API_KEY مش موجود.")
     prompt = clean_text(prompt, 32000)
@@ -2174,7 +2192,6 @@ def call_gemini_director(
             "mime_type": image_mime_type or "image/png",
             "data": base64.b64encode(image_bytes).decode("ascii"),
         })
-    payload: Dict[str, Any] = {"model": GEMINI_DIRECTOR_MODEL, "input": inputs}
     search_enabled = str(os.environ.get("XPAND_GEMINI_SEARCH_GROUNDING", "true")).lower() not in {
         "0", "false", "no", "off"
     }
@@ -2182,23 +2199,98 @@ def call_gemini_director(
     # grounded answer format corrupts the JSON body and the creative review
     # board comes back with empty evaluations. Grounding is only for free-text
     # research calls.
-    if search_enabled and not structured and contains_any(prompt, [
-        "bank", "بنك", "مصرف", "competitor", "منافس", "deep research", "بحث عميق"
-    ]):
-        payload["tools"] = [{"type": "google_search"}]
-    response = requests.post(
-        GEMINI_INTERACTIONS_URL,
-        headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
-        json=payload,
-        timeout=REQUEST_TIMEOUT,
+    use_search = bool(
+        search_enabled
+        and not structured
+        and contains_any(prompt, [
+            "bank", "بنك", "مصرف", "competitor", "منافس",
+            "deep research", "بحث عميق"
+        ])
     )
-    if not response.ok:
-        raise XPANDImageProviderError(_provider_error_message("Gemini Director", response))
-    data = _safe_json(response)
-    text = _find_gemini_text(data)
-    if not text:
-        raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
-    return normalize_json_text(text) if structured else text
+
+    candidates: List[str] = []
+
+    def add_candidate(value: Any) -> None:
+        model = clean_text(value, 200).strip()
+        if model and model not in candidates:
+            candidates.append(model)
+
+    add_candidate(GEMINI_DIRECTOR_RUNTIME_MODEL)
+    for fallback_model in GEMINI_DIRECTOR_FALLBACK_MODELS:
+        add_candidate(fallback_model)
+
+    last_error = ""
+    index = 0
+    while index < len(candidates) and index < 4:
+        model = candidates[index]
+        index += 1
+        payload: Dict[str, Any] = {
+            "model": model,
+            "input": inputs,
+        }
+        if use_search:
+            payload["tools"] = [{"type": "google_search"}]
+
+        response = requests.post(
+            GEMINI_INTERACTIONS_URL,
+            headers={
+                "x-goog-api-key": GEMINI_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=REQUEST_TIMEOUT,
+        )
+
+        if response.ok:
+            data = _safe_json(response)
+            text = _find_gemini_text(data)
+            if not text:
+                raise XPANDImageProviderError("Gemini Director رجع بدون نص.")
+            if model != GEMINI_DIRECTOR_RUNTIME_MODEL:
+                print(
+                    "✅ GEMINI DIRECTOR MODEL RECOVERED | "
+                    + model
+                )
+            GEMINI_DIRECTOR_RUNTIME_MODEL = model
+            return normalize_json_text(text) if structured else text
+
+        last_error = _provider_error_message(
+            "Gemini Director",
+            response,
+        )
+        model_problem = bool(
+            re.search(
+                r"model.+(?:not found|unsupported|invalid|does not exist)",
+                last_error,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+        )
+        if not model_problem:
+            raise XPANDImageProviderError(last_error)
+
+        # Google often returns the currently supported replacement directly in
+        # the error. Use that server-provided model before any static fallback.
+        suggestion = re.search(
+            r"Did you mean\s+['\"]([^'\"]+)['\"]",
+            last_error,
+            flags=re.IGNORECASE,
+        )
+        if suggestion:
+            suggested_model = suggestion.group(1).strip()
+            if suggested_model and suggested_model not in candidates:
+                candidates.insert(index, suggested_model)
+
+        if index < min(len(candidates), 4):
+            print(
+                "🔁 GEMINI DIRECTOR MODEL FALLBACK | "
+                + model
+                + " unavailable"
+            )
+
+    raise XPANDImageProviderError(
+        last_error
+        or "Gemini Director: no usable Director model was found."
+    )
 
 def call_openai_director(
     prompt: str,
@@ -2221,14 +2313,24 @@ def call_openai_director(
     # Backwards-compatible function name. XPAND V2 routes all creative,
     # structured and visual direction work to Gemini by default.
     if GEMINI_API_KEY:
-        return call_gemini_director(
-            prompt,
-            image_bytes=image_bytes,
-            image_mime_type=image_mime_type,
-            json_mode=json_mode,
-            json_schema=json_schema,
-            json_schema_name=json_schema_name,
-        )
+        try:
+            return call_gemini_director(
+                prompt,
+                image_bytes=image_bytes,
+                image_mime_type=image_mime_type,
+                json_mode=json_mode,
+                json_schema=json_schema,
+                json_schema_name=json_schema_name,
+            )
+        except XPANDImageProviderError as gemini_error:
+            # A retired Director model must never collapse the whole creative
+            # gate. If OpenAI is configured, continue through the existing
+            # Director implementation below as the final provider fallback.
+            if not OPENAI_API_KEY:
+                raise
+            print(
+                "🔁 DIRECTOR PROVIDER FALLBACK | Gemini unavailable; using OpenAI"
+            )
 
     if not OPENAI_API_KEY:
         raise XPANDImageConfigurationError(
