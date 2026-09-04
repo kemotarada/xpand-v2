@@ -5534,6 +5534,14 @@ def print_qa(
         ),
     )
 
+    for blocker in qa.critical_blockers[:5]:
+        print("  🛑", clean_text(blocker, 900))
+
+    if qa.problems:
+        print("Top QA problems:")
+        for problem in qa.problems[:3]:
+            print("  -", clean_text(problem, 900))
+
     print(
         "Decision:",
         qa.decision,
@@ -6449,9 +6457,16 @@ def run_production(
             or bool(best_qa.critical_blockers)
         )
     ):
+        correction_failed_to_improve = (
+            action == "targeted_correction"
+            and (
+                second_qa is None
+                or not qa_candidate_is_better(second_qa, first_qa)
+            )
+        )
         third_action = (
             "concept_recovery"
-            if has_concept_failure(best_qa)
+            if has_concept_failure(best_qa) or correction_failed_to_improve
             else "targeted_correction"
         )
         print("")
@@ -6560,9 +6575,17 @@ def run_production(
         and (not best_qa.passed or not best_qa.target_reached or best_qa.critical_blockers)
     ):
         call_number = telemetry["image_calls"] + 1
+        targeted_since_recovery = 0
+        for previous_pass in reversed(passes):
+            previous_name = str(previous_pass.pass_name).lower()
+            if "concept_recovery" in previous_name:
+                break
+            if "targeted_correction" in previous_name:
+                targeted_since_recovery += 1
+
         deep_action = (
             "concept_recovery"
-            if has_concept_failure(best_qa)
+            if has_concept_failure(best_qa) or targeted_since_recovery >= 1
             else "targeted_correction"
         )
         print("")
