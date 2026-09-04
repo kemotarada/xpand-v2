@@ -1501,28 +1501,22 @@ def get_metaphor_seed(
     }
 
 
-# STC Bank has its own approved visual system. Generic metaphor seeds are
-# bypassed because they can reintroduce the fintech clichés it forbids.
+# STC Bank has its own approved visual system. These markers identify
+# execution defects, not subject matter that the user may legitimately ask
+# for. Requested phones, cities and motivated identity lighting stay valid.
 STC_FORBIDDEN_CONCEPT_MARKERS = (
-    "globe", "world map", "country map", "geographic collage",
-    "miniature landmark", "miniature city", "global skyline",
     "floating card", "floating phone", "levitating", "unsupported product",
     "hologram", "holographic", "wireframe", "futuristic interface",
-    "light trail", "light thread", "glowing thread", "glowing line",
     "connection line", "network line", "route line", "dotted path",
-    "light beam", "laser beam", "transfer path",
-    "portal", "magic doorway", "doorway to", "opens onto a city",
-    "coin", "banknote", "currency symbol", "percentage symbol",
+    "laser beam", "transfer path",
     "particle", "sparkle", "hud", "ui overlay",
-    "كرة أرضية", "خريطة العالم", "خريطة دولة", "مدينة مصغرة",
     "بطاقة طافية", "هاتف طائر", "هاتف يطفو", "يطفو", "تطفو",
-    "هولوغرام", "مسار ضوئي", "خيط ضوئي", "خط ضوئي",
-    "خط اتصال", "خطوط اتصال", "بوابة", "عملات", "أوراق نقدية",
+    "هولوغرام", "مسار تحويل ضوئي", "خط اتصال", "خطوط اتصال",
 )
 
 
 def stc_concept_violations(concept: "CreativeConcept") -> List[str]:
-    """Return deterministic STC hard-rule violations for a concept."""
+    """Return deterministic STC execution risks for ranking and revision."""
     source = normalize_text(
         "\n".join(
             [
