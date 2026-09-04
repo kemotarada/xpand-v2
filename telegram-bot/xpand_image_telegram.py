@@ -2749,6 +2749,15 @@ REWARDS_BENEFIT_MARKERS = [
 ]
 
 
+MERCHANT_PAYMENTS_MARKERS = [
+    "نقاط البيع", "نقطة البيع", "أجهزة نقاط البيع", "اجهزة نقاط البيع",
+    "خدمات التجارة الالكترونية", "خدمات التجارة الإلكترونية",
+    "التجارة الالكترونية", "التجارة الإلكترونية", "بوابة الدفع",
+    "مدفوعات المتاجر", "merchant services", "point of sale", "pos terminal",
+    "e-commerce payments", "ecommerce payments", "payment gateway",
+]
+
+
 TRAVEL_BENEFIT_MARKERS = [
     "سفر",
     "السفر",
@@ -2811,6 +2820,11 @@ def detect_runtime_benefit_family(
     ):
 
         return "security"
+
+    # Arabic "نقاط البيع" contains the generic rewards token "نقاط", so POS
+    # intent must be resolved before the rewards family.
+    if contains_any(text, MERCHANT_PAYMENTS_MARKERS):
+        return "merchant_payments"
 
     if contains_any(
         text,
@@ -2877,6 +2891,17 @@ def build_creative_request(
         semantic_rule = (
             "XPAND SEMANTIC PRIORITY:\n"
             "The primary commercial benefit family is security."
+        )
+
+    elif family == "merchant_payments":
+
+        semantic_rule = (
+            "XPAND SEMANTIC PRIORITY:\n"
+            "The primary benefit is merchant payments: e-commerce services "
+            "and point-of-sale acceptance. Arabic نقاط البيع means POS "
+            "terminals, NOT loyalty points or rewards. Build a believable "
+            "merchant/customer commerce moment without cashback symbols, "
+            "reward points, coins or generic fintech decoration."
         )
 
     elif family == "rewards":
