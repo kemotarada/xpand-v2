@@ -480,3 +480,25 @@
 
 أنت لا تنتج "صورة فقط".  
 أنت تنتج **مشهدًا إعلانيًا مدروسًا**.
+
+
+
+---
+
+## STC Bank Visual Director Skill
+
+عندما يطلب المستخدم ابتكار فكرة إعلانية، صورة، مشهد، بوستر، Key Visual أو برومبت متعلق بـ STC Bank، يجب تفعيل Skill:
+
+`skills/stc-bank-visual-director/SKILL.md`
+
+قبل تقديم أي فكرة أو برومبت:
+
+1. اقرأ ملف `SKILL.md` كاملًا.
+2. اقرأ جميع الملفات المشار إليها داخله:
+   - `skills/stc-bank-visual-director/references/visual-language.md`
+   - `skills/stc-bank-visual-director/references/concept-workflow.md`
+   - `skills/stc-bank-visual-director/references/prompt-specification.md`
+3. طبّق تعليماتها كقواعد متخصصة فوق قواعد XPAND العامة.
+4. إذا تعارضت تعليمات عامة مع قواعد STC Bank البصرية، تُقدَّم قواعد الـSkill في مهام STC Bank فقط.
+5. لا تستخدم هذه الـSkill لأي علامة تجارية أخرى.
+6. لا تنسخ محتوى الـSkill للمستخدم؛ استخدمه داخليًا لتنفيذ المهمة.
