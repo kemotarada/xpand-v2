@@ -8181,6 +8181,17 @@ def handle_visual_reference_token(
         )
     )
 
+    caption_lower = clean_text(caption, 3000).lower()
+    if any(
+        marker in caption_lower
+        for marker in [
+            "app ui", "application ui", "app screenshot", "screen reference",
+            "واجهة التطبيق", "سكرين شوت التطبيق", "شاشة التطبيق",
+            "تطبيق stc", "stc app",
+        ]
+    ):
+        role_hint = "app_ui_reference"
+
     source_metadata = (
         infer_reference_source_metadata(
             caption=
@@ -8480,6 +8491,11 @@ def handle_visual_reference_token(
             or
             "style_reference"
         )
+
+    # The user's explicit caption wins over a generic Vision classification.
+    # An app screenshot is neither a style image nor a cutout product asset.
+    if role_hint == "app_ui_reference":
+        reference_role = "app_ui_reference"
 
     # =====================================================
     # EXACT PRODUCT CAPABILITY
