@@ -5683,6 +5683,96 @@ def run_creative_brain(
             )
 
     # =====================================================
+    # LOCAL PREFLIGHT SAFETY NET (masterpiece)
+    #
+    # Reached ONLY when zero concepts received a real model
+    # evaluation (the Director/Review model was momentarily
+    # unavailable, timed out, or its JSON could not be parsed —
+    # e.g. a large multimodal review board on a slow thinking
+    # model). Instead of hard-blocking the whole production, we
+    # release the strongest LOCALLY scored concept, clearly
+    # labeled, so image generation is never fully blocked.
+    #
+    # This is an emergency net, not the normal path. When the
+    # paid evaluation works, best_available already caught it.
+    # =====================================================
+
+    if (
+        mode == MODE_MASTERPIECE
+        and
+        winner is None
+        and
+        all_concepts
+    ):
+        local_ranked = sorted(
+            all_concepts,
+            key=lambda item: local_preflight_score(
+                item
+            ),
+            reverse=True,
+        )
+
+        fallback = local_ranked[0]
+
+        fallback.weighted_score = (
+            local_preflight_score(
+                fallback
+            )
+        )
+
+        fallback.evaluation_valid = True
+
+        fallback.quality_gate_passed = True
+
+        fallback.quality_gate_failures = []
+
+        fallback.debate[
+            "quality_release_level"
+        ] = "local_preflight_release"
+
+        fallback.debate[
+            "target_gate_passed"
+        ] = False
+
+        fallback.debate[
+            "best_available_policy"
+        ] = (
+            "Paid model evaluation was unavailable and no real "
+            "evaluations existed. Released the strongest locally "
+            "scored concept so production is not blocked. Review "
+            "the final image manually."
+        )
+
+        winner = fallback
+
+        released = [
+            winner
+        ]
+
+        release_level = (
+            "local_preflight_release"
+        )
+
+        errors.append(
+            "evaluation_unavailable_local_release_used"
+        )
+
+        print("")
+        print(
+            "⚠️ No real model evaluations — using LOCAL preflight safety net."
+        )
+        print(
+            (
+                "✅ Local safety net released strongest concept | "
+                + winner.concept_id
+                + " | local_score="
+                + str(
+                    winner.weighted_score
+                )
+            )
+        )
+
+    # =====================================================
     # FAST MODE FALLBACK
     # =====================================================
 
@@ -5890,6 +5980,15 @@ def run_creative_brain(
             release_level
             ==
             "best_available_release"
+        ):
+            effective_integration_floor = (
+                winner.weighted_score
+            )
+
+        elif (
+            release_level
+            ==
+            "local_preflight_release"
         ):
             effective_integration_floor = (
                 winner.weighted_score
