@@ -20,7 +20,7 @@ Physical relationships: scale, contact, parallel planes, perspective, occlusion,
 
 Lighting: motivated source, direction, softness, fill, rim, shadow behavior, time of day.
 
-Palette and material response.
+Palette and material response: state the scene tier (A natural / B premium-accent / C studio), the single purple family, and the exact hex values used for background, shadow, hero light, and reflection, plus the explicit instruction that skin, subject, and natural materials keep true color and neutral white balance.
 
 Realism and finish.
 
@@ -48,7 +48,7 @@ Mandatory negative tail
 
 Append and adapt this block:
 
-Absolutely no text, no letters, no numbers, no Arabic or Latin typography, no logo, no wordmark, no watermark, no signature, no QR code, no labels, no captions, no badges, no readable screen content, no UI overlay, no icons, no arrows, no connection lines, no charts, no decorative graphics, no particles, no random sparkles. No visual clutter, no floating objects without physical support, no inconsistent perspective, no mismatched shadows or reflections, no distorted anatomy or hands, no plastic skin, no warped products, no excessive CGI gloss, no oversharpening, no heavy HDR, no noise. Leave the designated copy area completely empty and naturally integrated into the environment.
+Absolutely no text, no letters, no numbers, no Arabic or Latin typography, no logo, no wordmark, no watermark, no signature, no QR code, no labels, no captions, no badges, no readable screen content, no UI overlay, no icons, no arrows, no connection lines, no charts, no decorative graphics, no particles, no random sparkles. No visual clutter, no floating objects without physical support, no inconsistent perspective, no mismatched shadows or reflections, no distorted anatomy or hands, no plastic skin, no warped products, no excessive CGI gloss, no oversharpening, no heavy HDR, no noise. No global purple color cast, no purple tint over the whole image, no purple skin or purple faces, no purple on natural materials, no flat purple wash, no green color cast; keep natural true-to-life color and correct white balance on all people and hero materials. Leave the designated copy area completely empty and naturally integrated into the environment.
 
 Quality check before delivery
 
