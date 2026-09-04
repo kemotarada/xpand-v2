@@ -691,6 +691,16 @@ def safe_list(
     )
 
 
+def safe_float(
+    value: Any,
+    default: float = 0.0,
+) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return float(default)
+
+
 def clamp_score(
     value: Any,
 ) -> float:
@@ -6565,6 +6575,9 @@ def run_production(
             + deep_action
             + "..."
         )
+        # Count the provider attempt before execution so both success and
+        # failure consume exactly one slot and the loop can never exceed N.
+        telemetry["image_calls"] += 1
         try:
             if deep_action == "concept_recovery":
                 deep_prompt = build_concept_recovery_prompt(
@@ -6610,7 +6623,6 @@ def run_production(
                     pass_name="deep_targeted_correction_" + str(call_number),
                 )
 
-            telemetry["image_calls"] += 1
             deep_qa = evaluate_generated_image(
                 image=deep_image,
                 original_request=original_request,
@@ -6649,9 +6661,6 @@ def run_production(
                 + clean_text(error, 3000)
             )
             print("⚠️ Deep Masterpiece pass failed; preserving best candidate.")
-            # Avoid an infinite loop when a provider call fails before telemetry
-            # can be advanced.
-            telemetry["image_calls"] += 1
 
     # =====================================================
     # FINAL DELIVERY
