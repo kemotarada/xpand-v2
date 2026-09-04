@@ -1501,6 +1501,50 @@ def get_metaphor_seed(
     }
 
 
+# STC Bank has its own approved visual system. Generic metaphor seeds are
+# bypassed because they can reintroduce the fintech clichés it forbids.
+STC_FORBIDDEN_CONCEPT_MARKERS = (
+    "globe", "world map", "country map", "geographic collage",
+    "miniature landmark", "miniature city", "global skyline",
+    "phone", "smartphone", "mobile screen", "app screen",
+    "floating card", "floating phone", "levitating", "unsupported product",
+    "hologram", "holographic", "wireframe", "futuristic interface",
+    "light trail", "light thread", "glowing thread", "glowing line",
+    "connection line", "network line", "route line", "dotted path",
+    "light beam", "laser beam", "transfer path",
+    "portal", "magic doorway", "doorway to", "opens onto a city",
+    "coin", "banknote", "currency symbol", "percentage symbol",
+    "particle", "sparkle", "hud", "ui overlay",
+    "كرة أرضية", "خريطة العالم", "خريطة دولة", "مدينة مصغرة",
+    "هاتف", "شاشة التطبيق", "بطاقة طافية", "يطفو", "تطفو",
+    "هولوغرام", "مسار ضوئي", "خيط ضوئي", "خط ضوئي",
+    "خط اتصال", "خطوط اتصال", "بوابة", "عملات", "أوراق نقدية",
+)
+
+
+def stc_concept_violations(concept: "CreativeConcept") -> List[str]:
+    """Return deterministic STC hard-rule violations for a concept."""
+    source = normalize_text(
+        "\n".join(
+            [
+                concept.title,
+                concept.core_idea,
+                concept.marketing_message,
+                concept.visual_metaphor,
+                concept.environment,
+                concept.hero_element,
+                " ".join(concept.supporting_elements),
+                concept.campaign_extension,
+            ]
+        )
+    )
+    return [
+        marker
+        for marker in STC_FORBIDDEN_CONCEPT_MARKERS
+        if normalize_text(marker) in source
+    ]
+
+
 # =========================================================
 # CONTEXT COMPACTION
 # =========================================================
@@ -1594,13 +1638,17 @@ def build_concept_generation_prompt(
         MASTERPIECE_DISTRIBUTION
     )
 
+    stc_request = is_stc_bank_request(user_request)
     metaphor_seed = (
-        get_metaphor_seed(
-            user_request
-        )
+        {
+            "family": "STC Bank dedicated visual system",
+            "directions": [],
+        }
+        if stc_request
+        else get_metaphor_seed(user_request)
     )
 
-    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
+    stc_skill = STC_BANK_VISUAL_SKILL if stc_request else ""
 
     return f"""
     {stc_skill}
@@ -1660,6 +1708,10 @@ Metaphor seeds:
 They are inspiration only.
 
 Do NOT mechanically copy them.
+
+For STC Bank, the empty seed list is intentional. Never replace it with
+generic fintech imagery. Develop the concept from the approved STC skill and
+the supplied references only.
 
 ==================================================
 REQUIRED DISTRIBUTION
@@ -2292,6 +2344,17 @@ unless the user explicitly requests that exact device.
         generation_round=round_number,
     )
 
+    # Enforce STC rules in code, not only through prompt wording.
+    if is_stc_bank_request(user_request):
+        compliant_concepts = []
+        for concept in concepts:
+            violations = stc_concept_violations(concept)
+            if violations:
+                concept.debate["stc_hard_rejection"] = violations
+                continue
+            compliant_concepts.append(concept)
+        concepts = compliant_concepts
+
     expected = (
         sum(
             FAST_DISTRIBUTION.values()
@@ -2303,13 +2366,13 @@ unless the user explicitly requests that exact device.
         )
     )
 
-    minimum_usable = max(
-        3,
-        int(
-            expected
-            *
-            0.60
-        ),
+    minimum_usable = (
+        3
+        if is_stc_bank_request(user_request)
+        else max(
+            3,
+            int(expected * 0.60),
+        )
     )
 
     if len(
@@ -2708,7 +2771,11 @@ def build_evaluation_prompt(
         )
     )
 
+    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
+
     return f"""
+{stc_skill}
+
 You are XPAND Masterpiece Creative Review Board.
 
 Do NOT generate an image.
@@ -2889,6 +2956,12 @@ Return JSON only:
 }}
 
 Return exactly one evaluation for each supplied concept.
+
+==================================================
+FINAL NON-NEGOTIABLE BRAND AUDIT
+==================================================
+
+{stc_skill or "No dedicated brand skill activated."}
 """.strip()
 
 
@@ -3874,13 +3947,20 @@ def build_recovery_prompt(
         )
     )
 
+    stc_request = is_stc_bank_request(user_request)
     metaphor_seed = (
-        get_metaphor_seed(
-            user_request
-        )
+        {
+            "family": "STC Bank dedicated visual system",
+            "directions": [],
+        }
+        if stc_request
+        else get_metaphor_seed(user_request)
     )
+    stc_skill = STC_BANK_VISUAL_SKILL if stc_request else ""
 
     return f"""
+{stc_skill}
+
 You are XPAND Masterpiece Recovery Board.
 
 The first creative shortlist was professionally evaluated
@@ -4070,6 +4150,12 @@ Return JSON only:
 }}
 
 Return exactly 3 concepts and exactly 3 evaluations.
+
+For STC Bank, every recovered concept must pass the dedicated skill's hard
+rejection gate. Do not repair a forbidden idea cosmetically; replace its
+entire visual mechanism.
+
+{stc_skill or "No dedicated brand skill activated."}
 """.strip()
 
 
@@ -4112,6 +4198,13 @@ def run_recovery_board(
         payload,
         generation_round=2,
     )
+
+    if is_stc_bank_request(user_request):
+        concepts = [
+            concept
+            for concept in concepts
+            if not stc_concept_violations(concept)
+        ]
 
     concepts = concepts[:3]
 
@@ -4281,7 +4374,11 @@ def build_winner_finalization_prompt(
     brand_context: Any,
     visual_references: Any,
 ) -> str:
+    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
+
     return f"""
+{stc_skill}
+
 You are XPAND Final Creative Production Director.
 
 The advertising concept below has already been selected.
@@ -4361,6 +4458,10 @@ Lock:
 
 Do not make the scene more complicated than necessary.
 
+For STC Bank, do not introduce any new object, light effect, route, line,
+portal, phone, map, globe, hologram, particle, UI, or financial symbol during
+finalization. Preserve only a concept that passes the dedicated hard gate.
+
 ==================================================
 OUTPUT
 ==================================================
@@ -4404,6 +4505,8 @@ Return JSON only:
     "do_not_change": []
   }}
 }}
+
+{stc_skill or "No dedicated brand skill activated."}
 """.strip()
 
 
