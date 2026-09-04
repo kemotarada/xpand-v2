@@ -5100,7 +5100,33 @@ def generate_masterpiece_images(
                     )
                 )
 
-                print("⚠️ QA advisory only; delivering best available image.")
+                # HYPER: Force one more production attempt if score is critically low
+                if score < 75.0:
+                    print("🔄 HYPER RETRY: QA critically low — forcing second production pass...")
+                    try:
+                        production2 = run_production(
+                            core=core,
+                            user_id=user_id,
+                            brand_id=brand_id,
+                            original_request=request_text + " | STRICT: photorealistic STC Bank ad, ZERO text, correct brand colors, premium commercial quality",
+                            creative_direction=direction,
+                            brand_context=model_brand_context,
+                            camera_direction=camera,
+                            aspect_ratio=aspect_ratio,
+                            mode=PRODUCTION_MODE_MASTERPIECE,
+                            target_model=TARGET_GEMINI
+                        )
+                        score2 = safe_float(getattr(production2, "best_score", 0), 0)
+                        if score2 > score:
+                            production = production2
+                            qa_passed = bool(production.qa and production.qa.passed)
+                            print(f"✅ HYPER RETRY improved score: {score:.1f} → {score2:.1f}")
+                        else:
+                            print(f"⚠️ HYPER RETRY did not improve ({score2:.1f}), keeping first")
+                    except Exception as retry_err:
+                        print("⚠️ HYPER RETRY failed: " + clean_text(retry_err, 300))
+                else:
+                    print("⚠️ QA below target; delivering best available image.")
 
             exact_result = (
                 maybe_apply_exact_asset_lock(
