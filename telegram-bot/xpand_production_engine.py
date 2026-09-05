@@ -1,7 +1,8 @@
 # =========================================================
-# XPAND PRODUCTION ENGINE V6.0
+# XPAND PRODUCTION ENGINE V6.0.1
 #
 # STABLE HYBRID MASTERPIECE PRODUCTION CORE
+# REGRESSION-PROOF IMMUTABLE FINAL LOCKS
 #
 # =========================================================
 #
@@ -17,8 +18,7 @@
 # Nano Banana 2
 # 1K PREVISUALIZATION ONLY
 #          ↓
-# Gemini Vision Preview Audit
-# non-release / guidance only
+# Gemini Preview Audit
 #          ↓
 # GPT-Image-2
 # FINAL RENDERER
@@ -26,51 +26,46 @@
 #          ↓
 # GPT-5.6 Sol Final Vision QA
 #          ↓
-# if excellent:
-#       RELEASE
+# GPT-Image-2 repair only when required
 #
-# if specific defects:
-#       GPT-Image-2 EDIT SAME FINAL IMAGE
-#          ↓
-#       GPT-5.6 Sol Final QA 2
-#          ↓
-#       strongest qualified image wins
+#
+# =========================================================
+# V6.0.1 CRITICAL FIX
+# =========================================================
+#
+# Final prompts are now divided into:
+#
+#   1) compressible production core
+#   2) IMMUTABLE FINAL LOCKS
+#
+# The immutable block is appended AFTER prompt compaction.
+#
+# Therefore these rules can never disappear because of
+# character-budget compaction:
+#
+# - 15–22% integrated copy space
+# - NO giant blank upper third
+# - NO hero pushed into bottom
+# - NO stone/travertine pedestal
+# - NO phone/POS fusion
+# - NO invented payment hardware
+# - NO fake UI
+# - NO text/logo
+# - STC references are visual authority
+# - ecommerce + POS = one merchant ecosystem
 #
 #
 # =========================================================
 # HARD ARCHITECTURAL RULES
 # =========================================================
 #
-# - Gemini is NEVER the final Masterpiece renderer.
-# - Nano Banana 2 is a PREVISUALIZATION model only.
-# - GPT-Image-2 is the mandatory Masterpiece final model.
-# - GPT-Image-2 is also the only automatic final repair model.
+# - Gemini is NEVER Masterpiece final renderer.
+# - Nano Banana 2 is PREVISUALIZATION only.
+# - GPT-Image-2 is mandatory Masterpiece final model.
+# - GPT-Image-2 is automatic final repair model.
 # - No Gemini Pro final escalation.
-# - No blank-scene rebuild after final generation.
-# - No Smart fallback is authorized by this module.
-#
-#
-# =========================================================
-# STC BANK VISUAL CONSTITUTION
-# =========================================================
-#
-# - physical STC references are actual visual authority
-# - one DNA reference
-# - one photographic/style reference
-# - one merchant/service reference
-# - references are sent to BOTH previs and final renderer
-#
-# - no invented payment hardware
-# - no phone/POS fusion
-# - no fake banking UI
-# - no random stone/travertine pedestal
-# - no generic luxury plinth
-# - no generic checkout tableau
-# - no giant empty upper third
-# - 15–22% integrated copy space
-# - strong intentional camera
-# - realistic Saudi commercial context
-# - e-commerce + POS must communicate ONE ecosystem
+# - No blank-scene final rebuild.
+# - No Smart fallback authorized here.
 #
 #
 # =========================================================
@@ -111,20 +106,11 @@
 # get_production_engine_status()
 #
 #
-# =========================================================
-# ZERO-COST SELF TEST
-# =========================================================
+# ZERO-COST TEST:
 #
-# python xpand_production_engine.py
-#
-# Makes:
-# - NO OpenAI calls
-# - NO Gemini calls
-# - NO Vision calls
-# - NO generated images
+#     python xpand_production_engine.py
 #
 # =========================================================
-
 
 from __future__ import annotations
 
@@ -147,7 +133,7 @@ from typing import (
 
 
 # =========================================================
-# XPAND IMAGE ENGINE V3+
+# IMAGE ENGINE V3+
 # =========================================================
 
 from xpand_image_engine import (
@@ -211,7 +197,7 @@ except Exception:
 # =========================================================
 
 ENGINE_NAME = "XPAND Production Engine"
-ENGINE_VERSION = "6.0"
+ENGINE_VERSION = "6.0.1"
 
 
 # =========================================================
@@ -238,7 +224,7 @@ TARGET_SEEDANCE = "seedance"
 
 
 # =========================================================
-# ENV
+# ENV HELPERS
 # =========================================================
 
 def env_bool(
@@ -369,22 +355,6 @@ STC_FORCE_BRAND_GROUNDING = env_bool(
 # =========================================================
 # CALL POLICY
 # =========================================================
-#
-# Compatibility:
-#
-# max_image_calls means expensive FINAL OpenAI renders.
-#
-# PREVIS is counted separately.
-#
-# Normal Masterpiece:
-#   1 Nano Banana 2 previs
-#   1 GPT-Image-2 final
-#
-# Maximum:
-#   1 Nano Banana 2 previs
-#   2 GPT-Image-2 calls
-#
-# =========================================================
 
 MASTERPIECE_MAX_IMAGE_CALLS = max(
     1,
@@ -511,7 +481,7 @@ MAX_LOCAL_REFERENCE_BYTES = max(
 
 
 # =========================================================
-# QA
+# QA POLICY
 # =========================================================
 
 QA_TARGET_SCORE = max(
@@ -603,9 +573,9 @@ PREVIS_PROMPT_BUDGET = max(
 
 
 FINAL_PROMPT_BUDGET = max(
-    5500,
+    6500,
     min(
-        11000,
+        12000,
         env_int(
             "XPAND_FINAL_PROMPT_BUDGET",
             8800,
@@ -627,12 +597,12 @@ QA_PROMPT_BUDGET = max(
 
 
 CORRECTION_PROMPT_BUDGET = max(
-    5000,
+    6000,
     min(
-        9000,
+        10000,
         env_int(
             "XPAND_CORRECTION_PROMPT_BUDGET",
-            7200,
+            7600,
         ),
     ),
 )
@@ -666,8 +636,11 @@ QA_WEIGHTS = {
 
 @dataclass
 class ProductionReference:
+
     role: str
+
     image_bytes: bytes
+
     mime_type: str
 
     dna: Dict[str, Any] = field(
@@ -679,9 +652,12 @@ class ProductionReference:
     )
 
     user_note: str = ""
+
     source_id: str = ""
 
-    content_family: str = "general_brand"
+    content_family: str = (
+        "general_brand"
+    )
 
     source_metadata: Dict[str, Any] = field(
         default_factory=dict
@@ -694,8 +670,11 @@ class ProductionReference:
 
 @dataclass
 class CompiledPrompt:
+
     target: str
+
     prompt: str
+
     negative_prompt: str
 
     metadata: Dict[str, Any] = field(
@@ -705,11 +684,17 @@ class CompiledPrompt:
 
 @dataclass
 class QAEvaluation:
+
     score: float
+
     scores: Dict[str, float]
+
     passed: bool
+
     strengths: List[str]
+
     problems: List[str]
+
     correction_instruction: str
 
     critical_blockers: List[str] = field(
@@ -717,7 +702,9 @@ class QAEvaluation:
     )
 
     target_reached: bool = False
+
     delivery_approved: bool = False
+
     decision: str = ""
 
     raw: Dict[str, Any] = field(
@@ -727,7 +714,9 @@ class QAEvaluation:
 
 @dataclass
 class ProductionPassResult:
+
     pass_name: str
+
     image: GeneratedImage
 
     qa: Optional[
@@ -741,8 +730,11 @@ class ProductionPassResult:
 
 @dataclass
 class ProductionResult:
+
     ok: bool
+
     final_image: GeneratedImage
+
     best_score: float
 
     qa: Optional[
@@ -756,7 +748,9 @@ class ProductionResult:
     compiled_prompt: CompiledPrompt
 
     references_used: int
+
     product_references_used: int
+
     elapsed_seconds: float
 
     errors: List[str] = field(
@@ -777,24 +771,31 @@ def clean_text(
     limit: int = 12000,
 ) -> str:
 
-    return str(
-        value
-        if value is not None
-        else ""
-    ).replace(
-        "\x00",
-        "",
-    ).strip()[:limit]
+    return (
+        str(
+            value
+            if value is not None
+            else ""
+        )
+        .replace(
+            "\x00",
+            "",
+        )
+        .strip()[:limit]
+    )
 
 
 def safe_dict(
     value: Any,
 ) -> Dict[str, Any]:
 
-    return value if isinstance(
+    if isinstance(
         value,
         dict,
-    ) else {}
+    ):
+        return value
+
+    return {}
 
 
 def safe_list(
@@ -890,13 +891,16 @@ def contains_any(
     markers: Sequence[str],
 ) -> bool:
 
-    source = normalize_text(value)
+    source = normalize_text(
+        value
+    )
 
     return any(
-        normalize_text(marker)
+        normalize_text(
+            marker
+        )
         in source
-        for marker
-        in markers
+        for marker in markers
     )
 
 
@@ -907,9 +911,11 @@ def dedupe_strings(
 ) -> List[str]:
 
     output: List[str] = []
+
     seen: Set[str] = set()
 
     for item in values:
+
         text = clean_text(
             item,
             1600,
@@ -918,13 +924,24 @@ def dedupe_strings(
         if not text:
             continue
 
-        key = normalize_text(text)
+        key = normalize_text(
+            text
+        )
 
-        if not key or key in seen:
+        if (
+            not key
+            or
+            key in seen
+        ):
             continue
 
-        seen.add(key)
-        output.append(text)
+        seen.add(
+            key
+        )
+
+        output.append(
+            text
+        )
 
         if len(output) >= limit:
             break
@@ -993,7 +1010,7 @@ def fit_prompt_for_api(
     text = clean_text(
         prompt,
         max(
-            budget * 3,
+            budget * 4,
             budget,
         ),
     )
@@ -1023,7 +1040,9 @@ def fit_prompt_for_api(
         +
         " | "
         +
-        str(len(text))
+        str(
+            len(text)
+        )
         +
         " → "
         +
@@ -1043,6 +1062,132 @@ def fit_prompt_for_api(
             else ""
         )
     )
+
+
+# =========================================================
+# V6.0.1 IMMUTABLE PROMPT COMPILER
+# =========================================================
+
+IMMUTABLE_LOCK_SENTINEL = (
+    "XPAND_IMMUTABLE_FINAL_LOCKS_V601"
+)
+
+
+def fit_prompt_with_immutable_locks(
+    core_prompt: str,
+    immutable_locks: str,
+    *,
+    label: str,
+    budget: int,
+) -> str:
+
+    core = clean_text(
+        core_prompt,
+        max(
+            budget * 6,
+            budget,
+        ),
+    )
+
+    locks = clean_text(
+        immutable_locks,
+        max(
+            4000,
+            budget,
+        ),
+    )
+
+    separator = (
+        "\n\n"
+        +
+        "=" * 60
+        +
+        "\n"
+        +
+        IMMUTABLE_LOCK_SENTINEL
+        +
+        "\n"
+        +
+        "=" * 60
+        +
+        "\n\n"
+    )
+
+    reserved = (
+        len(separator)
+        +
+        len(locks)
+    )
+
+    if reserved >= budget:
+        raise RuntimeError(
+            (
+                "Immutable final locks exceed prompt budget. "
+                "Increase XPAND_FINAL_PROMPT_BUDGET."
+            )
+        )
+
+    core_budget = (
+        budget
+        -
+        reserved
+    )
+
+    if len(core) > core_budget:
+
+        print(
+            "✂️ CORE PROMPT COMPACTED"
+            +
+            " | "
+            +
+            label
+            +
+            " | "
+            +
+            str(
+                len(core)
+            )
+            +
+            " → "
+            +
+            str(
+                core_budget
+            )
+            +
+            " | immutable="
+            +
+            str(
+                len(locks)
+            )
+        )
+
+        core = fit_prompt_for_api(
+            core,
+            label=(
+                label
+                +
+                "_core"
+            ),
+            budget=core_budget,
+        )
+
+    output = (
+        core
+        +
+        separator
+        +
+        locks
+    )
+
+    if len(output) > budget:
+        raise RuntimeError(
+            (
+                "Immutable prompt compiler exceeded "
+                "final budget unexpectedly."
+            )
+        )
+
+    return output
 
 
 def parse_json_object(
@@ -1074,7 +1219,9 @@ def parse_json_object(
     )
 
     try:
-        parsed = json.loads(text)
+        parsed = json.loads(
+            text
+        )
 
         if isinstance(
             parsed,
@@ -1085,10 +1232,19 @@ def parse_json_object(
     except Exception:
         pass
 
-    start = text.find("{")
-    end = text.rfind("}")
+    start = text.find(
+        "{"
+    )
 
-    if start >= 0 and end > start:
+    end = text.rfind(
+        "}"
+    )
+
+    if (
+        start >= 0
+        and
+        end > start
+    ):
         try:
             parsed = json.loads(
                 text[
@@ -1125,7 +1281,9 @@ def infer_mime_type(
         return "image/jpeg"
 
     if (
-        raw.startswith(b"RIFF")
+        raw.startswith(
+            b"RIFF"
+        )
         and
         b"WEBP"
         in raw[:16]
@@ -1154,6 +1312,7 @@ def reference_tuples(
     ] = []
 
     for item in references:
+
         if not item.image_bytes:
             continue
 
@@ -1180,10 +1339,14 @@ def is_stc_production_request(
     brand_id: str,
 ) -> bool:
 
-    if clean_text(
-        brand_id,
-        100,
-    ).lower() == "stc_bank":
+    if (
+        clean_text(
+            brand_id,
+            100,
+        ).lower()
+        ==
+        "stc_bank"
+    ):
         return True
 
     return bool(
@@ -1202,7 +1365,9 @@ def is_stc_high_alert(
     return bool(
         STC_HIGH_ALERT_ENABLED
         and
-        mode == MODE_MASTERPIECE
+        mode
+        ==
+        MODE_MASTERPIECE
         and
         is_stc_production_request(
             original_request,
@@ -1300,10 +1465,14 @@ def load_brand_visual_profile_safe(
             )
         )
 
-        if isinstance(
-            profile,
-            dict,
-        ) and profile:
+        if (
+            isinstance(
+                profile,
+                dict,
+            )
+            and
+            profile
+        ):
             return profile
 
     except Exception as error:
@@ -1357,7 +1526,7 @@ def get_brand_visual_profile(
 
 
 # =========================================================
-# BRAND MEMORY REFERENCES
+# MEMORY REFERENCES
 # =========================================================
 
 def load_runtime_references(
@@ -1366,7 +1535,9 @@ def load_runtime_references(
     brand_id: str,
     *,
     request: str = "",
-    limit: int = SMART_REFERENCE_SELECTION_LIMIT,
+    limit: int = (
+        SMART_REFERENCE_SELECTION_LIMIT
+    ),
 ) -> List[
     ProductionReference
 ]:
@@ -1435,7 +1606,10 @@ def load_runtime_references(
         ProductionReference
     ] = []
 
-    for item in safe_list(stored):
+    for item in safe_list(
+        stored
+    ):
+
         if not isinstance(
             item,
             dict,
@@ -1493,13 +1667,17 @@ def load_runtime_references(
                 ),
                 image_bytes=raw,
                 mime_type=(
-                    infer_mime_type(raw)
+                    infer_mime_type(
+                        raw
+                    )
                     if raw
                     else
                     "image/jpeg"
                 ),
                 dna=safe_dict(
-                    item.get("dna")
+                    item.get(
+                        "dna"
+                    )
                 ),
                 product_lock=safe_dict(
                     item.get(
@@ -1548,7 +1726,7 @@ def load_runtime_references(
 
 
 # =========================================================
-# STC LOCAL REFERENCE HELPERS
+# STC LOCAL REFERENCES
 # =========================================================
 
 def role_for_stc_asset(
@@ -1585,7 +1763,9 @@ def role_for_stc_asset(
         +
         " "
         +
-        " ".join(roles)
+        " ".join(
+            roles
+        )
     )
 
     if (
@@ -1645,6 +1825,7 @@ def load_stc_local_references(
         load_default_stc_brand_kit
         is None
     ):
+
         if STC_REQUIRE_BRAND_PACK:
             raise RuntimeError(
                 "Required STC Brand Kit is unavailable."
@@ -1662,6 +1843,7 @@ def load_stc_local_references(
         )
 
     except Exception as error:
+
         if STC_REQUIRE_BRAND_PACK:
             raise RuntimeError(
                 (
@@ -1721,6 +1903,7 @@ def load_stc_local_references(
     ] = []
 
     for asset in selected_assets:
+
         try:
             path = kit.resolve_asset_path(
                 asset.path
@@ -1733,7 +1916,9 @@ def load_stc_local_references(
             continue
 
         try:
-            size = path.stat().st_size
+            size = (
+                path.stat().st_size
+            )
 
         except Exception:
             continue
@@ -1748,7 +1933,9 @@ def load_stc_local_references(
             continue
 
         try:
-            raw = path.read_bytes()
+            raw = (
+                path.read_bytes()
+            )
 
         except Exception:
             continue
@@ -1758,12 +1945,16 @@ def load_stc_local_references(
 
         references.append(
             ProductionReference(
-                role=role_for_stc_asset(
-                    asset
+                role=(
+                    role_for_stc_asset(
+                        asset
+                    )
                 ),
                 image_bytes=raw,
-                mime_type=infer_mime_type(
-                    raw
+                mime_type=(
+                    infer_mime_type(
+                        raw
+                    )
                 ),
                 dna={
                     "asset_id":
@@ -1869,7 +2060,9 @@ def load_stc_local_references(
                             "",
                         ),
                     "resolved_path":
-                        str(path),
+                        str(
+                            path
+                        ),
                     "official":
                         False,
                 },
@@ -1911,7 +2104,9 @@ def load_stc_local_references(
     return (
         references,
         kit,
-        list(selected_assets),
+        list(
+            selected_assets
+        ),
     )
 
 
@@ -1988,6 +2183,7 @@ def unique_references(
     seen: Set[str] = set()
 
     for item in references:
+
         key = (
             clean_text(
                 item.source_id,
@@ -2020,8 +2216,13 @@ def unique_references(
         if key in seen:
             continue
 
-        seen.add(key)
-        output.append(item)
+        seen.add(
+            key
+        )
+
+        output.append(
+            item
+        )
 
     return output
 
@@ -2045,7 +2246,8 @@ def choose_physical_references(
         0,
         int(
             limit
-            or 0
+            or
+            0
         ),
     )
 
@@ -2078,7 +2280,9 @@ def choose_physical_references(
                 800,
             )
             +
-            reference_score(item)
+            reference_score(
+                item
+            )
         ),
         reverse=True,
     )
@@ -2125,13 +2329,12 @@ def build_stc_primary_reference_set(
         ProductionReference
     ] = []
 
-    #
-    # Exact physical product always wins.
-    #
-
     for item in product_refs:
+
         if item.image_bytes:
-            output.append(item)
+            output.append(
+                item
+            )
 
         if len(
             unique_references(
@@ -2181,49 +2384,65 @@ def build_stc_primary_reference_set(
         )
     ]
 
-    #
-    # Reference Constitution:
-    #
-    # 1 DNA
-    # 1 photographic/style
-    # 1 service/merchant
-    #
-
     for group in (
         campaign[:1],
         style[:1],
         service[:1],
     ):
-        output.extend(group)
-        output = unique_references(
-            output
+
+        output.extend(
+            group
         )
 
-        if len(output) >= limit:
+        output = (
+            unique_references(
+                output
+            )
+        )
+
+        if len(
+            output
+        ) >= limit:
             return output[:limit]
 
     for item in local_refs:
+
         if not item.image_bytes:
             continue
 
-        output.append(item)
-        output = unique_references(
-            output
+        output.append(
+            item
         )
 
-        if len(output) >= limit:
+        output = (
+            unique_references(
+                output
+            )
+        )
+
+        if len(
+            output
+        ) >= limit:
             return output[:limit]
 
     for item in choose_physical_references(
         memory_refs,
         limit=limit,
     ):
-        output.append(item)
-        output = unique_references(
-            output
+
+        output.append(
+            item
         )
 
-        if len(output) >= limit:
+        output = (
+            unique_references(
+                output
+            )
+        )
+
+        if len(
+            output
+        ) >= limit:
             break
 
     return output[:limit]
@@ -2247,10 +2466,14 @@ def correction_reference_set(
     ] = []
 
     for item in product_refs:
+
         if item.image_bytes:
-            output.append(item)
+            output.append(
+                item
+            )
 
     if high_alert:
+
         campaign = [
             item
             for item
@@ -2306,7 +2529,9 @@ def correction_reference_set(
 
     return unique_references(
         output
-    )[:STC_EDIT_REFERENCE_LIMIT]
+    )[
+        :STC_EDIT_REFERENCE_LIMIT
+    ]
 
 
 def reference_dna_payload(
@@ -2329,7 +2554,8 @@ def reference_dna_payload(
             10,
             int(
                 limit
-                or 1
+                or
+                1
             ),
         ),
     )
@@ -2394,9 +2620,11 @@ def combined_product_lock(
 ) -> Dict[str, Any]:
 
     rules: List[str] = []
+
     count = 0
 
     for item in references:
+
         if (
             item.role
             !=
@@ -2411,6 +2639,7 @@ def combined_product_lock(
                 "must_remain_identical"
             )
         ):
+
             text = clean_text(
                 value,
                 500,
@@ -2421,11 +2650,15 @@ def combined_product_lock(
                 and
                 text not in rules
             ):
-                rules.append(text)
+                rules.append(
+                    text
+                )
 
     return {
         "enabled":
-            bool(count),
+            bool(
+                count
+            ),
         "reference_count":
             count,
         "must_remain_identical":
@@ -2458,6 +2691,7 @@ def build_stc_brand_kit_context(
     for item in list(
         selected_assets
     )[:7]:
+
         selected.append(
             {
                 "asset_id":
@@ -2593,7 +2827,9 @@ def build_enriched_brand_context(
                 )[:4],
         },
         "runtime_reference_count":
-            len(references),
+            len(
+                references
+            ),
         "stc_permanent_brand_kit":
             (
                 stc_brand_kit_context
@@ -2616,7 +2852,9 @@ def creative_finalist_jury_payload(
     )
 
     debate = safe_dict(
-        creative.get("debate")
+        creative.get(
+            "debate"
+        )
     )
 
     jury = safe_dict(
@@ -2656,7 +2894,9 @@ def build_render_brief(
     )
 
     debate = safe_dict(
-        creative.get("debate")
+        creative.get(
+            "debate"
+        )
     )
 
     debate_camera = safe_dict(
@@ -2979,39 +3219,61 @@ def build_stc_visual_constitution(
     )
 
     style_text = """
-PREMIUM REALISTIC:
-Natural photographic Saudi commercial world.
-Brand identity is not a purple filter.
-Natural skin, fabric, glass, metal and real merchandise
-retain natural color and material behavior.
+PREMIUM REALISTIC
+
+Use a natural photographic Saudi commercial world.
+
+Brand identity must NOT become a purple filter.
+
+Human skin, fabric, glass, metal, merchandise and natural
+materials keep physically believable color and texture.
 """.strip()
 
-    if style == STYLE_PURPLE_ARCHITECTURAL:
+    if (
+        style
+        ==
+        STYLE_PURPLE_ARCHITECTURAL
+    ):
+
         style_text = """
-PURPLE ARCHITECTURAL:
+PURPLE ARCHITECTURAL
+
 Purple may exist in believable physical architecture,
-paint, glass, surface accents or lighting only when
-physically motivated.
-Do not recolor people, products or the whole frame purple.
+paint, glass, surfaces or motivated lighting.
+
+Never recolor people, products or the whole frame purple.
 """.strip()
 
-    elif style == STYLE_AUGMENTED_REALISM:
+    elif (
+        style
+        ==
+        STYLE_AUGMENTED_REALISM
+    ):
+
         style_text = """
-AUGMENTED REALISM:
-The base world stays photographic.
-Only one conceptual intervention is allowed.
-It must still obey real scale, perspective, contact,
-occlusion, gravity, reflections and lighting.
+AUGMENTED REALISM
+
+The base world remains photographic.
+
+Only one conceptual intervention may exist.
+
+It must still obey scale, perspective, contact, occlusion,
+gravity, reflection and lighting.
 """.strip()
 
     merchant = ""
 
-    if benefit == "merchant_payments":
+    if (
+        benefit
+        ==
+        "merchant_payments"
+    ):
+
         merchant = """
 MERCHANT-PAYMENTS CONSTITUTION
 ==============================
 
-The commercial message is:
+The visual proposition is:
 
 ONLINE / E-COMMERCE ACCEPTANCE
 +
@@ -3019,15 +3281,15 @@ PHYSICAL POINT-OF-SALE ACCEPTANCE
 =
 ONE CONNECTED MERCHANT ECOSYSTEM.
 
-Both channels must be visually understandable without text.
+Both channels must be understandable without generated text.
 
-Do not simply inventory service props in one room.
+Do not simply place unrelated service props together.
 
 Do not use:
 customer + POS + merchant + counter + packing activity
-as the whole advertising mechanism.
+as the entire advertising mechanism.
 
-Do not use a smartphone screen as the sole evidence
+Do not use a smartphone screen as the only evidence
 of e-commerce.
 
 Use believable commercial evidence and one clear
@@ -3041,7 +3303,7 @@ STC BANK VISUAL CONSTITUTION
 REFERENCE AUTHORITY
 -------------------
 
-The physically attached STC images are visual authority.
+Attached STC images are visual authority.
 
 Do not guess STC Bank from generic luxury advertising.
 
@@ -3057,7 +3319,7 @@ Learn from the references:
 - brand maturity
 
 Do NOT clone:
-- exact composition
+- exact compositions
 - exact people
 - text
 - logos
@@ -3070,20 +3332,21 @@ REFERENCE EVIDENCE OUTRANKS GENERIC LUXURY DEFAULTS.
 PHYSICAL REALITY FIREWALL
 -------------------------
 
-Every object must look manufactured, supported and
+Every object must appear manufactured, supported and
 photographed in the real world.
 
 PAYMENT HARDWARE:
-If a physical POS terminal appears, it must resemble
-a believable commercially available unbranded payment
-terminal.
 
-It must have:
+If a physical POS terminal appears, it must resemble a
+believable commercially available unbranded payment terminal.
+
+It needs:
 - coherent body geometry
-- believable keypad / touch surface
+- believable keypad or touch surface
 - sensible screen placement
-- plausible card/contactless interaction area
-- correct support and hand interaction
+- plausible contactless/card interaction area
+- correct physical support
+- believable hand interaction when held
 
 HARD BAN:
 - phone/POS fusion
@@ -3091,21 +3354,21 @@ HARD BAN:
 - impossible hybrid payment hardware
 - futuristic invented payment machine
 - malformed keypad
-- impossible screen-body geometry
+- impossible screen/body geometry
 - device that could not physically exist
 
-Do not merge a smartphone and POS merely to symbolize
+Do not merge smartphone + POS merely to symbolize
 e-commerce + physical payment.
 
 Preserve the IDEA through composition and real-world
-relationships instead of impossible hardware.
+relationships.
 
 MATERIAL FIREWALL
 -----------------
 
-Premium does NOT mean stone pedestal.
+Premium does NOT mean random stone pedestal.
 
-HARD BAN unless explicitly required by the approved idea:
+HARD BAN unless genuinely required by the approved idea:
 - standalone travertine slab
 - limestone product plinth
 - beige stone pedestal
@@ -3117,7 +3380,7 @@ Luxury must come from:
 camera,
 light,
 space,
-materials,
+real materials,
 behavior,
 color,
 restraint,
@@ -3126,12 +3389,12 @@ and production quality.
 CAMERA CONSTITUTION
 -------------------
 
-Camera must contribute to the message.
+Camera must contribute to the advertising message.
 
 Avoid automatic:
 eye-level + centered + three-quarter product shot.
 
-When appropriate use one coherent professional grammar:
+When justified use one coherent professional grammar:
 - reflection-led framing
 - architectural frame-within-frame
 - controlled environmental wide angle
@@ -3141,7 +3404,7 @@ When appropriate use one coherent professional grammar:
 - compressed long-lens relationship
 - deliberate asymmetric perspective
 
-Never use an unusual angle only as a gimmick.
+Never use an unusual angle as a meaningless gimmick.
 
 COPY SPACE
 ----------
@@ -3180,7 +3443,197 @@ no fake financial interface.
 
 
 # =========================================================
-# REFERENCE ROLE MANIFEST
+# V6.0.1 IMMUTABLE FINAL LOCKS
+# =========================================================
+
+def build_immutable_final_locks(
+    *,
+    original_request: str,
+    aspect_ratio: str,
+    requested_size: str,
+) -> str:
+
+    stc_request = (
+        is_stc_bank_request(
+            original_request
+        )
+    )
+
+    benefit = (
+        detect_stc_benefit_family(
+            original_request
+        )
+        if stc_request
+        else
+        ""
+    )
+
+    merchant_lock = ""
+
+    if (
+        stc_request
+        and
+        benefit
+        ==
+        "merchant_payments"
+    ):
+
+        merchant_lock = """
+MERCHANT MESSAGE — IMMUTABLE
+----------------------------
+
+E-COMMERCE + PHYSICAL POS MUST READ AS ONE CONNECTED
+MERCHANT ECOSYSTEM.
+
+Both channels must be visually understandable without text.
+
+A smartphone screen alone is NOT sufficient proof
+of e-commerce.
+
+A POS terminal alone is NOT sufficient proof
+of the complete service.
+
+Do not replace the message with generic checkout activity.
+""".strip()
+
+    brand_lock = ""
+
+    if stc_request:
+
+        brand_lock = """
+STC REFERENCE AUTHORITY — IMMUTABLE
+-----------------------------------
+
+THE ATTACHED STC REFERENCES ARE VISUAL AUTHORITY.
+
+Their brand-world evidence outranks generic luxury defaults.
+
+Use them for:
+- tonal balance
+- palette restraint
+- photographic finish
+- material behavior
+- camera maturity
+- spatial discipline
+- Saudi commercial realism
+
+Do NOT ignore the references.
+
+Do NOT clone their exact composition.
+""".strip()
+
+    return f"""
+FINAL NON-NEGOTIABLE LOCKS — DO NOT OVERRIDE
+=============================================
+
+These rules have higher priority than stylistic suggestions.
+
+FRAME
+-----
+
+Final aspect ratio:
+{aspect_ratio}
+
+Final resolution intent:
+{requested_size}
+
+Use approximately 15–22% integrated copy space.
+
+NO giant blank upper third.
+
+NO giant empty upper region.
+
+NO hero pushed into the bottom half merely to create
+copy space.
+
+Negative space must be integrated naturally into
+architecture, depth, lighting or scene structure.
+
+PHYSICAL REALITY
+----------------
+
+NO phone/POS fusion.
+
+NO smartphone fused with a payment terminal.
+
+NO invented payment hardware.
+
+NO impossible hybrid payment device.
+
+Any visible physical POS terminal must look like a
+believable commercially plausible unbranded POS terminal.
+
+MATERIALS
+---------
+
+NO random travertine pedestal.
+
+NO random stone pedestal.
+
+NO beige luxury plinth.
+
+NO marble product podium.
+
+NO meaningless limestone block.
+
+Premium quality must come from photography and art direction,
+not an arbitrary stone object.
+
+CAMERA
+------
+
+NO automatic generic eye-level centered three-quarter shot
+unless that exact angle is uniquely justified by the message.
+
+Camera must strengthen the advertising idea.
+
+TEXT / UI
+---------
+
+NO generated text.
+
+NO generated logo.
+
+NO watermark.
+
+NO fake banking UI.
+
+NO fake balances.
+
+NO fake numbers.
+
+NO fake card-brand symbol.
+
+NO readable financial interface.
+
+{brand_lock}
+
+{merchant_lock}
+
+FINAL SELF-CHECK
+----------------
+
+Before output, verify:
+
+1. The service message is visually clear without text.
+2. Every visible object is physically believable.
+3. Payment hardware is realistic.
+4. No phone/POS hybrid exists.
+5. No random stone/plinth exists.
+6. STC reference DNA visibly informs the result.
+7. Camera is intentional.
+8. Copy space is integrated, not empty.
+9. The hero has confident visual weight.
+10. The image looks like a real premium bank campaign.
+
+If any item fails, correct it before final output.
+
+END_{IMMUTABLE_LOCK_SENTINEL}
+""".strip()
+
+
+# =========================================================
+# REFERENCE MANIFEST
 # =========================================================
 
 def reference_role_manifest(
@@ -3196,41 +3649,50 @@ def reference_role_manifest(
     index = 1
 
     if draft_first:
+
         lines.append(
-            "Image 1 = approved Nano Banana 2 "
-            "previsualization / composition draft."
+            (
+                "Image 1 = approved Nano Banana 2 "
+                "previsualization / composition draft."
+            )
         )
 
         index = 2
 
     for reference in references:
+
         role = reference.role
 
         if role == "campaign_reference":
+
             role_text = (
                 "STC BANK BRAND DNA reference. "
-                "Use for identity, restraint, campaign maturity."
+                "Use for identity, restraint and campaign maturity."
             )
 
         elif role == "style_reference":
+
             role_text = (
                 "STC PHOTOGRAPHIC / STYLE reference. "
-                "Use for camera, lighting, finish, material language."
+                "Use for camera, lighting, finish and material language."
             )
 
         elif role == "environment_reference":
+
             role_text = (
                 "STC MERCHANT / SERVICE reference. "
                 "Use for believable commercial context and service cues."
             )
 
         elif role == "product_reference":
+
             role_text = (
                 "EXACT PRODUCT reference. "
                 "Physical geometry has highest fidelity priority."
             )
 
         else:
+
             role_text = (
                 "Supporting brand reference."
             )
@@ -3239,7 +3701,9 @@ def reference_role_manifest(
             (
                 "Image "
                 +
-                str(index)
+                str(
+                    index
+                )
                 +
                 " = "
                 +
@@ -3256,7 +3720,9 @@ def reference_role_manifest(
 
         index += 1
 
-    return "\n".join(lines)
+    return "\n".join(
+        lines
+    )
 
 
 # =========================================================
@@ -3382,16 +3848,19 @@ def build_quality_first_blueprint(
     )
 
     reinterpretation = """
-REALITY INTERPRETATION:
-Execute the approved mechanism directly.
+REALITY INTERPRETATION
+
+Execute the approved visual mechanism directly and
+physically believably.
 """.strip()
 
     if reality_reinterpretation:
+
         reinterpretation = """
 REALITY INTERPRETATION: ACTIVE
 
-The approved creative direction contains geometry that may
-be visually brittle or physically impossible.
+The approved concept contains potentially brittle or
+physically impossible geometry.
 
 Preserve:
 - advertising proposition
@@ -3418,8 +3887,8 @@ Never use invented hybrid hardware as a metaphor.
     )
 
     prompt = f"""
-XPAND MASTERPIECE STRATEGY-TO-IMAGE CONTRACT V6.0
-=================================================
+XPAND MASTERPIECE STRATEGY-TO-IMAGE CONTRACT V6.0.1
+===================================================
 
 ORIGINAL USER MESSAGE
 ---------------------
@@ -3469,7 +3938,7 @@ The advertising message must work before typography.
 CAMERA
 ------
 
-Use the approved camera when it is meaningful.
+Use the approved camera when meaningful.
 
 If the approved camera is vague or generic,
 choose a stronger real commercial viewpoint that improves
@@ -3487,7 +3956,7 @@ Correct:
 - anatomy
 - hand contact
 - gravity
-- support
+- physical support
 - perspective
 - reflections
 - shadow direction
@@ -3495,7 +3964,9 @@ Correct:
 
 {stc_section}
 
-{safe_frame_instruction(aspect_ratio)}
+{safe_frame_instruction(
+    aspect_ratio
+)}
 
 FINAL LOCK
 ----------
@@ -3511,8 +3982,12 @@ NO GENERIC FINTECH DECORATION.
 
     return fit_prompt_for_api(
         prompt,
-        label="production_blueprint_v60",
-        budget=COMPILED_PROMPT_BUDGET,
+        label=(
+            "production_blueprint_v601"
+        ),
+        budget=(
+            COMPILED_PROMPT_BUDGET
+        ),
     )
 
 
@@ -3596,7 +4071,9 @@ def compile_prompt(
                 or
                 {}
             ),
-            aspect_ratio=aspect_ratio,
+            aspect_ratio=(
+                aspect_ratio
+            ),
         )
     )
 
@@ -3608,9 +4085,11 @@ def compile_prompt(
         ),
         metadata={
             "compiler":
-                "xpand_production_v60",
+                "xpand_production_v601",
             "prompt_chars":
-                len(blueprint),
+                len(
+                    blueprint
+                ),
             "prompt_budget":
                 COMPILED_PROMPT_BUDGET,
             "aspect_ratio":
@@ -3625,6 +4104,8 @@ def compile_prompt(
                 FINAL_IMAGE_MODEL,
             "copy_space_policy":
                 "15-22_percent_integrated",
+            "immutable_final_locks":
+                True,
             "permanent_stc_brand_grounding":
                 True,
         },
@@ -3632,7 +4113,7 @@ def compile_prompt(
 
 
 # =========================================================
-# PREVISUALIZATION PROMPT
+# PREVIS PROMPT
 # =========================================================
 
 def build_previsualization_prompt(
@@ -3653,8 +4134,8 @@ def build_previsualization_prompt(
     )
 
     prompt = f"""
-XPAND NANO BANANA 2 PREVISUALIZATION V6
-=======================================
+XPAND NANO BANANA 2 PREVISUALIZATION V6.0.1
+===========================================
 
 THIS IS NOT THE FINAL CLIENT IMAGE.
 
@@ -3709,7 +4190,9 @@ Do not reserve a giant empty top area.
 
 Use a deliberate camera that supports the idea.
 
-{safe_frame_instruction(aspect_ratio)}
+{safe_frame_instruction(
+    aspect_ratio
+)}
 
 NO TEXT.
 NO LOGO.
@@ -3718,13 +4201,17 @@ NO FAKE UI.
 
     return fit_prompt_for_api(
         prompt,
-        label="nano_banana_previs_v60",
-        budget=PREVIS_PROMPT_BUDGET,
+        label=(
+            "nano_banana_previs_v601"
+        ),
+        budget=(
+            PREVIS_PROMPT_BUDGET
+        ),
     )
 
 
 # =========================================================
-# FINAL GPT-IMAGE-2 PROMPT
+# QA SUMMARY
 # =========================================================
 
 def qa_feedback_summary(
@@ -3735,7 +4222,7 @@ def qa_feedback_summary(
 
     if qa is None:
         return (
-            "No visual preview audit was available. "
+            "No preview audit was available. "
             "Use the approved production contract directly."
         )
 
@@ -3774,6 +4261,10 @@ def qa_feedback_summary(
     )
 
 
+# =========================================================
+# FINAL GPT-IMAGE-2 PROMPT V6.0.1
+# =========================================================
+
 def build_final_renderer_prompt(
     *,
     compiled: CompiledPrompt,
@@ -3810,13 +4301,21 @@ def build_final_renderer_prompt(
         )
     )
 
-    prompt = f"""
-XPAND GPT-IMAGE-2 FINAL RENDER V6.0
-===================================
+    #
+    # Compressible core.
+    #
+    # Critical non-negotiable locks are NOT placed here.
+    # They are appended after compaction.
+    #
+
+    core_prompt = f"""
+XPAND GPT-IMAGE-2 FINAL RENDER V6.0.1
+=====================================
 
 CREATE THE CLIENT-READY FINAL IMAGE.
 
 Image 1 is a PREVISUALIZATION.
+
 It is NOT a sacred pixel-perfect base.
 
 Preserve what works:
@@ -3842,7 +4341,7 @@ APPROVED PRODUCTION CONTRACT
 ----------------------------
 {clean_text(
     compiled.prompt,
-    4500,
+    4300,
 )}
 
 PREVISUALIZATION AUDIT
@@ -3854,23 +4353,22 @@ PREVISUALIZATION AUDIT
 FINAL RENDER OBJECTIVE
 ----------------------
 
-Turn the draft into a premium real-world commercial
-photograph.
+Turn the draft into premium real-world commercial photography.
 
-The FINAL image must NOT look like:
+The final image must NOT look like:
 - concept art
 - CGI product visualization
 - generic fintech render
 - generic luxury product still-life
 
-It must look intentionally produced for a real bank campaign.
+It should feel intentionally produced for a real bank campaign.
 
-REFERENCE AUTHORITY
--------------------
+REFERENCE USAGE
+---------------
 
-Study the attached STC reference images carefully.
+Study the attached STC references.
 
-Image 2+ should influence:
+Use them to strengthen:
 - tonal balance
 - lighting discipline
 - camera maturity
@@ -3879,117 +4377,78 @@ Image 2+ should influence:
 - spatial design
 - realistic Saudi commercial context
 
-Do not ignore them.
+Do not clone source campaigns.
 
-Do not clone them.
+PHOTOGRAPHIC QUALITY
+--------------------
 
-Do not substitute generic luxury styling.
-
-PHYSICAL REALITY
-----------------
-
-If a payment device exists:
-it must be a normal plausible payment terminal.
-
-NEVER:
-- morph it into a smartphone
-- merge it with a smartphone
-- invent a new hardware category
-- create impossible keys/screens/body geometry
-
-If the original creative concept suggests impossible
-hardware fusion, preserve its COMMERCIAL MEANING,
-not its impossible physical shape.
-
-Use real separate objects, behavior, space or composition.
-
-MATERIAL REALITY
-----------------
-
-No random:
-travertine,
-marble block,
-stone pedestal,
-luxury plinth,
-limestone slab.
-
-A neutral architectural wall may exist when justified,
-but no meaningless product-on-stone composition.
+Require:
+- real-world geometry
+- coherent lens perspective
+- believable scale
+- realistic anatomy
+- realistic hand/object contact
+- physically plausible shadows
+- physically plausible reflections
+- natural skin and fabric
+- material-specific roughness
+- deliberate focal hierarchy
+- production-grade color separation
 
 CAMERA
 ------
 
-Final photography must have an intentional point of view.
+Maintain an intentional viewpoint.
 
-Do not flatten the draft into the default:
-centered eye-level three-quarter product view.
-
-Preserve or strengthen:
-- reflection
-- foreground depth
+Camera may use:
+- reflection-led framing
 - architectural framing
-- compression
-- top-down logic
-- low grazing view
-- environmental perspective
+- controlled environmental width
+- long-lens compression
+- top-down relationship
+- low grazing perspective
+- foreground depth
 
-only when it supports the approved message.
+only where the approved advertising idea benefits.
 
-COMPOSITION
+STC CONTEXT
 -----------
-
-Hero must occupy a confident portion of the frame.
-
-Do not drop all visual weight into the bottom third.
-
-Use 15–22% natural copy space where appropriate.
-
-No giant blank upper third.
-
-FINAL SIZE INTENT
------------------
-{requested_size}
-
-FINAL ASPECT RATIO
-------------------
-{aspect_ratio}
 
 {constitution}
 
-FINAL OUTPUT LAW
-----------------
-
-NO TEXT.
-NO LOGO.
-NO WATERMARK.
-NO FAKE UI.
-NO FAKE BRAND SYMBOL.
-NO GENERIC FINTECH EFFECTS.
-
-Before finishing, internally verify:
-
-1. Is every visible object physically believable?
-2. Does the service message work without text?
-3. Does it feel informed by the attached STC references?
-4. Does the camera feel intentional?
-5. Is the composition balanced?
-6. Is any stone/plinth arbitrary?
-7. Is the POS real-looking?
-8. Is online + physical commerce visually connected?
-9. Does this feel like a real Saudi bank campaign?
-
-Fix any "no" before output.
+Create a polished campaign image at:
+Aspect ratio: {aspect_ratio}
+Resolution intent: {requested_size}
 """.strip()
 
-    return fit_prompt_for_api(
-        prompt,
-        label="gpt_image_2_final_v60",
-        budget=FINAL_PROMPT_BUDGET,
+    immutable_locks = (
+        build_immutable_final_locks(
+            original_request=(
+                original_request
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            requested_size=(
+                requested_size
+            ),
+        )
+    )
+
+    return fit_prompt_with_immutable_locks(
+        core_prompt,
+        immutable_locks,
+        label=(
+            "gpt_image_2_final_v601"
+        ),
+        budget=(
+            FINAL_PROMPT_BUDGET
+        ),
     )
 
 
 # =========================================================
-# COMPATIBILITY: GEMINI EDIT
+# GEMINI COMPATIBILITY EDIT
 # =========================================================
 
 def gemini_multi_reference_edit(
@@ -4020,7 +4479,8 @@ def gemini_multi_reference_edit(
         0,
         int(
             limit
-            or 0
+            or
+            0
         ),
     )
 
@@ -4033,11 +4493,14 @@ def gemini_multi_reference_edit(
         if item.image_bytes
     ][:limit]
 
-    tuples = reference_tuples(
-        refs
+    tuples = (
+        reference_tuples(
+            refs
+        )
     )
 
     if working_image is not None:
+
         inputs = [
             (
                 working_image.image_bytes,
@@ -4049,25 +4512,38 @@ def gemini_multi_reference_edit(
             )
         ]
 
-        inputs.extend(tuples)
+        inputs.extend(
+            tuples
+        )
 
         result = edit_with_gemini(
             inputs,
             prompt,
-            aspect_ratio=aspect_ratio,
-            image_size=output_image_size,
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            image_size=(
+                output_image_size
+            ),
             pro=False,
         )
 
     else:
+
         response = generate_image(
             prompt,
             mode="google_fast",
             number=1,
-            aspect_ratio=aspect_ratio,
-            image_size=output_image_size,
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            image_size=(
+                output_image_size
+            ),
             quality="high",
-            reference_images=tuples,
+            reference_images=(
+                tuples
+            ),
             allow_fallback=False,
         )
 
@@ -4076,7 +4552,9 @@ def gemini_multi_reference_edit(
                 "Nano Banana 2 returned no image."
             )
 
-        result = response.images[0]
+        result = (
+            response.images[0]
+        )
 
     if not isinstance(
         result.metadata,
@@ -4095,7 +4573,9 @@ def gemini_multi_reference_edit(
             "final_delivery_allowed":
                 False,
             "physical_reference_count":
-                len(refs),
+                len(
+                    refs
+                ),
             "physical_reference_ids":
                 [
                     item.source_id
@@ -4109,7 +4589,7 @@ def gemini_multi_reference_edit(
 
 
 # =========================================================
-# COMPATIBILITY: REAL OPENAI EDIT
+# REAL OPENAI MULTI-REFERENCE FINAL
 # =========================================================
 
 def openai_multi_reference_edit(
@@ -4140,7 +4620,8 @@ def openai_multi_reference_edit(
         0,
         int(
             limit
-            or 0
+            or
+            0
         ),
     )
 
@@ -4165,6 +4646,7 @@ def openai_multi_reference_edit(
         and
         working_image.image_bytes
     ):
+
         inputs.append(
             (
                 working_image.image_bytes,
@@ -4183,12 +4665,17 @@ def openai_multi_reference_edit(
     )
 
     if not inputs:
+
         response = generate_image(
             prompt,
             mode="openai",
             number=1,
-            aspect_ratio=aspect_ratio,
-            image_size=output_image_size,
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            image_size=(
+                output_image_size
+            ),
             quality="high",
             allow_fallback=False,
         )
@@ -4198,21 +4685,32 @@ def openai_multi_reference_edit(
                 "GPT-Image-2 returned no image."
             )
 
-        result = response.images[0]
+        result = response.images[
+            0
+        ]
 
     else:
+
         result = edit_with_openai_multi(
             inputs,
             prompt,
-            aspect_ratio=aspect_ratio,
-            image_size=output_image_size,
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            image_size=(
+                output_image_size
+            ),
             quality="high",
-            original_prompt=prompt,
+            original_prompt=(
+                prompt
+            ),
             metadata={
                 "production_engine":
                     ENGINE_VERSION,
                 "pass_name":
                     pass_name,
+                "immutable_final_locks":
+                    True,
             },
         )
 
@@ -4233,7 +4731,9 @@ def openai_multi_reference_edit(
             "final_delivery_allowed":
                 True,
             "physical_reference_count":
-                len(refs),
+                len(
+                    refs
+                ),
             "physical_reference_ids":
                 [
                     item.source_id
@@ -4242,6 +4742,8 @@ def openai_multi_reference_edit(
                 ],
             "mandatory_final_model":
                 FINAL_IMAGE_MODEL,
+            "immutable_final_locks":
+                True,
         }
     )
 
@@ -4283,6 +4785,7 @@ def generate_high_quality_image(
     }
 
     for item in product_refs:
+
         if (
             item.source_id
             and
@@ -4301,8 +4804,10 @@ def generate_high_quality_image(
                 item.source_id
             )
 
-    refs = unique_references(
-        refs
+    refs = (
+        unique_references(
+            refs
+        )
     )
 
     limit = (
@@ -4313,14 +4818,27 @@ def generate_high_quality_image(
         MAX_PHYSICAL_REFERENCE_IMAGES
     )
 
+    limit = max(
+        0,
+        int(
+            limit
+            or
+            0
+        ),
+    )
+
     preview_prompt = (
         build_previsualization_prompt(
             compiled=compiled,
-            original_request=original_request,
+            original_request=(
+                original_request
+            ),
             references=refs[
-                :int(limit)
+                :limit
             ],
-            aspect_ratio=aspect_ratio,
+            aspect_ratio=(
+                aspect_ratio
+            ),
         )
     )
 
@@ -4328,11 +4846,21 @@ def generate_high_quality_image(
         working_image=None,
         references=refs,
         prompt=preview_prompt,
-        aspect_ratio=aspect_ratio,
-        pass_name=pass_name,
-        output_image_size=output_image_size,
-        model_override=NANO_BANANA_2_MODEL,
-        max_reference_images=limit,
+        aspect_ratio=(
+            aspect_ratio
+        ),
+        pass_name=(
+            pass_name
+        ),
+        output_image_size=(
+            output_image_size
+        ),
+        model_override=(
+            NANO_BANANA_2_MODEL
+        ),
+        max_reference_images=(
+            limit
+        ),
     )
 
 
@@ -4518,6 +5046,7 @@ def calculate_qa_score(
     for key, weight in (
         QA_WEIGHTS.items()
     ):
+
         value = clamp_score(
             scores.get(
                 key,
@@ -4525,13 +5054,17 @@ def calculate_qa_score(
             )
         )
 
-        normalized[key] = value
+        normalized[
+            key
+        ] = value
 
         total += (
             value
             *
             (
-                float(weight)
+                float(
+                    weight
+                )
                 /
                 100.0
             )
@@ -4545,10 +5078,6 @@ def calculate_qa_score(
         normalized,
     )
 
-
-# =========================================================
-# QA TARGETS
-# =========================================================
 
 def qa_target_for_request(
     original_request: str,
@@ -4583,7 +5112,7 @@ def qa_release_floor_for_request(
 
 
 # =========================================================
-# CRITICAL BLOCKERS
+# BLOCKERS
 # =========================================================
 
 def detect_critical_blockers(
@@ -4601,17 +5130,23 @@ def detect_critical_blockers(
     for value in safe_list(
         explicit_failures
     ):
+
         text = clean_text(
             value,
             900,
         )
 
         if text:
-            blockers.append(text)
+            blockers.append(
+                text
+            )
 
-    flag_data = safe_dict(flags)
+    flag_data = safe_dict(
+        flags
+    )
 
     if stage == "preview":
+
         if flag_data.get(
             "invented_payment_hardware"
         ):
@@ -4645,32 +5180,28 @@ def detect_critical_blockers(
             limit=40,
         )
 
-    #
-    # Final hard minimums.
-    #
-
     general_thresholds = {
-        "concept_execution":
-            72.0,
-        "message_clarity_without_text":
-            72.0,
-        "realism":
-            75.0,
-        "camera_perspective":
-            72.0,
-        "advertising_readiness":
-            75.0,
+        "concept_execution": 72.0,
+        "message_clarity_without_text": 72.0,
+        "realism": 75.0,
+        "camera_perspective": 72.0,
+        "advertising_readiness": 75.0,
     }
 
     for key, minimum in (
         general_thresholds.items()
     ):
-        if clamp_score(
-            scores.get(
-                key,
-                0,
+
+        if (
+            clamp_score(
+                scores.get(
+                    key,
+                    0,
+                )
             )
-        ) < minimum:
+            <
+            minimum
+        ):
             blockers.append(
                 (
                     key
@@ -4678,7 +5209,9 @@ def detect_critical_blockers(
                     "_below_"
                     +
                     str(
-                        int(minimum)
+                        int(
+                            minimum
+                        )
                     )
                 )
             )
@@ -4690,42 +5223,36 @@ def detect_critical_blockers(
     )
 
     if stc_request:
+
         stc_thresholds = {
-            "concept_execution":
-                82.0,
-            "message_clarity_without_text":
-                80.0,
-            "brand_alignment":
-                82.0,
-            "brand_identity_strength":
-                82.0,
-            "advertising_readiness":
-                84.0,
-            "scene_originality":
-                80.0,
-            "service_integration":
-                82.0,
-            "realism":
-                84.0,
-            "camera_perspective":
-                80.0,
-            "reference_adherence":
-                80.0,
-            "text_logo_compliance":
-                95.0,
-            "copy_space_composition":
-                80.0,
+            "concept_execution": 82.0,
+            "message_clarity_without_text": 80.0,
+            "brand_alignment": 82.0,
+            "brand_identity_strength": 82.0,
+            "advertising_readiness": 84.0,
+            "scene_originality": 80.0,
+            "service_integration": 82.0,
+            "realism": 84.0,
+            "camera_perspective": 80.0,
+            "reference_adherence": 80.0,
+            "text_logo_compliance": 95.0,
+            "copy_space_composition": 80.0,
         }
 
         for key, minimum in (
             stc_thresholds.items()
         ):
-            if clamp_score(
-                scores.get(
-                    key,
-                    0,
+
+            if (
+                clamp_score(
+                    scores.get(
+                        key,
+                        0,
+                    )
                 )
-            ) < minimum:
+                <
+                minimum
+            ):
                 blockers.append(
                     (
                         "stc_"
@@ -4735,7 +5262,9 @@ def detect_critical_blockers(
                         "_below_"
                         +
                         str(
-                            int(minimum)
+                            int(
+                                minimum
+                            )
                         )
                     )
                 )
@@ -4763,9 +5292,11 @@ def detect_critical_blockers(
                 "stc_fake_banking_ui",
         }
 
-        for flag_name, blocker in (
-            hard_flags.items()
-        ):
+        for (
+            flag_name,
+            blocker,
+        ) in hard_flags.items():
+
             if flag_data.get(
                 flag_name
             ):
@@ -4856,25 +5387,28 @@ def build_qa_prompt(
 
     stage_instruction = """
 This is the FINAL image.
+
 Judge release readiness.
 """.strip()
 
     if stage == "preview":
+
         stage_instruction = """
 This is a PREVISUALIZATION only.
 
 Do not judge tiny polish harshly.
 
-Find structural problems that GPT-Image-2 must repair:
-message,
-hardware,
-scene logic,
-camera,
-composition,
-brand drift,
-reference drift,
-copy space,
-service integration.
+Find structural problems GPT-Image-2 must repair:
+
+- message
+- hardware
+- scene logic
+- camera
+- composition
+- brand drift
+- reference drift
+- copy space
+- service integration
 
 This audit is guidance, not client release.
 """.strip()
@@ -4882,71 +5416,72 @@ This audit is guidance, not client release.
     stc_section = ""
 
     if stc_request:
+
         stc_section = f"""
 STC BANK AUDIT
 ==============
 
-The physically attached reference library was used earlier
-as brand evidence.
-
-Judge whether the image actually feels informed by
-STC Bank campaign language rather than generic fintech.
+Judge whether the image genuinely feels informed by
+STC Bank visual language instead of generic fintech.
 
 PAYMENT HARDWARE
 ----------------
+
 invented_payment_hardware = TRUE if any POS/payment device
 has implausible industrial design, broken keys, impossible
-screen/body logic, or looks like fictional hardware.
+screen/body logic or fictional hardware.
 
-phone_pos_fusion = TRUE if a smartphone and POS terminal
-are physically merged or visually mutated into one device.
+phone_pos_fusion = TRUE if smartphone + POS physically merge.
 
 STONE / PEDESTAL
 ----------------
+
 random_stone_pedestal = TRUE when travertine, marble,
-limestone or a generic luxury stone block is used as an
-unmotivated advertising pedestal.
+limestone or generic luxury stone becomes an unmotivated
+advertising pedestal.
 
 COPY SPACE
 ----------
-excessive_empty_copy_space = TRUE when roughly a quarter
-or more of the frame becomes visibly dead/empty without
-strong compositional justification, especially a giant
-empty upper region.
+
+excessive_empty_copy_space = TRUE when the composition
+contains a large dead upper region or pushes the hero too low.
 
 CAMERA
 ------
+
 generic_camera = TRUE when the image defaults to an ordinary
-eye-level centered three-quarter commercial shot with no
-meaningful visual purpose.
+eye-level centered three-quarter shot with no visual purpose.
 
 REFERENCE ADHERENCE
 -------------------
+
 reference_drift = TRUE when the image feels like generic
-luxury/fintech styling rather than a visual world plausibly
-informed by the supplied STC reference DNA.
+luxury/fintech rather than a visual world informed by the
+STC reference DNA.
 
 MERCHANT MESSAGE
 ----------------
+
 For merchant_payments:
 
-merchant_fusion_failed = TRUE unless the viewer can understand
+merchant_fusion_failed = TRUE unless the viewer understands
 both:
-- online/e-commerce commercial activity
+
+- online/e-commerce activity
 - physical/in-store payment acceptance
 
-as one connected commercial ecosystem.
+as one connected ecosystem.
 
-Do NOT require text or readable UI as proof.
+Do not require readable text or UI as proof.
 
-A smartphone screen alone is weak evidence of e-commerce.
-
-{build_stc_visual_constitution(original_request)}
+{build_stc_visual_constitution(
+    original_request
+)}
 """.strip()
 
     prompt = f"""
-XPAND VISUAL QA V6.0
-====================
+XPAND VISUAL QA V6.0.1
+======================
 
 {stage_instruction}
 
@@ -4986,10 +5521,10 @@ brand_alignment:
 Does the strategy fit the brand?
 
 brand_identity_strength:
-Does it feel specifically art-directed for this brand?
+Does the frame feel specifically art-directed for this brand?
 
 advertising_readiness:
-Does it feel like a real campaign key visual?
+Does this feel like a real campaign key visual?
 
 scene_originality:
 Is it meaningfully different from generic stock banking?
@@ -5010,23 +5545,25 @@ human_anatomy:
 If no people appear, score 100.
 
 reference_adherence:
-Does the image show evidence of the intended visual DNA
+Does the image show evidence of intended visual DNA
 without cloning references?
 
 text_logo_compliance:
 No unwanted generated text/logo/UI.
 
 copy_space_composition:
-Is copy space integrated naturally without destroying balance?
+Is copy space integrated naturally without harming balance?
 
 FLAGS
 -----
-Return every required boolean flag accurately.
+
+Return every required boolean accurately.
 
 DECISION
 --------
-approve = ready for the current stage.
-correct = strong basis but repairable defects remain.
+
+approve = ready for current stage.
+correct = strong basis with repairable defects.
 rebuild = structural execution failure.
 
 {stc_section}
@@ -5037,19 +5574,21 @@ Return exactly the requested JSON schema.
     return fit_prompt_for_api(
         prompt,
         label=(
-            "preview_audit_v60"
+            "preview_audit_v601"
             if stage
             ==
             "preview"
             else
-            "final_qa_v60"
+            "final_qa_v601"
         ),
-        budget=QA_PROMPT_BUDGET,
+        budget=(
+            QA_PROMPT_BUDGET
+        ),
     )
 
 
 # =========================================================
-# BUILD QA OBJECT
+# BUILD QA
 # =========================================================
 
 def build_qa_evaluation(
@@ -5085,8 +5624,12 @@ def build_qa_evaluation(
                 )
             ),
             flags=flags,
-            product_lock=product_lock,
-            original_request=original_request,
+            product_lock=(
+                product_lock
+            ),
+            original_request=(
+                original_request
+            ),
             stage=stage,
         )
     )
@@ -5100,6 +5643,7 @@ def build_qa_evaluation(
     ).lower()
 
     if stage == "preview":
+
         preview_ok = bool(
             score
             >=
@@ -5125,6 +5669,10 @@ def build_qa_evaluation(
                         "strengths"
                     )
                 )[:8]
+                if clean_text(
+                    item,
+                    800,
+                )
             ],
             problems=[
                 clean_text(
@@ -5137,6 +5685,10 @@ def build_qa_evaluation(
                         "problems"
                     )
                 )[:10]
+                if clean_text(
+                    item,
+                    1000,
+                )
             ],
             correction_instruction=(
                 clean_text(
@@ -5202,21 +5754,29 @@ def build_qa_evaluation(
     )
 
     if target_reached:
-        decision = "target_reached"
+        decision = (
+            "target_reached"
+        )
 
     elif delivery_approved:
-        decision = "adaptive_release"
+        decision = (
+            "adaptive_release"
+        )
 
     elif model_decision == "rebuild":
         decision = "rebuild"
 
     else:
-        decision = "correction_required"
+        decision = (
+            "correction_required"
+        )
 
     return QAEvaluation(
         score=score,
         scores=normalized_scores,
-        passed=delivery_approved,
+        passed=(
+            delivery_approved
+        ),
         strengths=[
             clean_text(
                 item,
@@ -5228,6 +5788,10 @@ def build_qa_evaluation(
                     "strengths"
                 )
             )[:8]
+            if clean_text(
+                item,
+                800,
+            )
         ],
         problems=[
             clean_text(
@@ -5240,6 +5804,10 @@ def build_qa_evaluation(
                     "problems"
                 )
             )[:10]
+            if clean_text(
+                item,
+                1000,
+            )
         ],
         correction_instruction=(
             clean_text(
@@ -5250,9 +5818,15 @@ def build_qa_evaluation(
                 2400,
             )
         ),
-        critical_blockers=blockers,
-        target_reached=target_reached,
-        delivery_approved=delivery_approved,
+        critical_blockers=(
+            blockers
+        ),
+        target_reached=(
+            target_reached
+        ),
+        delivery_approved=(
+            delivery_approved
+        ),
         decision=decision,
         raw={
             **data,
@@ -5269,7 +5843,7 @@ def build_qa_evaluation(
 
 
 # =========================================================
-# GEMINI PREVIEW AUDIT
+# PREVIEW AUDIT
 # =========================================================
 
 def evaluate_preview_image(
@@ -5286,6 +5860,7 @@ def evaluate_preview_image(
 ) -> QAEvaluation:
 
     if telemetry is not None:
+
         telemetry[
             "preview_audit_calls"
         ] = (
@@ -5301,31 +5876,47 @@ def evaluate_preview_image(
 
     prompt = (
         build_qa_prompt(
-            original_request=original_request,
-            compiled_prompt=compiled_prompt,
-            product_lock=product_lock,
-            brand_context=brand_context,
-            aspect_ratio=aspect_ratio,
+            original_request=(
+                original_request
+            ),
+            compiled_prompt=(
+                compiled_prompt
+            ),
+            product_lock=(
+                product_lock
+            ),
+            brand_context=(
+                brand_context
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
             stage="preview",
         )
     )
 
     raw = call_gemini_director(
         prompt,
-        image_bytes=image.image_bytes,
+        image_bytes=(
+            image.image_bytes
+        ),
         image_mime_type=(
             image.mime_type
             or
             "image/jpeg"
         ),
         json_mode=True,
-        json_schema=QA_SCHEMA,
+        json_schema=(
+            QA_SCHEMA
+        ),
         json_schema_name=(
-            "xpand_preview_audit_v60"
+            "xpand_preview_audit_v601"
         ),
     )
 
-    data = parse_json_object(raw)
+    data = parse_json_object(
+        raw
+    )
 
     if not data:
         raise RuntimeError(
@@ -5334,8 +5925,12 @@ def evaluate_preview_image(
 
     return build_qa_evaluation(
         data,
-        original_request=original_request,
-        product_lock=product_lock,
+        original_request=(
+            original_request
+        ),
+        product_lock=(
+            product_lock
+        ),
         stage="preview",
     )
 
@@ -5358,6 +5953,7 @@ def evaluate_generated_image(
 ) -> QAEvaluation:
 
     if telemetry is not None:
+
         telemetry[
             "vision_calls"
         ] = (
@@ -5373,31 +5969,47 @@ def evaluate_generated_image(
 
     prompt = (
         build_qa_prompt(
-            original_request=original_request,
-            compiled_prompt=compiled_prompt,
-            product_lock=product_lock,
-            brand_context=brand_context,
-            aspect_ratio=aspect_ratio,
+            original_request=(
+                original_request
+            ),
+            compiled_prompt=(
+                compiled_prompt
+            ),
+            product_lock=(
+                product_lock
+            ),
+            brand_context=(
+                brand_context
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
             stage="final",
         )
     )
 
     raw = call_openai_director(
         prompt,
-        image_bytes=image.image_bytes,
+        image_bytes=(
+            image.image_bytes
+        ),
         image_mime_type=(
             image.mime_type
             or
             "image/jpeg"
         ),
         json_mode=True,
-        json_schema=QA_SCHEMA,
+        json_schema=(
+            QA_SCHEMA
+        ),
         json_schema_name=(
-            "xpand_final_qa_v60"
+            "xpand_final_qa_v601"
         ),
     )
 
-    data = parse_json_object(raw)
+    data = parse_json_object(
+        raw
+    )
 
     if not data:
         raise RuntimeError(
@@ -5406,8 +6018,12 @@ def evaluate_generated_image(
 
     return build_qa_evaluation(
         data,
-        original_request=original_request,
-        product_lock=product_lock,
+        original_request=(
+            original_request
+        ),
+        product_lock=(
+            product_lock
+        ),
         stage="final",
     )
 
@@ -5432,6 +6048,7 @@ def qa_quality_rank(
 ]:
 
     if qa is None:
+
         return (
             -999,
             0,
@@ -5448,40 +6065,47 @@ def qa_quality_rank(
         if not qa.critical_blockers
         else
         0,
+
         1
         if qa.passed
         else
         0,
+
         clamp_score(
             qa.scores.get(
                 "service_integration",
                 0,
             )
         ),
+
         clamp_score(
             qa.scores.get(
                 "brand_identity_strength",
                 0,
             )
         ),
+
         clamp_score(
             qa.scores.get(
                 "realism",
                 0,
             )
         ),
+
         clamp_score(
             qa.scores.get(
                 "camera_perspective",
                 0,
             )
         ),
+
         clamp_score(
             qa.scores.get(
                 "advertising_readiness",
                 0,
             )
         ),
+
         float(
             qa.score
         ),
@@ -5523,8 +6147,11 @@ def has_structural_failure(
     )
 
     if any(
-        flags.get(key)
-        for key in (
+        flags.get(
+            key
+        )
+        for key
+        in (
             "invented_payment_hardware",
             "phone_pos_fusion",
             "merchant_fusion_failed",
@@ -5534,28 +6161,40 @@ def has_structural_failure(
     ):
         return True
 
-    if clamp_score(
-        qa.scores.get(
-            "concept_execution",
-            0,
+    if (
+        clamp_score(
+            qa.scores.get(
+                "concept_execution",
+                0,
+            )
         )
-    ) < 76:
+        <
+        76
+    ):
         return True
 
-    if clamp_score(
-        qa.scores.get(
-            "message_clarity_without_text",
-            0,
+    if (
+        clamp_score(
+            qa.scores.get(
+                "message_clarity_without_text",
+                0,
+            )
         )
-    ) < 76:
+        <
+        76
+    ):
         return True
 
-    if clamp_score(
-        qa.scores.get(
-            "service_integration",
-            0,
+    if (
+        clamp_score(
+            qa.scores.get(
+                "service_integration",
+                0,
+            )
         )
-    ) < 76:
+        <
+        76
+    ):
         return True
 
     return bool(
@@ -5587,18 +6226,17 @@ def choose_adaptive_action(
         return "structural_repair"
 
     if qa.passed:
-        return (
-            "premium_refinement"
-            if high_alert
-            else
-            "none"
-        )
+
+        if high_alert:
+            return "premium_refinement"
+
+        return "none"
 
     return "targeted_repair"
 
 
 # =========================================================
-# FINAL GPT-IMAGE-2 REPAIR PROMPT
+# FINAL REPAIR PROMPT V6.0.1
 # =========================================================
 
 def build_final_repair_prompt(
@@ -5624,17 +6262,17 @@ def build_final_repair_prompt(
         """
 STRUCTURAL REPAIR IS ALLOWED.
 
-The final image has a real structural execution defect.
+The existing final image has a structural execution problem.
 
-You may recompose the existing image substantially,
-but preserve:
+You may substantially recompose the existing image while
+preserving:
+
 - commercial proposition
 - approved advertising idea
 - brand world
-- message
-- intended service
+- service message
 
-Replace impossible / generic execution with a believable
+Replace impossible or generic execution with a believable
 photographic execution of the SAME idea.
 """.strip()
         if structural
@@ -5642,7 +6280,7 @@ photographic execution of the SAME idea.
         """
 TARGETED REPAIR.
 
-Preserve all successful regions.
+Preserve successful regions.
 
 Do not redesign the campaign.
 
@@ -5650,14 +6288,16 @@ Fix only diagnosed defects.
 """.strip()
     )
 
-    prompt = f"""
-XPAND GPT-IMAGE-2 FINAL REPAIR V6.0
-===================================
+    core_prompt = f"""
+XPAND GPT-IMAGE-2 FINAL REPAIR V6.0.1
+=====================================
 
-Image 1 is the existing GPT-Image-2 FINAL candidate.
+Image 1 is the existing GPT-Image-2 final candidate.
 
-Images 2+ are STC reference authority.
+Images 2+ are STC visual authority.
 
+REFERENCE ROLES
+---------------
 {reference_role_manifest(
     references,
     draft_first=True,
@@ -5667,14 +6307,14 @@ ORIGINAL REQUEST
 ----------------
 {clean_text(
     original_request,
-    3000,
+    2800,
 )}
 
 APPROVED CONTRACT
 -----------------
 {clean_text(
     compiled.prompt,
-    3600,
+    3400,
 )}
 
 FINAL QA FAILURE
@@ -5687,57 +6327,52 @@ REPAIR MODE
 -----------
 {repair_mode}
 
-MANDATORY REPAIR CHECKS
------------------------
+REPAIR PRIORITIES
+-----------------
 
-Fix when present:
-
-- invented payment hardware
-- phone/POS fusion
-- malformed terminal
-- weak e-commerce/POS connection
-- generic checkout scene
-- generic camera
-- random stone/travertine pedestal
-- weak STC visual identity
+Repair:
+- weak service communication
+- weak brand identity
+- unrealistic hardware
+- bad anatomy
+- bad object contact
+- weak camera
 - reference drift
+- generic scene logic
+- weak composition
+- synthetic materials
 - fake UI
 - accidental text/logo
 - excessive empty upper space
-- hero too low/small
-- bad anatomy
-- bad contact
-- bad perspective
-- bad reflections
-- synthetic CGI finish
 
-PAYMENT HARDWARE MUST BE REALISTIC.
+Keep the commercial proposition intact.
 
-Do not physically merge phone and POS.
-
-Do not add decorative fintech effects.
-
-No stone/plinth shortcut.
-
-Use 15–22% integrated copy space.
-
-ASPECT:
-{aspect_ratio}
-
-SIZE:
-{requested_size}
-
-NO TEXT.
-NO LOGO.
-NO FAKE UI.
-
-Return one improved final campaign image.
+Create one improved final campaign image.
 """.strip()
 
-    return fit_prompt_for_api(
-        prompt,
-        label="gpt_image_2_final_repair_v60",
-        budget=CORRECTION_PROMPT_BUDGET,
+    immutable_locks = (
+        build_immutable_final_locks(
+            original_request=(
+                original_request
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            requested_size=(
+                requested_size
+            ),
+        )
+    )
+
+    return fit_prompt_with_immutable_locks(
+        core_prompt,
+        immutable_locks,
+        label=(
+            "gpt_image_2_final_repair_v601"
+        ),
+        budget=(
+            CORRECTION_PROMPT_BUDGET
+        ),
     )
 
 
@@ -5772,13 +6407,15 @@ def create_exact_delivery_frame(
         }
     )
 
-    image.aspect_ratio = aspect_ratio
+    image.aspect_ratio = (
+        aspect_ratio
+    )
 
     return image
 
 
 # =========================================================
-# LOG QA
+# QA LOG
 # =========================================================
 
 def print_qa(
@@ -5787,6 +6424,7 @@ def print_qa(
 ) -> None:
 
     print("")
+
     print(
         "📊 "
         +
@@ -5794,12 +6432,17 @@ def print_qa(
         +
         ": "
         +
-        str(qa.score)
+        str(
+            qa.score
+        )
         +
         "/100"
     )
 
-    for display, key in (
+    for (
+        display,
+        key,
+    ) in (
         (
             "Concept",
             "concept_execution",
@@ -5849,6 +6492,7 @@ def print_qa(
             "text_logo_compliance",
         ),
     ):
+
         print(
             display
             +
@@ -5867,8 +6511,11 @@ def print_qa(
     )
 
     for blocker in (
-        qa.critical_blockers[:12]
+        qa.critical_blockers[
+            :12
+        ]
     ):
+
         print(
             "  🛑",
             blocker,
@@ -5906,7 +6553,10 @@ def provider_failure_qa(
         ],
         correction_instruction="",
         critical_blockers=[
-            "mandatory_gpt_image_2_final_unavailable"
+            (
+                "mandatory_gpt_image_2_"
+                "final_unavailable"
+            )
         ],
         target_reached=False,
         delivery_approved=False,
@@ -5941,7 +6591,9 @@ def run_production(
     target_model: str = TARGET_OPENAI,
 ) -> ProductionResult:
 
-    started = time.monotonic()
+    started = (
+        time.monotonic()
+    )
 
     errors: List[str] = []
 
@@ -6023,6 +6675,8 @@ def run_production(
             False,
         "adaptive_action":
             "none",
+        "immutable_final_locks":
+            True,
         "block_generic_smart_fallback":
             bool(
                 high_alert
@@ -6038,8 +6692,12 @@ def run_production(
             core,
             user_id,
             brand_id,
-            request=original_request,
-            limit=SMART_REFERENCE_SELECTION_LIMIT,
+            request=(
+                original_request
+            ),
+            limit=(
+                SMART_REFERENCE_SELECTION_LIMIT
+            ),
         )
     )
 
@@ -6058,31 +6716,37 @@ def run_production(
     ] = []
 
     stc_kit: Optional[Any] = None
+
     stc_assets: List[Any] = []
 
     if stc_request:
+
         (
             stc_local_refs,
             stc_kit,
             stc_assets,
-        ) = load_stc_local_references(
-            request=original_request,
-            max_total=(
-                MAX_STC_PHYSICAL_REFERENCE_IMAGES
-            ),
-            rotation_key=(
-                clean_text(
-                    user_id,
-                    200,
-                )
-                +
-                ":"
-                +
-                clean_text(
-                    original_request,
-                    1400,
-                )
-            ),
+        ) = (
+            load_stc_local_references(
+                request=(
+                    original_request
+                ),
+                max_total=(
+                    MAX_STC_PHYSICAL_REFERENCE_IMAGES
+                ),
+                rotation_key=(
+                    clean_text(
+                        user_id,
+                        200,
+                    )
+                    +
+                    ":"
+                    +
+                    clean_text(
+                        original_request,
+                        1400,
+                    )
+                ),
+            )
         )
 
     telemetry[
@@ -6114,16 +6778,26 @@ def run_production(
     )
 
     if stc_request:
+
         physical_refs = (
             build_stc_primary_reference_set(
-                product_refs=product_refs,
-                local_refs=stc_local_refs,
-                memory_refs=memory_references,
-                limit=STC_RENDER_REFERENCE_LIMIT,
+                product_refs=(
+                    product_refs
+                ),
+                local_refs=(
+                    stc_local_refs
+                ),
+                memory_refs=(
+                    memory_references
+                ),
+                limit=(
+                    STC_RENDER_REFERENCE_LIMIT
+                ),
             )
         )
 
     else:
+
         physical_refs = (
             choose_physical_references(
                 memory_references,
@@ -6172,21 +6846,30 @@ def run_production(
     stc_kit_context = {}
 
     if stc_request:
+
         stc_kit_context = (
             build_stc_brand_kit_context(
                 stc_kit,
-                request=original_request,
-                selected_assets=stc_assets,
+                request=(
+                    original_request
+                ),
+                selected_assets=(
+                    stc_assets
+                ),
             )
         )
 
     enriched_brand_context = (
         build_enriched_brand_context(
-            brand_context=brand_context,
+            brand_context=(
+                brand_context
+            ),
             brand_visual_profile=(
                 brand_visual_profile
             ),
-            references=all_references,
+            references=(
+                all_references
+            ),
             stc_brand_kit_context=(
                 stc_kit_context
             ),
@@ -6206,23 +6889,31 @@ def run_production(
 
     compiled = compile_prompt(
         TARGET_OPENAI,
-        request=original_request,
+        request=(
+            original_request
+        ),
         creative_direction=(
             creative_direction
         ),
         brand_context=(
             enriched_brand_context
         ),
-        references=reference_dna,
+        references=(
+            reference_dna
+        ),
         camera_direction=(
             camera_direction
         ),
-        product_lock=product_lock,
-        aspect_ratio=aspect_ratio,
+        product_lock=(
+            product_lock
+        ),
+        aspect_ratio=(
+            aspect_ratio
+        ),
     )
 
     # =====================================================
-    # LOG
+    # LOG HEADER
     # =====================================================
 
     print("")
@@ -6230,10 +6921,10 @@ def run_production(
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V6.0"
+        " XPAND PRODUCTION ENGINE V6.0.1"
     )
     print(
-        " HYBRID STABLE MASTERPIECE CORE"
+        " IMMUTABLE-LOCK HYBRID MASTERPIECE CORE"
     )
     print(
         "=============================================="
@@ -6284,6 +6975,7 @@ def run_production(
     )
 
     for item in physical_refs:
+
         print(
             "  🖼️",
             item.source_id,
@@ -6301,11 +6993,17 @@ def run_production(
     )
 
     print(
+        "Immutable final locks:",
+        True,
+    )
+
+    print(
         "STC High Alert:",
         high_alert,
     )
 
     if stc_request:
+
         print(
             "STC scene tier:",
             stc_scene_tier(
@@ -6327,6 +7025,7 @@ def run_production(
     # =====================================================
 
     if mode != MODE_MASTERPIECE:
+
         print(
             "🍌 FAST PRODUCTION | Nano Banana 2"
         )
@@ -6334,12 +7033,24 @@ def run_production(
         fast_image = (
             generate_high_quality_image(
                 compiled=compiled,
-                product_refs=product_refs,
-                visual_refs=physical_refs,
-                aspect_ratio=aspect_ratio,
-                original_request=original_request,
-                pass_name="fast_generation_v60",
-                output_image_size=requested_size,
+                product_refs=(
+                    product_refs
+                ),
+                visual_refs=(
+                    physical_refs
+                ),
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                original_request=(
+                    original_request
+                ),
+                pass_name=(
+                    "fast_generation_v601"
+                ),
+                output_image_size=(
+                    requested_size
+                ),
                 max_physical_references=(
                     len(
                         physical_refs
@@ -6360,22 +7071,32 @@ def run_production(
             create_exact_delivery_frame(
                 fast_image,
                 aspect_ratio,
-                label="fast_delivery",
+                label=(
+                    "fast_delivery"
+                ),
             )
         )
 
         return ProductionResult(
             ok=True,
-            final_image=final_image,
+            final_image=(
+                final_image
+            ),
             best_score=0.0,
             qa=None,
             passes=[
                 ProductionPassResult(
-                    pass_name="fast_generation_v60",
-                    image=fast_image,
+                    pass_name=(
+                        "fast_generation_v601"
+                    ),
+                    image=(
+                        fast_image
+                    ),
                 )
             ],
-            compiled_prompt=compiled,
+            compiled_prompt=(
+                compiled
+            ),
             references_used=len(
                 all_references
             ),
@@ -6407,11 +7128,21 @@ def run_production(
     preview_image = (
         generate_high_quality_image(
             compiled=compiled,
-            product_refs=product_refs,
-            visual_refs=physical_refs,
-            aspect_ratio=aspect_ratio,
-            original_request=original_request,
-            pass_name="nano_banana_previs_v60",
+            product_refs=(
+                product_refs
+            ),
+            visual_refs=(
+                physical_refs
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            original_request=(
+                original_request
+            ),
+            pass_name=(
+                "nano_banana_previs_v601"
+            ),
             output_image_size="1K",
             model_override=(
                 NANO_BANANA_2_MODEL
@@ -6437,8 +7168,12 @@ def run_production(
         ProductionPassResult
     ] = [
         ProductionPassResult(
-            pass_name="nano_banana_previs_v60",
-            image=preview_image,
+            pass_name=(
+                "nano_banana_previs_v601"
+            ),
+            image=(
+                preview_image
+            ),
             metadata={
                 "delivery_allowed":
                     False,
@@ -6464,25 +7199,38 @@ def run_production(
     )
 
     try:
+
         preview_qa = (
             evaluate_preview_image(
-                image=preview_image,
+                image=(
+                    preview_image
+                ),
                 original_request=(
                     original_request
                 ),
-                compiled_prompt=compiled,
-                product_lock=product_lock,
+                compiled_prompt=(
+                    compiled
+                ),
+                product_lock=(
+                    product_lock
+                ),
                 brand_context=(
                     enriched_brand_context
                 ),
-                aspect_ratio=aspect_ratio,
-                telemetry=telemetry,
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                telemetry=(
+                    telemetry
+                ),
             )
         )
 
         passes[
             0
-        ].qa = preview_qa
+        ].qa = (
+            preview_qa
+        )
 
         print_qa(
             "Previs Audit",
@@ -6490,15 +7238,18 @@ def run_production(
         )
 
     except Exception as error:
+
         message = clean_text(
             error,
             2400,
         )
 
         errors.append(
-            "preview_audit: "
-            +
-            message
+            (
+                "preview_audit: "
+                +
+                message
+            )
         )
 
         print(
@@ -6507,8 +7258,10 @@ def run_production(
         )
 
         print(
-            "✅ Final renderer will continue "
-            "using approved Creative Brain contract."
+            (
+                "✅ Final renderer continues using "
+                "approved Creative Brain contract."
+            )
         )
 
     # =====================================================
@@ -6536,15 +7289,42 @@ def run_production(
 
     final_prompt = (
         build_final_renderer_prompt(
-            compiled=compiled,
+            compiled=(
+                compiled
+            ),
             original_request=(
                 original_request
             ),
-            preview_qa=preview_qa,
-            references=final_refs,
-            aspect_ratio=aspect_ratio,
-            requested_size=requested_size,
+            preview_qa=(
+                preview_qa
+            ),
+            references=(
+                final_refs
+            ),
+            aspect_ratio=(
+                aspect_ratio
+            ),
+            requested_size=(
+                requested_size
+            ),
         )
+    )
+
+    print(
+        "Final prompt chars:",
+        len(
+            final_prompt
+        ),
+        "/",
+        FINAL_PROMPT_BUDGET,
+    )
+
+    print(
+        "Immutable sentinel present:",
+        (
+            IMMUTABLE_LOCK_SENTINEL
+            in final_prompt
+        ),
     )
 
     print("")
@@ -6561,14 +7341,27 @@ def run_production(
     )
 
     try:
+
         first_final = (
             openai_multi_reference_edit(
-                working_image=preview_image,
-                references=final_refs,
-                prompt=final_prompt,
-                aspect_ratio=aspect_ratio,
-                pass_name="gpt_image_2_final_v60",
-                output_image_size=requested_size,
+                working_image=(
+                    preview_image
+                ),
+                references=(
+                    final_refs
+                ),
+                prompt=(
+                    final_prompt
+                ),
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                pass_name=(
+                    "gpt_image_2_final_v601"
+                ),
+                output_image_size=(
+                    requested_size
+                ),
                 model_override=(
                     FINAL_IMAGE_MODEL
                 ),
@@ -6581,15 +7374,18 @@ def run_production(
         )
 
     except Exception as error:
+
         message = clean_text(
             error,
             3500,
         )
 
         errors.append(
-            "gpt_image_2_final: "
-            +
-            message
+            (
+                "gpt_image_2_final: "
+                +
+                message
+            )
         )
 
         print(
@@ -6603,15 +7399,6 @@ def run_production(
             )
         )
 
-        #
-        # IMPORTANT:
-        #
-        # Preview is returned only as an internal object so
-        # Telegram has a complete ProductionResult.
-        #
-        # qa.passed=False prevents delivery.
-        #
-
         preview_image.metadata[
             "final_delivery_allowed"
         ] = False
@@ -6622,11 +7409,19 @@ def run_production(
 
         return ProductionResult(
             ok=False,
-            final_image=preview_image,
+            final_image=(
+                preview_image
+            ),
             best_score=0.0,
-            qa=failure_qa,
-            passes=passes,
-            compiled_prompt=compiled,
+            qa=(
+                failure_qa
+            ),
+            passes=(
+                passes
+            ),
+            compiled_prompt=(
+                compiled
+            ),
             references_used=len(
                 all_references
             ),
@@ -6669,8 +7464,12 @@ def run_production(
 
     passes.append(
         ProductionPassResult(
-            pass_name="gpt_image_2_final_v60",
-            image=first_final,
+            pass_name=(
+                "gpt_image_2_final_v601"
+            ),
+            image=(
+                first_final
+            ),
             metadata={
                 "model":
                     first_final.model,
@@ -6678,6 +7477,8 @@ def run_production(
                     "final",
                 "final_provider":
                     "openai",
+                "immutable_final_locks":
+                    True,
                 "references":
                     [
                         item.source_id
@@ -6699,11 +7500,11 @@ def run_production(
         !=
         FINAL_IMAGE_MODEL
     ):
+
         failure_qa = (
             provider_failure_qa(
                 (
-                    "Final provider lock failed. "
-                    "Expected "
+                    "Final provider lock failed. Expected "
                     +
                     FINAL_IMAGE_MODEL
                     +
@@ -6719,11 +7520,19 @@ def run_production(
 
         return ProductionResult(
             ok=False,
-            final_image=first_final,
+            final_image=(
+                first_final
+            ),
             best_score=0.0,
-            qa=failure_qa,
-            passes=passes,
-            compiled_prompt=compiled,
+            qa=(
+                failure_qa
+            ),
+            passes=(
+                passes
+            ),
+            compiled_prompt=(
+                compiled
+            ),
             references_used=len(
                 all_references
             ),
@@ -6760,25 +7569,38 @@ def run_production(
     ] = None
 
     try:
+
         first_qa = (
             evaluate_generated_image(
-                image=first_final,
+                image=(
+                    first_final
+                ),
                 original_request=(
                     original_request
                 ),
-                compiled_prompt=compiled,
-                product_lock=product_lock,
+                compiled_prompt=(
+                    compiled
+                ),
+                product_lock=(
+                    product_lock
+                ),
                 brand_context=(
                     enriched_brand_context
                 ),
-                aspect_ratio=aspect_ratio,
-                telemetry=telemetry,
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                telemetry=(
+                    telemetry
+                ),
             )
         )
 
         passes[
             -1
-        ].qa = first_qa
+        ].qa = (
+            first_qa
+        )
 
         print_qa(
             "Final QA",
@@ -6786,15 +7608,18 @@ def run_production(
         )
 
     except Exception as error:
+
         message = clean_text(
             error,
             2800,
         )
 
         errors.append(
-            "final_qa_1: "
-            +
-            message
+            (
+                "final_qa_1: "
+                +
+                message
+            )
         )
 
         print(
@@ -6802,17 +7627,24 @@ def run_production(
             message,
         )
 
-    best_image = first_final
-    best_qa = first_qa
+    best_image = (
+        first_final
+    )
+
+    best_qa = (
+        first_qa
+    )
 
     # =====================================================
-    # ADAPTIVE FINAL DECISION
+    # ADAPTIVE DECISION
     # =====================================================
 
     action = (
         choose_adaptive_action(
             first_qa,
-            high_alert=high_alert,
+            high_alert=(
+                high_alert
+            ),
         )
     )
 
@@ -6827,7 +7659,7 @@ def run_production(
     )
 
     # =====================================================
-    # OPTIONAL GPT-IMAGE-2 FINAL REPAIR
+    # OPTIONAL FINAL GPT-IMAGE-2 REPAIR
     # =====================================================
 
     if (
@@ -6844,11 +7676,18 @@ def run_production(
         <
         MASTERPIECE_MAX_IMAGE_CALLS
     ):
+
         repair_refs = (
             correction_reference_set(
-                product_refs=product_refs,
-                stc_local_refs=stc_local_refs,
-                high_alert=high_alert,
+                product_refs=(
+                    product_refs
+                ),
+                stc_local_refs=(
+                    stc_local_refs
+                ),
+                high_alert=(
+                    high_alert
+                ),
             )
             if stc_request
             else
@@ -6859,16 +7698,45 @@ def run_production(
 
         repair_prompt = (
             build_final_repair_prompt(
-                qa=first_qa,
-                compiled=compiled,
+                qa=(
+                    first_qa
+                ),
+                compiled=(
+                    compiled
+                ),
                 original_request=(
                     original_request
                 ),
-                references=repair_refs,
-                aspect_ratio=aspect_ratio,
-                requested_size=requested_size,
-                action=action,
+                references=(
+                    repair_refs
+                ),
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                requested_size=(
+                    requested_size
+                ),
+                action=(
+                    action
+                ),
             )
+        )
+
+        print(
+            "Repair prompt chars:",
+            len(
+                repair_prompt
+            ),
+            "/",
+            CORRECTION_PROMPT_BUDGET,
+        )
+
+        print(
+            "Repair immutable sentinel:",
+            (
+                IMMUTABLE_LOCK_SENTINEL
+                in repair_prompt
+            ),
         )
 
         print("")
@@ -6889,20 +7757,31 @@ def run_production(
         )
 
         try:
+
             second_final = (
                 openai_multi_reference_edit(
-                    working_image=first_final,
-                    references=repair_refs,
-                    prompt=repair_prompt,
-                    aspect_ratio=aspect_ratio,
+                    working_image=(
+                        first_final
+                    ),
+                    references=(
+                        repair_refs
+                    ),
+                    prompt=(
+                        repair_prompt
+                    ),
+                    aspect_ratio=(
+                        aspect_ratio
+                    ),
                     pass_name=(
                         "gpt_image_2_"
                         +
                         action
                         +
-                        "_v60"
+                        "_v601"
                     ),
-                    output_image_size=requested_size,
+                    output_image_size=(
+                        requested_size
+                    ),
                     model_override=(
                         FINAL_IMAGE_MODEL
                     ),
@@ -6930,9 +7809,11 @@ def run_production(
                         +
                         action
                         +
-                        "_v60"
+                        "_v601"
                     ),
-                    image=second_final,
+                    image=(
+                        second_final
+                    ),
                     metadata={
                         "model":
                             second_final.model,
@@ -6940,13 +7821,11 @@ def run_production(
                             "final_repair",
                         "working_image_used":
                             True,
+                        "immutable_final_locks":
+                            True,
                     },
                 )
             )
-
-            # =============================================
-            # FINAL QA 2
-            # =============================================
 
             second_qa: Optional[
                 QAEvaluation
@@ -6959,6 +7838,7 @@ def run_production(
                 <
                 MASTERPIECE_MAX_VISION_CALLS
             ):
+
                 print("")
                 print(
                     "👁️ FINAL QA 2/"
@@ -6971,13 +7851,18 @@ def run_production(
                 )
 
                 try:
+
                     second_qa = (
                         evaluate_generated_image(
-                            image=second_final,
+                            image=(
+                                second_final
+                            ),
                             original_request=(
                                 original_request
                             ),
-                            compiled_prompt=compiled,
+                            compiled_prompt=(
+                                compiled
+                            ),
                             product_lock=(
                                 product_lock
                             ),
@@ -6987,13 +7872,17 @@ def run_production(
                             aspect_ratio=(
                                 aspect_ratio
                             ),
-                            telemetry=telemetry,
+                            telemetry=(
+                                telemetry
+                            ),
                         )
                     )
 
                     passes[
                         -1
-                    ].qa = second_qa
+                    ].qa = (
+                        second_qa
+                    )
 
                     print_qa(
                         "Repair QA",
@@ -7001,15 +7890,18 @@ def run_production(
                     )
 
                 except Exception as error:
+
                     message = clean_text(
                         error,
                         2800,
                     )
 
                     errors.append(
-                        "final_qa_2: "
-                        +
-                        message
+                        (
+                            "final_qa_2: "
+                            +
+                            message
+                        )
                     )
 
                     print(
@@ -7026,28 +7918,44 @@ def run_production(
                     best_qa,
                 )
             ):
-                best_image = second_final
-                best_qa = second_qa
+
+                best_image = (
+                    second_final
+                )
+
+                best_qa = (
+                    second_qa
+                )
 
                 print(
-                    "🏆 GPT-Image-2 repaired candidate selected."
+                    (
+                        "🏆 GPT-Image-2 repaired "
+                        "candidate selected."
+                    )
                 )
 
             else:
+
                 print(
-                    "🏆 Original GPT-Image-2 final preserved."
+                    (
+                        "🏆 Original GPT-Image-2 "
+                        "final preserved."
+                    )
                 )
 
         except Exception as error:
+
             message = clean_text(
                 error,
                 3200,
             )
 
             errors.append(
-                "final_repair: "
-                +
-                message
+                (
+                    "final_repair: "
+                    +
+                    message
+                )
             )
 
             print(
@@ -7056,7 +7964,10 @@ def run_production(
             )
 
             print(
-                "✅ Original GPT-Image-2 final preserved."
+                (
+                    "✅ Original GPT-Image-2 "
+                    "final preserved."
+                )
             )
 
     # =====================================================
@@ -7071,16 +7982,22 @@ def run_production(
 
     telemetry[
         "final_provider_lock_passed"
-    ] = final_provider_valid
+    ] = (
+        final_provider_valid
+    )
 
     if (
         MASTERPIECE_REQUIRE_OPENAI_FINAL
         and
         not final_provider_valid
     ):
+
         best_qa = (
             provider_failure_qa(
-                "Non-OpenAI final candidate blocked."
+                (
+                    "Non-OpenAI final "
+                    "candidate blocked."
+                )
             )
         )
 
@@ -7088,7 +8005,9 @@ def run_production(
         create_exact_delivery_frame(
             best_image,
             aspect_ratio,
-            label="final_delivery_v60",
+            label=(
+                "final_delivery_v601"
+            ),
         )
     )
 
@@ -7132,16 +8051,16 @@ def run_production(
                 False,
             "copy_space_policy":
                 "15-22_percent_integrated",
+            "immutable_final_locks":
+                True,
+            "immutable_lock_version":
+                "v601",
             "block_generic_smart_fallback":
                 bool(
                     high_alert
                 ),
         }
     )
-
-    # =====================================================
-    # FINAL RESULT
-    # =====================================================
 
     final_ok = bool(
         best_qa
@@ -7170,7 +8089,7 @@ def run_production(
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION COMPLETE V6.0"
+        " XPAND PRODUCTION COMPLETE V6.0.1"
     )
     print(
         "=============================================="
@@ -7247,6 +8166,11 @@ def run_production(
     )
 
     print(
+        "Immutable final locks:",
+        True,
+    )
+
+    print(
         "Final size:",
         requested_size,
     )
@@ -7290,20 +8214,36 @@ def run_production(
 
     return ProductionResult(
         ok=final_ok,
-        final_image=final_image,
-        best_score=best_score,
-        qa=best_qa,
-        passes=passes,
-        compiled_prompt=compiled,
+        final_image=(
+            final_image
+        ),
+        best_score=(
+            best_score
+        ),
+        qa=(
+            best_qa
+        ),
+        passes=(
+            passes
+        ),
+        compiled_prompt=(
+            compiled
+        ),
         references_used=len(
             all_references
         ),
         product_references_used=len(
             product_refs
         ),
-        elapsed_seconds=elapsed,
-        errors=errors,
-        telemetry=telemetry,
+        elapsed_seconds=(
+            elapsed
+        ),
+        errors=(
+            errors
+        ),
+        telemetry=(
+            telemetry
+        ),
     )
 
 
@@ -7352,11 +8292,6 @@ def get_production_engine_status() -> Dict[
 
         "gemini_pro_final":
             False,
-
-        #
-        # Compatibility:
-        # max_image_calls = final OpenAI calls.
-        #
 
         "max_image_calls":
             MASTERPIECE_MAX_IMAGE_CALLS,
@@ -7440,6 +8375,18 @@ def get_production_engine_status() -> Dict[
         "merchant_message_lock":
             True,
 
+        "immutable_final_locks":
+            True,
+
+        "immutable_lock_sentinel":
+            IMMUTABLE_LOCK_SENTINEL,
+
+        "final_prompt_budget":
+            FINAL_PROMPT_BUDGET,
+
+        "correction_prompt_budget":
+            CORRECTION_PROMPT_BUDGET,
+
         "image_engine_version":
             image_status.get(
                 "version",
@@ -7465,16 +8412,16 @@ if __name__ == "__main__":
         bool,
     ] = {}
 
-    # =====================================================
+    # -----------------------------------------------------
     # VERSION / ARCHITECTURE
-    # =====================================================
+    # -----------------------------------------------------
 
     tests[
-        "version_60"
+        "version_601"
     ] = (
         ENGINE_VERSION
         ==
-        "6.0"
+        "6.0.1"
     )
 
     tests[
@@ -7487,10 +8434,14 @@ if __name__ == "__main__":
         100
     )
 
+    status = (
+        get_production_engine_status()
+    )
+
     tests[
         "nano_banana_is_previs"
     ] = (
-        get_production_engine_status()[
+        status[
             "nano_banana_role"
         ]
         ==
@@ -7515,7 +8466,7 @@ if __name__ == "__main__":
     tests[
         "gemini_final_forbidden"
     ] = (
-        get_production_engine_status()[
+        status[
             "gemini_final_allowed"
         ]
         is False
@@ -7524,15 +8475,15 @@ if __name__ == "__main__":
     tests[
         "no_gemini_pro_final"
     ] = (
-        get_production_engine_status()[
+        status[
             "gemini_pro_final"
         ]
         is False
     )
 
-    # =====================================================
-    # COST / CALL STRUCTURE
-    # =====================================================
+    # -----------------------------------------------------
+    # CALL STRUCTURE
+    # -----------------------------------------------------
 
     tests[
         "one_previsualization"
@@ -7566,9 +8517,9 @@ if __name__ == "__main__":
         1
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # STC THRESHOLDS
-    # =====================================================
+    # -----------------------------------------------------
 
     tests[
         "stc_target_92"
@@ -7586,9 +8537,9 @@ if __name__ == "__main__":
         88.0
     )
 
-    # =====================================================
-    # FRAME REGRESSION
-    # =====================================================
+    # -----------------------------------------------------
+    # FRAME
+    # -----------------------------------------------------
 
     frame = (
         safe_frame_instruction(
@@ -7610,9 +8561,9 @@ if __name__ == "__main__":
         in frame
     )
 
-    # =====================================================
-    # STC CONSTITUTION REGRESSIONS
-    # =====================================================
+    # -----------------------------------------------------
+    # STC CONSTITUTION
+    # -----------------------------------------------------
 
     constitution = (
         build_stc_visual_constitution(
@@ -7650,7 +8601,10 @@ if __name__ == "__main__":
     tests[
         "real_pos_required"
     ] = (
-        "commercially available unbranded payment"
+        (
+            "commercially available "
+            "unbranded payment terminal"
+        )
         in constitution
     )
 
@@ -7664,7 +8618,7 @@ if __name__ == "__main__":
     tests[
         "phone_not_only_ecommerce_cue"
     ] = (
-        "smartphone screen as the sole evidence"
+        "smartphone screen as the only evidence"
         in constitution
     )
 
@@ -7682,9 +8636,9 @@ if __name__ == "__main__":
         in constitution
     )
 
-    # =====================================================
-    # REFERENCE MIX
-    # =====================================================
+    # -----------------------------------------------------
+    # REFERENCES
+    # -----------------------------------------------------
 
     fake_refs = [
         ProductionReference(
@@ -7727,7 +8681,9 @@ if __name__ == "__main__":
     selected = (
         build_stc_primary_reference_set(
             product_refs=[],
-            local_refs=fake_refs,
+            local_refs=(
+                fake_refs
+            ),
             memory_refs=[],
             limit=3,
         )
@@ -7736,11 +8692,15 @@ if __name__ == "__main__":
     tests[
         "five_loaded_three_selected"
     ] = (
-        len(fake_refs)
+        len(
+            fake_refs
+        )
         ==
         5
         and
-        len(selected)
+        len(
+            selected
+        )
         ==
         3
     )
@@ -7805,9 +8765,9 @@ if __name__ == "__main__":
         in manifest
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # COMPILED CONTRACT
-    # =====================================================
+    # -----------------------------------------------------
 
     compiled = (
         compile_prompt(
@@ -7824,7 +8784,9 @@ if __name__ == "__main__":
                 "title":
                     "Connected Commerce",
                 "campaign_hook":
-                    "One merchant ecosystem.",
+                    (
+                        "One merchant ecosystem."
+                    ),
                 "core_idea":
                     (
                         "A believable Saudi merchant "
@@ -7838,7 +8800,8 @@ if __name__ == "__main__":
                     ),
                 "environment":
                     (
-                        "Contemporary Saudi commercial world."
+                        "Contemporary Saudi "
+                        "commercial world."
                     ),
                 "hero_element":
                     (
@@ -7889,19 +8852,23 @@ if __name__ == "__main__":
         in compiled.prompt
     )
 
-    # =====================================================
-    # FINAL PROMPT
-    # =====================================================
+    # -----------------------------------------------------
+    # IMMUTABLE FINAL PROMPT
+    # -----------------------------------------------------
 
     final_prompt = (
         build_final_renderer_prompt(
-            compiled=compiled,
+            compiled=(
+                compiled
+            ),
             original_request=(
                 "STC Bank خدمات التجارة الإلكترونية "
                 "ونقاط البيع Masterpiece 2K 4:5"
             ),
             preview_qa=None,
-            references=selected,
+            references=(
+                selected
+            ),
             aspect_ratio="4:5",
             requested_size="2K",
         )
@@ -7925,36 +8892,265 @@ if __name__ == "__main__":
     )
 
     tests[
+        "final_prompt_immutable_sentinel"
+    ] = (
+        IMMUTABLE_LOCK_SENTINEL
+        in final_prompt
+    )
+
+    tests[
+        "final_prompt_within_budget"
+    ] = (
+        len(
+            final_prompt
+        )
+        <=
+        FINAL_PROMPT_BUDGET
+    )
+
+    tests[
+        "final_prompt_no_giant_space"
+    ] = (
+        "NO giant blank upper third"
+        in final_prompt
+    )
+
+    tests[
+        "final_prompt_copy_space_immutable"
+    ] = (
+        "15–22% integrated copy space"
+        in final_prompt
+    )
+
+    tests[
+        "final_prompt_no_bottom_push"
+    ] = (
+        "NO hero pushed into the bottom half"
+        in final_prompt
+    )
+
+    tests[
         "final_prompt_stone_guard"
     ] = (
-        "stone pedestal"
+        "NO random travertine pedestal"
+        in final_prompt
+        and
+        "NO random stone pedestal"
         in final_prompt
     )
 
     tests[
         "final_prompt_hardware_guard"
     ] = (
-        "merge it with a smartphone"
+        "NO phone/POS fusion"
+        in final_prompt
+        and
+        "NO invented payment hardware"
         in final_prompt
     )
 
     tests[
         "final_prompt_reference_authority"
     ] = (
-        "Do not ignore them"
+        "THE ATTACHED STC REFERENCES ARE VISUAL AUTHORITY"
         in final_prompt
     )
 
     tests[
-        "final_prompt_no_giant_space"
+        "final_prompt_merchant_ecosystem"
     ] = (
-        "No giant blank upper third"
+        (
+            "ONE CONNECTED"
+            in final_prompt
+        )
+        and
+        (
+            "MERCHANT ECOSYSTEM"
+            in final_prompt
+        )
+    )
+
+    tests[
+        "final_prompt_no_text_logo_ui"
+    ] = (
+        "NO generated text"
+        in final_prompt
+        and
+        "NO generated logo"
+        in final_prompt
+        and
+        "NO fake banking UI"
         in final_prompt
     )
 
-    # =====================================================
+    tests[
+        "immutable_locks_survive_forced_compaction"
+    ] = False
+
+    try:
+
+        huge_core = (
+            "CORE INFORMATION\n"
+            +
+            (
+                "x" * 20000
+            )
+        )
+
+        forced = (
+            fit_prompt_with_immutable_locks(
+                huge_core,
+                build_immutable_final_locks(
+                    original_request=(
+                        "STC Bank التجارة الإلكترونية "
+                        "ونقاط البيع"
+                    ),
+                    aspect_ratio="4:5",
+                    requested_size="2K",
+                ),
+                label=(
+                    "forced_compaction_selftest"
+                ),
+                budget=(
+                    FINAL_PROMPT_BUDGET
+                ),
+            )
+        )
+
+        tests[
+            "immutable_locks_survive_forced_compaction"
+        ] = bool(
+            len(
+                forced
+            )
+            <=
+            FINAL_PROMPT_BUDGET
+            and
+            IMMUTABLE_LOCK_SENTINEL
+            in forced
+            and
+            "NO giant blank upper third"
+            in forced
+            and
+            "NO phone/POS fusion"
+            in forced
+            and
+            "NO random travertine pedestal"
+            in forced
+            and
+            "15–22% integrated copy space"
+            in forced
+            and
+            (
+                "THE ATTACHED STC REFERENCES "
+                "ARE VISUAL AUTHORITY"
+            )
+            in forced
+        )
+
+    except Exception:
+        tests[
+            "immutable_locks_survive_forced_compaction"
+        ] = False
+
+    # -----------------------------------------------------
+    # REPAIR PROMPT ALSO IMMUTABLE
+    # -----------------------------------------------------
+
+    fake_qa = QAEvaluation(
+        score=74.0,
+        scores={
+            key:
+                76.0
+            for key
+            in QA_WEIGHTS
+        },
+        passed=False,
+        strengths=[],
+        problems=[
+            (
+                "Payment hardware looks invented "
+                "and copy space is excessive."
+            )
+        ],
+        correction_instruction=(
+            "Replace hardware and rebalance composition."
+        ),
+        critical_blockers=[
+            "stc_invented_payment_hardware",
+            "stc_excessive_empty_copy_space",
+        ],
+        target_reached=False,
+        delivery_approved=False,
+        decision="rebuild",
+        raw={
+            "decision":
+                "rebuild",
+            "_xpand_flags": {
+                "invented_payment_hardware":
+                    True,
+            },
+        },
+    )
+
+    repair_prompt = (
+        build_final_repair_prompt(
+            qa=(
+                fake_qa
+            ),
+            compiled=(
+                compiled
+            ),
+            original_request=(
+                "STC Bank التجارة الإلكترونية "
+                "ونقاط البيع Masterpiece 2K 4:5"
+            ),
+            references=(
+                selected[:2]
+            ),
+            aspect_ratio="4:5",
+            requested_size="2K",
+            action="structural_repair",
+        )
+    )
+
+    tests[
+        "repair_prompt_immutable_sentinel"
+    ] = (
+        IMMUTABLE_LOCK_SENTINEL
+        in repair_prompt
+    )
+
+    tests[
+        "repair_prompt_no_giant_space"
+    ] = (
+        "NO giant blank upper third"
+        in repair_prompt
+    )
+
+    tests[
+        "repair_prompt_hardware_lock"
+    ] = (
+        "NO phone/POS fusion"
+        in repair_prompt
+        and
+        "NO invented payment hardware"
+        in repair_prompt
+    )
+
+    tests[
+        "repair_prompt_within_budget"
+    ] = (
+        len(
+            repair_prompt
+        )
+        <=
+        CORRECTION_PROMPT_BUDGET
+    )
+
+    # -----------------------------------------------------
     # QA FLAGS
-    # =====================================================
+    # -----------------------------------------------------
 
     required_flags = set(
         QA_FLAGS_SCHEMA[
@@ -8004,9 +9200,9 @@ if __name__ == "__main__":
         in required_flags
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # ADAPTIVE POLICY
-    # =====================================================
+    # -----------------------------------------------------
 
     perfect_qa = QAEvaluation(
         score=94.0,
@@ -8083,16 +9279,22 @@ if __name__ == "__main__":
         "structural_repair"
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # ACTUAL STC BRAND PACK BYTES
-    # =====================================================
+    # -----------------------------------------------------
 
     local_reference_test_ok = False
+
     local_reference_count = 0
-    local_reference_ids: List[str] = []
+
+    local_reference_ids: List[
+        str
+    ] = []
 
     if STC_BRAND_KIT_AVAILABLE:
+
         try:
+
             (
                 self_refs,
                 self_kit,
@@ -8106,7 +9308,7 @@ if __name__ == "__main__":
                     MAX_STC_PHYSICAL_REFERENCE_IMAGES
                 ),
                 rotation_key=(
-                    "production-v60-self-test"
+                    "production-v601-self-test"
                 ),
             )
 
@@ -8137,6 +9339,7 @@ if __name__ == "__main__":
             )
 
         except Exception as error:
+
             print(
                 "⚠️ STC brand-pack self test:",
                 clean_text(
@@ -8151,9 +9354,9 @@ if __name__ == "__main__":
         local_reference_test_ok
     )
 
-    # =====================================================
-    # IMAGE ENGINE CONTRACT
-    # =====================================================
+    # -----------------------------------------------------
+    # IMAGE ENGINE
+    # -----------------------------------------------------
 
     image_status = {}
 
@@ -8171,7 +9374,7 @@ if __name__ == "__main__":
         str(
             image_status.get(
                 "version",
-                ""
+                "",
             )
         ).startswith(
             "3."
@@ -8188,9 +9391,9 @@ if __name__ == "__main__":
         FINAL_IMAGE_MODEL
     )
 
-    # =====================================================
+    # -----------------------------------------------------
     # RESULT
-    # =====================================================
+    # -----------------------------------------------------
 
     passed = all(
         tests.values()
@@ -8201,10 +9404,10 @@ if __name__ == "__main__":
         "=============================================="
     )
     print(
-        " XPAND PRODUCTION ENGINE V6.0"
+        " XPAND PRODUCTION ENGINE V6.0.1"
     )
     print(
-        " ZERO-COST STABLE HYBRID SELF TEST"
+        " ZERO-COST IMMUTABLE-LOCK SELF TEST"
     )
     print(
         "=============================================="
@@ -8214,6 +9417,7 @@ if __name__ == "__main__":
     for name, result in (
         tests.items()
     ):
+
         print(
             (
                 "✅ "
@@ -8232,6 +9436,7 @@ if __name__ == "__main__":
     )
 
     for item in local_reference_ids:
+
         print(
             "  🖼️",
             item,
@@ -8246,6 +9451,16 @@ if __name__ == "__main__":
     print(
         "Final model:",
         FINAL_IMAGE_MODEL,
+    )
+
+    print(
+        "Final prompt budget:",
+        FINAL_PROMPT_BUDGET,
+    )
+
+    print(
+        "Immutable sentinel:",
+        IMMUTABLE_LOCK_SENTINEL,
     )
 
     print("")
@@ -8283,6 +9498,12 @@ if __name__ == "__main__":
         "      ↓"
     )
     print(
+        "  IMMUTABLE FINAL LOCKS"
+    )
+    print(
+        "      ↓"
+    )
+    print(
         "  GPT-5.6 Sol QA"
     )
     print(
@@ -8295,24 +9516,29 @@ if __name__ == "__main__":
     print("")
 
     if passed:
+
         print(
             (
-                "XPAND Production Engine V6.0 "
+                "XPAND Production Engine V6.0.1 "
                 "self-test: PASS ✅"
             )
         )
 
     else:
+
         print(
             (
-                "XPAND Production Engine V6.0 "
+                "XPAND Production Engine V6.0.1 "
                 "self-test: FAIL ❌"
             )
         )
 
         failures = [
             name
-            for name, result
+            for (
+                name,
+                result
+            )
             in tests.items()
             if not result
         ]
@@ -8325,7 +9551,7 @@ if __name__ == "__main__":
         raise RuntimeError(
             (
                 "XPAND Production Engine "
-                "V6.0 self-test failed."
+                "V6.0.1 self-test failed."
             )
         )
 
@@ -8337,37 +9563,37 @@ if __name__ == "__main__":
         "✅ Nano Banana 2 is previsualization only"
     )
     print(
-        "✅ Physical STC references reach both stages"
+        "✅ 3 STC reference roles preserved"
     )
     print(
-        "✅ Actual reference roles are explicit"
+        "✅ Immutable final locks survive compaction"
     )
     print(
-        "✅ Phone/POS fusion blocked"
+        "✅ Immutable repair locks survive compaction"
     )
     print(
-        "✅ Invented payment hardware blocked"
+        "✅ NO giant blank upper third cannot be compacted away"
     )
     print(
-        "✅ Random stone/travertine pedestal blocked"
+        "✅ 15–22% copy-space lock cannot be compacted away"
     )
     print(
-        "✅ Giant upper copy-space regression blocked"
+        "✅ Phone/POS fusion lock cannot be compacted away"
     )
     print(
-        "✅ 15–22% integrated copy-space policy"
+        "✅ Invented hardware lock cannot be compacted away"
     )
     print(
-        "✅ Generic three-quarter camera audited"
+        "✅ Stone/travertine lock cannot be compacted away"
     )
     print(
-        "✅ Merchant message fusion audited"
+        "✅ STC reference authority cannot be compacted away"
     )
     print(
-        "✅ Reference drift audited"
+        "✅ Merchant ecosystem message cannot be compacted away"
     )
     print(
-        "✅ Final repair remains GPT-Image-2"
+        "✅ No generated text/logo/fake UI"
     )
     print(
         "✅ STC target remains 92"
