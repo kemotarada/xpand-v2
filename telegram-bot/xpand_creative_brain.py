@@ -1,9 +1,8 @@
 # =========================================================
-# XPAND CREATIVE BRAIN V5.5
+# XPAND CREATIVE BRAIN V5.6
 #
 # STC BANK HIGH-ALERT
-# TARGETED CREATIVE REPAIR
-# QUALITY-FIRST ARBITRATION
+# DETERMINISTIC STRICT-QUALIFIED RELEASE AUTHORITY
 #
 # FULL RUNTIME-COMPATIBLE REPLACEMENT
 #
@@ -22,7 +21,55 @@
 #
 # =========================================================
 #
-# V5.5 STC MASTERPIECE PATH
+# V5.6 CORE GUARANTEE
+#
+# A real model-generated concept that:
+#
+#   1. was evaluated by the Director
+#   2. has production_feasible = true
+#   3. contains no hard-reject pattern
+#   4. passes EVERY strict STC dimension
+#   5. passes the STC release floor
+#
+# is a STRICT-QUALIFIED concept.
+#
+# Once at least one strict-qualified concept exists:
+#
+#   THE CREATIVE QUALITY GATE MUST RELEASE ONE.
+#
+# The Jury can:
+#   - recommend a concept
+#   - provide camera guidance
+#   - provide production instruction
+#   - provide concerns
+#
+# The Jury can NOT:
+#   - veto all strict-qualified concepts
+#   - make approval=false destroy a qualified concept
+#   - make low confidence destroy a qualified concept
+#   - make a global fatal_issues field destroy a different
+#     concept that independently passed strict evaluation
+#   - select an unqualified concept over a qualified concept
+#
+# Why:
+#
+# Recovery/Repair Board jury fields are GLOBAL fields created
+# in the same call. They can accidentally describe another
+# candidate while the per-concept evaluation correctly shows
+# one or more production-ready concepts.
+#
+# V5.6 therefore establishes ONE authority:
+#
+#   PER-CONCEPT STRICT QUALIFICATION
+#
+# The highest strict-qualified concept wins deterministically.
+#
+# NO thresholds are lowered.
+# NO fake winner is created.
+#
+# =========================================================
+#
+# STC MASTERPIECE PATH
 #
 # CALL 1
 #   8 fundamentally different concepts
@@ -32,58 +79,31 @@
 #   Executive Creative Review
 #          ↓
 #
-#   A) STRICT finalist exists
+#   A) Strict finalist exists
 #          ↓
 #      CALL 3 = Finalist Jury
-#
-#   B) NO strict finalist, but one or two concepts are
-#      genuinely close to the strict gates
 #          ↓
-#      CALL 3 = TARGETED CREATIVE REPAIR
-#               - preserve strongest core proposition
-#               - repair diagnosed weak dimensions
-#               - create exactly 2 repaired concepts
-#               - evaluate both
-#               - jury-select
-#               - all in ONE structured call
+#      Highest strict-qualified finalist RELEASES
 #
-#   C) NO repairable near-miss
+#   B) No strict finalist, but repairable near-miss exists
+#          ↓
+#      CALL 3 = Targeted Repair Board
+#               2 repaired concepts
+#               + evaluation
+#               + jury guidance
+#          ↓
+#      If any repaired concept is strict-qualified:
+#      highest strict-qualified concept RELEASES
+#
+#   C) No strict finalist and no repairable near-miss
 #          ↓
 #      CALL 3 = Fresh Recovery Board
-#               - 3 new concepts
-#               - evaluation
-#               - jury
-#               - all in ONE structured call
-#
-# =========================================================
-#
-# IMPORTANT
-#
-# Targeted Repair is NOT:
-#
-#   - threshold lowering
-#   - score inflation
-#   - cosmetic rewriting
-#   - fake approval
-#
-# Every repaired concept must independently pass:
-#
-#   concept_strength       >= 88
-#   brand_fit              >= 90
-#   originality            >= 88
-#   visual_mechanism       >= 90
-#   camera_quality         >= 84
-#   realism                >= 86
-#   feasibility            >= 82
-#   copy_space_quality     >= 80
-#   distinctiveness        >= 88
-#   advertising_readiness  >= 90
-#
-# AND:
-#
-#   weighted score         >= STC release floor
-#   production_feasible    = true
-#   no hard-reject pattern
+#               3 new concepts
+#               + evaluation
+#               + jury guidance
+#          ↓
+#      If any recovery concept is strict-qualified:
+#      highest strict-qualified concept RELEASES
 #
 # =========================================================
 #
@@ -95,7 +115,7 @@
 # Normal:
 #   normally 2 Director calls
 #
-# No image generation happens in this module.
+# This module performs NO image generation.
 #
 # =========================================================
 
@@ -106,7 +126,11 @@ import json
 import os
 import re
 
-from dataclasses import dataclass, field
+from dataclasses import (
+    dataclass,
+    field,
+)
+
 from pathlib import Path
 
 from typing import (
@@ -134,6 +158,7 @@ from xpand_image_engine import (
 # =========================================================
 
 try:
+
     from xpand_stc_bank_skill import (
         STC_BANK_VISUAL_SKILL,
         detect_stc_benefit_family,
@@ -147,20 +172,27 @@ except Exception:
     def is_stc_bank_request(
         value: Any,
     ) -> bool:
+
         text = str(
-            value or ""
+            value
+            or ""
         ).lower()
 
         return (
-            "stc bank" in text
-            or "بنك stc" in text
+            "stc bank"
+            in text
+            or
+            "بنك stc"
+            in text
         )
 
     def detect_stc_benefit_family(
         value: Any,
     ) -> str:
+
         text = str(
-            value or ""
+            value
+            or ""
         ).lower()
 
         markers = (
@@ -175,9 +207,12 @@ except Exception:
         )
 
         if any(
-            marker in text
-            for marker in markers
+            marker
+            in text
+            for marker
+            in markers
         ):
+
             return "merchant_payments"
 
         return "general_banking"
@@ -188,6 +223,7 @@ except Exception:
 # =========================================================
 
 try:
+
     from xpand_stc_brand_kit import (
         load_default_stc_brand_kit,
     )
@@ -197,6 +233,7 @@ try:
 except Exception:
 
     load_default_stc_brand_kit = None
+
     STC_BRAND_KIT_AVAILABLE = False
 
 
@@ -204,9 +241,11 @@ except Exception:
 # IDENTITY
 # =========================================================
 
-VERSION = "5.5"
+VERSION = "5.6"
 
-MODULE_NAME = "XPAND Creative Brain"
+MODULE_NAME = (
+    "XPAND Creative Brain"
+)
 
 
 # =========================================================
@@ -230,7 +269,12 @@ def env_bool(
     value = str(
         os.environ.get(
             name,
-            "true" if default else "false",
+            (
+                "true"
+                if default
+                else
+                "false"
+            ),
         )
     ).strip().lower()
 
@@ -249,15 +293,19 @@ def env_float(
 ) -> float:
 
     try:
+
         return float(
             os.environ.get(
                 name,
-                str(default),
+                str(
+                    default
+                ),
             )
             or default
         )
 
     except Exception:
+
         return float(
             default
         )
@@ -269,15 +317,19 @@ def env_int(
 ) -> int:
 
     try:
+
         return int(
             os.environ.get(
                 name,
-                str(default),
+                str(
+                    default
+                ),
             )
             or default
         )
 
     except Exception:
+
         return int(
             default
         )
@@ -292,38 +344,51 @@ STC_HIGH_ALERT_ENABLED = env_bool(
     True,
 )
 
+
 STC_REQUIRE_VISUAL_MECHANISM = env_bool(
     "XPAND_STC_REQUIRE_VISUAL_MECHANISM",
     True,
 )
+
 
 STC_REJECT_GENERIC_SCENES = env_bool(
     "XPAND_STC_REJECT_GENERIC_SCENES",
     True,
 )
 
+
 STC_REJECT_REPEATED_SCENES = env_bool(
     "XPAND_STC_REJECT_REPEATED_SCENES",
     True,
 )
+
 
 STC_REQUIRE_ADVERTISING_STYLE = env_bool(
     "XPAND_STC_REQUIRE_ADVERTISING_STYLE",
     True,
 )
 
+
 STC_CREATIVE_RECOVERY_ENABLED = env_bool(
     "XPAND_STC_CREATIVE_RECOVERY_ENABLED",
     True,
 )
 
-STC_QUALITY_FIRST_ARBITRATION_ENABLED = env_bool(
-    "XPAND_STC_QUALITY_FIRST_ARBITRATION",
-    True,
-)
 
 STC_TARGETED_REPAIR_ENABLED = env_bool(
     "XPAND_STC_TARGETED_REPAIR_ENABLED",
+    True,
+)
+
+
+#
+# V5.6:
+#
+# Once a concept independently passes every strict
+# per-concept gate, Jury global fields are advisory.
+#
+STC_STRICT_QUALIFIED_RELEASE_AUTHORITY = env_bool(
+    "XPAND_STC_STRICT_QUALIFIED_RELEASE_AUTHORITY",
     True,
 )
 
@@ -343,6 +408,7 @@ MASTERPIECE_MIN_SCORE = max(
     ),
 )
 
+
 MASTERPIECE_RELEASE_FLOOR = max(
     78.0,
     min(
@@ -353,6 +419,7 @@ MASTERPIECE_RELEASE_FLOOR = max(
         ),
     ),
 )
+
 
 FAST_MIN_SCORE = max(
     55.0,
@@ -381,6 +448,7 @@ STC_HIGH_ALERT_MIN_SCORE = max(
     ),
 )
 
+
 STC_HIGH_ALERT_RELEASE_FLOOR = max(
     84.0,
     min(
@@ -396,7 +464,7 @@ STC_HIGH_ALERT_RELEASE_FLOOR = max(
 # =========================================================
 # STC STRICT DIMENSION GATES
 #
-# V5.5 DOES NOT LOWER THESE.
+# V5.6 DOES NOT LOWER THESE.
 # =========================================================
 
 STC_MIN_CONCEPT_STRENGTH = 88.0
@@ -424,6 +492,7 @@ STC_DIMENSION_MINIMUMS: Dict[
     str,
     float,
 ] = {
+
     "concept_strength":
         STC_MIN_CONCEPT_STRENGTH,
 
@@ -528,9 +597,14 @@ STC_RECOVERY_CONCEPT_COUNT = max(
 )
 
 
+STC_TARGETED_REPAIR_OUTPUT_COUNT = 2
+
+
 MASTERPIECE_SHORTLIST_SIZE = 3
 
+
 MASTERPIECE_TARGET_DIRECTOR_CALLS = 3
+
 
 MASTERPIECE_MAX_DIRECTOR_CALLS = max(
     2,
@@ -547,10 +621,10 @@ MASTERPIECE_MAX_DIRECTOR_CALLS = max(
 # =========================================================
 # TARGETED REPAIR POLICY
 #
-# These values decide ONLY whether Call 3 should repair
-# a near-miss rather than generate a fresh concept pool.
+# These values only determine whether Call 3 repairs a
+# near-miss instead of rebuilding the idea.
 #
-# They DO NOT affect final release thresholds.
+# They DO NOT change final release thresholds.
 # =========================================================
 
 STC_TARGETED_REPAIR_MIN_SCORE = max(
@@ -564,6 +638,7 @@ STC_TARGETED_REPAIR_MIN_SCORE = max(
     ),
 )
 
+
 STC_TARGETED_REPAIR_MAX_DIMENSION_FAILURES = max(
     1,
     min(
@@ -574,6 +649,7 @@ STC_TARGETED_REPAIR_MAX_DIMENSION_FAILURES = max(
         ),
     ),
 )
+
 
 STC_TARGETED_REPAIR_MAX_GAP = max(
     1.0,
@@ -586,6 +662,7 @@ STC_TARGETED_REPAIR_MAX_GAP = max(
     ),
 )
 
+
 STC_TARGETED_REPAIR_CANDIDATES = max(
     1,
     min(
@@ -597,11 +674,14 @@ STC_TARGETED_REPAIR_CANDIDATES = max(
     ),
 )
 
-STC_TARGETED_REPAIR_OUTPUT_COUNT = 2
-
 
 # =========================================================
-# JURY POLICY
+# JURY
+#
+# V5.6:
+#
+# Confidence is retained for diagnostics / art direction.
+# It is NOT a second quality gate after strict qualification.
 # =========================================================
 
 STC_MIN_JURY_CONFIDENCE = max(
@@ -635,7 +715,9 @@ def clean_text(
             "\x00",
             "",
         )
-        .strip()[:limit]
+        .strip()[
+            :limit
+        ]
     )
 
 
@@ -647,6 +729,7 @@ def safe_dict(
         value,
         dict,
     ):
+
         return value
 
     return {}
@@ -660,12 +743,14 @@ def safe_list(
         value,
         list,
     ):
+
         return value
 
     if isinstance(
         value,
         tuple,
     ):
+
         return list(
             value
         )
@@ -679,11 +764,13 @@ def safe_float(
 ) -> float:
 
     try:
+
         return float(
             value
         )
 
     except Exception:
+
         return float(
             default
         )
@@ -715,19 +802,36 @@ def normalize_arabic(
     ).lower()
 
     replacements = {
-        "أ": "ا",
-        "إ": "ا",
-        "آ": "ا",
-        "ة": "ه",
-        "ى": "ي",
-        "ؤ": "و",
-        "ئ": "ي",
-        "ـ": "",
+
+        "أ":
+            "ا",
+
+        "إ":
+            "ا",
+
+        "آ":
+            "ا",
+
+        "ة":
+            "ه",
+
+        "ى":
+            "ي",
+
+        "ؤ":
+            "و",
+
+        "ئ":
+            "ي",
+
+        "ـ":
+            "",
     }
 
     for old, new in (
         replacements.items()
     ):
+
         text = text.replace(
             old,
             new,
@@ -762,7 +866,8 @@ def contains_any(
             marker
         )
         in source
-        for marker in markers
+        for marker
+        in markers
     )
 
 
@@ -812,7 +917,9 @@ def compact_json(
             limit,
         )
 
-    return output[:limit]
+    return output[
+        :limit
+    ]
 
 
 def dedupe_strings(
@@ -831,11 +938,13 @@ def dedupe_strings(
         )
 
         if not text:
+
             continue
 
         key = text.lower()
 
         if key in seen:
+
             continue
 
         seen.add(
@@ -857,6 +966,7 @@ def parse_json_payload(
         raw,
         dict,
     ):
+
         return raw
 
     text = clean_text(
@@ -868,7 +978,9 @@ def parse_json_payload(
         r"^```(?:json)?\s*",
         "",
         text,
-        flags=re.IGNORECASE,
+        flags=(
+            re.IGNORECASE
+        ),
     )
 
     text = re.sub(
@@ -885,8 +997,12 @@ def parse_json_payload(
         payload,
         dict,
     ):
+
         raise RuntimeError(
-            "Structured Director response is not a JSON object."
+            (
+                "Structured Director response "
+                "is not a JSON object."
+            )
         )
 
     return payload
@@ -896,9 +1012,12 @@ def parse_json_payload(
 # BRAND PACK
 # =========================================================
 
-def locate_stc_brand_pack() -> Optional[Path]:
+def locate_stc_brand_pack() -> Optional[
+    Path
+]:
 
     candidates = [
+
         (
             Path(
                 __file__
@@ -941,11 +1060,15 @@ def locate_stc_brand_pack() -> Optional[Path]:
     return None
 
 
-def load_stc_brand_pack() -> Dict[str, Any]:
+def load_stc_brand_pack() -> Dict[
+    str,
+    Any,
+]:
 
     path = locate_stc_brand_pack()
 
     if path is None:
+
         return {}
 
     try:
@@ -960,21 +1083,18 @@ def load_stc_brand_pack() -> Dict[str, Any]:
             payload,
             dict,
         ):
+
             return payload
 
     except Exception:
+
         pass
 
     return {}
 
 
 # =========================================================
-# CURATED LOCAL REFERENCE CONTEXT
-#
-# Metadata only.
-#
-# Physical JPEG bytes are handled later by
-# xpand_production_engine.py.
+# CURATED BRAND KIT CONTEXT
 # =========================================================
 
 def stc_curated_reference_context(
@@ -983,7 +1103,11 @@ def stc_curated_reference_context(
     stc_style: str,
 ) -> Dict[str, Any]:
 
-    result: Dict[str, Any] = {
+    result: Dict[
+        str,
+        Any,
+    ] = {
+
         "available":
             False,
 
@@ -999,28 +1123,38 @@ def stc_curated_reference_context(
 
     if (
         not STC_BRAND_KIT_AVAILABLE
-        or load_default_stc_brand_kit is None
+        or
+        load_default_stc_brand_kit
+        is None
     ):
+
         return result
 
     try:
 
-        kit = load_default_stc_brand_kit()
+        kit = (
+            load_default_stc_brand_kit()
+        )
 
-        selected = kit.select_ideation_assets(
-            benefit_family=(
-                benefit_family
-            ),
-            visual_family=(
-                stc_style
-            ),
-            max_total=7,
-            rotation_key=(
-                "creative-brain:"
-                + benefit_family
-                + ":"
-                + stc_style
-            ),
+        selected = (
+            kit.select_ideation_assets(
+                benefit_family=(
+                    benefit_family
+                ),
+                visual_family=(
+                    stc_style
+                ),
+                max_total=7,
+                rotation_key=(
+                    "creative-brain:"
+                    +
+                    benefit_family
+                    +
+                    ":"
+                    +
+                    stc_style
+                ),
+            )
         )
 
         assets: List[
@@ -1031,6 +1165,7 @@ def stc_curated_reference_context(
 
             assets.append(
                 {
+
                     "asset_id":
                         getattr(
                             item,
@@ -1116,6 +1251,7 @@ def stc_curated_reference_context(
             reference_brief = ""
 
         return {
+
             "available":
                 True,
 
@@ -1155,7 +1291,8 @@ def stc_brand_pack_prompt_fragment(
             ),
             stc_style=(
                 stc_style
-                or "premium_realistic"
+                or
+                "premium_realistic"
             ),
         )
     )
@@ -1167,7 +1304,32 @@ def stc_brand_pack_prompt_fragment(
             10000,
         )
 
+    styles = safe_dict(
+        pack.get(
+            "styles"
+        )
+    )
+
+    visual_families = safe_dict(
+        pack.get(
+            "visual_families"
+        )
+    )
+
+    style_payload = (
+        styles.get(
+            stc_style
+        )
+        or
+        visual_families.get(
+            stc_style
+        )
+        or
+        {}
+    )
+
     useful = {
+
         "brand_id":
             pack.get(
                 "brand_id"
@@ -1176,6 +1338,11 @@ def stc_brand_pack_prompt_fragment(
         "brand_name":
             pack.get(
                 "brand_name"
+            ),
+
+        "pack_version":
+            pack.get(
+                "pack_version"
             ),
 
         "default_visual_family":
@@ -1210,7 +1377,8 @@ def stc_brand_pack_prompt_fragment(
                 pack.get(
                     "approved_visual_mechanisms"
                 )
-                or []
+                or
+                []
             ),
 
         "global_rules":
@@ -1219,15 +1387,8 @@ def stc_brand_pack_prompt_fragment(
                 {},
             ),
 
-        "style_family":
-            safe_dict(
-                pack.get(
-                    "style_families"
-                )
-            ).get(
-                stc_style,
-                {},
-            ),
+        "selected_style":
+            style_payload,
 
         "benefit_family":
             safe_dict(
@@ -1372,7 +1533,10 @@ class CreativeBrainResponse:
 # CONCEPT SCHEMA
 # =========================================================
 
-CONCEPT_SCHEMA: Dict[str, Any] = {
+CONCEPT_SCHEMA: Dict[
+    str,
+    Any,
+] = {
 
     "type":
         "object",
@@ -1448,6 +1612,7 @@ CONCEPT_SCHEMA: Dict[str, Any] = {
         },
 
         "supporting_elements": {
+
             "type":
                 "array",
 
@@ -1488,6 +1653,7 @@ CONCEPT_SCHEMA: Dict[str, Any] = {
         },
 
         "production_method": {
+
             "type":
                 "string",
 
@@ -1505,6 +1671,7 @@ CONCEPT_SCHEMA: Dict[str, Any] = {
         },
 
         "risks": {
+
             "type":
                 "array",
 
@@ -1580,10 +1747,13 @@ def make_ideation_schema(
 
 
 # =========================================================
-# REVIEW SCHEMA
+# EVALUATION SCHEMA
 # =========================================================
 
-def evaluation_schema() -> Dict[str, Any]:
+def evaluation_schema() -> Dict[
+    str,
+    Any,
+]:
 
     return {
 
@@ -1661,6 +1831,7 @@ def evaluation_schema() -> Dict[str, Any]:
             },
 
             "strengths": {
+
                 "type":
                     "array",
 
@@ -1671,6 +1842,7 @@ def evaluation_schema() -> Dict[str, Any]:
             },
 
             "weaknesses": {
+
                 "type":
                     "array",
 
@@ -1822,10 +1994,13 @@ def make_review_schema(
 
 
 # =========================================================
-# FINAL JURY SCHEMA
+# JURY SCHEMA
 # =========================================================
 
-FINALIST_JURY_SCHEMA: Dict[str, Any] = {
+FINALIST_JURY_SCHEMA: Dict[
+    str,
+    Any,
+] = {
 
     "type":
         "object",
@@ -1871,6 +2046,7 @@ FINALIST_JURY_SCHEMA: Dict[str, Any] = {
         },
 
         "fatal_issues": {
+
             "type":
                 "array",
 
@@ -1901,6 +2077,7 @@ FINALIST_JURY_SCHEMA: Dict[str, Any] = {
         },
 
         "do_not_drift_into": {
+
             "type":
                 "array",
 
@@ -1930,13 +2107,9 @@ FINALIST_JURY_SCHEMA: Dict[str, Any] = {
 
 
 # =========================================================
-# BOARD SCHEMA
+# COMBINED BOARD SCHEMA
 #
-# Used by:
-# - Targeted Repair
-# - Fresh Recovery
-#
-# One paid call generates, evaluates and juries.
+# Used by Targeted Repair and Fresh Recovery.
 # =========================================================
 
 def make_board_schema(
@@ -2019,6 +2192,7 @@ def make_board_schema(
             },
 
             "fatal_issues": {
+
                 "type":
                     "array",
 
@@ -2049,6 +2223,7 @@ def make_board_schema(
             },
 
             "do_not_drift_into": {
+
                 "type":
                     "array",
 
@@ -2080,7 +2255,7 @@ def make_board_schema(
 
 
 #
-# V5.4 compatibility name.
+# Compatibility alias from V5.4/V5.5.
 #
 
 def make_recovery_schema(
@@ -2093,28 +2268,37 @@ def make_recovery_schema(
 
 
 # =========================================================
-# STC LANGUAGE / PATTERNS
+# STC GUARD PATTERNS
 # =========================================================
 
 STC_GENERIC_PATTERNS = [
 
     "person using phone",
+
     "man using phone",
+
     "woman using phone",
 
     "شخص يستخدم الهاتف",
+
     "رجل يستخدم الهاتف",
+
     "امرأة تستخدم الهاتف",
 
     "customer paying at counter",
+
     "customer taps terminal",
+
     "customer tapping terminal",
 
     "عميل يدفع عند الكاونتر",
-    "عميل يدفع عند الكاونتر",
+
+    "عميل يدفع عند الكاشير",
 
     "smiling businessman",
+
     "business handshake",
+
     "generic office",
 ]
 
@@ -2122,29 +2306,47 @@ STC_GENERIC_PATTERNS = [
 STC_FINTECH_CLICHES = [
 
     "network lines",
+
     "connection lines",
+
     "glowing payment trail",
+
     "glowing route",
+
     "hologram",
+
     "holographic",
+
     "hud",
+
     "cyber",
+
     "cyber tunnel",
+
     "neon fintech",
+
     "floating icons",
+
     "floating card",
+
     "floating phone",
+
     "floating pos",
+
     "floating terminal",
+
     "digital tunnel",
+
     "laser beam",
-    "particles",
+
     "particle cloud",
 
     "هولوغرام",
+
     "بطاقة طافية",
-    "هاتف طائر",
+
     "خطوط اتصال",
+
     "مسار ضوئي",
 ]
 
@@ -2152,19 +2354,31 @@ STC_FINTECH_CLICHES = [
 STC_REPEATED_SCENE_MARKERS = [
 
     "wooden counter",
+
     "wood counter",
+
     "wooden checkout",
+
     "luxury boutique",
+
     "boutique checkout",
+
     "perfume boutique",
+
     "fashion boutique",
+
     "merchant behind counter",
+
     "worker packing box",
+
     "packing parcel",
 
     "كاونتر خشبي",
+
     "متجر فاخر",
+
     "موظف يعبئ صندوق",
+
     "تغليف صندوق",
 ]
 
@@ -2172,9 +2386,13 @@ STC_REPEATED_SCENE_MARKERS = [
 LITERAL_TRANSACTION_CUSTOMER_MARKERS = [
 
     "customer",
+
     "shopper",
+
     "buyer",
+
     "عميل",
+
     "زبون",
 ]
 
@@ -2182,9 +2400,13 @@ LITERAL_TRANSACTION_CUSTOMER_MARKERS = [
 LITERAL_TRANSACTION_COUNTER_MARKERS = [
 
     "counter",
+
     "checkout counter",
+
     "cashier counter",
+
     "كاونتر",
+
     "منضدة دفع",
 ]
 
@@ -2192,13 +2414,21 @@ LITERAL_TRANSACTION_COUNTER_MARKERS = [
 LITERAL_TRANSACTION_MERCHANT_MARKERS = [
 
     "merchant",
+
     "cashier",
+
     "seller",
+
     "store owner",
+
     "worker",
+
     "تاجر",
+
     "بائع",
+
     "كاشير",
+
     "موظف",
 ]
 
@@ -2206,32 +2436,45 @@ LITERAL_TRANSACTION_MERCHANT_MARKERS = [
 MERCHANT_ONLINE_MARKERS = [
 
     "التجارة الإلكترونية",
+
     "التجارة الالكترونية",
+
     "تجارة إلكترونية",
+
     "تجاره الكترونيه",
 
     "e-commerce",
+
     "ecommerce",
 
     "online commerce",
+
     "digital commerce",
 
     "online order",
+
     "online ordering",
 
     "digital storefront",
+
     "online storefront",
 
     "web checkout",
+
     "online checkout",
 
     "online sale",
+
     "online sales",
 
     "طلب إلكتروني",
+
     "طلب الكتروني",
+
     "متجر إلكتروني",
+
     "متجر الكتروني",
+
     "بيع إلكتروني",
 ]
 
@@ -2239,36 +2482,49 @@ MERCHANT_ONLINE_MARKERS = [
 MERCHANT_PHYSICAL_MARKERS = [
 
     "نقاط البيع",
+
     "نقطة البيع",
+
     "نقطه البيع",
 
     "الدفع داخل المتجر",
+
     "الدفع في المتجر",
 
     "دفع حضوري",
 
     "جهاز دفع",
+
     "جهاز نقاط بيع",
 
     "point of sale",
+
     "pos",
+
     "pos terminal",
 
     "payment terminal",
+
     "card terminal",
+
     "card reader",
+
     "payment reader",
 
     "tap payment",
+
     "tap-to-pay",
+
     "tap to pay",
 
     "in-store payment",
+
     "in store payment",
 
     "in-store acceptance",
 
     "physical payment",
+
     "physical checkout",
 
     "store payment",
@@ -2278,57 +2534,84 @@ MERCHANT_PHYSICAL_MARKERS = [
 MERCHANT_MECHANISM_MARKERS = [
 
     "connect",
+
     "connected",
+
     "connection",
 
     "unify",
+
     "unified",
+
     "fusion",
+
     "fused",
 
     "continuity",
+
     "continuous",
 
     "bridge",
 
     "transformation",
+
     "transform",
 
     "cause and effect",
-    "cause/effect",
 
     "same system",
+
     "one ecosystem",
+
     "single ecosystem",
 
     "foreground background relationship",
+
     "foreground-to-background",
 
     "perspective reveal",
+
     "spatial relationship",
 
     "physical relationship",
+
     "material transition",
 
     "service transformation",
 
     "يربط",
+
     "ربط",
+
     "متصل",
+
     "موحد",
+
     "توحيد",
+
     "اندماج",
+
     "استمرارية",
+
     "استمراريه",
+
     "تحول",
+
     "جسر بصري",
+
     "علاقة بصرية",
+
     "علاقه بصريه",
+
     "نظام واحد",
+
     "منظومة واحدة",
 ]
 
 
+#
+# Any of these means the concept itself is not strict-qualified.
+#
 HARD_REJECT_FAILURES: Set[str] = {
 
     "literal_transaction_tableau",
@@ -2348,6 +2631,10 @@ HARD_REJECT_FAILURES: Set[str] = {
     "single_frame_mechanism_failure",
 
     "not_bank_campaign_ready",
+
+    "merchant_online_channel_unclear",
+
+    "merchant_pos_channel_unclear",
 
     "merchant_channels_not_visually_connected",
 }
@@ -2373,18 +2660,23 @@ def detect_benefit_family(
     merchant_markers = [
 
         "نقاط البيع",
+
         "نقطه البيع",
 
         "التجاره الالكترونيه",
+
         "تجاره الكترونيه",
 
         "e-commerce",
+
         "ecommerce",
 
         "point of sale",
+
         "pos",
 
         "merchant payment",
+
         "merchant payments",
     ]
 
@@ -2393,8 +2685,10 @@ def detect_benefit_family(
             marker
         )
         in normalized
-        for marker in merchant_markers
+        for marker
+        in merchant_markers
     ):
+
         return "merchant_payments"
 
     try:
@@ -2407,9 +2701,11 @@ def detect_benefit_family(
         )
 
         if skill_family:
+
             return skill_family
 
     except Exception:
+
         pass
 
     if contains_any(
@@ -2421,6 +2717,7 @@ def detect_benefit_family(
             "راتب",
         ],
     ):
+
         return "financing"
 
     if contains_any(
@@ -2432,6 +2729,7 @@ def detect_benefit_family(
             "كاش باك",
         ],
     ):
+
         return "travel_cards"
 
     if contains_any(
@@ -2443,6 +2741,7 @@ def detect_benefit_family(
             "حوال",
         ],
     ):
+
         return "transfers"
 
     return "general_banking"
@@ -2481,7 +2780,10 @@ def detect_stc_style(
             "استوديو بنفسجي",
         ],
     ):
-        return "premium_purple_architecture"
+
+        return (
+            "premium_purple_architecture"
+        )
 
     if contains_any(
         text,
@@ -2495,7 +2797,10 @@ def detect_stc_style(
             "واقعي سريالي",
         ],
     ):
-        return "premium_augmented_realism"
+
+        return (
+            "premium_augmented_realism"
+        )
 
     return "premium_realistic"
 
@@ -2511,8 +2816,12 @@ def is_stc_high_alert(
 
     return bool(
         STC_HIGH_ALERT_ENABLED
-        and mode == MODE_MASTERPIECE
-        and is_stc_bank_request(
+        and
+        mode
+        ==
+        MODE_MASTERPIECE
+        and
+        is_stc_bank_request(
             user_request
         )
     )
@@ -2527,13 +2836,16 @@ def concept_count_for_request(
         user_request,
         mode,
     ):
-        return STC_HIGH_ALERT_CONCEPT_COUNT
+
+        return (
+            STC_HIGH_ALERT_CONCEPT_COUNT
+        )
 
     return NORMAL_CONCEPT_COUNT
 
 
 # =========================================================
-# CONCEPT PARSER
+# PARSING
 # =========================================================
 
 def concept_from_dict(
@@ -2553,7 +2865,8 @@ def concept_from_dict(
                 ),
                 100,
             )
-            or fallback_id
+            or
+            fallback_id
         ),
 
         category=clean_text(
@@ -2706,7 +3019,8 @@ def concept_from_dict(
                 ),
                 100,
             )
-            or "single_generation"
+            or
+            "single_generation"
         ),
 
         campaign_extension=clean_text(
@@ -2749,7 +3063,9 @@ def parse_concepts(
     generation_round: int = 1,
     id_prefix: str = "C",
     force_ids: bool = False,
-) -> List[CreativeConcept]:
+) -> List[
+    CreativeConcept
+]:
 
     raw_concepts = safe_list(
         payload.get(
@@ -2770,12 +3086,17 @@ def parse_concepts(
             item,
             dict,
         ):
+
             continue
 
         forced_id = (
             id_prefix
             +
-            str(index).zfill(2)
+            str(
+                index
+            ).zfill(
+                2
+            )
         )
 
         concept = concept_from_dict(
@@ -2789,7 +3110,10 @@ def parse_concepts(
         )
 
         if force_ids:
-            concept.concept_id = forced_id
+
+            concept.concept_id = (
+                forced_id
+            )
 
         concepts.append(
             concept
@@ -2837,7 +3161,7 @@ def concept_search_text(
 
 
 # =========================================================
-# MERCHANT SEMANTIC SIGNALS
+# MERCHANT LOCAL SEMANTICS
 # =========================================================
 
 def merchant_local_signals(
@@ -2871,7 +3195,7 @@ def merchant_local_signals(
 
 
 # =========================================================
-# LOCAL CONCEPT PENALTIES
+# LOCAL CONCEPT GUARD
 # =========================================================
 
 def local_concept_penalties(
@@ -2932,11 +3256,15 @@ def local_concept_penalties(
 
     if (
         customer
-        and counter
-        and physical_payment
-        and (
+        and
+        counter
+        and
+        physical_payment
+        and
+        (
             merchant
-            or packing
+            or
+            packing
         )
     ):
 
@@ -2982,7 +3310,8 @@ def local_concept_penalties(
 
     if (
         STC_REJECT_REPEATED_SCENES
-        and repeated_hits >= 2
+        and
+        repeated_hits >= 2
     ):
 
         penalty += 26.0
@@ -3000,7 +3329,7 @@ def local_concept_penalties(
         )
 
     # =====================================================
-    # GENERIC LIFESTYLE WITHOUT AD MECHANISM
+    # GENERIC LIFESTYLE
     # =====================================================
 
     generic_hits = count_matches(
@@ -3025,13 +3354,16 @@ def local_concept_penalties(
                 2200,
             )
         )
-        >= 25
+        >=
+        25
     )
 
     if (
         STC_REJECT_GENERIC_SCENES
-        and generic_hits >= 1
-        and not mechanism_present
+        and
+        generic_hits >= 1
+        and
+        not mechanism_present
     ):
 
         penalty += 25.0
@@ -3041,7 +3373,7 @@ def local_concept_penalties(
         )
 
     # =====================================================
-    # MECHANISM DEFENSE
+    # MECHANISM COMPLETENESS
     # =====================================================
 
     if STC_REQUIRE_VISUAL_MECHANISM:
@@ -3099,7 +3431,7 @@ def local_concept_penalties(
             )
 
     # =====================================================
-    # PURPLE IS NOT AN IDEA
+    # PURPLE IS NOT THE IDEA
     # =====================================================
 
     if (
@@ -3128,8 +3460,8 @@ def local_concept_penalties(
     # =====================================================
     # MERCHANT LOCAL LANGUAGE
     #
-    # Lexical absence is SOFT.
-    # Executive semantic review is authoritative.
+    # These are soft warnings.
+    # Real semantic evaluation happens in Call 2/3.
     # =====================================================
 
     if benefit_family == "merchant_payments":
@@ -3212,7 +3544,7 @@ def dimension_composite_score(
 
 
 # =========================================================
-# STC DIMENSION FAILURES
+# STRICT DIMENSION FAILURES
 # =========================================================
 
 def stc_dimension_gate_failures(
@@ -3302,6 +3634,7 @@ def strict_qualified_concepts(
     for concept in concepts:
 
         if not concept.evaluation_valid:
+
             continue
 
         if any(
@@ -3310,6 +3643,7 @@ def strict_qualified_concepts(
             for failure
             in concept.quality_gate_failures
         ):
+
             continue
 
         if high_alert:
@@ -3319,11 +3653,13 @@ def strict_qualified_concepts(
                 <
                 STC_HIGH_ALERT_RELEASE_FLOOR
             ):
+
                 continue
 
             if stc_dimension_gate_failures(
                 concept
             ):
+
                 continue
 
         output.append(
@@ -3369,10 +3705,12 @@ def targeted_repair_dimension_gaps(
         )
 
         if score >= minimum:
+
             continue
 
         gaps.append(
             {
+
                 "dimension":
                     key,
 
@@ -3428,7 +3766,8 @@ def targeted_repair_rejection_reason(
         failure
         for failure
         in concept.quality_gate_failures
-        if failure in HARD_REJECT_FAILURES
+        if failure
+        in HARD_REJECT_FAILURES
     ]
 
     if hard_failures:
@@ -3464,8 +3803,10 @@ def targeted_repair_rejection_reason(
             "score_below_repair_floor"
         )
 
-    gaps = targeted_repair_dimension_gaps(
-        concept
+    gaps = (
+        targeted_repair_dimension_gaps(
+            concept
+        )
     )
 
     if not gaps:
@@ -3538,7 +3879,8 @@ def select_targeted_repair_candidates(
 
     candidates = [
         concept
-        for concept in concepts
+        for concept
+        in concepts
         if is_targeted_repair_candidate(
             concept
         )
@@ -3563,7 +3905,7 @@ def select_targeted_repair_candidates(
 
 
 # =========================================================
-# ARCHETYPE SYSTEM
+# STC IDEATION ARCHETYPES
 # =========================================================
 
 STC_HIGH_ALERT_ARCHETYPES = """
@@ -3603,15 +3945,10 @@ Concept 8:
 BOLD CAMPAIGN HERO
 One simple, memorable, award-minded visual proposition.
 
-If more concepts are requested:
-continue using genuinely different advertising grammars.
-
 At most TWO concepts may use indoor retail.
 
 At most ONE concept may make a POS terminal the obvious
 foreground hero.
-
-Do not use the same hero relationship twice.
 
 Do not create eight variations of:
 merchant + terminal + parcel + counter.
@@ -3619,7 +3956,7 @@ merchant + terminal + parcel + counter.
 
 
 # =========================================================
-# IDEATION PROMPT
+# INITIAL IDEATION PROMPT
 # =========================================================
 
 def build_ideation_prompt(
@@ -3635,18 +3972,16 @@ def build_ideation_prompt(
     high_alert: bool = False,
 ) -> str:
 
-    recovery_block = ""
+    technical_retry_block = ""
 
     if recovery:
 
-        recovery_block = f"""
+        technical_retry_block = f"""
 ==================================================
 STRUCTURED TECHNICAL RETRY
 ==================================================
 
-A previous structured ideation call failed technically.
-
-This is NOT a creative-quality recovery.
+The first structured call failed technically.
 
 Return exactly {concept_count} complete concept objects.
 
@@ -3665,31 +4000,36 @@ Do not shorten the schema.
 
             high_alert_block = f"""
 ==================================================
-STC BANK HIGH-ALERT
+STC BANK HIGH ALERT
 ==================================================
+
+The brief gives you the COMMERCIAL MESSAGE.
+
+YOU invent:
+- concept
+- scene
+- visual metaphor
+- hero
+- camera
+- art direction
+- production design
+
+The user should not have to invent the advertising idea.
 
 A scene is not an advertising idea.
 
 A POS terminal is not an advertising idea.
 
-A customer using a phone is not an advertising idea.
+A customer holding a phone is not an advertising idea.
 
-Purple is not automatically brand intelligence.
+Purple is not automatically brand identity.
 
-Every concept must have ONE memorable visual mechanism
-that survives as ONE still frame.
+Every concept needs ONE meaningful VISUAL MECHANISM
+that survives in ONE still frame.
 
-The viewer should feel:
-
-"This image was conceived as advertising."
-
-not:
-
-"This is a nice picture of a service."
-
---------------------------------------------------
+==================================================
 MANDATORY DIVERSITY
---------------------------------------------------
+==================================================
 
 {STC_HIGH_ALERT_ARCHETYPES}
 """
@@ -3704,12 +4044,31 @@ PERMANENT STC BRAND INTELLIGENCE
     stc_style=stc_style,
 )}
 
+References are VISUAL DNA.
+
+Use them to understand:
+- campaign maturity
+- composition quality
+- hierarchy
+- materials
+- lighting restraint
+- Saudi context
+- camera discipline
+- STC Bank confidence
+
+Do NOT clone:
+- scene
+- people
+- location
+- campaign
+- copy
+- logo
+
 ==================================================
-STC VISUAL FAMILY
+VISUAL FAMILY
 ==================================================
 
 Selected family:
-
 {stc_style}
 
 PREMIUM REALISTIC:
@@ -3719,44 +4078,44 @@ Prefer:
 - real people only when useful
 - natural skin
 - premium modern materials
-- controlled reflections
 - realistic daylight or motivated commercial light
-- disciplined camera
 - restrained brand accents
+- deliberate camera
+- controlled reflections
 
 Purple is OPTIONAL.
 
-Do NOT make purple the idea.
+Do not use purple as the idea.
 
 PURPLE ARCHITECTURAL:
 
-Only when this family is explicitly active:
-- purple may become physical architecture
+Only when explicitly active.
+
+Purple may become:
+- architecture
 - planes
 - geometry
-- satin materials
-- controlled reflection
-- shadow depth
+- satin surfaces
+- controlled reflections
 
 Never:
+- nightclub neon
 - cyber room
-- neon fintech tunnel
-- generic purple gradient room
+- generic fintech tunnel
 
 AUGMENTED REALISM:
 
-Use ONE physically believable conceptual intervention.
+Use ONE physically credible conceptual intervention.
 
-It must respect:
+It must obey:
 - gravity
-- scale
 - perspective
+- scale
 - contact
-- shadow
+- shadows
+- reflections
 - occlusion
 - material logic
-
-No random holograms or icon clouds.
 
 ==================================================
 MERCHANT PAYMENTS LAW
@@ -3768,36 +4127,57 @@ The viewer must understand:
 
 ONLINE / E-COMMERCE SALES
 +
-PHYSICAL POINT-OF-SALE ACCEPTANCE
+PHYSICAL / IN-STORE PAYMENT ACCEPTANCE
 +
 ONE UNIFIED MERCHANT PROPOSITION
 
-Equivalent physical language is allowed:
+Physical equivalents:
 - POS
 - payment terminal
 - card reader
 - tap-to-pay
 - in-store acceptance
 
-Equivalent online language is allowed:
+Digital equivalents:
 - e-commerce
 - digital storefront
 - online order
 - web checkout
 - online commerce
 
-DO NOT merely place the two channels next to each other.
+Both channels must be understandable.
 
-The visual mechanism must CONNECT them.
+But DO NOT simply place them next to each other.
 
-HARD WEAK PATTERN:
-
-CUSTOMER + POS + COUNTER + MERCHANT + TABLET/PACKING
-
-is ordinary transaction photography, not the campaign idea.
+ONE advertising mechanism must connect them.
 
 ==================================================
-GENERIC FINTECH BAN
+HARD WEAK PATTERN
+==================================================
+
+Reject:
+
+CUSTOMER
++
+POS
++
+COUNTER
++
+MERCHANT
++
+TABLET / PACKING
+
+when it is ordinary transaction photography.
+
+Also reject:
+- wooden checkout counter cliché
+- generic luxury boutique
+- packing worker as the e-commerce idea
+- customer simply tapping a terminal
+- terminal simply held toward camera
+
+==================================================
+NO GENERIC FINTECH
 ==================================================
 
 No:
@@ -3824,7 +4204,7 @@ No fake digital blank panel.
 TEXT / LOGO
 ==================================================
 
-The intended generated image must contain no:
+The image must contain no generated:
 - headline
 - slogan
 - CTA
@@ -3833,20 +4213,6 @@ The intended generated image must contain no:
 - bank logo
 - card-network logo
 - fake readable banking UI
-
-==================================================
-CONCEPT DEFENSE
-==================================================
-
-For EVERY concept:
-
-why_not_generic:
-Explain precisely why this is an advertisement rather than
-ordinary lifestyle photography.
-
-environment_novelty:
-Explain why the environment is not the repeated STC/Xpand
-merchant-counter cliché.
 
 ==================================================
 STC SKILL
@@ -3861,19 +4227,19 @@ STC SKILL
 """
 
     return f"""
-You are XPAND Creative Brain V5.5.
+You are XPAND Creative Brain V5.6.
 
-The brief gives you the MESSAGE.
+You receive the COMMERCIAL MESSAGE.
 
-You are responsible for inventing the advertising idea.
+Your job is to invent the advertising idea.
 
 ==================================================
-ORIGINAL REQUEST
+REQUEST
 ==================================================
 
 {clean_text(
     user_request,
-    7000,
+    7500,
 )}
 
 ==================================================
@@ -3886,26 +4252,13 @@ BRAND CONTEXT
 )}
 
 ==================================================
-VISUAL REFERENCE DNA
+RUNTIME REFERENCE DNA
 ==================================================
 
 {compact_json(
     visual_references,
-    9000,
+    8000,
 )}
-
-References are DNA, not templates.
-
-Extract:
-- art-direction quality
-- visual hierarchy
-- camera discipline
-- material quality
-- lighting discipline
-- brand confidence
-- campaign simplicity
-
-Do NOT clone a reference.
 
 ==================================================
 STYLE HINT
@@ -3923,44 +4276,39 @@ BENEFIT FAMILY
 {benefit_family}
 
 ==================================================
-IDEATION RULES
+IDEATION
 ==================================================
 
 Generate exactly {concept_count} fundamentally different
 advertising concepts.
 
-Each concept must differ in:
-- archetype
+Each concept must differ materially in:
 - visual mechanism
+- archetype
 - hero relationship
 - environment
-- spatial composition
+- spatial construction
 - camera strategy
 
-Do NOT produce cosmetic variations.
-
-No generated text or logo.
+Do not produce cosmetic variants.
 
 {stc_block}
 
-{recovery_block}
+{technical_retry_block}
 
 ==================================================
-OUTPUT CONTRACT
+OUTPUT
 ==================================================
 
 Return exactly the structured schema.
 
 Use IDs:
-
 C01
 C02
 C03
 ...
 
-until exactly {concept_count} concepts exist.
-
-Do NOT score concepts in this call.
+Do not score concepts in this call.
 """.strip()
 
 
@@ -3983,29 +4331,24 @@ def build_review_prompt(
         concept_to_dict(
             concept
         )
-        for concept in concepts
+        for concept
+        in concepts
     ]
 
-    high_alert_block = ""
+    strict_block = ""
 
     if high_alert:
 
-        high_alert_block = f"""
+        strict_block = f"""
 ==================================================
-STC STRICT STANDARD
+STC STRICT RELEASE STANDARD
 ==================================================
 
-Do not reward merely competent work.
+Do not reward competence.
 
-A concept does NOT deserve 90+ merely because:
-- it is pretty
-- it is realistic
-- it is feasible
-- it includes the requested service
+90+ must mean genuine campaign quality.
 
-90+ means campaign-grade.
-
-STRICT RELEASE DIMENSIONS:
+STRICT DIMENSION GATES:
 
 concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
 brand_fit >= {STC_MIN_BRAND_FIT}
@@ -4018,32 +4361,24 @@ copy_space_quality >= {STC_MIN_COPY_SPACE}
 distinctiveness >= {STC_MIN_DISTINCTIVENESS}
 advertising_readiness >= {STC_MIN_AD_READINESS}
 
-Do not adjust your scoring to force a pass.
+Overall strict release floor:
+{STC_HIGH_ALERT_RELEASE_FLOOR}
 
-Heavily penalize:
-- customer + POS + counter + merchant + packing/tablet
-- repeated luxury boutique
-- repeated wood counter
-- worker packing a parcel as the e-commerce idea
-- generic person using phone
-- ordinary transaction photography
-- purple as a substitute for concept
-- generic fintech effects
+Do NOT inflate scores just to pass.
+
+A beautiful but ordinary scene can score 65-78.
+
+A polished but familiar campaign can score 78-86.
+
+90+ is exceptional.
 """
 
     return f"""
-You are XPAND V5.5 EXECUTIVE CREATIVE REVIEW BOARD.
+You are XPAND V5.6 EXECUTIVE CREATIVE REVIEW.
 
-Evaluate ALL concepts independently.
+Evaluate every concept independently.
 
-You are:
-- executive creative director
-- STC Bank brand guardian
-- senior advertising art director
-- commercial photography director
-- production feasibility reviewer
-
-Do NOT invent replacement concepts in this call.
+Do NOT generate replacement concepts here.
 
 ==================================================
 REQUEST
@@ -4055,7 +4390,7 @@ REQUEST
 )}
 
 ==================================================
-BENEFIT FAMILY
+BENEFIT
 ==================================================
 
 {benefit_family}
@@ -4089,7 +4424,7 @@ originality:
 Is it materially different from stock bank advertising?
 
 visual_mechanism:
-Is there a real visual idea, not merely a scene?
+Is there a real visual idea rather than just a scene?
 
 camera_quality:
 Does the camera strengthen meaning and hierarchy?
@@ -4107,46 +4442,46 @@ distinctiveness:
 Is the direction memorable?
 
 advertising_readiness:
-Would a senior bank creative director authorize production?
+Would a senior bank creative director send this to production?
 
 weighted_score:
-Give your strict overall score.
+Give a strict overall score.
 
 ==================================================
 BOOLEAN CREATIVE JUDGMENTS
 ==================================================
 
 generic_scene_risk:
-TRUE when the idea could collapse into ordinary lifestyle
-or transaction photography.
+TRUE if this could collapse into ordinary lifestyle or
+transaction photography.
 
 repetition_risk:
-TRUE when it resembles known repeated XPAND/STC scenes.
+TRUE if this resembles the repeated XPAND/STC merchant
+counter / boutique pattern.
 
 concept_is_scene_only:
-TRUE if it is mainly location + people + props without
-an advertising mechanism.
+TRUE if the proposal is mainly location + people + props.
 
 mechanism_survives_single_frame:
-TRUE only when the mechanism is clear in one still image.
+TRUE only when the advertising mechanism remains readable
+in one still image.
 
 looks_like_real_bank_campaign:
-TRUE only when the idea has premium financial-campaign
-discipline.
+TRUE only for premium financial-campaign discipline.
 
 ==================================================
 MERCHANT SEMANTIC REVIEW
 ==================================================
 
-When benefit_family = merchant_payments:
+For merchant_payments:
 
 merchant_online_channel_clear:
-Can the viewer understand an online/e-commerce sales channel?
+Can a viewer understand an online/e-commerce sales channel?
 
 merchant_pos_channel_clear:
-Can the viewer understand physical/in-store payment acceptance?
+Can a viewer understand physical/in-store payment acceptance?
 
-Accept semantic equivalents such as:
+Accept:
 - card reader
 - payment terminal
 - tap-to-pay
@@ -4155,44 +4490,53 @@ Accept semantic equivalents such as:
 - online order
 - web checkout
 
-Do NOT require the exact word "POS".
+Do NOT require the exact token POS.
 
 merchant_channels_fused:
-TRUE only when one advertising mechanism genuinely unifies
-the two channels.
+TRUE only when ONE mechanism genuinely unifies both channels.
 
-Putting them in the same room is NOT fusion.
+Putting both channels in one room is NOT fusion.
 
 For non-merchant briefs:
 set all three merchant booleans TRUE.
 
 ==================================================
-CAMERA
-==================================================
-
-Return one coherent:
-- camera angle
-- lens
-- perspective
-
-for every concept.
-
-==================================================
 PRODUCTION FEASIBILITY
 ==================================================
 
-production_feasible = TRUE only when the central idea can be
-generated as one coherent image without impossible geometry,
-contradictory scenes or unreadable UI.
+production_feasible = TRUE only if one coherent generated
+frame can preserve the central advertising idea.
 
-{high_alert_block}
+No impossible geometry.
+
+No contradictory camera systems.
+
+No required readable UI.
+
+==================================================
+CAMERA
+==================================================
+
+Return:
+- one camera angle
+- one lens
+- one perspective
+
+for every concept.
+
+{strict_block}
 
 Return exactly the structured schema.
 """.strip()
 
 
 # =========================================================
-# FINALIST JURY PROMPT
+# JURY PROMPT
+#
+# V5.6:
+#
+# Jury is an advisory production layer after deterministic
+# qualification. It cannot veto strict-qualified concepts.
 # =========================================================
 
 def build_finalist_jury_prompt(
@@ -4209,19 +4553,30 @@ def build_finalist_jury_prompt(
         concept_to_dict(
             concept
         )
-        for concept in finalists
+        for concept
+        in finalists
     ]
 
     return f"""
-You are the FINAL XPAND STC BANK CAMPAIGN JURY V5.5.
+You are XPAND V5.6 FINAL STC BANK ART-DIRECTION JURY.
 
-This decision happens immediately before expensive image
-production.
+IMPORTANT:
 
-Every supplied finalist has already passed deterministic
-strict quality gates.
+Every concept provided below has ALREADY passed XPAND's
+deterministic strict quality gates.
 
-You may choose ONLY from the supplied IDs.
+Your role is:
+
+1. rank the qualified concepts
+2. recommend the strongest one
+3. strengthen production art direction
+4. lock camera / environment / mechanism
+5. warn about likely execution drift
+
+You are NOT a second veto layer.
+
+The deterministic strict qualification remains the final
+release authority.
 
 ==================================================
 REQUEST
@@ -4245,7 +4600,7 @@ STYLE
 {stc_style}
 
 ==================================================
-FINALISTS
+STRICT-QUALIFIED FINALISTS
 ==================================================
 
 {compact_json(
@@ -4254,68 +4609,669 @@ FINALISTS
 )}
 
 ==================================================
-DECISION
+SELECT
 ==================================================
 
-Select ONE finalist only if you would authorize production.
+Choose ONE ID from the supplied concepts.
 
-Judge:
-1. Campaign idea
-2. STC Bank fit
-3. Originality
-4. Visual mechanism
-5. Single-frame message clarity
-6. Realism
-7. Feasibility
-8. Camera
-9. Simplicity
-10. Resistance to generic-scene drift
+Prefer:
+- strongest advertising proposition
+- strongest STC Bank ownership
+- clearest single-frame mechanism
+- best merchant fusion
+- highest realism
+- lowest generic-scene risk
+- best camera
 
-merchant_fusion_approved:
+approval:
+Give your recommendation.
+
+confidence:
+Give honest confidence.
+
+These values are diagnostic and do NOT erase a concept that
+already passed deterministic strict gates.
+
+==================================================
+MERCHANT
+==================================================
 
 For merchant_payments:
-TRUE only if online commerce and physical payment are
-visually unified through one mechanism.
 
-For other benefits:
-TRUE.
+merchant_fusion_approved should describe your opinion about
+the recommended concept.
 
-==================================================
-DO NOT APPROVE
-==================================================
-
-Do not approve:
-- ordinary lifestyle photography
-- transaction photography
-- generic boutique POS scene
-- wooden counter tableau
-- worker packing a box as e-commerce
-- person simply holding a device
-- purple as substitute for idea
-- generic fintech effects
+The runtime still relies on the concept's independent
+per-concept evaluation for release authority.
 
 ==================================================
-PRODUCTION LOCK
+PRODUCTION INSTRUCTION
 ==================================================
 
-production_instruction must lock:
+Lock:
 - hero relationship
 - visual mechanism
 - environment
 - camera
 - lens
 - perspective
-- lighting logic
+- lighting
 - copy-space location
 
-do_not_drift_into must list likely generic failure modes.
+Do not drift into:
+- ordinary checkout
+- customer + terminal tableau
+- wooden boutique counter
+- packing worker
+- generic fintech effects
+- generated text or logo
 
 Return exactly the schema.
 """.strip()
 
 
 # =========================================================
-# GENERATE INITIAL CONCEPTS
+# FAILURE / REPAIR CONTEXT
+# =========================================================
+
+def build_failure_context(
+    concepts: Sequence[
+        CreativeConcept
+    ],
+    limit: int = 4,
+) -> str:
+
+    ranked = [
+        item
+        for item
+        in concepts
+        if item.evaluation_valid
+    ]
+
+    ranked.sort(
+        key=lambda item:
+            item.weighted_score,
+        reverse=True,
+    )
+
+    payload: List[
+        Dict[str, Any]
+    ] = []
+
+    for concept in ranked[
+        :limit
+    ]:
+
+        payload.append(
+            {
+
+                "concept_id":
+                    concept.concept_id,
+
+                "title":
+                    concept.title,
+
+                "archetype":
+                    concept.concept_archetype,
+
+                "score":
+                    concept.weighted_score,
+
+                "scores":
+                    concept.scores,
+
+                "quality_failures":
+                    concept.quality_gate_failures,
+
+                "weaknesses":
+                    safe_list(
+                        concept.debate.get(
+                            "weaknesses"
+                        )
+                    )[:8],
+
+                "core_idea":
+                    clean_text(
+                        concept.core_idea,
+                        1100,
+                    ),
+
+                "visual_mechanism":
+                    clean_text(
+                        concept.visual_metaphor,
+                        1000,
+                    ),
+
+                "environment":
+                    clean_text(
+                        concept.environment,
+                        800,
+                    ),
+            }
+        )
+
+    return compact_json(
+        payload,
+        18000,
+    )
+
+
+def build_targeted_repair_context(
+    candidates: Sequence[
+        CreativeConcept
+    ],
+) -> str:
+
+    payload: List[
+        Dict[str, Any]
+    ] = []
+
+    for concept in candidates:
+
+        payload.append(
+            {
+
+                "concept_id":
+                    concept.concept_id,
+
+                "title":
+                    concept.title,
+
+                "weighted_score":
+                    concept.weighted_score,
+
+                "exact_dimension_gaps":
+                    targeted_repair_dimension_gaps(
+                        concept
+                    ),
+
+                "quality_failures":
+                    concept.quality_gate_failures,
+
+                "strengths":
+                    safe_list(
+                        concept.debate.get(
+                            "strengths"
+                        )
+                    )[:8],
+
+                "weaknesses":
+                    safe_list(
+                        concept.debate.get(
+                            "weaknesses"
+                        )
+                    )[:8],
+
+                "core_idea":
+                    clean_text(
+                        concept.core_idea,
+                        1800,
+                    ),
+
+                "campaign_hook":
+                    clean_text(
+                        concept.campaign_hook,
+                        1400,
+                    ),
+
+                "visual_metaphor":
+                    clean_text(
+                        concept.visual_metaphor,
+                        1600,
+                    ),
+
+                "visual_mechanism_type":
+                    clean_text(
+                        concept.visual_mechanism_type,
+                        800,
+                    ),
+
+                "why_not_generic":
+                    clean_text(
+                        concept.why_not_generic,
+                        1400,
+                    ),
+
+                "environment":
+                    clean_text(
+                        concept.environment,
+                        1400,
+                    ),
+
+                "hero_element":
+                    clean_text(
+                        concept.hero_element,
+                        1000,
+                    ),
+
+                "camera_angle":
+                    concept.camera_angle,
+
+                "lens":
+                    concept.lens,
+
+                "perspective":
+                    concept.perspective,
+
+                "brand_logic":
+                    clean_text(
+                        concept.brand_logic,
+                        1400,
+                    ),
+            }
+        )
+
+    return compact_json(
+        payload,
+        22000,
+    )
+
+
+# =========================================================
+# TARGETED REPAIR PROMPT
+# =========================================================
+
+def build_targeted_repair_prompt(
+    *,
+    user_request: str,
+    repair_candidates: Sequence[
+        CreativeConcept
+    ],
+    brand_context: Any,
+    visual_references: Any,
+    benefit_family: str,
+    stc_style: str,
+) -> str:
+
+    return f"""
+You are XPAND V5.6 STC BANK TARGETED CREATIVE REPAIR BOARD.
+
+The Executive Review found a genuinely strong near-miss.
+
+You have ONE final Director call.
+
+This one structured response must:
+
+1. repair the strongest near-miss
+2. create exactly TWO repaired concepts
+3. evaluate both independently
+4. recommend one
+5. provide production guidance
+
+==================================================
+REPAIR PHILOSOPHY
+==================================================
+
+Preserve the strongest CORE proposition.
+
+Do not discard a strong advertising idea because several
+execution dimensions are a few points short.
+
+But do NOT perform a cosmetic rewrite.
+
+You may materially strengthen:
+- mechanism
+- hero relationship
+- environment
+- camera
+- brand ownership
+- realism
+- production design
+- lighting
+- copy-space integration
+
+when necessary.
+
+==================================================
+REQUEST
+==================================================
+
+{clean_text(
+    user_request,
+    6500,
+)}
+
+==================================================
+BENEFIT
+==================================================
+
+{benefit_family}
+
+==================================================
+STYLE
+==================================================
+
+{stc_style}
+
+==================================================
+NEAR-MISS DIAGNOSIS
+==================================================
+
+{build_targeted_repair_context(
+    repair_candidates
+)}
+
+==================================================
+STRICT GATES — NO LOWERING
+==================================================
+
+concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
+brand_fit >= {STC_MIN_BRAND_FIT}
+originality >= {STC_MIN_ORIGINALITY}
+visual_mechanism >= {STC_MIN_VISUAL_MECHANISM}
+camera_quality >= {STC_MIN_CAMERA_QUALITY}
+realism >= {STC_MIN_REALISM}
+feasibility >= {STC_MIN_FEASIBILITY}
+copy_space_quality >= {STC_MIN_COPY_SPACE}
+distinctiveness >= {STC_MIN_DISTINCTIVENESS}
+advertising_readiness >= {STC_MIN_AD_READINESS}
+
+overall release floor >= {STC_HIGH_ALERT_RELEASE_FLOOR}
+
+Do not inflate scores.
+
+==================================================
+PERMANENT STC BRAND INTELLIGENCE
+==================================================
+
+{stc_brand_pack_prompt_fragment(
+    benefit_family=benefit_family,
+    stc_style=stc_style,
+)}
+
+==================================================
+RUNTIME BRAND CONTEXT
+==================================================
+
+{compact_json(
+    brand_context,
+    6000,
+)}
+
+==================================================
+RUNTIME VISUAL DNA
+==================================================
+
+{compact_json(
+    visual_references,
+    7000,
+)}
+
+==================================================
+MERCHANT LAW
+==================================================
+
+For merchant_payments:
+
+The viewer must understand:
+ONLINE COMMERCE
++
+PHYSICAL PAYMENT ACCEPTANCE
++
+ONE UNIFIED MERCHANT SYSTEM
+
+A card reader counts as POS.
+
+A digital storefront counts as e-commerce.
+
+Both must be connected by ONE advertising mechanism.
+
+Same room is not fusion.
+
+==================================================
+BAN
+==================================================
+
+Never repair into:
+- customer + POS + counter + merchant tableau
+- wooden checkout counter
+- packing employee in background
+- ordinary transaction photography
+- floating fintech objects
+- network lines
+- holograms
+- cyber effects
+- generated copy
+- generated logo
+- fake banking UI
+
+==================================================
+REALISM
+==================================================
+
+One coherent frame.
+
+One camera system.
+
+One light logic.
+
+Physically believable:
+- perspective
+- scale
+- contact
+- shadow
+- reflection
+- occlusion
+- material roughness
+
+==================================================
+OUTPUT
+==================================================
+
+Create exactly:
+
+T01
+T02
+
+Evaluate both honestly.
+
+The runtime will independently apply deterministic strict
+qualification after your response.
+
+If one or both pass every strict gate, the highest
+strict-qualified concept will be released.
+
+Your final recommendation is advisory production guidance.
+
+Return exactly the structured schema.
+""".strip()
+
+
+# =========================================================
+# FRESH RECOVERY PROMPT
+# =========================================================
+
+def build_recovery_board_prompt(
+    *,
+    user_request: str,
+    failed_concepts: Sequence[
+        CreativeConcept
+    ],
+    brand_context: Any,
+    visual_references: Any,
+    benefit_family: str,
+    stc_style: str,
+) -> str:
+
+    return f"""
+You are XPAND V5.6 STC BANK FRESH CREATIVE RECOVERY BOARD.
+
+The first eight concepts were genuinely evaluated.
+
+No strict-qualified concept exists.
+
+No suitable near-miss qualified for Targeted Repair.
+
+You have ONE final Director call.
+
+This response must:
+
+1. invent exactly {STC_RECOVERY_CONCEPT_COUNT} NEW concepts
+2. evaluate every new concept independently
+3. recommend one
+4. provide production art direction
+
+==================================================
+REQUEST
+==================================================
+
+{clean_text(
+    user_request,
+    6500,
+)}
+
+==================================================
+BENEFIT
+==================================================
+
+{benefit_family}
+
+==================================================
+STYLE
+==================================================
+
+{stc_style}
+
+==================================================
+WHY THE FIRST ROUND FAILED
+==================================================
+
+{build_failure_context(
+    failed_concepts,
+    limit=4,
+)}
+
+==================================================
+RECOVERY LAW
+==================================================
+
+Do NOT cosmetically rewrite the failed ideas.
+
+Change the conceptual grammar.
+
+Do not merely:
+- change the store
+- change the person
+- change the counter
+- change the wall
+- add purple
+- change the lens
+
+Find a materially different advertising mechanism.
+
+==================================================
+STRICT GATES — NO LOWERING
+==================================================
+
+concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
+brand_fit >= {STC_MIN_BRAND_FIT}
+originality >= {STC_MIN_ORIGINALITY}
+visual_mechanism >= {STC_MIN_VISUAL_MECHANISM}
+camera_quality >= {STC_MIN_CAMERA_QUALITY}
+realism >= {STC_MIN_REALISM}
+feasibility >= {STC_MIN_FEASIBILITY}
+copy_space_quality >= {STC_MIN_COPY_SPACE}
+distinctiveness >= {STC_MIN_DISTINCTIVENESS}
+advertising_readiness >= {STC_MIN_AD_READINESS}
+
+overall release floor >= {STC_HIGH_ALERT_RELEASE_FLOOR}
+
+Do not inflate scores.
+
+==================================================
+PERMANENT STC BANK INTELLIGENCE
+==================================================
+
+{stc_brand_pack_prompt_fragment(
+    benefit_family=benefit_family,
+    stc_style=stc_style,
+)}
+
+==================================================
+BRAND CONTEXT
+==================================================
+
+{compact_json(
+    brand_context,
+    6000,
+)}
+
+==================================================
+VISUAL REFERENCE DNA
+==================================================
+
+{compact_json(
+    visual_references,
+    7000,
+)}
+
+==================================================
+MERCHANT PAYMENTS
+==================================================
+
+For merchant_payments:
+
+ONLINE / E-COMMERCE
++
+PHYSICAL / IN-STORE PAYMENT
++
+ONE UNIFIED MERCHANT PROPOSITION
+
+The two channels must be connected by the visual mechanism.
+
+Do not use:
+customer + terminal + counter + packing worker.
+
+==================================================
+BAN
+==================================================
+
+No:
+- generic boutique checkout
+- wooden counter cliché
+- generic phone lifestyle
+- floating cards
+- floating phones
+- floating POS
+- network lines
+- holograms
+- HUD
+- neon fintech
+- random particles
+- generated text/logo
+- fake banking UI
+
+==================================================
+OUTPUT
+==================================================
+
+Use:
+
+R01
+R02
+R03
+
+and R04 only if four recovery concepts are configured.
+
+Evaluate every concept honestly.
+
+The runtime will independently apply deterministic strict
+qualification after this response.
+
+IMPORTANT:
+
+If any generated concept passes ALL deterministic strict
+gates, it WILL be released.
+
+Your selected_concept_id / approval / confidence fields are
+advisory guidance and cannot erase a strict-qualified concept.
+
+Return exactly the structured schema.
+""".strip()
+
+
+# =========================================================
+# INITIAL GENERATION CALL
 # =========================================================
 
 def generate_concepts(
@@ -4372,7 +5328,7 @@ def generate_concepts(
             )
         ),
         json_schema_name=(
-            "xpand_creative_ideation_v55"
+            "xpand_creative_ideation_v56"
         ),
     )
 
@@ -4415,7 +5371,7 @@ def generate_concepts(
 
 
 # =========================================================
-# APPLY MODEL EVALUATIONS
+# APPLY REAL MODEL EVALUATIONS
 # =========================================================
 
 def apply_evaluations_to_concepts(
@@ -4441,6 +5397,7 @@ def apply_evaluations_to_concepts(
             item,
             dict,
         ):
+
             continue
 
         concept_id = clean_text(
@@ -4451,6 +5408,7 @@ def apply_evaluations_to_concepts(
         )
 
         if concept_id:
+
             by_id[
                 concept_id
             ] = item
@@ -4464,14 +5422,19 @@ def apply_evaluations_to_concepts(
             concept.concept_id
         )
 
+        #
+        # Safe array-position fallback.
+        #
         if evaluation is None:
 
-            #
-            # Some structured models occasionally retain the
-            # correct array order but slightly alter the ID.
-            #
+            array_index = (
+                index
+                -
+                1
+            )
+
             if (
-                index - 1
+                array_index
                 <
                 len(
                     evaluations
@@ -4479,23 +5442,30 @@ def apply_evaluations_to_concepts(
             ):
 
                 candidate = evaluations[
-                    index - 1
+                    array_index
                 ]
 
                 if isinstance(
                     candidate,
                     dict,
                 ):
-                    evaluation = candidate
+
+                    evaluation = (
+                        candidate
+                    )
 
         if not isinstance(
             evaluation,
             dict,
         ):
 
-            concept.evaluation_valid = False
+            concept.evaluation_valid = (
+                False
+            )
 
-            concept.quality_gate_passed = False
+            concept.quality_gate_passed = (
+                False
+            )
 
             concept.quality_gate_failures = [
                 "missing_real_evaluation"
@@ -4505,7 +5475,7 @@ def apply_evaluations_to_concepts(
 
         scores: Dict[
             str,
-            float
+            float,
         ] = {}
 
         for key in (
@@ -4605,6 +5575,27 @@ def apply_evaluations_to_concepts(
             )
         )
 
+        online_clear = bool(
+            evaluation.get(
+                "merchant_online_channel_clear",
+                True,
+            )
+        )
+
+        pos_clear = bool(
+            evaluation.get(
+                "merchant_pos_channel_clear",
+                True,
+            )
+        )
+
+        channels_fused = bool(
+            evaluation.get(
+                "merchant_channels_fused",
+                True,
+            )
+        )
+
         if generic_scene_risk:
 
             review_penalty += 7.0
@@ -4645,32 +5636,11 @@ def apply_evaluations_to_concepts(
                 "not_bank_campaign_ready"
             )
 
-        online_clear = bool(
-            evaluation.get(
-                "merchant_online_channel_clear",
-                True,
-            )
-        )
-
-        pos_clear = bool(
-            evaluation.get(
-                "merchant_pos_channel_clear",
-                True,
-            )
-        )
-
-        channels_fused = bool(
-            evaluation.get(
-                "merchant_channels_fused",
-                True,
-            )
-        )
-
         if benefit_family == "merchant_payments":
 
             if not online_clear:
 
-                review_penalty += 7.0
+                review_penalty += 8.0
 
                 review_failures.append(
                     "merchant_online_channel_unclear"
@@ -4678,7 +5648,7 @@ def apply_evaluations_to_concepts(
 
             if not pos_clear:
 
-                review_penalty += 7.0
+                review_penalty += 8.0
 
                 review_failures.append(
                     "merchant_pos_channel_unclear"
@@ -4696,22 +5666,27 @@ def apply_evaluations_to_concepts(
             0.0,
             min(
                 100.0,
-                base_score
-                -
-                local_penalty
-                -
-                review_penalty,
+                (
+                    base_score
+                    -
+                    local_penalty
+                    -
+                    review_penalty
+                ),
             ),
         )
 
-        combined_failures = dedupe_strings(
-            (
+        combined_failures = (
+            dedupe_strings(
                 local_failures
                 +
                 review_failures
             )
         )
 
+        #
+        # Hard-rejected concepts cannot appear close to release.
+        #
         if any(
             failure
             in HARD_REJECT_FAILURES
@@ -4754,9 +5729,25 @@ def apply_evaluations_to_concepts(
                     evaluation.get(
                         "feasibility_reason"
                     ),
-                    1500,
+                    1700,
                 ),
         }
+
+        concept.cliche_hits = [
+            {
+
+                "id":
+                    failure,
+
+                "reason":
+                    failure.replace(
+                        "_",
+                        " ",
+                    ),
+            }
+            for failure
+            in concept.quality_gate_failures
+        ]
 
         concept.debate = {
 
@@ -4769,24 +5760,34 @@ def apply_evaluations_to_concepts(
                         value,
                         1000,
                     )
-                    for value in safe_list(
+                    for value
+                    in safe_list(
                         evaluation.get(
                             "strengths"
                         )
                     )[:8]
+                    if clean_text(
+                        value,
+                        1000,
+                    )
                 ],
 
             "weaknesses":
                 [
                     clean_text(
                         value,
-                        1000,
+                        1100,
                     )
-                    for value in safe_list(
+                    for value
+                    in safe_list(
                         evaluation.get(
                             "weaknesses"
                         )
-                    )[:8]
+                    )[:10]
+                    if clean_text(
+                        value,
+                        1100,
+                    )
                 ],
 
             "verdict":
@@ -4897,13 +5898,13 @@ def apply_evaluations_to_concepts(
                         evaluation.get(
                             "camera_reason"
                         ),
-                        1200,
+                        1400,
                     ),
 
                 "camera_lock_instruction":
                     (
-                        "Preserve this camera strategy "
-                        "during image production."
+                        "Preserve this evaluated camera "
+                        "strategy during image production."
                     ),
             },
         }
@@ -4917,16 +5918,20 @@ def apply_evaluations_to_concepts(
         if camera.get(
             "camera_angle"
         ):
-            concept.camera_angle = clean_text(
-                camera.get(
-                    "camera_angle"
-                ),
-                900,
+
+            concept.camera_angle = (
+                clean_text(
+                    camera.get(
+                        "camera_angle"
+                    ),
+                    900,
+                )
             )
 
         if camera.get(
             "lens"
         ):
+
             concept.lens = clean_text(
                 camera.get(
                     "lens"
@@ -4937,11 +5942,14 @@ def apply_evaluations_to_concepts(
         if camera.get(
             "perspective"
         ):
-            concept.perspective = clean_text(
-                camera.get(
-                    "perspective"
-                ),
-                1200,
+
+            concept.perspective = (
+                clean_text(
+                    camera.get(
+                        "perspective"
+                    ),
+                    1200,
+                )
             )
 
         if is_stc_bank_request(
@@ -5007,7 +6015,7 @@ def review_concepts(
             )
         ),
         json_schema_name=(
-            "xpand_creative_review_v55"
+            "xpand_creative_review_v56"
         ),
     )
 
@@ -5044,7 +6052,7 @@ def review_concepts(
 
 
 # =========================================================
-# JURY CALL
+# FINALIST JURY CALL
 # =========================================================
 
 def run_finalist_jury(
@@ -5079,7 +6087,7 @@ def run_finalist_jury(
             FINALIST_JURY_SCHEMA
         ),
         json_schema_name=(
-            "xpand_stc_finalist_jury_v55"
+            "xpand_stc_finalist_jury_v56"
         ),
     )
 
@@ -5089,1065 +6097,7 @@ def run_finalist_jury(
 
 
 # =========================================================
-# FIND CONCEPT
-# =========================================================
-
-def find_concept_by_id(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    concept_id: str,
-) -> Optional[
-    CreativeConcept
-]:
-
-    target = clean_text(
-        concept_id,
-        100,
-    )
-
-    for concept in concepts:
-
-        if (
-            concept.concept_id
-            ==
-            target
-        ):
-            return concept
-
-    return None
-
-
-# =========================================================
-# JURY GLOBAL GATE
-# =========================================================
-
-def jury_global_gate(
-    jury: Dict[str, Any],
-    *,
-    benefit_family: str,
-) -> Tuple[
-    bool,
-    List[str],
-]:
-
-    failures: List[str] = []
-
-    if not bool(
-        jury.get(
-            "approval",
-            False,
-        )
-    ):
-
-        failures.append(
-            "jury_not_approved"
-        )
-
-    confidence = clamp_score(
-        jury.get(
-            "confidence"
-        )
-    )
-
-    if (
-        confidence
-        <
-        STC_MIN_JURY_CONFIDENCE
-    ):
-
-        failures.append(
-            "jury_low_confidence"
-        )
-
-    fatal_issues = [
-        clean_text(
-            value,
-            1000,
-        )
-        for value
-        in safe_list(
-            jury.get(
-                "fatal_issues"
-            )
-        )
-        if clean_text(
-            value,
-            1000,
-        )
-    ]
-
-    if fatal_issues:
-
-        failures.append(
-            "jury_fatal_issues"
-        )
-
-    if (
-        benefit_family
-        ==
-        "merchant_payments"
-        and
-        not bool(
-            jury.get(
-                "merchant_fusion_approved",
-                False,
-            )
-        )
-    ):
-
-        failures.append(
-            "jury_merchant_fusion_rejected"
-        )
-
-    return (
-        not bool(
-            failures
-        ),
-        failures,
-    )
-
-
-# =========================================================
-# JURY ATTACHMENT
-# =========================================================
-
-def attach_jury_approval(
-    *,
-    winner: CreativeConcept,
-    jury: Dict[str, Any],
-    source: str,
-    original_selected_id: str = "",
-    arbitrated: bool = False,
-) -> None:
-
-    winner.debate[
-        "finalist_jury"
-    ] = {
-
-        "source":
-            source,
-
-        "approval":
-            bool(
-                jury.get(
-                    "approval",
-                    False,
-                )
-            ),
-
-        "confidence":
-            clamp_score(
-                jury.get(
-                    "confidence"
-                )
-            ),
-
-        "advertising_reason":
-            clean_text(
-                jury.get(
-                    "advertising_reason"
-                ),
-                1800,
-            ),
-
-        "brand_reason":
-            clean_text(
-                jury.get(
-                    "brand_reason"
-                ),
-                1800,
-            ),
-
-        "originality_reason":
-            clean_text(
-                jury.get(
-                    "originality_reason"
-                ),
-                1800,
-            ),
-
-        "merchant_fusion_approved":
-            bool(
-                jury.get(
-                    "merchant_fusion_approved",
-                    True,
-                )
-            ),
-
-        "fatal_issues":
-            [
-                clean_text(
-                    value,
-                    1000,
-                )
-                for value
-                in safe_list(
-                    jury.get(
-                        "fatal_issues"
-                    )
-                )
-            ],
-
-        "production_instruction":
-            clean_text(
-                jury.get(
-                    "production_instruction"
-                ),
-                3500,
-            ),
-
-        "do_not_drift_into":
-            [
-                clean_text(
-                    value,
-                    1000,
-                )
-                for value
-                in safe_list(
-                    jury.get(
-                        "do_not_drift_into"
-                    )
-                )
-            ],
-
-        "original_selected_id":
-            original_selected_id,
-
-        "arbitrated":
-            bool(
-                arbitrated
-            ),
-
-        "thresholds_lowered":
-            False,
-    }
-
-    camera = winner.debate.setdefault(
-        "camera_director",
-        {},
-    )
-
-    jury_angle = clean_text(
-        jury.get(
-            "recommended_camera_angle"
-        ),
-        900,
-    )
-
-    jury_lens = clean_text(
-        jury.get(
-            "recommended_lens"
-        ),
-        400,
-    )
-
-    jury_perspective = clean_text(
-        jury.get(
-            "recommended_perspective"
-        ),
-        1200,
-    )
-
-    if jury_angle:
-
-        winner.camera_angle = (
-            jury_angle
-        )
-
-        camera[
-            "camera_angle"
-        ] = jury_angle
-
-    if jury_lens:
-
-        winner.lens = (
-            jury_lens
-        )
-
-        camera[
-            "lens"
-        ] = jury_lens
-
-    if jury_perspective:
-
-        winner.perspective = (
-            jury_perspective
-        )
-
-        camera[
-            "perspective"
-        ] = jury_perspective
-
-        camera[
-            "perspective_type"
-        ] = jury_perspective
-
-    camera[
-        "camera_lock_instruction"
-    ] = (
-        "FINAL JURY CAMERA LOCK. "
-        "Do not normalize or replace this camera."
-    )
-
-
-# =========================================================
-# APPLY JURY RESULT
-# =========================================================
-
-def apply_jury_result(
-    *,
-    concepts: List[
-        CreativeConcept
-    ],
-    jury: Dict[str, Any],
-    benefit_family: str,
-    source: str = "finalist_jury",
-) -> Optional[
-    CreativeConcept
-]:
-
-    selected_id = clean_text(
-        jury.get(
-            "selected_concept_id"
-        ),
-        100,
-    )
-
-    selected = find_concept_by_id(
-        concepts,
-        selected_id,
-    )
-
-    if selected is None:
-        return None
-
-    (
-        global_passed,
-        global_failures,
-    ) = jury_global_gate(
-        jury,
-        benefit_family=(
-            benefit_family
-        ),
-    )
-
-    selected.debate[
-        "jury_global_gate"
-    ] = {
-        "passed":
-            global_passed,
-
-        "failures":
-            global_failures,
-    }
-
-    if not global_passed:
-
-        selected.quality_gate_failures = (
-            dedupe_strings(
-                selected.quality_gate_failures
-                +
-                global_failures
-            )
-        )
-
-    attach_jury_approval(
-        winner=(
-            selected
-        ),
-        jury=(
-            jury
-        ),
-        source=(
-            source
-        ),
-        original_selected_id=(
-            selected_id
-        ),
-        arbitrated=False,
-    )
-
-    return selected
-
-
-# =========================================================
-# FAILURE CONTEXT
-# =========================================================
-
-def build_failure_context(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    limit: int = 4,
-) -> str:
-
-    ranked = [
-        item
-        for item
-        in concepts
-        if item.evaluation_valid
-    ]
-
-    ranked.sort(
-        key=lambda item:
-            item.weighted_score,
-        reverse=True,
-    )
-
-    payload: List[
-        Dict[str, Any]
-    ] = []
-
-    for concept in ranked[
-        :limit
-    ]:
-
-        payload.append(
-            {
-                "concept_id":
-                    concept.concept_id,
-
-                "title":
-                    concept.title,
-
-                "archetype":
-                    concept.concept_archetype,
-
-                "score":
-                    concept.weighted_score,
-
-                "scores":
-                    concept.scores,
-
-                "quality_failures":
-                    concept.quality_gate_failures,
-
-                "weaknesses":
-                    safe_list(
-                        concept.debate.get(
-                            "weaknesses"
-                        )
-                    )[:8],
-
-                "core_idea":
-                    clean_text(
-                        concept.core_idea,
-                        1000,
-                    ),
-
-                "visual_mechanism":
-                    clean_text(
-                        concept.visual_metaphor,
-                        900,
-                    ),
-
-                "environment":
-                    clean_text(
-                        concept.environment,
-                        700,
-                    ),
-            }
-        )
-
-    return compact_json(
-        payload,
-        16000,
-    )
-
-
-def primary_archetypes(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-) -> List[str]:
-
-    return dedupe_strings(
-        [
-            concept.concept_archetype
-            for concept
-            in concepts
-            if concept.concept_archetype
-        ]
-    )[:12]
-
-
-# =========================================================
-# TARGETED REPAIR CONTEXT
-# =========================================================
-
-def build_targeted_repair_context(
-    candidates: Sequence[
-        CreativeConcept
-    ],
-) -> str:
-
-    payload: List[
-        Dict[str, Any]
-    ] = []
-
-    for concept in candidates:
-
-        payload.append(
-            {
-                "concept_id":
-                    concept.concept_id,
-
-                "title":
-                    concept.title,
-
-                "score":
-                    concept.weighted_score,
-
-                "failed_dimensions":
-                    targeted_repair_dimension_gaps(
-                        concept
-                    ),
-
-                "quality_failures":
-                    concept.quality_gate_failures,
-
-                "strengths":
-                    safe_list(
-                        concept.debate.get(
-                            "strengths"
-                        )
-                    )[:8],
-
-                "weaknesses":
-                    safe_list(
-                        concept.debate.get(
-                            "weaknesses"
-                        )
-                    )[:8],
-
-                "core_idea":
-                    clean_text(
-                        concept.core_idea,
-                        1800,
-                    ),
-
-                "campaign_hook":
-                    clean_text(
-                        concept.campaign_hook,
-                        1200,
-                    ),
-
-                "visual_mechanism":
-                    clean_text(
-                        concept.visual_metaphor,
-                        1400,
-                    ),
-
-                "visual_mechanism_type":
-                    clean_text(
-                        concept.visual_mechanism_type,
-                        700,
-                    ),
-
-                "why_not_generic":
-                    clean_text(
-                        concept.why_not_generic,
-                        1200,
-                    ),
-
-                "environment":
-                    clean_text(
-                        concept.environment,
-                        1200,
-                    ),
-
-                "hero_element":
-                    clean_text(
-                        concept.hero_element,
-                        900,
-                    ),
-
-                "camera_angle":
-                    concept.camera_angle,
-
-                "lens":
-                    concept.lens,
-
-                "perspective":
-                    concept.perspective,
-
-                "brand_logic":
-                    clean_text(
-                        concept.brand_logic,
-                        1200,
-                    ),
-            }
-        )
-
-    return compact_json(
-        payload,
-        20000,
-    )
-
-
-# =========================================================
-# TARGETED REPAIR PROMPT
-# =========================================================
-
-def build_targeted_repair_prompt(
-    *,
-    user_request: str,
-    repair_candidates: Sequence[
-        CreativeConcept
-    ],
-    brand_context: Any,
-    visual_references: Any,
-    benefit_family: str,
-    stc_style: str,
-) -> str:
-
-    repair_context = (
-        build_targeted_repair_context(
-            repair_candidates
-        )
-    )
-
-    return f"""
-You are XPAND V5.5 STC BANK TARGETED CREATIVE REPAIR BOARD.
-
-The Executive Creative Review found one or two concepts that
-are genuinely CLOSE to production quality.
-
-You have ONE final paid creative call.
-
-This one response must:
-
-1. Diagnose the near-miss precisely.
-2. Create exactly TWO repaired concepts.
-3. Evaluate both repaired concepts.
-4. Jury-select the strongest repaired concept.
-5. Return all of this in ONE structured response.
-
-==================================================
-CRITICAL REPAIR PHILOSOPHY
-==================================================
-
-PRESERVE THE STRONGEST CORE PROPOSITION.
-
-Do NOT discard a strong central advertising idea merely
-because several execution dimensions are a few points short.
-
-However:
-
-This is NOT a cosmetic rewrite.
-
-You MAY materially improve:
-- hero relationship
-- visual mechanism clarity
-- environment
-- art direction
-- camera angle
-- lens
-- perspective
-- production design
-- material behavior
-- lighting
-- copy-space integration
-
-when those changes are necessary to fix the diagnosed gaps.
-
-The repaired idea must still be recognizably descended from
-the strongest near-miss proposition.
-
-Do NOT replace it with an unrelated campaign.
-
-==================================================
-NO SCORE INFLATION
-==================================================
-
-DO NOT inflate scores to force approval.
-
-A repaired concept must earn every score.
-
-If the core proposition cannot honestly survive the strict
-standards, do not fake a pass.
-
-==================================================
-REQUEST
-==================================================
-
-{clean_text(
-    user_request,
-    6500,
-)}
-
-==================================================
-BENEFIT FAMILY
-==================================================
-
-{benefit_family}
-
-==================================================
-STYLE
-==================================================
-
-{stc_style}
-
-==================================================
-NEAR-MISS CANDIDATES + EXACT DIAGNOSIS
-==================================================
-
-{repair_context}
-
-The failed_dimensions above are the exact weaknesses that
-triggered this repair route.
-
-Repair those weaknesses deliberately.
-
-==================================================
-STRICT RELEASE GATES — NO LOWERING
-==================================================
-
-concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
-brand_fit >= {STC_MIN_BRAND_FIT}
-originality >= {STC_MIN_ORIGINALITY}
-visual_mechanism >= {STC_MIN_VISUAL_MECHANISM}
-camera_quality >= {STC_MIN_CAMERA_QUALITY}
-realism >= {STC_MIN_REALISM}
-feasibility >= {STC_MIN_FEASIBILITY}
-copy_space_quality >= {STC_MIN_COPY_SPACE}
-distinctiveness >= {STC_MIN_DISTINCTIVENESS}
-advertising_readiness >= {STC_MIN_AD_READINESS}
-
-Overall release floor >= {STC_HIGH_ALERT_RELEASE_FLOOR}
-
-No threshold may be lowered.
-
-==================================================
-STC BRAND INTELLIGENCE
-==================================================
-
-{stc_brand_pack_prompt_fragment(
-    benefit_family=benefit_family,
-    stc_style=stc_style,
-)}
-
-==================================================
-BRAND CONTEXT
-==================================================
-
-{compact_json(
-    brand_context,
-    6000,
-)}
-
-==================================================
-VISUAL REFERENCE DNA
-==================================================
-
-{compact_json(
-    visual_references,
-    7000,
-)}
-
-References are DNA, not templates.
-
-Do not copy them.
-
-==================================================
-HARD CREATIVE RULES
-==================================================
-
-Never repair into:
-
-- customer + POS + counter + merchant tableau
-- wooden checkout counter cliché
-- worker packing a parcel as the e-commerce idea
-- ordinary transaction photography
-- generic person holding a phone
-- purple used as the concept
-- random fintech neon
-- holograms
-- floating cards
-- floating POS devices
-- network lines
-- fake banking UI
-- generated headline
-- generated STC logo
-
-==================================================
-MERCHANT PAYMENTS
-==================================================
-
-For merchant_payments:
-
-The viewer must understand BOTH:
-
-ONLINE / E-COMMERCE SALES
-
-and
-
-PHYSICAL / IN-STORE PAYMENT ACCEPTANCE
-
-through ONE coherent advertising mechanism.
-
-A card reader counts as physical POS.
-
-A digital storefront counts as e-commerce.
-
-Simply showing both in the same room is NOT fusion.
-
-==================================================
-REALISM
-==================================================
-
-The final frame must be physically believable.
-
-Respect:
-- perspective
-- scale
-- gravity
-- contact
-- occlusion
-- shadows
-- reflections
-- material roughness
-- motivated light
-
-Do not solve conceptual weakness with impossible geometry.
-
-==================================================
-CAMERA
-==================================================
-
-Camera must strengthen the idea.
-
-Use deliberate:
-- viewpoint
-- focal length
-- foreground/background hierarchy
-- perspective reveal
-- negative space
-
-Do not simply say "cinematic".
-
-==================================================
-COPY SPACE
-==================================================
-
-Reserve approximately 25%-40% natural copy space.
-
-No blank digital panel.
-
-==================================================
-OUTPUT
-==================================================
-
-Create exactly TWO repaired concepts:
-
-T01
-T02
-
-Each must use the full concept schema.
-
-Then evaluate BOTH using the full evaluation schema.
-
-Then jury-select ONE only if you would genuinely authorize
-expensive image production.
-
-merchant_fusion_approved must be TRUE for merchant_payments
-only when the two merchant channels are genuinely unified.
-
-fatal_issues must list any genuine fatal problem.
-
-Return exactly the structured schema.
-""".strip()
-
-
-# =========================================================
-# FRESH RECOVERY PROMPT
-# =========================================================
-
-def build_recovery_board_prompt(
-    *,
-    user_request: str,
-    failed_concepts: Sequence[
-        CreativeConcept
-    ],
-    brand_context: Any,
-    visual_references: Any,
-    benefit_family: str,
-    stc_style: str,
-) -> str:
-
-    failure_context = build_failure_context(
-        failed_concepts,
-        limit=4,
-    )
-
-    used_archetypes = primary_archetypes(
-        failed_concepts
-    )
-
-    return f"""
-You are XPAND V5.5 STC BANK FRESH CREATIVE RECOVERY BOARD.
-
-The first concept pool was genuinely evaluated.
-
-No concept passed the strict campaign-quality gates.
-
-No suitable near-miss qualified for Targeted Repair.
-
-Therefore the problem is considered FUNDAMENTAL rather than
-a small execution gap.
-
-You have ONE final paid creative call.
-
-This one response must:
-
-1. Create exactly {STC_RECOVERY_CONCEPT_COUNT} materially NEW
-   advertising concepts.
-2. Evaluate all of them.
-3. Jury-select the strongest.
-4. Return all of it in ONE structured response.
-
-==================================================
-REQUEST
-==================================================
-
-{clean_text(
-    user_request,
-    6500,
-)}
-
-==================================================
-BENEFIT
-==================================================
-
-{benefit_family}
-
-==================================================
-STYLE
-==================================================
-
-{stc_style}
-
-==================================================
-FAILED STRONGEST DIRECTIONS
-==================================================
-
-{failure_context}
-
-==================================================
-USED ARCHETYPES
-==================================================
-
-{compact_json(
-    used_archetypes,
-    3000,
-)}
-
-==================================================
-RECOVERY LAW
-==================================================
-
-Do NOT cosmetically rewrite the failed ideas.
-
-Change the conceptual mechanism.
-
-Find a materially different campaign grammar.
-
-If earlier ideas relied on:
-- ordinary retail
-- customer transactions
-- split scenes
-- portals
-- floating technology
-- decorative purple
-- phone-holding lifestyle
-- generic interior
-- literal banking props
-
-use a different visual logic.
-
-==================================================
-STRICT RELEASE GATES — NO LOWERING
-==================================================
-
-concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
-brand_fit >= {STC_MIN_BRAND_FIT}
-originality >= {STC_MIN_ORIGINALITY}
-visual_mechanism >= {STC_MIN_VISUAL_MECHANISM}
-camera_quality >= {STC_MIN_CAMERA_QUALITY}
-realism >= {STC_MIN_REALISM}
-feasibility >= {STC_MIN_FEASIBILITY}
-copy_space_quality >= {STC_MIN_COPY_SPACE}
-distinctiveness >= {STC_MIN_DISTINCTIVENESS}
-advertising_readiness >= {STC_MIN_AD_READINESS}
-
-Overall release floor >= {STC_HIGH_ALERT_RELEASE_FLOOR}
-
-==================================================
-STC BRAND INTELLIGENCE
-==================================================
-
-{stc_brand_pack_prompt_fragment(
-    benefit_family=benefit_family,
-    stc_style=stc_style,
-)}
-
-==================================================
-MERCHANT PAYMENTS
-==================================================
-
-For merchant_payments:
-
-Online commerce and physical in-store payment must be
-understood as ONE merchant ecosystem through ONE visible
-advertising mechanism.
-
-Do not use:
-customer + terminal + counter + packing worker.
-
-==================================================
-BAN
-==================================================
-
-No:
-- wooden counter cliché
-- generic boutique checkout
-- generic phone lifestyle
-- floating cards
-- floating phones
-- floating POS
-- network lines
-- holograms
-- HUD
-- neon fintech tunnel
-- random particles
-- generated text/logo
-- fake banking UI
-
-==================================================
-OUTPUT
-==================================================
-
-Use IDs:
-
-R01
-R02
-R03
-
-and R04 only if configured for four concepts.
-
-Evaluate all concepts honestly.
-
-Do not inflate scores.
-
-Jury-select only if genuinely production-worthy.
-
-Return exactly the structured schema.
-""".strip()
-
-
-# =========================================================
-# BOARD EXECUTION
+# COMBINED REPAIR / RECOVERY BOARD
 # =========================================================
 
 def run_creative_board(
@@ -6223,11 +6173,6 @@ def run_creative_board(
         )
     )
 
-    #
-    # Because IDs are intentionally forced locally,
-    # normalize evaluation IDs by array position too.
-    #
-
     normalized_evaluations: List[
         Dict[str, Any]
     ] = []
@@ -6241,6 +6186,7 @@ def run_creative_board(
             item,
             dict,
         ):
+
             continue
 
         normalized = dict(
@@ -6285,7 +6231,8 @@ def run_creative_board(
     )
 
     #
-    # Normalize selected ID if model used source-style IDs.
+    # Normalize selected ID if the Director used a different
+    # prefix but correct numeric index.
     #
     selected_id = clean_text(
         payload.get(
@@ -6296,7 +6243,8 @@ def run_creative_board(
 
     valid_ids = {
         concept.concept_id
-        for concept in concepts
+        for concept
+        in concepts
     }
 
     if selected_id not in valid_ids:
@@ -6314,7 +6262,7 @@ def run_creative_board(
                 )
             )
 
-            candidate_id = (
+            normalized_id = (
                 id_prefix
                 +
                 str(
@@ -6324,11 +6272,11 @@ def run_creative_board(
                 )
             )
 
-            if candidate_id in valid_ids:
+            if normalized_id in valid_ids:
 
                 payload[
                     "selected_concept_id"
-                ] = candidate_id
+                ] = normalized_id
 
     return (
         concepts,
@@ -6379,9 +6327,7 @@ def run_targeted_repair_board(
         concept_count=(
             STC_TARGETED_REPAIR_OUTPUT_COUNT
         ),
-        id_prefix=(
-            "T"
-        ),
+        id_prefix="T",
         user_request=(
             user_request
         ),
@@ -6395,7 +6341,7 @@ def run_targeted_repair_board(
             "stc_targeted_repair_board"
         ),
         schema_name=(
-            "xpand_stc_targeted_repair_v55"
+            "xpand_stc_targeted_repair_v56"
         ),
     )
 
@@ -6443,9 +6389,7 @@ def run_recovery_board(
         concept_count=(
             STC_RECOVERY_CONCEPT_COUNT
         ),
-        id_prefix=(
-            "R"
-        ),
+        id_prefix="R",
         user_request=(
             user_request
         ),
@@ -6459,33 +6403,662 @@ def run_recovery_board(
             "stc_recovery_board"
         ),
         schema_name=(
-            "xpand_stc_recovery_board_v55"
+            "xpand_stc_recovery_board_v56"
         ),
     )
 
 
 # =========================================================
-# QUALITY-FIRST BOARD ARBITRATION
+# CONCEPT LOOKUP
 # =========================================================
 
-def arbitrate_board_selection(
+def find_concept_by_id(
+    concepts: Sequence[
+        CreativeConcept
+    ],
+    concept_id: str,
+) -> Optional[
+    CreativeConcept
+]:
+
+    target = clean_text(
+        concept_id,
+        100,
+    )
+
+    for concept in concepts:
+
+        if (
+            concept.concept_id
+            ==
+            target
+        ):
+
+            return concept
+
+    return None
+
+
+# =========================================================
+# JURY DIAGNOSTICS
+#
+# These fields are retained.
+# They are NOT strict-release authority after qualification.
+# =========================================================
+
+def jury_diagnostics(
+    jury: Any,
+) -> Dict[str, Any]:
+
+    jury = safe_dict(
+        jury
+    )
+
+    return {
+
+        "selected_concept_id":
+            clean_text(
+                jury.get(
+                    "selected_concept_id"
+                ),
+                100,
+            ),
+
+        "approval":
+            bool(
+                jury.get(
+                    "approval",
+                    False,
+                )
+            ),
+
+        "confidence":
+            clamp_score(
+                jury.get(
+                    "confidence"
+                )
+            ),
+
+        "merchant_fusion_approved":
+            bool(
+                jury.get(
+                    "merchant_fusion_approved",
+                    False,
+                )
+            ),
+
+        "fatal_issues":
+            [
+                clean_text(
+                    value,
+                    1000,
+                )
+                for value
+                in safe_list(
+                    jury.get(
+                        "fatal_issues"
+                    )
+                )[:10]
+                if clean_text(
+                    value,
+                    1000,
+                )
+            ],
+
+        "advertising_reason":
+            clean_text(
+                jury.get(
+                    "advertising_reason"
+                ),
+                1800,
+            ),
+
+        "brand_reason":
+            clean_text(
+                jury.get(
+                    "brand_reason"
+                ),
+                1800,
+            ),
+
+        "originality_reason":
+            clean_text(
+                jury.get(
+                    "originality_reason"
+                ),
+                1800,
+            ),
+
+        "production_instruction":
+            clean_text(
+                jury.get(
+                    "production_instruction"
+                ),
+                3500,
+            ),
+
+        "recommended_camera_angle":
+            clean_text(
+                jury.get(
+                    "recommended_camera_angle"
+                ),
+                900,
+            ),
+
+        "recommended_lens":
+            clean_text(
+                jury.get(
+                    "recommended_lens"
+                ),
+                400,
+            ),
+
+        "recommended_perspective":
+            clean_text(
+                jury.get(
+                    "recommended_perspective"
+                ),
+                1200,
+            ),
+
+        "do_not_drift_into":
+            [
+                clean_text(
+                    value,
+                    1000,
+                )
+                for value
+                in safe_list(
+                    jury.get(
+                        "do_not_drift_into"
+                    )
+                )[:12]
+                if clean_text(
+                    value,
+                    1000,
+                )
+            ],
+    }
+
+
+def print_jury_diagnostics(
     *,
-    board_concepts: Sequence[
+    jury: Any,
+    qualified: Sequence[
         CreativeConcept
     ],
-    board_qualified: Sequence[
+    source: str,
+) -> None:
+
+    diag = jury_diagnostics(
+        jury
+    )
+
+    print("")
+    print(
+        "⚖️ V5.6 JURY DIAGNOSTICS"
+    )
+    print(
+        "Source:",
+        source,
+    )
+    print(
+        "Jury selected ID:",
+        (
+            diag.get(
+                "selected_concept_id"
+            )
+            or "-"
+        ),
+    )
+    print(
+        "Jury approval:",
+        diag.get(
+            "approval"
+        ),
+    )
+    print(
+        "Jury confidence:",
+        diag.get(
+            "confidence"
+        ),
+    )
+    print(
+        "Jury merchant fusion:",
+        diag.get(
+            "merchant_fusion_approved"
+        ),
+    )
+    print(
+        "Jury fatal issues:",
+        compact_json(
+            diag.get(
+                "fatal_issues"
+            ),
+            2000,
+        ),
+    )
+    print(
+        "Strict-qualified IDs:",
+        [
+            concept.concept_id
+            for concept
+            in qualified
+        ],
+    )
+
+
+# =========================================================
+# PRODUCTION INSTRUCTION
+# =========================================================
+
+def build_deterministic_production_instruction(
+    winner: CreativeConcept,
+) -> str:
+
+    return clean_text(
+        (
+            "XPAND V5.6 STRICT-QUALIFIED PRODUCTION LOCK. "
+            "Produce the independently evaluated campaign concept "
+            +
+            winner.concept_id
+            +
+            " without simplifying it into ordinary lifestyle "
+            "or transaction photography. Preserve the central "
+            "advertising mechanism, hero relationship, environment, "
+            "brand logic and copy space. Camera angle: "
+            +
+            (
+                winner.camera_angle
+                or
+                "preserve evaluated camera"
+            )
+            +
+            ". Lens: "
+            +
+            (
+                winner.lens
+                or
+                "preserve evaluated lens"
+            )
+            +
+            ". Perspective: "
+            +
+            (
+                winner.perspective
+                or
+                "preserve evaluated perspective"
+            )
+            +
+            ". Lighting: "
+            +
+            (
+                winner.lighting
+                or
+                "premium physically motivated lighting"
+            )
+            +
+            ". Do not add text, logo, fake UI, fintech decoration, "
+            "wooden checkout tableau, packing-worker background, "
+            "or generic customer-payment photography."
+        ),
+        4200,
+    )
+
+
+# =========================================================
+# ATTACH JURY AS ADVISORY ART DIRECTION
+# =========================================================
+
+def attach_jury_advisory(
+    *,
+    winner: CreativeConcept,
+    jury: Any,
+    source: str,
+    strict_qualified_ids: Sequence[str],
+    deterministic_reason: str,
+) -> None:
+
+    diag = jury_diagnostics(
+        jury
+    )
+
+    jury_selected_id = clean_text(
+        diag.get(
+            "selected_concept_id"
+        ),
+        100,
+    )
+
+    #
+    # Only apply jury camera override when Jury actually
+    # recommended THIS qualified winner.
+    #
+    # Otherwise preserve this concept's own evaluated camera.
+    #
+    jury_recommended_winner = bool(
+        jury_selected_id
+        and
+        jury_selected_id
+        ==
+        winner.concept_id
+    )
+
+    production_instruction = (
+        clean_text(
+            diag.get(
+                "production_instruction"
+            ),
+            3500,
+        )
+        if jury_recommended_winner
+        else
+        ""
+    )
+
+    if not production_instruction:
+
+        production_instruction = (
+            build_deterministic_production_instruction(
+                winner
+            )
+        )
+
+    drift = dedupe_strings(
+        list(
+            safe_list(
+                diag.get(
+                    "do_not_drift_into"
+                )
+            )
+        )
+        +
+        [
+            "generic checkout-counter scene",
+            "customer + POS + merchant transaction tableau",
+            "worker packing a parcel in background",
+            "wooden luxury counter cliché",
+            "generic fintech effects",
+            "reference-image cloning",
+            "generated text or logo",
+            "fake readable banking UI",
+        ]
+    )[:14]
+
+    winner.debate[
+        "finalist_jury"
+    ] = {
+
+        "source":
+            source,
+
+        "role":
+            "advisory_art_direction",
+
+        "release_authority":
+            "deterministic_per_concept_strict_qualification",
+
+        "approval":
+            diag.get(
+                "approval"
+            ),
+
+        "confidence":
+            diag.get(
+                "confidence"
+            ),
+
+        "merchant_fusion_approved":
+            diag.get(
+                "merchant_fusion_approved"
+            ),
+
+        "fatal_issues":
+            diag.get(
+                "fatal_issues"
+            ),
+
+        "advertising_reason":
+            diag.get(
+                "advertising_reason"
+            ),
+
+        "brand_reason":
+            diag.get(
+                "brand_reason"
+            ),
+
+        "originality_reason":
+            diag.get(
+                "originality_reason"
+            ),
+
+        "jury_selected_id":
+            jury_selected_id,
+
+        "jury_recommended_this_winner":
+            jury_recommended_winner,
+
+        "strict_qualified_ids":
+            list(
+                strict_qualified_ids
+            ),
+
+        "deterministic_reason":
+            deterministic_reason,
+
+        "production_instruction":
+            production_instruction,
+
+        "do_not_drift_into":
+            drift,
+
+        "thresholds_lowered":
+            False,
+
+        "jury_global_fields_can_veto_strict_winner":
+            False,
+    }
+
+    camera = winner.debate.setdefault(
+        "camera_director",
+        {},
+    )
+
+    if jury_recommended_winner:
+
+        jury_angle = clean_text(
+            diag.get(
+                "recommended_camera_angle"
+            ),
+            900,
+        )
+
+        jury_lens = clean_text(
+            diag.get(
+                "recommended_lens"
+            ),
+            400,
+        )
+
+        jury_perspective = clean_text(
+            diag.get(
+                "recommended_perspective"
+            ),
+            1200,
+        )
+
+        if jury_angle:
+
+            winner.camera_angle = (
+                jury_angle
+            )
+
+            camera[
+                "camera_angle"
+            ] = jury_angle
+
+        if jury_lens:
+
+            winner.lens = (
+                jury_lens
+            )
+
+            camera[
+                "lens"
+            ] = jury_lens
+
+        if jury_perspective:
+
+            winner.perspective = (
+                jury_perspective
+            )
+
+            camera[
+                "perspective"
+            ] = jury_perspective
+
+            camera[
+                "perspective_type"
+            ] = jury_perspective
+
+    camera[
+        "camera_lock_instruction"
+    ] = (
+        "V5.6 STRICT-QUALIFIED CAMERA LOCK. "
+        "Use the camera evaluated for this exact winning concept. "
+        "Only apply Jury camera changes when the Jury selected "
+        "this same strict-qualified concept."
+    )
+
+
+# =========================================================
+# DETERMINISTIC STRICT-QUALIFIED RELEASE
+#
+# THIS IS THE V5.6 FIX.
+# =========================================================
+
+def deterministic_strict_release(
+    *,
+    concepts: Sequence[
         CreativeConcept
     ],
-    jury: Dict[str, Any],
-    benefit_family: str,
+    jury: Any,
     source: str,
 ) -> Tuple[
     Optional[CreativeConcept],
     Dict[str, Any],
 ]:
 
-    original_selected_id = clean_text(
-        jury.get(
+    qualified = (
+        strict_qualified_concepts(
+            concepts,
+            high_alert=True,
+        )
+    )
+
+    diag = jury_diagnostics(
+        jury
+    )
+
+    result: Dict[
+        str,
+        Any,
+    ] = {
+
+        "source":
+            source,
+
+        "authority":
+            (
+                "deterministic_per_concept_"
+                "strict_qualification"
+            ),
+
+        "strict_qualified_ids":
+            [
+                concept.concept_id
+                for concept
+                in qualified
+            ],
+
+        "strict_qualified_count":
+            len(
+                qualified
+            ),
+
+        "jury_selected_id":
+            diag.get(
+                "selected_concept_id"
+            ),
+
+        "jury_approval":
+            diag.get(
+                "approval"
+            ),
+
+        "jury_confidence":
+            diag.get(
+                "confidence"
+            ),
+
+        "jury_merchant_fusion_approved":
+            diag.get(
+                "merchant_fusion_approved"
+            ),
+
+        "jury_fatal_issues":
+            diag.get(
+                "fatal_issues"
+            ),
+
+        "jury_fields_are_advisory":
+            True,
+
+        "thresholds_lowered":
+            False,
+
+        "released":
+            False,
+
+        "winner_id":
+            "",
+
+        "reason":
+            "",
+    }
+
+    #
+    # No strict-qualified concept:
+    # quality failure remains quality failure.
+    #
+    if not qualified:
+
+        result[
+            "reason"
+        ] = (
+            "no_strict_qualified_concept"
+        )
+
+        return (
+            None,
+            result,
+        )
+
+    #
+    # V5.6 invariant:
+    #
+    # Once strict qualification exists, Jury global fields
+    # cannot destroy it.
+    #
+    # Highest strict-qualified concept wins.
+    #
+    winner = qualified[
+        0
+    ]
+
+    jury_selected_id = clean_text(
+        diag.get(
             "selected_concept_id"
         ),
         100,
@@ -6494,309 +7067,147 @@ def arbitrate_board_selection(
     qualified_ids = [
         concept.concept_id
         for concept
-        in board_qualified
+        in qualified
     ]
 
-    result: Dict[str, Any] = {
-
-        "used":
-            False,
-
-        "original_selected_id":
-            original_selected_id,
-
-        "selected_was_qualified":
-            (
-                original_selected_id
-                in qualified_ids
-            ),
-
-        "arbitrated_winner_id":
-            "",
-
-        "reason":
-            "",
-
-        "qualified_ids":
-            qualified_ids,
-
-        "source":
-            source,
-
-        "thresholds_lowered":
-            False,
-    }
-
-    if not board_qualified:
-
-        result[
-            "reason"
-        ] = (
-            "no_strict_qualified_board_concept"
-        )
-
-        return (
-            None,
-            result,
-        )
-
-    (
-        global_gate_passed,
-        global_failures,
-    ) = jury_global_gate(
-        jury,
-        benefit_family=(
-            benefit_family
-        ),
-    )
-
-    result[
-        "jury_global_gate_passed"
-    ] = global_gate_passed
-
-    result[
-        "jury_global_failures"
-    ] = global_failures
-
-    if not global_gate_passed:
-
-        result[
-            "reason"
-        ] = (
-            "jury_global_gate_failed:"
-            +
-            ",".join(
-                global_failures
-            )
-        )
-
-        return (
-            None,
-            result,
-        )
-
-    selected = find_concept_by_id(
-        board_concepts,
-        original_selected_id,
-    )
-
     if (
-        selected is not None
-        and
-        original_selected_id
+        jury_selected_id
+        ==
+        winner.concept_id
+    ):
+
+        reason = (
+            "jury_and_strict_ranking_agree"
+        )
+
+    elif (
+        jury_selected_id
         in qualified_ids
     ):
 
-        attach_jury_approval(
-            winner=(
-                selected
-            ),
-            jury=(
-                jury
-            ),
-            source=(
-                source
-            ),
-            original_selected_id=(
-                original_selected_id
-            ),
-            arbitrated=False,
+        reason = (
+            "strict_highest_score_outranked_"
+            "different_qualified_jury_choice"
         )
 
-        result[
-            "reason"
-        ] = (
-            "jury_selected_strict_qualified_concept"
+    elif jury_selected_id:
+
+        reason = (
+            "jury_selected_unqualified_concept_"
+            "highest_strict_qualified_released"
         )
 
-        return (
-            selected,
-            result,
+    else:
+
+        reason = (
+            "jury_selection_missing_"
+            "highest_strict_qualified_released"
         )
 
-    if not STC_QUALITY_FIRST_ARBITRATION_ENABLED:
-
-        result[
-            "reason"
-        ] = (
-            "quality_first_arbitration_disabled"
-        )
-
-        return (
-            None,
-            result,
-        )
-
-    #
-    # The Director approved the board globally, but selected
-    # an unqualified ID while another board concept passed
-    # EVERY deterministic release gate.
-    #
-    # Promote the strongest strict-qualified concept.
-    #
-    promoted = board_qualified[
-        0
-    ]
-
-    attach_jury_approval(
+    attach_jury_advisory(
         winner=(
-            promoted
+            winner
         ),
         jury=(
             jury
         ),
         source=(
             source
-            +
-            "_quality_first_arbitration"
         ),
-        original_selected_id=(
-            original_selected_id
+        strict_qualified_ids=(
+            qualified_ids
         ),
-        arbitrated=True,
+        deterministic_reason=(
+            reason
+        ),
     )
 
-    promoted.debate[
-        "board_arbitration"
+    winner.debate[
+        "strict_release_authority"
     ] = {
 
-        "used":
-            True,
+        "policy_version":
+            "5.6",
 
-        "source":
-            source,
+        "authority":
+            (
+                "per_concept_strict_qualification"
+            ),
 
-        "original_selected_id":
-            original_selected_id,
+        "winner_id":
+            winner.concept_id,
 
-        "promoted_id":
-            promoted.concept_id,
+        "winner_score":
+            winner.weighted_score,
+
+        "strict_qualified_ids":
+            qualified_ids,
 
         "reason":
-            (
-                "jury_selected_unqualified_concept_"
-                "strict_qualified_candidate_promoted"
-            ),
+            reason,
+
+        "jury_global_veto_allowed":
+            False,
 
         "thresholds_lowered":
             False,
+
+        "real_model_generated":
+            True,
+
+        "real_model_evaluated":
+            True,
+
+        "production_feasible":
+            bool(
+                safe_dict(
+                    winner.feasibility
+                ).get(
+                    "production_feasible",
+                    False,
+                )
+            ),
+
+        "strict_dimension_failures":
+            stc_dimension_gate_failures(
+                winner
+            ),
     }
+
+    winner.quality_gate_passed = True
+
+    winner.debate[
+        "quality_release_level"
+    ] = (
+        "stc_strict_qualified_release"
+    )
 
     result.update(
         {
 
-            "used":
+            "released":
                 True,
 
-            "arbitrated_winner_id":
-                promoted.concept_id,
+            "winner_id":
+                winner.concept_id,
+
+            "winner_score":
+                winner.weighted_score,
 
             "reason":
-                (
-                    "jury_selected_unqualified_concept_"
-                    "strict_qualified_candidate_promoted"
-                ),
+                reason,
         }
     )
 
     return (
-        promoted,
+        winner,
         result,
     )
 
 
-#
-# V5.4 compatibility wrapper.
-#
-
-def arbitrate_recovery_selection(
-    *,
-    recovery_concepts: Sequence[
-        CreativeConcept
-    ],
-    recovery_qualified: Sequence[
-        CreativeConcept
-    ],
-    jury: Dict[str, Any],
-    benefit_family: str,
-) -> Tuple[
-    Optional[CreativeConcept],
-    Dict[str, Any],
-]:
-
-    return arbitrate_board_selection(
-        board_concepts=(
-            recovery_concepts
-        ),
-        board_qualified=(
-            recovery_qualified
-        ),
-        jury=(
-            jury
-        ),
-        benefit_family=(
-            benefit_family
-        ),
-        source=(
-            "stc_recovery"
-        ),
-    )
-
-
-def arbitrate_targeted_repair_selection(
-    *,
-    repair_concepts: Sequence[
-        CreativeConcept
-    ],
-    repair_qualified: Sequence[
-        CreativeConcept
-    ],
-    jury: Dict[str, Any],
-    benefit_family: str,
-) -> Tuple[
-    Optional[CreativeConcept],
-    Dict[str, Any],
-]:
-
-    return arbitrate_board_selection(
-        board_concepts=(
-            repair_concepts
-        ),
-        board_qualified=(
-            repair_qualified
-        ),
-        jury=(
-            jury
-        ),
-        benefit_family=(
-            benefit_family
-        ),
-        source=(
-            "stc_targeted_repair"
-        ),
-    )
-
-
 # =========================================================
-# RELEASE
+# NORMAL NON-STC RELEASE
 # =========================================================
-
-def mark_quality_release(
-    concept: CreativeConcept,
-    *,
-    release_level: str,
-) -> None:
-
-    concept.quality_gate_passed = True
-
-    concept.debate[
-        "quality_release_level"
-    ] = release_level
-
-    concept.debate[
-        "thresholds_lowered"
-    ] = False
-
 
 def choose_normal_release(
     *,
@@ -6837,14 +7248,18 @@ def choose_normal_release(
 
         if (
             best.weighted_score
-            >= FAST_MIN_SCORE
+            >=
+            FAST_MIN_SCORE
         ):
 
-            mark_quality_release(
-                best,
-                release_level=(
-                    "fast_release"
-                ),
+            best.quality_gate_passed = (
+                True
+            )
+
+            best.debate[
+                "quality_release_level"
+            ] = (
+                "fast_release"
             )
 
             return (
@@ -6859,14 +7274,18 @@ def choose_normal_release(
 
     if (
         best.weighted_score
-        >= MASTERPIECE_MIN_SCORE
+        >=
+        MASTERPIECE_MIN_SCORE
     ):
 
-        mark_quality_release(
-            best,
-            release_level=(
-                "masterpiece_target_release"
-            ),
+        best.quality_gate_passed = (
+            True
+        )
+
+        best.debate[
+            "quality_release_level"
+        ] = (
+            "masterpiece_target_release"
         )
 
         return (
@@ -6876,14 +7295,18 @@ def choose_normal_release(
 
     if (
         best.weighted_score
-        >= MASTERPIECE_RELEASE_FLOOR
+        >=
+        MASTERPIECE_RELEASE_FLOOR
     ):
 
-        mark_quality_release(
-            best,
-            release_level=(
-                "masterpiece_release_floor"
-            ),
+        best.quality_gate_passed = (
+            True
+        )
+
+        best.debate[
+            "quality_release_level"
+        ] = (
+            "masterpiece_release_floor"
         )
 
         return (
@@ -6897,104 +7320,8 @@ def choose_normal_release(
     )
 
 
-def choose_strict_stc_jury_release(
-    *,
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    jury: Dict[str, Any],
-    benefit_family: str,
-) -> Tuple[
-    Optional[CreativeConcept],
-    str,
-]:
-
-    qualified = (
-        strict_qualified_concepts(
-            concepts,
-            high_alert=True,
-        )
-    )
-
-    qualified_ids = {
-        concept.concept_id
-        for concept in qualified
-    }
-
-    (
-        global_passed,
-        _
-    ) = jury_global_gate(
-        jury,
-        benefit_family=(
-            benefit_family
-        ),
-    )
-
-    if not global_passed:
-
-        return (
-            None,
-            "jury_rejected",
-        )
-
-    selected_id = clean_text(
-        jury.get(
-            "selected_concept_id"
-        ),
-        100,
-    )
-
-    if selected_id not in qualified_ids:
-
-        return (
-            None,
-            "jury_selected_unqualified",
-        )
-
-    winner = find_concept_by_id(
-        concepts,
-        selected_id,
-    )
-
-    if winner is None:
-
-        return (
-            None,
-            "jury_selection_missing",
-        )
-
-    attach_jury_approval(
-        winner=(
-            winner
-        ),
-        jury=(
-            jury
-        ),
-        source=(
-            "stc_finalist_jury"
-        ),
-        original_selected_id=(
-            selected_id
-        ),
-        arbitrated=False,
-    )
-
-    mark_quality_release(
-        winner,
-        release_level=(
-            "stc_finalist_jury_release"
-        ),
-    )
-
-    return (
-        winner,
-        "stc_finalist_jury_release",
-    )
-
-
 # =========================================================
-# TECHNICAL FAILURE RESPONSE
+# TECHNICAL FAILURE
 # =========================================================
 
 def technical_failure_response(
@@ -7020,19 +7347,19 @@ def technical_failure_response(
         "=========================================="
     )
     print(
-        "This is NOT classified as a creative-quality failure."
+        (
+            "This is NOT classified as a "
+            "creative-quality failure."
+        )
     )
 
     if high_alert:
 
         print(
-            "STC High Alert produced no valid creative approval."
-        )
-
-    else:
-
-        print(
-            "Technical Smart fallback may remain available."
+            (
+                "STC High Alert produced no "
+                "valid evaluated creative release."
+            )
         )
 
     if errors:
@@ -7074,7 +7401,10 @@ def technical_failure_response(
                 VERSION,
 
             "architecture":
-                "stc_targeted_repair_v55",
+                (
+                    "stc_deterministic_"
+                    "strict_release_v56"
+                ),
 
             "technical_failure":
                 True,
@@ -7085,10 +7415,6 @@ def technical_failure_response(
             "quality_gate_passed":
                 False,
 
-            #
-            # Technical failure remains distinct from a genuine
-            # creative-quality rejection.
-            #
             "allow_smart_engine_fallback":
                 True,
 
@@ -7117,20 +7443,17 @@ def technical_failure_response(
                 (
                     3
                     if high_alert
-                    else 2
+                    else
+                    2
                 ),
 
             "director_call_maximum":
                 MASTERPIECE_MAX_DIRECTOR_CALLS,
 
-            "targeted_repair_enabled":
-                STC_TARGETED_REPAIR_ENABLED,
-
-            "targeted_repair_used":
-                False,
-
-            "recovery_used":
-                False,
+            "strict_qualified_release_authority":
+                (
+                    STC_STRICT_QUALIFIED_RELEASE_AUTHORITY
+                ),
 
             "release_level":
                 "technical_failure",
@@ -7156,7 +7479,7 @@ def technical_failure_response(
 
 
 # =========================================================
-# TOP CONCEPT BUILDER
+# TOP CONCEPTS
 # =========================================================
 
 def build_top_concept_list(
@@ -7207,6 +7530,7 @@ def build_top_concept_list(
             concept.concept_id
             in seen
         ):
+
             continue
 
         output.append(
@@ -7220,6 +7544,7 @@ def build_top_concept_list(
         if len(
             output
         ) >= limit:
+
             break
 
     return output[
@@ -7310,11 +7635,19 @@ def run_creative_brain(
 
     errors: List[str] = []
 
-    concepts: List[
+    all_concepts: List[
         CreativeConcept
     ] = []
 
-    all_concepts: List[
+    primary_concepts: List[
+        CreativeConcept
+    ] = []
+
+    targeted_repair_concepts: List[
+        CreativeConcept
+    ] = []
+
+    recovery_concepts: List[
         CreativeConcept
     ] = []
 
@@ -7326,12 +7659,9 @@ def run_creative_brain(
         "quality_failed"
     )
 
-    jury_payload: Dict[
-        str,
-        Any
-    ] = {}
-
-    technical_ideation_recovery = False
+    technical_ideation_recovery = (
+        False
+    )
 
     targeted_repair_used = False
 
@@ -7339,61 +7669,30 @@ def run_creative_brain(
         str
     ] = []
 
-    targeted_repair_concepts: List[
-        CreativeConcept
-    ] = []
-
-    targeted_repair_arbitration: Dict[
-        str,
-        Any
-    ] = {
-        "used":
-            False,
-
-        "original_selected_id":
-            "",
-
-        "selected_was_qualified":
-            False,
-
-        "arbitrated_winner_id":
-            "",
-
-        "reason":
-            "",
-
-        "qualified_ids":
-            [],
-    }
-
-    recovery_used = False
+    fresh_recovery_used = False
 
     recovery_reason = ""
 
-    recovery_concepts: List[
-        CreativeConcept
-    ] = []
+    final_jury_payload: Dict[
+        str,
+        Any
+    ] = {}
 
-    recovery_arbitration: Dict[
+    strict_release_info: Dict[
         str,
         Any
     ] = {
-        "used":
+
+        "released":
             False,
-
-        "original_selected_id":
-            "",
-
-        "selected_was_qualified":
-            False,
-
-        "arbitrated_winner_id":
-            "",
 
         "reason":
             "",
 
-        "qualified_ids":
+        "winner_id":
+            "",
+
+        "strict_qualified_ids":
             [],
     }
 
@@ -7406,13 +7705,16 @@ def run_creative_brain(
         "=========================================="
     )
     print(
-        " XPAND CREATIVE BRAIN V5.5"
+        " XPAND CREATIVE BRAIN V5.6"
     )
 
     if high_alert:
 
         print(
-            " STC BANK TARGETED-REPAIR HIGH ALERT"
+            (
+                " STC BANK DETERMINISTIC "
+                "STRICT-RELEASE HIGH ALERT"
+            )
         )
 
     else:
@@ -7464,16 +7766,18 @@ def run_creative_brain(
         (
             STC_TARGETED_REPAIR_ENABLED
             if high_alert
-            else False
+            else
+            False
         ),
     )
 
     print(
-        "Quality-first arbitration:",
+        "Strict-qualified release authority:",
         (
-            STC_QUALITY_FIRST_ARBITRATION_ENABLED
+            STC_STRICT_QUALIFIED_RELEASE_AUTHORITY
             if high_alert
-            else False
+            else
+            False
         ),
     )
 
@@ -7520,7 +7824,7 @@ def run_creative_brain(
     print("")
 
     # =====================================================
-    # CALL 1 — IDEATION
+    # CALL 1 — DIVERSE IDEATION
     # =====================================================
 
     try:
@@ -7531,32 +7835,34 @@ def run_creative_brain(
             "diverse_ideation"
         )
 
-        concepts = generate_concepts(
-            user_request=(
-                user_request
-            ),
-            brand_context=(
-                brand_context
-            ),
-            visual_references=(
-                visual_references
-            ),
-            style_hint=(
-                style_hint
-            ),
-            benefit_family=(
-                benefit_family
-            ),
-            stc_style=(
-                stc_style
-            ),
-            recovery=False,
-            concept_count=(
-                concept_count
-            ),
-            high_alert=(
-                high_alert
-            ),
+        primary_concepts = (
+            generate_concepts(
+                user_request=(
+                    user_request
+                ),
+                brand_context=(
+                    brand_context
+                ),
+                visual_references=(
+                    visual_references
+                ),
+                style_hint=(
+                    style_hint
+                ),
+                benefit_family=(
+                    benefit_family
+                ),
+                stc_style=(
+                    stc_style
+                ),
+                recovery=False,
+                concept_count=(
+                    concept_count
+                ),
+                high_alert=(
+                    high_alert
+                ),
+            )
         )
 
     except Exception as error:
@@ -7579,14 +7885,13 @@ def run_creative_brain(
             primary_error,
         )
 
-        # =================================================
-        # TECHNICAL RETRY
         #
-        # This consumes another Director call.
-        # =================================================
-
+        # One technical retry is permitted.
+        #
         if (
-            mode == MODE_MASTERPIECE
+            mode
+            ==
+            MODE_MASTERPIECE
             and
             director_calls
             <
@@ -7595,7 +7900,9 @@ def run_creative_brain(
 
             try:
 
-                technical_ideation_recovery = True
+                technical_ideation_recovery = (
+                    True
+                )
 
                 director_calls += 1
 
@@ -7603,32 +7910,34 @@ def run_creative_brain(
                     "technical_ideation_recovery"
                 )
 
-                concepts = generate_concepts(
-                    user_request=(
-                        user_request
-                    ),
-                    brand_context=(
-                        brand_context
-                    ),
-                    visual_references=(
-                        visual_references
-                    ),
-                    style_hint=(
-                        style_hint
-                    ),
-                    benefit_family=(
-                        benefit_family
-                    ),
-                    stc_style=(
-                        stc_style
-                    ),
-                    recovery=True,
-                    concept_count=(
-                        concept_count
-                    ),
-                    high_alert=(
-                        high_alert
-                    ),
+                primary_concepts = (
+                    generate_concepts(
+                        user_request=(
+                            user_request
+                        ),
+                        brand_context=(
+                            brand_context
+                        ),
+                        visual_references=(
+                            visual_references
+                        ),
+                        style_hint=(
+                            style_hint
+                        ),
+                        benefit_family=(
+                            benefit_family
+                        ),
+                        stc_style=(
+                            stc_style
+                        ),
+                        recovery=True,
+                        concept_count=(
+                            concept_count
+                        ),
+                        high_alert=(
+                            high_alert
+                        ),
+                    )
                 )
 
             except Exception as retry_error:
@@ -7701,7 +8010,7 @@ def run_creative_brain(
             )
 
     all_concepts.extend(
-        concepts
+        primary_concepts
     )
 
     # =====================================================
@@ -7761,7 +8070,7 @@ def run_creative_brain(
                 user_request
             ),
             concepts=(
-                concepts
+                primary_concepts
             ),
             benefit_family=(
                 benefit_family
@@ -7814,14 +8123,14 @@ def run_creative_brain(
             ),
         )
 
-    concepts.sort(
+    primary_concepts.sort(
         key=lambda item:
             item.weighted_score,
         reverse=True,
     )
 
     # =====================================================
-    # NORMAL MODE
+    # NORMAL NON-STC
     # =====================================================
 
     if not high_alert:
@@ -7831,7 +8140,7 @@ def run_creative_brain(
             release_level,
         ) = choose_normal_release(
             concepts=(
-                concepts
+                primary_concepts
             ),
             mode=(
                 mode
@@ -7846,7 +8155,7 @@ def run_creative_brain(
 
         primary_qualified = (
             strict_qualified_concepts(
-                concepts,
+                primary_concepts,
                 high_alert=True,
             )
         )
@@ -7859,47 +8168,49 @@ def run_creative_brain(
         )
 
         # =================================================
-        # TECHNICAL IDEATION RETRY ALREADY CONSUMED CALL 2.
+        # TECHNICAL RETRY USED ALL 3 CALLS
         #
-        # Executive Review is now Call 3.
-        # No additional Jury/Repair/Recovery call is legal.
-        #
-        # A strict reviewed concept may still release.
+        # If Executive Review itself found a strict-qualified
+        # concept, release it deterministically.
         # =================================================
 
         if technical_ideation_recovery:
 
             if primary_qualified:
 
-                winner = (
-                    primary_qualified[
-                        0
-                    ]
-                )
-
-                release_level = (
-                    "stc_technical_retry_strict_review_release"
-                )
-
-                mark_quality_release(
+                (
                     winner,
-                    release_level=(
-                        release_level
+                    strict_release_info,
+                ) = deterministic_strict_release(
+                    concepts=(
+                        primary_concepts
+                    ),
+                    jury={},
+                    source=(
+                        "technical_retry_review"
                     ),
                 )
+
+                if winner:
+
+                    release_level = (
+                        "stc_technical_retry_"
+                        "strict_release"
+                    )
 
             else:
 
                 winner = None
 
                 release_level = (
-                    "quality_failed_after_technical_retry"
+                    "quality_failed_after_"
+                    "technical_retry"
                 )
 
         # =================================================
-        # ROUTE A
-        # STRICT PRIMARY FINALISTS
-        # CALL 3 = JURY
+        # ROUTE A:
+        # PRIMARY STRICT FINALISTS
+        # CALL 3 = ADVISORY FINAL JURY
         # =================================================
 
         elif primary_qualified:
@@ -7924,43 +8235,34 @@ def run_creative_brain(
                         "stc_finalist_jury"
                     )
 
-                    jury_payload = run_finalist_jury(
-                        user_request=(
-                            user_request
-                        ),
-                        finalists=(
-                            finalists
-                        ),
-                        benefit_family=(
-                            benefit_family
-                        ),
-                        stc_style=(
-                            stc_style
-                        ),
-                    )
-
-                    (
-                        winner,
-                        release_level,
-                    ) = (
-                        choose_strict_stc_jury_release(
-                            concepts=(
-                                concepts
+                    final_jury_payload = (
+                        run_finalist_jury(
+                            user_request=(
+                                user_request
                             ),
-                            jury=(
-                                jury_payload
+                            finalists=(
+                                finalists
                             ),
                             benefit_family=(
                                 benefit_family
+                            ),
+                            stc_style=(
+                                stc_style
                             ),
                         )
                     )
 
                 except Exception as jury_error:
 
+                    #
+                    # V5.6:
+                    #
+                    # Jury technical failure cannot erase concepts
+                    # already independently strict-qualified.
+                    #
                     errors.append(
                         (
-                            "finalist_jury: "
+                            "finalist_jury_advisory_failure: "
                             +
                             clean_text(
                                 jury_error,
@@ -7969,42 +8271,51 @@ def run_creative_brain(
                         )
                     )
 
-                    return technical_failure_response(
-                        user_request=(
-                            user_request
-                        ),
-                        mode=(
-                            mode
-                        ),
-                        errors=(
-                            errors
-                        ),
-                        director_calls=(
-                            director_calls
-                        ),
-                        history=(
-                            director_history
-                        ),
-                        benefit_family=(
-                            benefit_family
-                        ),
-                        stc_style=(
-                            stc_style
-                        ),
-                        high_alert=(
-                            high_alert
-                        ),
-                    )
+                    final_jury_payload = {}
+
+            print_jury_diagnostics(
+                jury=(
+                    final_jury_payload
+                ),
+                qualified=(
+                    primary_qualified
+                ),
+                source=(
+                    "stc_finalist_jury"
+                ),
+            )
+
+            (
+                winner,
+                strict_release_info,
+            ) = deterministic_strict_release(
+                concepts=(
+                    primary_concepts
+                ),
+                jury=(
+                    final_jury_payload
+                ),
+                source=(
+                    "stc_primary_strict_finalists"
+                ),
+            )
+
+            if winner:
+
+                release_level = (
+                    "stc_primary_"
+                    "strict_qualified_release"
+                )
 
         # =================================================
-        # NO STRICT PRIMARY FINALIST
+        # NO PRIMARY STRICT FINALIST
         # =================================================
 
         else:
 
             repair_candidates = (
                 select_targeted_repair_candidates(
-                    concepts
+                    primary_concepts
                 )
             )
 
@@ -8015,36 +8326,36 @@ def run_creative_brain(
                 ),
             )
 
-            if repair_candidates:
+            for candidate in (
+                repair_candidates
+            ):
 
-                for candidate in repair_candidates:
-
-                    print(
-                        (
-                            "  ↳ "
-                            +
-                            candidate.concept_id
-                            +
-                            " score="
-                            +
-                            str(
-                                candidate.weighted_score
-                            )
-                            +
-                            " gaps="
-                            +
-                            compact_json(
-                                targeted_repair_dimension_gaps(
-                                    candidate
-                                ),
-                                2000,
-                            )
+                print(
+                    (
+                        "  ↳ "
+                        +
+                        candidate.concept_id
+                        +
+                        " | score="
+                        +
+                        str(
+                            candidate.weighted_score
+                        )
+                        +
+                        " | gaps="
+                        +
+                        compact_json(
+                            targeted_repair_dimension_gaps(
+                                candidate
+                            ),
+                            1800,
                         )
                     )
+                )
 
             # =============================================
-            # ROUTE B
-            # CALL 3 = TARGETED REPAIR
+            # ROUTE B:
+            # TARGETED REPAIR
             # =============================================
 
             if (
@@ -8057,6 +8368,14 @@ def run_creative_brain(
                 MASTERPIECE_MAX_DIRECTOR_CALLS
             ):
 
+                targeted_repair_used = True
+
+                targeted_repair_source_ids = [
+                    candidate.concept_id
+                    for candidate
+                    in repair_candidates
+                ]
+
                 print("")
                 print(
                     "🛠️ STC TARGETED CREATIVE REPAIR"
@@ -8065,19 +8384,12 @@ def run_creative_brain(
                     "Near-miss detected."
                 )
                 print(
-                    "Call 3 will repair the strongest "
-                    "existing proposition instead of "
-                    "discarding it."
+                    (
+                        "Call 3 will repair the strongest "
+                        "existing proposition."
+                    )
                 )
                 print("")
-
-                targeted_repair_used = True
-
-                targeted_repair_source_ids = [
-                    candidate.concept_id
-                    for candidate
-                    in repair_candidates
-                ]
 
                 try:
 
@@ -8090,25 +8402,27 @@ def run_creative_brain(
                     (
                         targeted_repair_concepts,
                         repair_jury,
-                    ) = run_targeted_repair_board(
-                        user_request=(
-                            user_request
-                        ),
-                        repair_candidates=(
-                            repair_candidates
-                        ),
-                        brand_context=(
-                            brand_context
-                        ),
-                        visual_references=(
-                            visual_references
-                        ),
-                        benefit_family=(
-                            benefit_family
-                        ),
-                        stc_style=(
-                            stc_style
-                        ),
+                    ) = (
+                        run_targeted_repair_board(
+                            user_request=(
+                                user_request
+                            ),
+                            repair_candidates=(
+                                repair_candidates
+                            ),
+                            brand_context=(
+                                brand_context
+                            ),
+                            visual_references=(
+                                visual_references
+                            ),
+                            benefit_family=(
+                                benefit_family
+                            ),
+                            stc_style=(
+                                stc_style
+                            ),
+                        )
                     )
 
                     all_concepts.extend(
@@ -8129,26 +8443,35 @@ def run_creative_brain(
                         ),
                     )
 
-                    jury_payload = (
+                    print_jury_diagnostics(
+                        jury=(
+                            repair_jury
+                        ),
+                        qualified=(
+                            repair_qualified
+                        ),
+                        source=(
+                            "stc_targeted_repair_board"
+                        ),
+                    )
+
+                    final_jury_payload = (
                         repair_jury
                     )
 
                     (
                         winner,
-                        targeted_repair_arbitration,
+                        strict_release_info,
                     ) = (
-                        arbitrate_targeted_repair_selection(
-                            repair_concepts=(
+                        deterministic_strict_release(
+                            concepts=(
                                 targeted_repair_concepts
-                            ),
-                            repair_qualified=(
-                                repair_qualified
                             ),
                             jury=(
                                 repair_jury
                             ),
-                            benefit_family=(
-                                benefit_family
+                            source=(
+                                "stc_targeted_repair_board"
                             ),
                         )
                     )
@@ -8156,20 +8479,15 @@ def run_creative_brain(
                     if winner:
 
                         release_level = (
-                            "stc_targeted_repair_release"
-                        )
-
-                        mark_quality_release(
-                            winner,
-                            release_level=(
-                                release_level
-                            ),
+                            "stc_targeted_repair_"
+                            "strict_qualified_release"
                         )
 
                     else:
 
                         release_level = (
-                            "targeted_repair_quality_failed"
+                            "targeted_repair_"
+                            "quality_failed"
                         )
 
                 except Exception as repair_error:
@@ -8213,8 +8531,8 @@ def run_creative_brain(
                     )
 
             # =============================================
-            # ROUTE C
-            # CALL 3 = FRESH RECOVERY
+            # ROUTE C:
+            # FRESH RECOVERY
             # =============================================
 
             elif (
@@ -8225,10 +8543,11 @@ def run_creative_brain(
                 MASTERPIECE_MAX_DIRECTOR_CALLS
             ):
 
-                recovery_used = True
+                fresh_recovery_used = True
 
                 recovery_reason = (
-                    "no_strict_primary_and_no_repairable_near_miss"
+                    "no_strict_primary_and_"
+                    "no_repairable_near_miss"
                 )
 
                 print("")
@@ -8240,8 +8559,11 @@ def run_creative_brain(
                     recovery_reason,
                 )
                 print(
-                    "No repairable near-miss exists; "
-                    "Call 3 will rebuild the creative mechanism."
+                    (
+                        "No repairable near-miss exists; "
+                        "Call 3 will rebuild the "
+                        "creative mechanism."
+                    )
                 )
                 print("")
 
@@ -8261,7 +8583,7 @@ def run_creative_brain(
                             user_request
                         ),
                         failed_concepts=(
-                            concepts
+                            primary_concepts
                         ),
                         brand_context=(
                             brand_context
@@ -8295,26 +8617,63 @@ def run_creative_brain(
                         ),
                     )
 
-                    jury_payload = (
+                    for qualified_item in (
+                        recovery_qualified
+                    ):
+
+                        print(
+                            (
+                                "  ✅ "
+                                +
+                                qualified_item.concept_id
+                                +
+                                " | "
+                                +
+                                qualified_item.title
+                                +
+                                " | score="
+                                +
+                                str(
+                                    qualified_item.weighted_score
+                                )
+                            )
+                        )
+
+                    print_jury_diagnostics(
+                        jury=(
+                            recovery_jury
+                        ),
+                        qualified=(
+                            recovery_qualified
+                        ),
+                        source=(
+                            "stc_recovery_board"
+                        ),
+                    )
+
+                    final_jury_payload = (
                         recovery_jury
                     )
 
+                    #
+                    # THIS IS THE EXACT REGRESSION FIX:
+                    #
+                    # Recovery strict finalists > 0
+                    # MUST produce a winner.
+                    #
                     (
                         winner,
-                        recovery_arbitration,
+                        strict_release_info,
                     ) = (
-                        arbitrate_recovery_selection(
-                            recovery_concepts=(
+                        deterministic_strict_release(
+                            concepts=(
                                 recovery_concepts
-                            ),
-                            recovery_qualified=(
-                                recovery_qualified
                             ),
                             jury=(
                                 recovery_jury
                             ),
-                            benefit_family=(
-                                benefit_family
+                            source=(
+                                "stc_recovery_board"
                             ),
                         )
                     )
@@ -8322,14 +8681,8 @@ def run_creative_brain(
                     if winner:
 
                         release_level = (
-                            "stc_recovery_release"
-                        )
-
-                        mark_quality_release(
-                            winner,
-                            release_level=(
-                                release_level
-                            ),
+                            "stc_recovery_"
+                            "strict_qualified_release"
                         )
 
                     else:
@@ -8387,7 +8740,100 @@ def run_creative_brain(
                 )
 
     # =====================================================
-    # FINAL QUALITY STATE
+    # ABSOLUTE FINAL STRICT REVALIDATION
+    #
+    # No new threshold.
+    #
+    # This simply proves the winner STILL passes the exact
+    # same deterministic gates that qualified it.
+    # =====================================================
+
+    if (
+        high_alert
+        and
+        winner is not None
+    ):
+
+        final_failures = (
+            stc_dimension_gate_failures(
+                winner
+            )
+        )
+
+        final_hard = [
+            failure
+            for failure
+            in winner.quality_gate_failures
+            if failure
+            in HARD_REJECT_FAILURES
+        ]
+
+        final_score_ok = bool(
+            winner.weighted_score
+            >=
+            STC_HIGH_ALERT_RELEASE_FLOOR
+        )
+
+        final_feasible = bool(
+            safe_dict(
+                winner.feasibility
+            ).get(
+                "production_feasible",
+                False,
+            )
+        )
+
+        if (
+            final_failures
+            or
+            final_hard
+            or
+            not final_score_ok
+            or
+            not final_feasible
+        ):
+
+            errors.append(
+                (
+                    "final_strict_revalidation_failed:"
+                    +
+                    compact_json(
+                        {
+                            "dimension_failures":
+                                final_failures,
+
+                            "hard_failures":
+                                final_hard,
+
+                            "score_ok":
+                                final_score_ok,
+
+                            "production_feasible":
+                                final_feasible,
+                        },
+                        2500,
+                    )
+                )
+            )
+
+            winner.quality_gate_passed = (
+                False
+            )
+
+            winner = None
+
+            release_level = (
+                "final_strict_revalidation_failed"
+            )
+
+        else:
+
+            winner.quality_gate_passed = (
+                True
+            )
+
+    # =====================================================
+    # QUALITY STATE
     # =====================================================
 
     quality_gate_evaluated = bool(
@@ -8400,55 +8846,11 @@ def run_creative_brain(
 
     quality_gate_passed = bool(
         winner is not None
-        and winner.evaluation_valid
-        and winner.quality_gate_passed
+        and
+        winner.evaluation_valid
+        and
+        winner.quality_gate_passed
     )
-
-    if (
-        high_alert
-        and winner is not None
-    ):
-
-        #
-        # Absolute last deterministic protection.
-        #
-        if (
-            winner.weighted_score
-            <
-            STC_HIGH_ALERT_RELEASE_FLOOR
-            or
-            stc_dimension_gate_failures(
-                winner
-            )
-            or
-            any(
-                failure
-                in HARD_REJECT_FAILURES
-                for failure
-                in winner.quality_gate_failures
-            )
-        ):
-
-            errors.append(
-                (
-                    "final_release_guard: "
-                    "winner failed strict STC release validation"
-                )
-            )
-
-            winner.quality_gate_passed = False
-
-            winner = None
-
-            quality_gate_passed = False
-
-            release_level = (
-                "final_strict_guard_failed"
-            )
-
-    # =====================================================
-    # TOP CONCEPTS
-    # =====================================================
 
     top_concepts = build_top_concept_list(
         all_concepts=(
@@ -8463,7 +8865,7 @@ def run_creative_brain(
     )
 
     # =====================================================
-    # DIAGNOSTIC LOG
+    # LOG FINAL
     # =====================================================
 
     print("")
@@ -8485,6 +8887,13 @@ def run_creative_brain(
         )
 
         print(
+            "Title:",
+            winner.title
+            if winner
+            else "",
+        )
+
+        print(
             "Score:",
             winner.weighted_score
             if winner
@@ -8494,6 +8903,26 @@ def run_creative_brain(
         print(
             "Release:",
             release_level,
+        )
+
+        print(
+            "Strict release authority:",
+            strict_release_info.get(
+                "authority",
+                (
+                    "normal_release"
+                    if not high_alert
+                    else ""
+                ),
+            ),
+        )
+
+        print(
+            "Final arbitration reason:",
+            strict_release_info.get(
+                "reason",
+                "",
+            ),
         )
 
     else:
@@ -8528,28 +8957,21 @@ def run_creative_brain(
 
             print(
                 "Best concept:",
-                best.title
-                or
-                best.concept_id,
+                (
+                    best.title
+                    or
+                    best.concept_id
+                ),
             )
 
-            failures = (
-                stc_dimension_gate_failures(
-                    best
-                )
-                if high_alert
-                else
-                best.quality_gate_failures
-            )
-
-            if failures:
+            if high_alert:
 
                 print(
                     "Failures:",
                     ", ".join(
-                        failures[
-                            :16
-                        ]
+                        stc_dimension_gate_failures(
+                            best
+                        )[:16]
                     ),
                 )
 
@@ -8564,7 +8986,7 @@ def run_creative_brain(
 
     print(
         "Fresh recovery used:",
-        recovery_used,
+        fresh_recovery_used,
     )
 
     print(
@@ -8597,13 +9019,15 @@ def run_creative_brain(
         if targeted_repair_used:
 
             failure_reason = (
-                "targeted_repair_did_not_pass_strict_stc_gates"
+                "targeted_repair_did_not_"
+                "produce_strict_qualified_concept"
             )
 
-        elif recovery_used:
+        elif fresh_recovery_used:
 
             failure_reason = (
-                "recovery_did_not_pass_strict_stc_gates"
+                "recovery_did_not_produce_"
+                "strict_qualified_concept"
             )
 
         elif high_alert:
@@ -8658,7 +9082,10 @@ def run_creative_brain(
                 VERSION,
 
             "architecture":
-                "stc_targeted_repair_quality_first_v55",
+                (
+                    "stc_deterministic_"
+                    "strict_release_v56"
+                ),
 
             "high_alert":
                 high_alert,
@@ -8669,22 +9096,12 @@ def run_creative_brain(
             "stc_style":
                 stc_style,
 
+            # =============================================
+            # CALLS
+            # =============================================
+
             "initial_concepts":
                 concept_count,
-
-            "total_concepts":
-                len(
-                    all_concepts
-                ),
-
-            "shortlisted_concepts":
-                len(
-                    top_concepts
-                ),
-
-            # =============================================
-            # DIRECTOR CALLS
-            # =============================================
 
             "director_calls":
                 director_calls,
@@ -8696,7 +9113,8 @@ def run_creative_brain(
                 (
                     3
                     if high_alert
-                    else 2
+                    else
+                    2
                 ),
 
             "director_call_maximum":
@@ -8715,6 +9133,14 @@ def run_creative_brain(
             "targeted_repair_used":
                 targeted_repair_used,
 
+            "targeted_repair_source_ids":
+                targeted_repair_source_ids,
+
+            "targeted_repair_concepts":
+                len(
+                    targeted_repair_concepts
+                ),
+
             "targeted_repair_min_score":
                 STC_TARGETED_REPAIR_MIN_SCORE,
 
@@ -8724,57 +9150,15 @@ def run_creative_brain(
             "targeted_repair_max_gap":
                 STC_TARGETED_REPAIR_MAX_GAP,
 
-            "targeted_repair_source_ids":
-                targeted_repair_source_ids,
-
-            "targeted_repair_concepts":
-                len(
-                    targeted_repair_concepts
-                ),
-
-            "targeted_repair_arbitration_enabled":
-                STC_QUALITY_FIRST_ARBITRATION_ENABLED,
-
-            "targeted_repair_arbitration_used":
-                bool(
-                    targeted_repair_arbitration.get(
-                        "used"
-                    )
-                ),
-
-            "targeted_repair_original_selection":
-                targeted_repair_arbitration.get(
-                    "original_selected_id",
-                    "",
-                ),
-
-            "targeted_repair_arbitrated_selection":
-                targeted_repair_arbitration.get(
-                    "arbitrated_winner_id",
-                    "",
-                ),
-
-            "targeted_repair_arbitration_reason":
-                targeted_repair_arbitration.get(
-                    "reason",
-                    "",
-                ),
-
-            "targeted_repair_strict_qualified_ids":
-                targeted_repair_arbitration.get(
-                    "qualified_ids",
-                    [],
-                ),
-
             # =============================================
-            # FRESH RECOVERY
+            # RECOVERY
             # =============================================
 
             "recovery_enabled":
                 STC_CREATIVE_RECOVERY_ENABLED,
 
             "recovery_used":
-                recovery_used,
+                fresh_recovery_used,
 
             "recovery_reason":
                 recovery_reason,
@@ -8784,38 +9168,69 @@ def run_creative_brain(
                     recovery_concepts
                 ),
 
-            "quality_first_arbitration_enabled":
-                STC_QUALITY_FIRST_ARBITRATION_ENABLED,
+            # =============================================
+            # V5.6 RELEASE AUTHORITY
+            # =============================================
 
-            "quality_first_arbitration_used":
+            "strict_qualified_release_authority":
+                STC_STRICT_QUALIFIED_RELEASE_AUTHORITY,
+
+            "strict_release_authority":
+                strict_release_info.get(
+                    "authority",
+                    "",
+                ),
+
+            "strict_release_released":
                 bool(
-                    recovery_arbitration.get(
-                        "used"
+                    strict_release_info.get(
+                        "released",
+                        False,
                     )
                 ),
 
-            "recovery_jury_original_selection":
-                recovery_arbitration.get(
-                    "original_selected_id",
+            "strict_release_winner_id":
+                strict_release_info.get(
+                    "winner_id",
                     "",
                 ),
 
-            "recovery_arbitrated_selection":
-                recovery_arbitration.get(
-                    "arbitrated_winner_id",
-                    "",
-                ),
-
-            "recovery_arbitration_reason":
-                recovery_arbitration.get(
+            "strict_release_reason":
+                strict_release_info.get(
                     "reason",
                     "",
                 ),
 
-            "recovery_strict_qualified_ids":
-                recovery_arbitration.get(
-                    "qualified_ids",
+            "strict_qualified_ids":
+                strict_release_info.get(
+                    "strict_qualified_ids",
                     [],
+                ),
+
+            "strict_qualified_count":
+                strict_release_info.get(
+                    "strict_qualified_count",
+                    0,
+                ),
+
+            "jury_fields_are_advisory_after_strict_qualification":
+                True,
+
+            "jury_global_veto_allowed_after_strict_qualification":
+                False,
+
+            # =============================================
+            # JURY DIAGNOSTICS
+            # =============================================
+
+            "finalist_jury_used":
+                bool(
+                    final_jury_payload
+                ),
+
+            "jury_diagnostics":
+                jury_diagnostics(
+                    final_jury_payload
                 ),
 
             # =============================================
@@ -8845,10 +9260,13 @@ def run_creative_brain(
                     STC_DIMENSION_MINIMUMS
                 ),
 
+            "thresholds_lowered":
+                False,
+
             "thresholds_lowered_by_repair":
                 False,
 
-            "thresholds_lowered_by_arbitration":
+            "thresholds_lowered_by_jury":
                 False,
 
             # =============================================
@@ -8883,10 +9301,6 @@ def run_creative_brain(
             "technical_failure":
                 False,
 
-            #
-            # Genuine STC quality rejection must NOT silently
-            # become generic Smart final delivery.
-            #
             "allow_smart_engine_fallback":
                 bool(
                     not high_alert
@@ -8912,7 +9326,7 @@ def run_creative_brain(
                 failure_reason,
 
             # =============================================
-            # SAFETY / QUALITY FEATURES
+            # QUALITY PROTECTIONS
             # =============================================
 
             "real_model_evaluation_required":
@@ -8960,28 +9374,11 @@ def run_creative_brain(
             "originality_dimension_gate":
                 True,
 
-            "finalist_jury_enabled":
-                high_alert,
+            "camera_director_enabled":
+                True,
 
-            "finalist_jury_used":
-                bool(
-                    jury_payload
-                ),
-
-            "finalist_jury_source":
-                (
-                    safe_dict(
-                        winner.debate.get(
-                            "finalist_jury"
-                        )
-                    ).get(
-                        "source",
-                        "",
-                    )
-                    if winner
-                    else
-                    ""
-                ),
+            "scene_feasibility_enabled":
+                True,
 
             "brand_pack_available":
                 bool(
@@ -8990,12 +9387,6 @@ def run_creative_brain(
 
             "brand_kit_available":
                 STC_BRAND_KIT_AVAILABLE,
-
-            "camera_director_enabled":
-                True,
-
-            "scene_feasibility_enabled":
-                True,
 
             "no_generated_copy":
                 True,
@@ -9012,8 +9403,6 @@ def run_creative_brain(
 
 # =========================================================
 # SERIALIZER
-#
-# PUBLIC COMPATIBILITY CONTRACT
 # =========================================================
 
 def concept_to_dict(
@@ -9201,7 +9590,11 @@ def build_top_concepts_summary(
             (
                 "الفكرة المعتمدة: "
                 +
-                response.winner.title
+                (
+                    response.winner.title
+                    or
+                    response.winner.concept_id
+                )
             )
         )
 
@@ -9295,24 +9688,30 @@ def build_top_concepts_summary(
 
 
 # =========================================================
-# ZERO-COST SELF TEST
+# ZERO-COST V5.6 SELF TEST
 #
-# IMPORTANT:
-#
-# This block makes NO Director API calls.
-# It generates NO images.
+# NO API CALLS.
+# NO IMAGE GENERATION.
 # =========================================================
 
 if __name__ == "__main__":
 
     tests: Dict[
         str,
-        bool
+        bool,
     ] = {}
 
     # =====================================================
-    # PUBLIC CONTRACT
+    # CONTRACT
     # =====================================================
+
+    tests[
+        "version_56"
+    ] = (
+        VERSION
+        ==
+        "5.6"
+    )
 
     tests[
         "mode_fast_contract"
@@ -9330,16 +9729,8 @@ if __name__ == "__main__":
         "masterpiece"
     )
 
-    tests[
-        "version_55"
-    ] = (
-        VERSION
-        ==
-        "5.5"
-    )
-
     # =====================================================
-    # SCORE WEIGHTS
+    # WEIGHTS
     # =====================================================
 
     tests[
@@ -9353,9 +9744,7 @@ if __name__ == "__main__":
     )
 
     # =====================================================
-    # STRICT THRESHOLDS
-    #
-    # Targeted Repair must NEVER lower these.
+    # STRICT THRESHOLDS UNCHANGED
     # =====================================================
 
     tests[
@@ -9452,7 +9841,7 @@ if __name__ == "__main__":
 
     tests[
         "stc_six_to_ten_concepts"
-    ] = (
+    ] = bool(
         6
         <=
         STC_HIGH_ALERT_CONCEPT_COUNT
@@ -9477,7 +9866,7 @@ if __name__ == "__main__":
     )
 
     tests[
-        "stc_three_call_target"
+        "three_call_target"
     ] = (
         MASTERPIECE_TARGET_DIRECTOR_CALLS
         ==
@@ -9493,7 +9882,7 @@ if __name__ == "__main__":
     ] = (
         detect_benefit_family(
             (
-                "أنشئ إعلان لبنك STC Bank "
+                "أنشئ إعلان STC Bank "
                 "عن التجارة الإلكترونية ونقاط البيع"
             )
         )
@@ -9515,17 +9904,17 @@ if __name__ == "__main__":
         "explicit_purple_style"
     ] = (
         detect_stc_style(
-            "STC Bank في بيئة بنفسجية معمارية"
+            "بيئة بنفسجية معمارية"
         )
         ==
         "premium_purple_architecture"
     )
 
     tests[
-        "augmented_realism_style"
+        "augmented_style"
     ] = (
         detect_stc_style(
-            "STC Bank واقعية معززة"
+            "واقعية معززة"
         )
         ==
         "premium_augmented_realism"
@@ -9542,15 +9931,785 @@ if __name__ == "__main__":
         dict,
     )
 
+    tests[
+        "brand_kit_context_safe"
+    ] = isinstance(
+        stc_curated_reference_context(
+            benefit_family=(
+                "merchant_payments"
+            ),
+            stc_style=(
+                "premium_realistic"
+            ),
+        ),
+        dict,
+    )
+
     # =====================================================
-    # LIVE-CASE STYLE NEAR MISS
+    # BUILD A REAL STRICT-QUALIFIED FIXTURE
+    # =====================================================
+
+    strict_a = CreativeConcept(
+
+        concept_id="R01",
+
+        title=(
+            "ظلّ التجارة المزدوج"
+        ),
+
+        concept_archetype=(
+            "campaign service transformation"
+        ),
+
+        campaign_hook=(
+            "One physically believable visual mechanism "
+            "connects online commerce with physical payment "
+            "acceptance as one merchant ecosystem."
+        ),
+
+        core_idea=(
+            "A premium Saudi commercial environment expresses "
+            "e-commerce and in-store payment through one coherent "
+            "physical relationship rather than a literal checkout."
+        ),
+
+        marketing_message=(
+            "Unified merchant payment ecosystem."
+        ),
+
+        visual_metaphor=(
+            "One continuous physical relationship makes the digital "
+            "commerce channel and physical acceptance channel read "
+            "as two expressions of the same merchant system."
+        ),
+
+        visual_mechanism_type=(
+            "physical service continuity"
+        ),
+
+        why_not_generic=(
+            "The service proposition is encoded into the central "
+            "physical advertising mechanism, not documentary "
+            "transaction photography."
+        ),
+
+        environment=(
+            "Premium contemporary Saudi commercial architecture."
+        ),
+
+        environment_novelty=(
+            "No ordinary checkout counter, no wooden boutique scene."
+        ),
+
+        hero_element=(
+            "Unified commerce mechanism."
+        ),
+
+        camera_angle=(
+            "elevated three-quarter view"
+        ),
+
+        lens="35mm",
+
+        perspective=(
+            "foreground-to-background reveal"
+        ),
+
+        lighting=(
+            "controlled premium natural daylight"
+        ),
+
+        negative_space=(
+            "30% natural upper-right negative space"
+        ),
+
+        brand_logic=(
+            "Premium restrained STC Bank confidence."
+        ),
+
+        production_method=(
+            "single_generation"
+        ),
+
+        evaluation_valid=True,
+
+        weighted_score=93.32,
+
+        scores={
+
+            "concept_strength":
+                94,
+
+            "brand_fit":
+                94,
+
+            "originality":
+                93,
+
+            "visual_mechanism":
+                95,
+
+            "camera_quality":
+                91,
+
+            "realism":
+                91,
+
+            "feasibility":
+                89,
+
+            "copy_space_quality":
+                90,
+
+            "distinctiveness":
+                94,
+
+            "advertising_readiness":
+                95,
+        },
+
+        feasibility={
+            "production_feasible":
+                True,
+        },
+
+        debate={
+            "merchant_semantics": {
+
+                "online_channel_clear":
+                    True,
+
+                "pos_channel_clear":
+                    True,
+
+                "channels_fused":
+                    True,
+            },
+        },
+
+        quality_gate_failures=[],
+    )
+
+    strict_b = CreativeConcept(
+
+        concept_id="R02",
+
+        title=(
+            "Second qualified concept"
+        ),
+
+        concept_archetype=(
+            "architectural mechanism"
+        ),
+
+        campaign_hook=(
+            "One coherent campaign mechanism links both "
+            "merchant payment channels."
+        ),
+
+        core_idea=(
+            "A second production-ready STC Bank merchant concept."
+        ),
+
+        marketing_message=(
+            "Unified commerce."
+        ),
+
+        visual_metaphor=(
+            "Physical continuity between digital storefront "
+            "and in-store payment acceptance."
+        ),
+
+        visual_mechanism_type=(
+            "physical continuity"
+        ),
+
+        why_not_generic=(
+            "The central relationship, not a transaction, "
+            "communicates the benefit."
+        ),
+
+        environment=(
+            "Contemporary Saudi commercial architecture."
+        ),
+
+        environment_novelty=(
+            "No repeated checkout-counter scene."
+        ),
+
+        hero_element=(
+            "Commerce continuity."
+        ),
+
+        camera_angle=(
+            "controlled three-quarter view"
+        ),
+
+        lens="35mm",
+
+        perspective=(
+            "layered perspective reveal"
+        ),
+
+        lighting=(
+            "premium daylight"
+        ),
+
+        negative_space=(
+            "30% upper-left natural negative space"
+        ),
+
+        brand_logic=(
+            "Premium STC Bank visual discipline."
+        ),
+
+        production_method=(
+            "single_generation"
+        ),
+
+        evaluation_valid=True,
+
+        weighted_score=91.40,
+
+        scores={
+
+            "concept_strength":
+                92,
+
+            "brand_fit":
+                93,
+
+            "originality":
+                91,
+
+            "visual_mechanism":
+                92,
+
+            "camera_quality":
+                88,
+
+            "realism":
+                89,
+
+            "feasibility":
+                86,
+
+            "copy_space_quality":
+                87,
+
+            "distinctiveness":
+                91,
+
+            "advertising_readiness":
+                92,
+        },
+
+        feasibility={
+            "production_feasible":
+                True,
+        },
+
+        quality_gate_failures=[],
+    )
+
+    strict_fixture = (
+        strict_qualified_concepts(
+            [
+                strict_a,
+                strict_b,
+            ],
+            high_alert=True,
+        )
+    )
+
+    tests[
+        "two_strict_finalists_detected"
+    ] = bool(
+        len(
+            strict_fixture
+        )
+        ==
+        2
+    )
+
+    tests[
+        "highest_strict_score_first"
+    ] = bool(
+        strict_fixture
+        and
+        strict_fixture[
+            0
+        ].concept_id
+        ==
+        "R01"
+    )
+
+    # =====================================================
+    # EXACT V5.5 REGRESSION
     #
-    # Represents the type of concept that scored ~87.94:
+    # TWO strict finalists exist but Jury says:
     #
-    # - strong core idea
-    # - feasible
-    # - no hard reject
-    # - only four small strict-dimension gaps
+    #   approval=false
+    #   low confidence
+    #   merchant fusion=false
+    #   fatal issues
+    #
+    # V5.5 could block.
+    #
+    # V5.6 MUST still release highest strict-qualified.
+    # =====================================================
+
+    hostile_global_jury = {
+
+        "selected_concept_id":
+            "R03",
+
+        "approval":
+            False,
+
+        "confidence":
+            42,
+
+        "advertising_reason":
+            (
+                "Jury global field contradicts "
+                "per-concept evaluation."
+            ),
+
+        "brand_reason":
+            "Advisory only.",
+
+        "originality_reason":
+            "Advisory only.",
+
+        "merchant_fusion_approved":
+            False,
+
+        "fatal_issues": [
+            (
+                "Global board concern referring "
+                "to another candidate."
+            )
+        ],
+
+        "production_instruction":
+            "",
+
+        "recommended_camera_angle":
+            "",
+
+        "recommended_lens":
+            "",
+
+        "recommended_perspective":
+            "",
+
+        "do_not_drift_into": [
+            "generic checkout",
+        ],
+    }
+
+    (
+        regression_winner,
+        regression_info,
+    ) = deterministic_strict_release(
+        concepts=[
+            strict_a,
+            strict_b,
+        ],
+        jury=(
+            hostile_global_jury
+        ),
+        source=(
+            "self_test_exact_v55_regression"
+        ),
+    )
+
+    tests[
+        "v55_regression_cannot_recur"
+    ] = bool(
+        regression_winner
+        and
+        regression_winner.concept_id
+        ==
+        "R01"
+    )
+
+    tests[
+        "jury_approval_false_cannot_veto_strict_finalist"
+    ] = bool(
+        regression_winner
+        is not None
+    )
+
+    tests[
+        "jury_low_confidence_cannot_veto_strict_finalist"
+    ] = bool(
+        regression_winner
+        is not None
+    )
+
+    tests[
+        "jury_global_fatal_issue_cannot_veto_other_strict_finalist"
+    ] = bool(
+        regression_winner
+        is not None
+    )
+
+    tests[
+        "jury_global_merchant_false_cannot_veto_per_concept_fusion"
+    ] = bool(
+        regression_winner
+        is not None
+    )
+
+    tests[
+        "unqualified_jury_selection_cannot_win"
+    ] = bool(
+        regression_winner
+        and
+        regression_winner.concept_id
+        ==
+        "R01"
+    )
+
+    tests[
+        "highest_strict_qualified_always_wins"
+    ] = bool(
+        regression_winner
+        and
+        regression_winner.weighted_score
+        ==
+        93.32
+    )
+
+    tests[
+        "strict_release_no_threshold_lowering"
+    ] = bool(
+        regression_info.get(
+            "thresholds_lowered"
+        )
+        is False
+    )
+
+    tests[
+        "strict_release_authority_is_deterministic"
+    ] = bool(
+        regression_info.get(
+            "authority"
+        )
+        ==
+        (
+            "deterministic_per_concept_"
+            "strict_qualification"
+        )
+    )
+
+    # =====================================================
+    # JURY AGREEMENT CASE
+    # =====================================================
+
+    agreeing_jury = {
+
+        **hostile_global_jury,
+
+        "selected_concept_id":
+            "R01",
+
+        "approval":
+            True,
+
+        "confidence":
+            96,
+
+        "merchant_fusion_approved":
+            True,
+
+        "fatal_issues":
+            [],
+
+        "production_instruction":
+            (
+                "Preserve the hero mechanism."
+            ),
+
+        "recommended_camera_angle":
+            "elevated three-quarter view",
+
+        "recommended_lens":
+            "35mm",
+
+        "recommended_perspective":
+            "foreground-to-background reveal",
+    }
+
+    (
+        agreeing_winner,
+        agreeing_info,
+    ) = deterministic_strict_release(
+        concepts=[
+            strict_a,
+            strict_b,
+        ],
+        jury=(
+            agreeing_jury
+        ),
+        source=(
+            "self_test_jury_agreement"
+        ),
+    )
+
+    tests[
+        "jury_agreement_still_releases"
+    ] = bool(
+        agreeing_winner
+        and
+        agreeing_winner.concept_id
+        ==
+        "R01"
+    )
+
+    # =====================================================
+    # NO QUALIFIED CONCEPT MUST STILL FAIL
+    # =====================================================
+
+    weak = CreativeConcept(
+
+        concept_id="R03",
+
+        title="Weak",
+
+        weighted_score=87.0,
+
+        evaluation_valid=True,
+
+        scores={
+
+            "concept_strength":
+                87,
+
+            "brand_fit":
+                89,
+
+            "originality":
+                87,
+
+            "visual_mechanism":
+                89,
+
+            "camera_quality":
+                84,
+
+            "realism":
+                86,
+
+            "feasibility":
+                83,
+
+            "copy_space_quality":
+                82,
+
+            "distinctiveness":
+                87,
+
+            "advertising_readiness":
+                89,
+        },
+
+        feasibility={
+            "production_feasible":
+                True,
+        },
+
+        quality_gate_failures=[],
+    )
+
+    (
+        weak_winner,
+        weak_info,
+    ) = deterministic_strict_release(
+        concepts=[
+            weak
+        ],
+        jury=(
+            agreeing_jury
+        ),
+        source=(
+            "self_test_weak"
+        ),
+    )
+
+    tests[
+        "no_strict_finalist_still_blocks"
+    ] = bool(
+        weak_winner
+        is None
+        and
+        weak_info.get(
+            "reason"
+        )
+        ==
+        "no_strict_qualified_concept"
+    )
+
+    # =====================================================
+    # HARD REJECT MUST STILL FAIL
+    # =====================================================
+
+    hard = CreativeConcept(
+
+        concept_id="BAD",
+
+        title="Generic checkout",
+
+        weighted_score=96.0,
+
+        evaluation_valid=True,
+
+        scores={
+
+            "concept_strength":
+                96,
+
+            "brand_fit":
+                96,
+
+            "originality":
+                96,
+
+            "visual_mechanism":
+                96,
+
+            "camera_quality":
+                96,
+
+            "realism":
+                96,
+
+            "feasibility":
+                96,
+
+            "copy_space_quality":
+                96,
+
+            "distinctiveness":
+                96,
+
+            "advertising_readiness":
+                96,
+        },
+
+        feasibility={
+            "production_feasible":
+                True,
+        },
+
+        quality_gate_failures=[
+            "literal_transaction_tableau"
+        ],
+    )
+
+    (
+        hard_winner,
+        _
+    ) = deterministic_strict_release(
+        concepts=[
+            hard
+        ],
+        jury=(
+            agreeing_jury
+        ),
+        source=(
+            "self_test_hard"
+        ),
+    )
+
+    tests[
+        "hard_reject_still_blocks_even_at_96"
+    ] = (
+        hard_winner
+        is None
+    )
+
+    # =====================================================
+    # PRODUCTION FEASIBILITY MUST STILL FAIL
+    # =====================================================
+
+    impossible = CreativeConcept(
+
+        concept_id="IMP",
+
+        title="Impossible",
+
+        weighted_score=95.0,
+
+        evaluation_valid=True,
+
+        scores={
+
+            "concept_strength":
+                95,
+
+            "brand_fit":
+                95,
+
+            "originality":
+                95,
+
+            "visual_mechanism":
+                95,
+
+            "camera_quality":
+                95,
+
+            "realism":
+                95,
+
+            "feasibility":
+                95,
+
+            "copy_space_quality":
+                95,
+
+            "distinctiveness":
+                95,
+
+            "advertising_readiness":
+                95,
+        },
+
+        feasibility={
+            "production_feasible":
+                False,
+        },
+
+        quality_gate_failures=[],
+    )
+
+    (
+        impossible_winner,
+        _
+    ) = deterministic_strict_release(
+        concepts=[
+            impossible
+        ],
+        jury=(
+            agreeing_jury
+        ),
+        source=(
+            "self_test_impossible"
+        ),
+    )
+
+    tests[
+        "production_infeasible_still_blocks"
+    ] = (
+        impossible_winner
+        is None
+    )
+
+    # =====================================================
+    # NEAR MISS TARGETED REPAIR
     # =====================================================
 
     near_miss = CreativeConcept(
@@ -9578,7 +10737,7 @@ if __name__ == "__main__":
         ),
 
         marketing_message=(
-            "One merchant ecosystem across online and physical sales."
+            "One merchant ecosystem."
         ),
 
         visual_metaphor=(
@@ -9592,8 +10751,7 @@ if __name__ == "__main__":
 
         why_not_generic=(
             "The campaign is driven by the physical relationship "
-            "between both commerce channels, not by a customer "
-            "performing an ordinary transaction."
+            "between both commerce channels."
         ),
 
         environment=(
@@ -9601,8 +10759,7 @@ if __name__ == "__main__":
         ),
 
         environment_novelty=(
-            "The environment is built around a spatial advertising "
-            "mechanism rather than the repeated checkout-counter scene."
+            "No conventional checkout-counter hero."
         ),
 
         hero_element=(
@@ -9637,40 +10794,40 @@ if __name__ == "__main__":
 
         weighted_score=87.94,
 
+        evaluation_valid=True,
+
         scores={
 
             "concept_strength":
-                87.0,
+                87,
 
             "brand_fit":
-                89.0,
+                89,
 
             "originality":
-                90.0,
+                90,
 
             "visual_mechanism":
-                92.0,
+                92,
 
             "camera_quality":
-                87.0,
+                87,
 
             "realism":
-                85.0,
+                85,
 
             "feasibility":
-                86.0,
+                86,
 
             "copy_space_quality":
-                85.0,
+                85,
 
             "distinctiveness":
-                90.0,
+                90,
 
             "advertising_readiness":
-                89.0,
+                89,
         },
-
-        evaluation_valid=True,
 
         feasibility={
             "production_feasible":
@@ -9683,59 +10840,6 @@ if __name__ == "__main__":
             "realism_below_86",
             "advertising_readiness_below_90",
         ],
-
-        debate={
-            "strengths": [
-                "Strong single-frame spatial mechanism.",
-                "Merchant channels are visibly unified.",
-            ],
-
-            "weaknesses": [
-                "Needs stronger STC Bank ownership.",
-                "Needs more premium realism.",
-                "Needs final advertising polish.",
-            ],
-
-            "merchant_semantics": {
-                "online_channel_clear":
-                    True,
-
-                "pos_channel_clear":
-                    True,
-
-                "channels_fused":
-                    True,
-            },
-        },
-    )
-
-    near_miss_gaps = (
-        targeted_repair_dimension_gaps(
-            near_miss
-        )
-    )
-
-    tests[
-        "near_miss_has_four_small_gaps"
-    ] = bool(
-        len(
-            near_miss_gaps
-        )
-        ==
-        4
-        and
-        max(
-            safe_float(
-                item.get(
-                    "gap"
-                ),
-                0,
-            )
-            for item
-            in near_miss_gaps
-        )
-        <=
-        STC_TARGETED_REPAIR_MAX_GAP
     )
 
     repair_candidates = (
@@ -9747,7 +10851,7 @@ if __name__ == "__main__":
     )
 
     tests[
-        "live_8794_case_is_repairable"
+        "8794_near_miss_routes_to_repair"
     ] = bool(
         repair_candidates
         and
@@ -9759,49 +10863,20 @@ if __name__ == "__main__":
     )
 
     # =====================================================
-    # HARD REJECT CANNOT ENTER REPAIR
+    # HARD CONCEPT DOES NOT ENTER REPAIR
     # =====================================================
 
-    hard_rejected = CreativeConcept(
+    hard_repair = CreativeConcept(
 
-        concept_id="HARD",
+        concept_id="HARD_REPAIR",
 
-        title="Generic checkout",
+        weighted_score=87.8,
 
-        core_idea=(
-            "Customer taps POS terminal on a wooden counter "
-            "while merchant packs a parcel."
-        ),
-
-        campaign_hook=(
-            "Ordinary payment transaction."
-        ),
-
-        visual_metaphor=(
-            "Worker packing box."
-        ),
-
-        visual_mechanism_type="",
-
-        why_not_generic="",
-
-        environment=(
-            "Luxury boutique with wooden counter."
-        ),
-
-        environment_novelty="",
-
-        hero_element=(
-            "POS terminal"
-        ),
-
-        weighted_score=87.5,
+        evaluation_valid=True,
 
         scores=dict(
             near_miss.scores
         ),
-
-        evaluation_valid=True,
 
         feasibility={
             "production_feasible":
@@ -9809,582 +10884,124 @@ if __name__ == "__main__":
         },
 
         quality_gate_failures=[
-            "literal_transaction_tableau",
+            "literal_transaction_tableau"
         ],
     )
 
     tests[
-        "hard_reject_not_repairable"
+        "hard_reject_cannot_enter_targeted_repair"
     ] = (
         not is_targeted_repair_candidate(
-            hard_rejected
+            hard_repair
         )
     )
 
     # =====================================================
-    # TARGETED REPAIR PROMPT
+    # SEMANTICS
     # =====================================================
 
-    repair_prompt_test = (
-        build_targeted_repair_prompt(
-            user_request=(
-                "STC Bank التجارة الإلكترونية ونقاط البيع"
-            ),
-            repair_candidates=[
-                near_miss
-            ],
-            brand_context={},
-            visual_references=[],
-            benefit_family=(
-                "merchant_payments"
-            ),
-            stc_style=(
-                "premium_realistic"
-            ),
-        )
-    )
+    semantic = CreativeConcept(
 
-    tests[
-        "repair_prompt_preserves_core"
-    ] = contains_any(
-        repair_prompt_test,
-        [
-            "PRESERVE THE STRONGEST CORE PROPOSITION",
-        ],
-    )
+        concept_id="SEM",
 
-    tests[
-        "repair_prompt_contains_exact_failure"
-    ] = contains_any(
-        repair_prompt_test,
-        [
-            "concept_strength_below_88",
-        ],
-    )
-
-    tests[
-        "repair_prompt_blocks_score_inflation"
-    ] = contains_any(
-        repair_prompt_test,
-        [
-            "DO NOT inflate scores",
-        ],
-    )
-
-    tests[
-        "repair_prompt_has_merchant_fusion"
-    ] = contains_any(
-        repair_prompt_test,
-        [
-            (
-                "Simply showing both in the same room "
-                "is NOT fusion"
-            ),
-        ],
-    )
-
-    tests[
-        "repair_prompt_blocks_counter"
-    ] = contains_any(
-        repair_prompt_test,
-        [
-            "customer + POS + counter + merchant tableau",
-        ],
-    )
-
-    # =====================================================
-    # STRICT QUALIFIED FIXTURE
-    # =====================================================
-
-    qualified = CreativeConcept(
-
-        concept_id="T01",
-
-        title=(
-            "Strict repaired concept"
-        ),
-
-        concept_archetype=(
-            "service transformation"
-        ),
+        title="Unified commerce",
 
         campaign_hook=(
-            "One physical mechanism unifies online commerce "
-            "and in-store acceptance."
+            "A continuous physical connection unifies a "
+            "digital storefront and in-store card reader."
         ),
 
         core_idea=(
-            "A premium Saudi commercial scene uses one coherent "
-            "physical transformation between digital ordering and "
-            "physical payment."
-        ),
-
-        marketing_message=(
-            "Unified merchant payments."
+            "Online commerce and physical acceptance become "
+            "one merchant ecosystem."
         ),
 
         visual_metaphor=(
-            "One continuous material relationship visibly joins "
-            "digital storefront and payment acceptance."
+            "Physical continuity."
         ),
 
         visual_mechanism_type=(
-            "physical continuity"
+            "physical connection"
         ),
 
         why_not_generic=(
-            "The relationship between both channels is the actual "
-            "advertising mechanism."
+            "The unified physical relationship is the advertising idea."
         ),
 
         environment=(
-            "Premium contemporary Saudi commercial architecture."
+            "Contemporary Saudi commercial environment."
         ),
 
         environment_novelty=(
-            "No checkout-counter tableau."
+            "No conventional counter."
         ),
 
         hero_element=(
-            "Unified merchant mechanism."
+            "Unified merchant system."
         ),
-
-        camera_angle=(
-            "elevated three-quarter view"
-        ),
-
-        lens="35mm",
-
-        perspective=(
-            "foreground-to-background reveal"
-        ),
-
-        lighting=(
-            "premium natural daylight"
-        ),
-
-        negative_space=(
-            "30% upper-right natural negative space"
-        ),
-
-        brand_logic=(
-            "Restrained premium STC Bank visual discipline."
-        ),
-
-        production_method=(
-            "single_generation"
-        ),
-
-        evaluation_valid=True,
-
-        weighted_score=89.25,
-
-        scores={
-
-            "concept_strength":
-                91,
-
-            "brand_fit":
-                93,
-
-            "originality":
-                90,
-
-            "visual_mechanism":
-                93,
-
-            "camera_quality":
-                88,
-
-            "realism":
-                90,
-
-            "feasibility":
-                87,
-
-            "copy_space_quality":
-                88,
-
-            "distinctiveness":
-                91,
-
-            "advertising_readiness":
-                92,
-        },
-
-        feasibility={
-            "production_feasible":
-                True,
-        },
-
-        debate={
-            "merchant_semantics": {
-
-                "online_channel_clear":
-                    True,
-
-                "pos_channel_clear":
-                    True,
-
-                "channels_fused":
-                    True,
-            },
-        },
     )
 
-    unqualified = CreativeConcept(
-
-        concept_id="T02",
-
-        title=(
-            "Jury liked but unqualified"
-        ),
-
-        core_idea=(
-            "Visually attractive merchant scene."
-        ),
-
-        campaign_hook=(
-            "Commerce scene."
-        ),
-
-        visual_metaphor=(
-            "Composition."
-        ),
-
-        visual_mechanism_type=(
-            "composition"
-        ),
-
-        why_not_generic=(
-            "Styled image."
-        ),
-
-        environment=(
-            "Commercial environment."
-        ),
-
-        environment_novelty=(
-            "Modern."
-        ),
-
-        hero_element=(
-            "Merchant scene."
-        ),
-
-        evaluation_valid=True,
-
-        weighted_score=86.0,
-
-        scores={
-
-            "concept_strength":
-                86,
-
-            "brand_fit":
-                88,
-
-            "originality":
-                86,
-
-            "visual_mechanism":
-                86,
-
-            "camera_quality":
-                85,
-
-            "realism":
-                88,
-
-            "feasibility":
-                86,
-
-            "copy_space_quality":
-                84,
-
-            "distinctiveness":
-                85,
-
-            "advertising_readiness":
-                86,
-        },
-
-        feasibility={
-            "production_feasible":
-                True,
-        },
-    )
-
-    strict_fixture = (
-        strict_qualified_concepts(
-            [
-                qualified,
-                unqualified,
-            ],
-            high_alert=True,
+    semantic_signals = (
+        merchant_local_signals(
+            semantic
         )
     )
 
     tests[
-        "strict_fixture_has_one_finalist"
+        "digital_storefront_is_online"
     ] = bool(
-        len(
-            strict_fixture
-        )
-        ==
-        1
-        and
-        strict_fixture[
-            0
-        ].concept_id
-        ==
-        "T01"
-    )
-
-    # =====================================================
-    # QUALITY-FIRST TARGETED REPAIR ARBITRATION
-    # =====================================================
-
-    repair_jury = {
-
-        "selected_concept_id":
-            "T02",
-
-        "approval":
-            True,
-
-        "confidence":
-            90,
-
-        "advertising_reason":
-            "Board approves production.",
-
-        "brand_reason":
-            "Fits STC Bank.",
-
-        "originality_reason":
-            "Distinct enough.",
-
-        "merchant_fusion_approved":
-            True,
-
-        "fatal_issues":
-            [],
-
-        "production_instruction":
-            "Lock the central mechanism.",
-
-        "recommended_camera_angle":
-            "elevated three-quarter view",
-
-        "recommended_lens":
-            "35mm",
-
-        "recommended_perspective":
-            "foreground-to-background reveal",
-
-        "do_not_drift_into": [
-            "generic checkout",
-        ],
-    }
-
-    (
-        arbitrated_repair,
-        repair_arbitration_info,
-    ) = (
-        arbitrate_targeted_repair_selection(
-            repair_concepts=[
-                qualified,
-                unqualified,
-            ],
-            repair_qualified=(
-                strict_fixture
-            ),
-            jury=(
-                repair_jury
-            ),
-            benefit_family=(
-                "merchant_payments"
-            ),
+        semantic_signals.get(
+            "online"
         )
     )
 
     tests[
-        "targeted_repair_unqualified_selection_cannot_win"
+        "card_reader_is_physical_pos"
     ] = bool(
-        arbitrated_repair
-        and
-        arbitrated_repair.concept_id
-        ==
-        "T01"
+        semantic_signals.get(
+            "physical"
+        )
     )
 
     tests[
-        "targeted_repair_arbitration_used"
+        "connection_language_is_mechanism"
     ] = bool(
-        repair_arbitration_info.get(
-            "used"
+        semantic_signals.get(
+            "mechanism"
         )
-    )
-
-    tests[
-        "targeted_repair_arbitration_no_threshold_lowering"
-    ] = bool(
-        repair_arbitration_info.get(
-            "thresholds_lowered"
-        )
-        is False
-    )
-
-    # =====================================================
-    # NEGATIVE ARBITRATION TEST
-    # =====================================================
-
-    rejected_jury = {
-        **repair_jury,
-        "approval":
-            False,
-    }
-
-    (
-        rejected_candidate,
-        _
-    ) = (
-        arbitrate_targeted_repair_selection(
-            repair_concepts=[
-                qualified,
-                unqualified,
-            ],
-            repair_qualified=[
-                qualified
-            ],
-            jury=(
-                rejected_jury
-            ),
-            benefit_family=(
-                "merchant_payments"
-            ),
-        )
-    )
-
-    tests[
-        "arbitration_does_not_override_jury_rejection"
-    ] = (
-        rejected_candidate
-        is None
-    )
-
-    fatal_jury = {
-        **repair_jury,
-
-        "fatal_issues": [
-            "Service message unclear."
-        ],
-    }
-
-    (
-        fatal_candidate,
-        _
-    ) = (
-        arbitrate_targeted_repair_selection(
-            repair_concepts=[
-                qualified,
-                unqualified,
-            ],
-            repair_qualified=[
-                qualified
-            ],
-            jury=(
-                fatal_jury
-            ),
-            benefit_family=(
-                "merchant_payments"
-            ),
-        )
-    )
-
-    tests[
-        "arbitration_does_not_override_fatal_issue"
-    ] = (
-        fatal_candidate
-        is None
-    )
-
-    fusion_reject_jury = {
-        **repair_jury,
-
-        "merchant_fusion_approved":
-            False,
-    }
-
-    (
-        fusion_candidate,
-        _
-    ) = (
-        arbitrate_targeted_repair_selection(
-            repair_concepts=[
-                qualified,
-                unqualified,
-            ],
-            repair_qualified=[
-                qualified
-            ],
-            jury=(
-                fusion_reject_jury
-            ),
-            benefit_family=(
-                "merchant_payments"
-            ),
-        )
-    )
-
-    tests[
-        "arbitration_does_not_override_merchant_reject"
-    ] = (
-        fusion_candidate
-        is None
-    )
-
-    low_confidence_jury = {
-        **repair_jury,
-
-        "confidence":
-            72,
-    }
-
-    (
-        low_confidence_candidate,
-        _
-    ) = (
-        arbitrate_targeted_repair_selection(
-            repair_concepts=[
-                qualified,
-                unqualified,
-            ],
-            repair_qualified=[
-                qualified
-            ],
-            jury=(
-                low_confidence_jury
-            ),
-            benefit_family=(
-                "merchant_payments"
-            ),
-        )
-    )
-
-    tests[
-        "arbitration_does_not_override_low_confidence"
-    ] = (
-        low_confidence_candidate
-        is None
     )
 
     # =====================================================
     # SERIALIZATION CONTRACT
     # =====================================================
 
-    fixture_response = (
+    encoded = concept_to_dict(
+        strict_a
+    )
+
+    tests[
+        "concept_contract"
+    ] = bool(
+        encoded.get(
+            "concept_id"
+        )
+        ==
+        "R01"
+        and
+        "concept_archetype"
+        in encoded
+        and
+        "campaign_hook"
+        in encoded
+        and
+        "visual_mechanism_type"
+        in encoded
+        and
+        "debate"
+        in encoded
+    )
+
+    response_fixture = (
         CreativeBrainResponse(
 
             ok=True,
@@ -10393,28 +11010,23 @@ if __name__ == "__main__":
                 MODE_MASTERPIECE
             ),
 
-            request=(
-                "test"
-            ),
+            request="test",
 
             total_concepts=1,
 
             concepts=[
-                qualified
+                strict_a
             ],
 
             top_concepts=[
-                qualified
+                strict_a
             ],
 
             winner=(
-                qualified
+                strict_a
             ),
 
             metadata={
-                "version":
-                    VERSION,
-
                 "quality_gate_passed":
                     True,
             },
@@ -10424,7 +11036,7 @@ if __name__ == "__main__":
     )
 
     serialized = response_to_dict(
-        fixture_response
+        response_fixture
     )
 
     tests[
@@ -10450,18 +11062,6 @@ if __name__ == "__main__":
         )
     )
 
-    tests[
-        "concept_contract"
-    ] = bool(
-        concept_to_dict(
-            qualified
-        ).get(
-            "visual_mechanism_type"
-        )
-        ==
-        qualified.visual_mechanism_type
-    )
-
     # =====================================================
     # RESULT
     # =====================================================
@@ -10475,10 +11075,10 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND CREATIVE BRAIN V5.5"
+        " XPAND CREATIVE BRAIN V5.6"
     )
     print(
-        " ZERO-COST TARGETED REPAIR SELF TEST"
+        " ZERO-COST REGRESSION-PROOF SELF TEST"
     )
     print(
         "=========================================="
@@ -10506,7 +11106,7 @@ if __name__ == "__main__":
 
         print(
             (
-                "XPAND Creative Brain V5.5 "
+                "XPAND Creative Brain V5.6 "
                 "self-test: PASS ✅"
             )
         )
@@ -10515,7 +11115,7 @@ if __name__ == "__main__":
 
         print(
             (
-                "XPAND Creative Brain V5.5 "
+                "XPAND Creative Brain V5.6 "
                 "self-test: FAIL ❌"
             )
         )
@@ -10528,61 +11128,70 @@ if __name__ == "__main__":
         "✅ Production concept contract preserved"
     )
     print(
-        "✅ STC High Alert preserved"
-    )
-    print(
         "✅ Maximum 3 Director calls"
     )
     print(
-        "✅ Call 3 = Jury OR Targeted Repair OR Fresh Recovery"
+        "✅ Strict STC thresholds unchanged"
     )
     print(
-        "✅ Targeted Repair preserves strong near-miss core idea"
+        "✅ Targeted Repair preserved"
     )
     print(
-        "✅ Targeted Repair fixes diagnosed dimensions"
+        "✅ Fresh Recovery preserved"
     )
     print(
-        "✅ Targeted Repair creates exactly 2 repaired concepts"
+        (
+            "✅ Recovery strict finalists > 0 "
+            "MUST release a strict winner"
+        )
     )
     print(
-        "✅ Targeted Repair evaluates + juries in same call"
+        (
+            "✅ Jury approval=false cannot erase "
+            "a strict-qualified concept"
+        )
     )
     print(
-        "✅ ~87.94 near-miss fixture routes to Targeted Repair"
+        (
+            "✅ Jury low confidence cannot erase "
+            "a strict-qualified concept"
+        )
     )
     print(
-        "✅ Hard-rejected concepts cannot enter repair"
+        (
+            "✅ Global Jury fatal issue cannot erase "
+            "a different independently qualified concept"
+        )
     )
     print(
-        "✅ Quality-first arbitration preserved"
+        (
+            "✅ Global Jury merchant flag cannot override "
+            "per-concept merchant fusion evaluation"
+        )
     )
     print(
-        "✅ Jury rejection cannot be overridden"
+        (
+            "✅ Unqualified Jury selection cannot beat "
+            "a strict-qualified concept"
+        )
     )
     print(
-        "✅ Merchant fusion rejection cannot be overridden"
+        (
+            "✅ Highest strict-qualified score wins "
+            "deterministically"
+        )
     )
     print(
-        "✅ Fatal issues cannot be overridden"
+        "✅ Hard rejects still block"
     )
     print(
-        "✅ Strict thresholds were NOT lowered"
+        "✅ Production-infeasible concepts still block"
     )
     print(
-        "✅ Permanent STC Brand Kit preserved"
+        "✅ No thresholds were lowered"
     )
     print(
-        "✅ Merchant semantic equivalence preserved"
-    )
-    print(
-        "✅ Generic-scene hard guard preserved"
-    )
-    print(
-        "✅ Repeated-scene guard preserved"
-    )
-    print(
-        "✅ Literal counter-tableau guard preserved"
+        "✅ No fake winner"
     )
     print(
         "✅ No generated text / logo"
