@@ -1,262 +1,557 @@
 {
   "brand_id": "stc_bank",
   "brand_name": "STC Bank",
+  "version": "2.0",
+  "default_visual_family": "premium_realistic",
+
   "identity_keywords": [
     "modern Saudi banking",
-    "premium confidence",
+    "premium financial confidence",
     "clean digital-first experience",
-    "refined purple and green brand accents",
-    "advanced but human",
-    "commercial sophistication",
-    "premium service design",
-    "trust and elegance"
+    "Saudi lifestyle sophistication",
+    "refined commercial photography",
+    "premium campaign art direction",
+    "restrained STC purple and green accents",
+    "human-centered banking",
+    "simple but memorable advertising ideas",
+    "high-end material realism"
   ],
+
   "required_brand_signals": [
-    "Saudi authenticity with premium execution",
-    "disciplined purple-green-white brand language",
-    "clean and high-end composition",
-    "financial confidence",
-    "smart digital-physical integration",
-    "advertising-grade polish",
-    "not generic fintech clutter"
+    "premium Saudi visual language",
+    "advertising-grade composition",
+    "strong visual mechanism",
+    "realistic human behavior",
+    "controlled color palette",
+    "clean visual hierarchy",
+    "intentional negative space",
+    "premium material rendering",
+    "confident modern banking tone",
+    "STC Bank identity without depending on logos"
   ],
+
+  "global_rules": {
+    "purple_is_optional": true,
+    "purple_is_not_default": true,
+    "no_generated_text": true,
+    "no_generated_logo": true,
+    "no_fake_bank_ui": true,
+    "no_generic_fintech": true,
+    "no_random_neon": true,
+    "no_floating_icons": true,
+    "no_network_lines": true,
+    "no_particle_effects": true,
+    "no_repeated_counter_scene": true,
+    "no_plain_pos_scene": true,
+    "no_card_on_pedestal_default": true,
+    "require_visual_mechanism": true,
+    "require_advertising_style": true,
+    "require_scene_novelty": true,
+    "require_camera_intent": true,
+    "require_copy_space": true,
+    "copy_space_min_percent": 25,
+    "copy_space_max_percent": 40
+  },
+
   "banned_patterns": [
     "wooden checkout counter",
-    "generic office",
-    "plain counter",
-    "floating card",
-    "generic fintech clutter",
+    "generic merchant counter",
+    "generic boutique checkout",
+    "generic perfume boutique",
+    "generic fashion boutique",
+    "customer simply tapping a POS terminal",
+    "merchant standing behind a counter",
+    "tablet beside POS terminal",
+    "worker packing a box in the background",
+    "person simply looking at a phone",
+    "generic office desk",
+    "smiling businessman",
+    "handshake",
+    "floating bank card",
+    "floating POS terminal",
+    "floating phone",
     "empty purple room",
-    "random neon",
-    "cheap stock-photo look",
-    "unrelated banking UI",
-    "overused card-on-pedestal composition"
+    "plain purple wall",
+    "purple neon fintech room",
+    "card on purple cube",
+    "card on pedestal",
+    "network lines",
+    "glowing payment trail",
+    "hologram",
+    "HUD interface",
+    "cyber tunnel",
+    "digital tunnel",
+    "glowing particles",
+    "random fintech graphics",
+    "cheap stock photo banking scene"
   ],
+
   "approved_mechanisms": [
-    "commerce fusion",
-    "tap triggers fulfillment",
-    "merchant operating system",
-    "online-offline visual bridge",
-    "spatial choreography",
-    "benefit-as-mechanism",
-    "system confidence"
+    "physical visual bridge",
+    "spatial continuity",
+    "cause and effect",
+    "service transformation",
+    "architectural metaphor",
+    "perspective reveal",
+    "foreground-background relationship",
+    "material transition",
+    "scale contrast",
+    "parallel commercial action",
+    "single gesture connecting two services",
+    "visual compression of two commercial channels",
+    "real-world object relationship",
+    "threshold metaphor",
+    "controlled augmented realism"
   ],
+
   "style_families": {
     "premium_realistic": {
+      "name": "Premium Realistic",
+      "description": "High-end Saudi commercial photography with believable people, architecture, materials, light and advertising-level art direction.",
       "mood": [
-        "luxury commercial realism",
-        "Saudi modern lifestyle",
-        "trust",
-        "elegance",
-        "refined confidence"
+        "premium",
+        "confident",
+        "human",
+        "clean",
+        "modern Saudi",
+        "refined",
+        "credible"
       ],
       "colors": [
-        "restrained purple accents",
-        "green accents",
+        "warm neutrals",
+        "stone",
+        "cream",
         "white",
-        "soft neutrals",
-        "premium stone and matte textures"
+        "graphite",
+        "restrained deep purple accents",
+        "restrained green accents"
       ],
       "materials": [
-        "travertine",
         "limestone",
+        "travertine",
+        "glass",
+        "brushed aluminum",
         "matte metal",
+        "premium leather",
+        "premium textiles",
+        "ceramic",
         "premium packaging",
-        "architectural wood only as secondary support"
+        "selective architectural timber"
       ],
       "lighting": [
-        "soft daylight",
-        "premium commercial polish",
-        "controlled reflections",
-        "clean highlight discipline"
+        "large-window daylight",
+        "soft directional daylight",
+        "golden-hour side light",
+        "premium diffused key light",
+        "negative fill",
+        "controlled practical lighting",
+        "realistic contact shadows",
+        "premium material reflections"
       ],
-      "scene_rules": [
-        "look like a real ad campaign",
-        "not a generic documentary scene",
-        "preserve elegant copy space",
-        "show benefit through composition",
-        "show brand identity through art direction"
+      "camera_language": [
+        "eye-level environmental portrait",
+        "low-angle hero shot",
+        "worm's-eye view",
+        "bird's-eye view",
+        "elevated three-quarter view",
+        "high-angle architectural view",
+        "over-the-shoulder POV",
+        "foreground-framed composition",
+        "compressed telephoto perspective",
+        "35mm environmental perspective",
+        "50mm commercial realism",
+        "85mm compressed portrait",
+        "24mm controlled architectural perspective"
       ]
     },
-    "purple_architectural": {
+
+    "premium_purple_architecture": {
+      "name": "Premium Purple Architecture",
+      "description": "Controlled STC-inspired purple architecture, geometric planes, premium reflections and product-focused advertising without cheap neon.",
       "mood": [
-        "high-end studio control",
-        "bold brand confidence",
-        "premium architectural geometry"
+        "bold",
+        "premium",
+        "controlled",
+        "architectural",
+        "confident"
       ],
       "colors": [
-        "deeper STC-inspired purple",
-        "green accents",
+        "deep STC-inspired purple",
+        "dark violet",
+        "graphite",
         "white",
-        "graphite"
+        "restrained green accent"
       ],
       "materials": [
-        "matte surfaces",
-        "architectural blocks",
+        "satin lacquer",
+        "polished lacquer",
         "glass",
-        "metal"
+        "dark metal",
+        "matte architectural planes",
+        "controlled reflective surfaces"
       ],
       "lighting": [
-        "controlled studio light",
-        "soft gradients",
-        "premium reflections"
+        "controlled studio lighting",
+        "soft gradient illumination",
+        "edge highlights",
+        "premium reflections",
+        "deep but readable shadows"
       ],
-      "scene_rules": [
-        "purple is controlled, not noisy neon",
-        "premium brand architecture",
-        "no cheap product pedestal clichés"
+      "rules": [
+        "purple must act as architecture, not decoration",
+        "no random neon",
+        "no generic glowing fintech room",
+        "no automatic card pedestal",
+        "use strong geometric relationships",
+        "use realistic reflections and contact shadows"
       ]
     },
-    "augmented_realism": {
+
+    "premium_augmented_realism": {
+      "name": "Premium Augmented Realism",
+      "description": "A real photographic Saudi environment with one imaginative but physically believable advertising intervention.",
       "mood": [
-        "conceptual but believable",
-        "high-end commercial imagination",
-        "future-ready"
+        "clever",
+        "surprising",
+        "premium",
+        "believable",
+        "campaign-ready"
       ],
       "colors": [
-        "brand-led purple-green accents",
-        "clean neutrals",
-        "controlled light glow"
+        "real-world palette",
+        "restrained purple accents",
+        "restrained green accents",
+        "premium neutrals"
       ],
-      "materials": [
-        "polished surfaces",
-        "glass",
-        "metal",
-        "architectural minimalism"
-      ],
-      "lighting": [
-        "cinematic ad glow",
-        "controlled premium contrast",
-        "high-end realism"
-      ],
-      "scene_rules": [
-        "use imagination as an advertising mechanism",
-        "remain credible",
-        "never feel like sci-fi clutter"
+      "rules": [
+        "only one major imaginative intervention",
+        "the intervention must communicate the benefit",
+        "remain photographically plausible",
+        "no sci-fi clutter",
+        "no holograms",
+        "no HUD graphics",
+        "no floating icon clouds",
+        "no random particles"
       ]
     }
   },
+
+  "benefit_families": {
+    "merchant_payments": {
+      "required_messages": [
+        "online commerce",
+        "physical point-of-sale",
+        "one merchant ecosystem"
+      ],
+      "creative_rule": "Online commerce and physical payment must be visually connected through one meaningful advertising mechanism. Merely showing a POS terminal while someone packs an order in the background is rejected.",
+      "preferred_visual_mechanisms": [
+        "physical visual bridge",
+        "cause and effect",
+        "service transformation",
+        "spatial continuity",
+        "parallel commercial action",
+        "perspective reveal"
+      ]
+    }
+  },
+
   "assets": [
     {
-      "asset_id": "stc_brand_dna_01",
-      "path": "stc_bank/dna/stc_brand_dna_01.jpg",
+      "asset_id": "stc_dna_01",
+      "path": "stc_bank/dna/stc_dna_01.jpg",
       "kind": "image",
-      "roles": ["brand_dna"],
-      "tags": ["approved", "campaign", "brand-tone"],
-      "benefit_families": ["merchant_payments", "cards", "digital_services"],
-      "visual_families": ["premium_realistic", "purple_architectural", "augmented_realism"],
+      "roles": [
+        "brand_dna"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_purple_architecture",
+        "premium_augmented_realism"
+      ],
+      "priority": 100,
+      "notes": "Primary STC Bank campaign DNA reference."
+    },
+    {
+      "asset_id": "stc_dna_02",
+      "path": "stc_bank/dna/stc_dna_02.jpg",
+      "kind": "image",
+      "roles": [
+        "brand_dna"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_purple_architecture"
+      ],
+      "priority": 99,
+      "notes": "Premium composition, hierarchy and brand confidence reference."
+    },
+    {
+      "asset_id": "stc_dna_03",
+      "path": "stc_bank/dna/stc_dna_03.jpg",
+      "kind": "image",
+      "roles": [
+        "brand_dna"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_augmented_realism"
+      ],
       "priority": 98,
-      "notes": "Official or approved STC Bank campaign aesthetic reference."
+      "notes": "Saudi lifestyle and premium photography reference."
     },
     {
-      "asset_id": "stc_brand_dna_02",
-      "path": "stc_bank/dna/stc_brand_dna_02.jpg",
+      "asset_id": "stc_dna_04",
+      "path": "stc_bank/dna/stc_dna_04.jpg",
       "kind": "image",
-      "roles": ["brand_dna"],
-      "tags": ["approved", "campaign", "composition"],
-      "benefit_families": ["merchant_payments", "cards"],
-      "visual_families": ["premium_realistic", "purple_architectural"],
+      "roles": [
+        "brand_dna"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_purple_architecture"
+      ],
+      "priority": 97,
+      "notes": "Lighting, materials and campaign layout reference."
+    },
+    {
+      "asset_id": "stc_dna_05",
+      "path": "stc_bank/dna/stc_dna_05.jpg",
+      "kind": "image",
+      "roles": [
+        "brand_dna"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_augmented_realism"
+      ],
       "priority": 96,
-      "notes": "Approved advertising composition style."
+      "notes": "Advertising idea quality and visual simplicity reference."
     },
+
     {
-      "asset_id": "stc_brand_dna_03",
-      "path": "stc_bank/dna/stc_brand_dna_03.jpg",
+      "asset_id": "stc_realistic_01",
+      "path": "stc_bank/realistic/stc_realistic_01.jpg",
       "kind": "image",
-      "roles": ["brand_dna"],
-      "tags": ["approved", "lifestyle", "saudi"],
-      "benefit_families": ["merchant_payments", "financing", "digital_services"],
-      "visual_families": ["premium_realistic", "augmented_realism"],
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
       "priority": 95,
-      "notes": "Saudi lifestyle premium brand tone."
+      "notes": "Premium realistic Saudi lifestyle photography."
     },
     {
-      "asset_id": "stc_cards_01",
-      "path": "stc_bank/products/stc_cards_01.jpg",
+      "asset_id": "stc_realistic_02",
+      "path": "stc_bank/realistic/stc_realistic_02.jpg",
       "kind": "image",
-      "roles": ["physical_product"],
-      "tags": ["cards", "product", "official"],
-      "benefit_families": ["cards", "merchant_payments"],
-      "visual_families": ["premium_realistic", "purple_architectural"],
-      "priority": 92,
-      "notes": "Official card family visual reference."
-    },
-    {
-      "asset_id": "stc_cards_02",
-      "path": "stc_bank/products/stc_cards_02.jpg",
-      "kind": "image",
-      "roles": ["physical_product"],
-      "tags": ["cards", "product", "official"],
-      "benefit_families": ["cards", "merchant_payments"],
-      "visual_families": ["premium_realistic", "purple_architectural"],
-      "priority": 89,
-      "notes": "Alternative product shot."
-    },
-    {
-      "asset_id": "stc_app_ui_01",
-      "path": "stc_bank/ui/stc_app_ui_01.jpg",
-      "kind": "image",
-      "roles": ["ui_product"],
-      "tags": ["app", "ui", "official"],
-      "benefit_families": ["merchant_payments", "digital_services", "cards"],
-      "visual_families": ["premium_realistic", "augmented_realism"],
-      "priority": 91,
-      "notes": "Official app screen related to merchant or digital financial use."
-    },
-    {
-      "asset_id": "stc_app_ui_02",
-      "path": "stc_bank/ui/stc_app_ui_02.jpg",
-      "kind": "image",
-      "roles": ["ui_product"],
-      "tags": ["app", "ui", "official"],
-      "benefit_families": ["digital_services", "merchant_payments"],
-      "visual_families": ["premium_realistic", "augmented_realism"],
-      "priority": 88,
-      "notes": "Second app reference for variety."
-    },
-    {
-      "asset_id": "stc_layout_01",
-      "path": "stc_bank/layouts/stc_layout_01.jpg",
-      "kind": "image",
-      "roles": ["layout", "campaign_style"],
-      "tags": ["layout", "copy-space", "approved"],
-      "benefit_families": ["merchant_payments", "cards", "financing"],
-      "visual_families": ["premium_realistic", "purple_architectural"],
-      "priority": 90,
-      "notes": "Reference for visual hierarchy and copy-space discipline."
-    },
-    {
-      "asset_id": "stc_layout_02",
-      "path": "stc_bank/layouts/stc_layout_02.jpg",
-      "kind": "image",
-      "roles": ["layout", "campaign_style"],
-      "tags": ["layout", "composition", "approved"],
-      "benefit_families": ["merchant_payments", "digital_services"],
-      "visual_families": ["premium_realistic", "augmented_realism"],
-      "priority": 87,
-      "notes": "Reference for campaign framing and branded scene composition."
-    },
-    {
-      "asset_id": "stc_merchant_ref_01",
-      "path": "stc_bank/merchant/stc_merchant_ref_01.jpg",
-      "kind": "image",
-      "roles": ["brand_dna", "merchant_context"],
-      "tags": ["merchant", "saudi", "approved"],
-      "benefit_families": ["merchant_payments"],
-      "visual_families": ["premium_realistic"],
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
       "priority": 94,
-      "notes": "Merchant-lifestyle reference aligned to STC identity."
+      "notes": "Premium human scene with strong advertising composition."
     },
     {
-      "asset_id": "stc_merchant_ref_02",
-      "path": "stc_bank/merchant/stc_merchant_ref_02.jpg",
+      "asset_id": "stc_realistic_03",
+      "path": "stc_bank/realistic/stc_realistic_03.jpg",
       "kind": "image",
-      "roles": ["brand_dna", "merchant_context"],
-      "tags": ["merchant", "operations", "approved"],
-      "benefit_families": ["merchant_payments"],
-      "visual_families": ["premium_realistic", "augmented_realism"],
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
       "priority": 93,
-      "notes": "Merchant operations aesthetic reference."
+      "notes": "Saudi architecture, light and commercial realism."
+    },
+    {
+      "asset_id": "stc_realistic_04",
+      "path": "stc_bank/realistic/stc_realistic_04.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 92,
+      "notes": "Camera and lifestyle composition reference."
+    },
+    {
+      "asset_id": "stc_realistic_05",
+      "path": "stc_bank/realistic/stc_realistic_05.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 91,
+      "notes": "Premium environmental advertising photography reference."
+    },
+
+    {
+      "asset_id": "stc_purple_01",
+      "path": "stc_bank/purple/stc_purple_01.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 95,
+      "notes": "Purple architectural composition and controlled reflection reference."
+    },
+    {
+      "asset_id": "stc_purple_02",
+      "path": "stc_bank/purple/stc_purple_02.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 94,
+      "notes": "Purple material hierarchy and premium studio lighting."
+    },
+    {
+      "asset_id": "stc_purple_03",
+      "path": "stc_bank/purple/stc_purple_03.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 93,
+      "notes": "Geometric brand-world composition reference."
+    },
+
+    {
+      "asset_id": "stc_augmented_01",
+      "path": "stc_bank/augmented/stc_augmented_01.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "augmented_reference"
+      ],
+      "styles": [
+        "premium_augmented_realism"
+      ],
+      "priority": 95,
+      "notes": "Premium augmented realism with one meaningful conceptual intervention."
+    },
+    {
+      "asset_id": "stc_augmented_02",
+      "path": "stc_bank/augmented/stc_augmented_02.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "augmented_reference"
+      ],
+      "styles": [
+        "premium_augmented_realism"
+      ],
+      "priority": 94,
+      "notes": "Real-world photography combined with advertising metaphor."
+    },
+    {
+      "asset_id": "stc_augmented_03",
+      "path": "stc_bank/augmented/stc_augmented_03.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "augmented_reference"
+      ],
+      "styles": [
+        "premium_augmented_realism"
+      ],
+      "priority": 93,
+      "notes": "Symbolic realism and campaign storytelling reference."
+    },
+
+    {
+      "asset_id": "stc_merchant_01",
+      "path": "stc_bank/merchant/stc_merchant_01.jpg",
+      "kind": "image",
+      "roles": [
+        "merchant_reference"
+      ],
+      "benefit_families": [
+        "merchant_payments"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_augmented_realism"
+      ],
+      "priority": 98,
+      "notes": "High-quality merchant advertising reference; must not be a generic POS counter scene."
+    },
+    {
+      "asset_id": "stc_merchant_02",
+      "path": "stc_bank/merchant/stc_merchant_02.jpg",
+      "kind": "image",
+      "roles": [
+        "merchant_reference"
+      ],
+      "benefit_families": [
+        "merchant_payments"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_augmented_realism"
+      ],
+      "priority": 97,
+      "notes": "E-commerce and physical commerce visual relationship reference."
+    },
+    {
+      "asset_id": "stc_merchant_03",
+      "path": "stc_bank/merchant/stc_merchant_03.jpg",
+      "kind": "image",
+      "roles": [
+        "merchant_reference"
+      ],
+      "benefit_families": [
+        "merchant_payments"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_purple_architecture"
+      ],
+      "priority": 96,
+      "notes": "Premium merchant campaign composition and visual hierarchy."
+    },
+    {
+      "asset_id": "stc_merchant_04",
+      "path": "stc_bank/merchant/stc_merchant_04.jpg",
+      "kind": "image",
+      "roles": [
+        "merchant_reference"
+      ],
+      "benefit_families": [
+        "merchant_payments"
+      ],
+      "styles": [
+        "premium_realistic",
+        "premium_augmented_realism"
+      ],
+      "priority": 95,
+      "notes": "Original merchant-commerce advertising idea reference."
     }
   ]
 }
