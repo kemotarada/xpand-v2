@@ -1,0 +1,427 @@
+[
+  {
+    "asset_id": "stc_curated_01",
+    "source_filename": "اختيارك المميز يبدأ مع بطاقة بلاتينيوم الائتمانية 💳▪️مجانًا للسنة الأولى ▪️صفر رسوم على العمليا(5).jpg",
+    "path": "stc_bank/curated/stc_curated_01.jpg",
+    "sha256": "a77870e997acca9982926e8e9fdd844600974927ec7e690ba70c2b74afea1fae",
+    "family": "premium_realistic",
+    "title": "Pocket card gesture",
+    "observed_camera": "Tight oblique waist-level detail",
+    "observations": "White linen, khaki cloth, dark card; soft side light reveals tendons and fabric; diagonal hand/card gesture; lower copy overlay must be omitted.",
+    "dominant_jpeg_swatches": [
+      "#D1D6DD",
+      "#64665F",
+      "#3E3C37",
+      "#332823",
+      "#5E493D"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_02",
+    "source_filename": "بطاقات ائتمانية بمزايا استثنائيةاكتشف بطاقات STC Bank الائتمانية بفئاتها بلاتينيوم، سيجنتشر وإنف (1)(5).jpg",
+    "path": "stc_bank/curated/stc_curated_02.jpg",
+    "sha256": "31994a45752886e36d13198ef42f38ee36b1f948663b1b30e728f329fc5bad4d",
+    "family": "premium_purple_architecture",
+    "title": "Infinite card inclined plane",
+    "observed_camera": "Elevated three-quarter view",
+    "observations": "Dark card lies along diagonal violet support; broad pale pool beneath hero, deep outer violet; silver band catches strip reflection; coherent card/base foreshortening.",
+    "dominant_jpeg_swatches": [
+      "#15022E",
+      "#210543",
+      "#412172",
+      "#251B3D",
+      "#4A3E6B"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_03",
+    "source_filename": "بطاقات ائتمانية بمزايا استثنائيةاكتشف بطاقات STC Bank الائتمانية بفئاتها بلاتينيوم، سيجنتشر وإنف (2)(5).jpg",
+    "path": "stc_bank/curated/stc_curated_03.jpg",
+    "sha256": "8c1cf0528c69d28c2c53b7eb27f4a5206eaae0a5bc17756fdf166280c240fc1b",
+    "family": "premium_purple_architecture",
+    "title": "Signature card reflective shelf",
+    "observed_camera": "Near-level oblique product view",
+    "observations": "Upright leaning black card, green metallic band, visible reflection below; back plane diagonal recedes; deep violet negative upper area; contact along card bottom.",
+    "dominant_jpeg_swatches": [
+      "#1A0233",
+      "#1A0530",
+      "#0F011E",
+      "#345856",
+      "#1F0638"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_04",
+    "source_filename": "بطاقات ائتمانية بمزايا استثنائيةاكتشف بطاقات STC Bank الائتمانية بفئاتها بلاتينيوم، سيجنتشر وإنف (3)(5).jpg",
+    "path": "stc_bank/curated/stc_curated_04.jpg",
+    "sha256": "92d4954739d5e4fb99efc6ea2e80f0c03ba87751e594d29afda9403ec388efdb",
+    "family": "premium_purple_architecture",
+    "title": "Three cards diagonal array",
+    "observed_camera": "Elevated oblique product arrangement",
+    "observations": "Repeated dark rectangular cards progress along purple diagonal support; neutral and green bands separate variants; perspective-aligned sides and small contact shadows; no infographic banners.",
+    "dominant_jpeg_swatches": [
+      "#423E5A",
+      "#250554",
+      "#1C0346",
+      "#300769",
+      "#0F051F"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_05",
+    "source_filename": "بطاقات ائتمانية بمزايا استثنائيةاكتشف بطاقات STC Bank الائتمانية بفئاتها بلاتينيوم، سيجنتشر وإنف (4)(5).jpg",
+    "path": "stc_bank/curated/stc_curated_05.jpg",
+    "sha256": "5dbcc8ecb5f1fa1df4e35181f93a775508895897ec74c0bdfe450b20adb3bcb2",
+    "family": "premium_purple_architecture",
+    "title": "Platinum card sloping support",
+    "observed_camera": "Elevated three-quarter product view",
+    "observations": "Thin black card on a purple sloping top, dark vertical face, broad violet illumination behind; neutral metallic strip; align support/product directions, no neon outline.",
+    "dominant_jpeg_swatches": [
+      "#1E034A",
+      "#3B1D70",
+      "#11022E",
+      "#160339",
+      "#080115"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_06",
+    "source_filename": "بطاقات ائتمانية بمزايا استثنائيةاكتشف بطاقات STC Bank الائتمانية بفئاتها بلاتينيوم، سيجنتشر وإنف(5).jpg",
+    "path": "stc_bank/curated/stc_curated_06.jpg",
+    "sha256": "4a96da9d7af2ebf8eca2c56ee1be872efe3f7244a5d3801f059c9f905f6cfc7e",
+    "family": "premium_purple_architecture",
+    "title": "Three cards tiered platforms",
+    "observed_camera": "Oblique studio view showing top and side planes",
+    "observations": "Three stepped purple plinths create hierarchy; upright cards grounded on separate levels; bright top rims are physical reflections; dark fronts preserve contrast; upper copy space.",
+    "dominant_jpeg_swatches": [
+      "#2F125F",
+      "#633490",
+      "#230D4D",
+      "#0D0420",
+      "#160C2B"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_07",
+    "source_filename": "تدور على هدية تخرج 🎓؟بخصم يوصل لـ 500 ريال فارفتش يوفر لك اللي في بالك 🤩استخدم بطاقات Visa الد(5).jpg",
+    "path": "stc_bank/curated/stc_curated_07.jpg",
+    "sha256": "bf5b7b3a6a3b34c59a4eee2aadf0deadd46430195b2fb78576833fd09bb1728f",
+    "family": "premium_purple_architecture",
+    "title": "Fashion fabric and sunglasses",
+    "observed_camera": "Moderately elevated three-quarter still life",
+    "observations": "Coral/peach patterned fabric drapes over connected purple blocks, folds settle with gravity; sunglasses upper left; soft directional violet light with readable matte planes; warm accent dominates selectively.",
+    "dominant_jpeg_swatches": [
+      "#571A84",
+      "#A065B4",
+      "#420C70",
+      "#37085F",
+      "#5C2F85"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_08",
+    "source_filename": "تمويل شخصي بدون تعقيد!حوّل راتبك واحصل على تمويل شخصي حتى1.5  مليون ريال بنسبة تنافسية وخطوات بس(5).jpg",
+    "path": "stc_bank/curated/stc_curated_08.jpg",
+    "sha256": "40fec3d703176b42f7556b2d47ae2e71a98b73f08d99ce8f317277303c480024",
+    "family": "premium_realistic",
+    "title": "Phone in bright office",
+    "observed_camera": "Seated eye-level oblique medium shot",
+    "observations": "Cool glass daylight and navy clothing contrast warm skin; gray monitor near left, dark cup lower foreground; phone gaze supplies action; clean window geometry, soft background detail.",
+    "dominant_jpeg_swatches": [
+      "#344351",
+      "#0A131D",
+      "#A6C1CA",
+      "#6D8A96",
+      "#95A2AB"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_09",
+    "source_filename": "حوّل لحسابك من ريال لـ 20,000 ريال 💸برقم الآيبان من أي بنك وفي كل وقت🤳(5).jpg",
+    "path": "stc_bank/curated/stc_curated_09.jpg",
+    "sha256": "a2e90362fcef15f31cf0398a55f1c9ed79081ce54bd6c179d57bdb2dc6cf5f83",
+    "family": "premium_realistic",
+    "title": "Nighttime banking chair",
+    "observed_camera": "Rear three-quarter over-the-shoulder shot",
+    "observations": "White thobe and headcloth, warm lamp, dark glass skyline, localized violet bounce on background/chair edge; one phone in hand; omit floating IBAN label and all text.",
+    "dominant_jpeg_swatches": [
+      "#131426",
+      "#472A49",
+      "#594A58",
+      "#1B1221",
+      "#10060F"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_10",
+    "source_filename": "رتّب مصاريف سفرتك بكل سهولة ✈️ مع قطّة منSTC Bank  قسّم المصاريف بينكم بالطريقة اللي تناسبكم(5).jpg",
+    "path": "stc_bank/curated/stc_curated_10.jpg",
+    "sha256": "ce62305bbbce0956c3d2dfcc0e9e4e5371505683cc05ecc30aefcf39e5e8f180",
+    "family": "premium_realistic",
+    "title": "Shared beach expenses",
+    "observed_camera": "Rear three-quarter seated over-the-shoulder view",
+    "observations": "Warm hand, wood chair and sand against cyan sea/blue sky; phone at gaze height; smaller companions in distance, juice at side; clean warm/cool harmony with contextual depth.",
+    "dominant_jpeg_swatches": [
+      "#060302",
+      "#4C80B6",
+      "#D9D2CB",
+      "#96BDD6",
+      "#57473A"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_11",
+    "source_filename": "كل اللي تحتاجه في مكان واحد!بطاقات رقمية، شرائح سفر، أجهزة إلكترونية و بطاقات المتاجركلها تلقاها (1)(5).jpg",
+    "path": "stc_bank/curated/stc_curated_11.jpg",
+    "sha256": "045302e4a4e79ec0b81b196494bf981befa6b434a4570a1ceef45c949bde6595",
+    "family": "premium_realistic",
+    "title": "Phone in home entertainment room",
+    "observed_camera": "Near-level frontal product view",
+    "observations": "Phone standing on textured wood; large screen hero against softly receding shelves/controllers; warm wood with muted cool-violet depth; attached base shadow; do not reproduce store logos/UI.",
+    "dominant_jpeg_swatches": [
+      "#17121E",
+      "#231C2C",
+      "#F5F5F5",
+      "#5C454A",
+      "#3E3850"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_12",
+    "source_filename": "كل اللي تحتاجه في مكان واحد!بطاقات رقمية، شرائح سفر، أجهزة إلكترونية و بطاقات المتاجركلها تلقاها(5).jpg",
+    "path": "stc_bank/curated/stc_curated_12.jpg",
+    "sha256": "bf39bd9c221f461346e6d73e35093690025dbee25a5b4ea062bf99436b017552",
+    "family": "premium_purple_architecture",
+    "title": "Marketplace phone",
+    "observed_camera": "Near-frontal slight three-quarter product view",
+    "observations": "Phone dominates purple floor/backdrop, dark edge, broad grounded shadow; source has white floating UI cards: learn hero hierarchy only, exclude all overlay tiles/lettering.",
+    "dominant_jpeg_swatches": [
+      "#2F0053",
+      "#FEFEFE",
+      "#5E0C9E",
+      "#370261",
+      "#530A8C"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_13",
+    "source_filename": "كل وجهة لها ذكرياتها 🌎وخلّك متصل فيها من أول دقيقة!اطلب شريحة السفر لرحلتك من السّوق داخل تطبيق(5).jpg",
+    "path": "stc_bank/curated/stc_curated_13.jpg",
+    "sha256": "86669e071375eaf344f732c21a51f29159e5b6f025f0d22a4c2c270609d785f8",
+    "family": "premium_realistic",
+    "title": "Travel phone inside tent",
+    "observed_camera": "First-person seated POV",
+    "observations": "Dark tent fabric forms angular frame around snow and mountains; low warm sun at left with cool blue shadows; hands and knees anchor eye position; crisp phone, natural distance softness; not inherently surreal.",
+    "dominant_jpeg_swatches": [
+      "#050810",
+      "#10141F",
+      "#6D7581",
+      "#3B3843",
+      "#172435"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_14",
+    "source_filename": "لا تشيل هم 💜💚نستقبل ملاحظاتك واستفساراتك طوال اليوم عبر قنواتنا الرسمية 📱(5).jpg",
+    "path": "stc_bank/curated/stc_curated_14.jpg",
+    "sha256": "7aaa0c74bad9aa41f33637870db930ab9694161356354c4bfbef2b3c31b905ee",
+    "family": "premium_purple_architecture",
+    "title": "Support phone in hand",
+    "observed_camera": "Frontal close-up with slight oblique hand",
+    "observations": "One believable hand holds bright phone against saturated violet; dimensional fingers, soft skin shading, quiet right/upper field; omit all contacts, UI lettering and logos.",
+    "dominant_jpeg_swatches": [
+      "#4B028B",
+      "#4B0489",
+      "#FCFBFC",
+      "#450381",
+      "#3B026D"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_15",
+    "source_filename": "مسافر او بتسافر قريب؟ ✈️أحصل على%20  كاش باك عند شحن أرقامك الدولية عبر التطبيق 📲(5).jpg",
+    "path": "stc_bank/curated/stc_curated_15.jpg",
+    "sha256": "b80a0b7c6d177f690a88d254b568c384f68a6411d0e4ebe161357b4234232f9b",
+    "family": "premium_augmented_realism",
+    "title": "International top-up composite",
+    "observed_camera": "Frontal product hero and composited depth",
+    "observations": "Large phone centered against landmarks/sky with reflected base; source uses collage and text. Learn scale hierarchy and warm architecture/cool sky only; no landmark collage or graphic overlays in new concepts.",
+    "dominant_jpeg_swatches": [
+      "#6C6866",
+      "#FDF9F2",
+      "#214F74",
+      "#D2D7D2",
+      "#152C3F"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_16",
+    "source_filename": "من لحظة التخطيط… إذا البطاقة المناسبة معك يفرق الموضوع ✈️استمتع بمميزات وكاش باك يصل إلى 10٪ مع (5).jpg",
+    "path": "stc_bank/curated/stc_curated_16.jpg",
+    "sha256": "afbec583b3fb7763d8dcb4fb51bc8f3a95489a3fde162804180b4469a26f4b1b",
+    "family": "premium_augmented_realism",
+    "title": "Card architecture threshold",
+    "observed_camera": "Near-eye-level architectural oblique view",
+    "observations": "Giant dark card acts as door leaf in purple wall; traveler and luggage at smaller coherent scale; warm destination light contrasts violet interior; learn scale/threshold mechanism without copying this scene.",
+    "dominant_jpeg_swatches": [
+      "#250843",
+      "#351057",
+      "#14032B",
+      "#0D0320",
+      "#1C0536"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_curated_17",
+    "source_filename": "هللتين تجيب لك شاورمتين من فروع نجم الشاورما مع بطاقات STC Bank الرقمية 🌯🌯تُطبّق الشروط والأحك(5).jpg",
+    "path": "stc_bank/curated/stc_curated_17.jpg",
+    "sha256": "f4ae0227ac919c0a72bcc9060c28bc355d430076f0b7a369aa455ff0b2b08229",
+    "family": "premium_realistic",
+    "title": "Food purchase foreground hand",
+    "observed_camera": "Low-angle foreground close-up",
+    "observations": "Two warm shawarma wraps in one hand, white storefront and clean blue sky; upward view, warm food highlights, legible context; remove signage/text/logo/card strip; avoid oversaturated food.",
+    "dominant_jpeg_swatches": [
+      "#80BAE6",
+      "#5E98D0",
+      "#D2C9C6",
+      "#DFDBD9",
+      "#3A2C34"
+    ],
+    "swatch_caveat": "Whole-image quantization includes text/products; use only as diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "camera height",
+      "light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  }
+]

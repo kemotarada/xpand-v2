@@ -111,8 +111,8 @@
 # - no fake UI
 # - no generated text/logo
 #
-# - 15–22% integrated copy space
-# - NO giant empty upper third
+# - 25–40% integrated copy space
+# - NO artificial empty panel
 #
 # - intentional campaign camera
 # - physically believable execution
@@ -4208,11 +4208,11 @@ Consider when meaningful:
 COPY SPACE
 ==================================================
 
-Use approximately 15–22% integrated calm copy space
+Use approximately 25–40% integrated calm copy space
 when useful.
 
 Do NOT create:
-- a giant blank upper third
+- an artificial blank panel
 - 30–40% automatic empty wall
 - a hero pushed into the bottom of the frame
 
@@ -4238,7 +4238,7 @@ STC SKILL
 ==================================================
 
 {clean_text(
-    STC_BANK_VISUAL_SKILL,
+    STC_BANK_VISUAL_SKILL + "\n" + __import__("xpand_stc_skill_runtime").read_skill_file("references/concept-workflow.md"),
     6500,
 )}
 
@@ -4484,7 +4484,7 @@ feasibility:
 Can an image model preserve the mechanism?
 
 copy_space_quality:
-Is approximately 15–22% copy space naturally integrated,
+Is approximately 25–40% copy space naturally integrated,
 without a giant dead upper region?
 
 distinctiveness:
@@ -4723,7 +4723,7 @@ Lock:
 - lens
 - perspective
 - lighting
-- approximately 15–22% integrated copy space
+- approximately 25–40% integrated copy space
 
 do_not_drift_into should explicitly identify the most likely
 generic failure modes.
@@ -5037,9 +5037,9 @@ Never repair into:
 - giant globe
 - readable banking UI
 - generated text/logo
-- giant empty upper third
+- artificial empty panel
 
-Use 15–22% integrated copy space.
+Use 25–40% integrated copy space.
 
 ==================================================
 OUTPUT
@@ -5206,9 +5206,9 @@ No required readable UI.
 COPY SPACE
 ==================================================
 
-15–22% integrated copy space.
+25–40% integrated copy space.
 
-No giant blank upper third.
+No artificial blank panel.
 
 ==================================================
 OUTPUT IDS
@@ -7544,7 +7544,7 @@ def run_creative_brain(
                     True,
 
                 "copy_space_policy":
-                    "15-22_percent_integrated",
+                    "25-40_percent_integrated",
             },
 
             errors=(
@@ -8468,7 +8468,7 @@ def run_creative_brain(
                 STC_CANONICAL_POLICY_AVAILABLE,
 
             "copy_space_policy":
-                "15-22_percent_integrated",
+                "25-40_percent_integrated",
 
             "giant_upper_third_banned":
                 True,
@@ -9080,26 +9080,26 @@ if __name__ == "__main__":
     )
 
     tests[
-        "copy_space_15_22"
+        "copy_space_25_40"
     ] = (
-        "15–22%"
+        "25–40%"
         in digital_policy_prompt
     )
 
     tests[
-        "old_copy_space_25_40_removed"
+        "obsolete_copy_space_removed"
     ] = (
-        "25%-40%"
+        "15–22%"
         not in digital_policy_prompt
         and
-        "25%-40% natural negative space"
+        "15-22%"
         not in digital_policy_prompt
     )
 
     tests[
         "no_giant_upper_third"
     ] = (
-        "giant blank upper third"
+        "artificial blank panel"
         in digital_policy_prompt
     )
 
@@ -9770,10 +9770,10 @@ if __name__ == "__main__":
         "✅ Merchant-payments creative policy active"
     )
     print(
-        "✅ 15–22% integrated copy-space policy"
+        "✅ 25–40% integrated copy-space policy"
     )
     print(
-        "✅ Giant blank upper-third banned"
+        "✅ Artificial blank panel banned"
     )
     print(
         "✅ Generic phone/global-globe transfer cliché banned"

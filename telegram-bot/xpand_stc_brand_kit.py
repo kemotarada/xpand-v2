@@ -1606,6 +1606,7 @@ class BrandKit:
             in self.existing_assets()
             if asset.asset_id
             not in excluded
+            and self._visual_family_matches(asset, visual_family)
         ]
 
         candidates.sort(
@@ -1723,6 +1724,7 @@ class BrandKit:
             in self.existing_assets()
             if asset.asset_id
             not in excluded
+            and self._visual_family_matches(asset, family)
         ]
 
         selected: List[
@@ -1762,16 +1764,6 @@ class BrandKit:
 
             reverse=True,
         )
-
-        for asset in brand_dna[
-            :max_brand_dna
-        ]:
-
-            self._append_unique(
-                selected,
-                asset,
-                max_total=max_total,
-            )
 
         # =================================================
         # 2. VISUAL STYLE REFERENCES
@@ -1841,6 +1833,16 @@ class BrandKit:
 
         for asset in style_candidates[
             :style_budget
+        ]:
+
+            self._append_unique(
+                selected,
+                asset,
+                max_total=max_total,
+            )
+
+        for asset in brand_dna[
+            :max_brand_dna
         ]:
 
             self._append_unique(
@@ -2183,7 +2185,8 @@ class BrandKit:
             family_id
         )
 
-        lines: List[str] = []
+        from xpand_stc_skill_runtime import style_direction
+        lines: List[str] = [style_direction(family_id)]
 
         lines.append(
             (
@@ -2959,23 +2962,23 @@ if __name__ == "__main__":
         )
 
         tests[
-            "twenty_assets_loaded"
+            "reference_assets_loaded"
         ] = (
             len(
                 pack.assets
             )
-            ==
+            >=
             20
         )
 
         tests[
-            "twenty_assets_exist"
+            "all_reference_assets_exist"
         ] = (
             len(
                 pack.existing_assets()
             )
             ==
-            20
+            len(pack.assets)
         )
 
         # =================================================

@@ -1148,11 +1148,11 @@ def build_final_render_locks_text(
                 "styling that conflicts with the references."
             ),
             (
-                "- Use approximately 15–22% integrated calm "
+                "- Use approximately 25–40% integrated calm "
                 "copy space when useful."
             ),
             (
-                "- Do not create a giant blank upper third."
+                "- Do not create an artificial blank panel."
             ),
             (
                 "- Do not push the main subject into the "
@@ -1509,16 +1509,16 @@ if __name__ == "__main__":
     # -----------------------------------------------------
 
     tests[
-        "final_copy_space_15_22"
+        "final_copy_space_25_40"
     ] = (
-        "15–22%"
+        "25–40%"
         in merchant_final
     )
 
     tests[
         "final_no_giant_upper_third"
     ] = (
-        "giant blank upper third"
+        "artificial blank panel"
         in merchant_final
     )
 

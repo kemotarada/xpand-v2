@@ -1,0 +1,7 @@
+# Photographic surrealism (the user's “fantasy”)
+This is premium conceptual photography: an ordinary world with one impossible-but-coherent relationship. It is not illustration, generic 3D fintech, magic or effect accumulation.
+The card-door reference transforms a product into architecture. Learn scale substitution, threshold framing, matching contact and light, and a simple passage metaphor. Do not replicate that exact card-door/traveler composition.
+The global-landmark reference and floating UI reference show that the supplied collection contains compositing. They are evidence of message hierarchy and depth only; the user explicitly excludes graphic elements and lines. Do not copy their UI tiles, text, landmarks or magical effects.
+A tent photographed in mountains remains realistic; unusual scenery alone does not make an image surreal. A purple environment can remain studio realism. Classify by the mechanism, not by purple or dramatic light.
+Build the photographic base first. Add one controlled scale shift, material substitution, physical reveal or unexpected spatial continuity. Describe its supports, occlusion, reflected environment and shadows. Keep everyone else at a consistent scale. When a metaphor needs long explanation, replace it with a simpler observable action.
+Example mechanisms to adapt: ordinary service tool functioning as a physical organizing surface; a single folded object revealing two connected real-use contexts; forced perspective aligning product and architecture. These are starting principles, not automatic elements to insert.

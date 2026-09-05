@@ -1,94 +1,10 @@
-Concept and research workflow
-
-Brief extraction
-
-Reduce the user's content to:
-
-single benefit;
-
-target audience and moment;
-
-emotion to create;
-
-mandatory product asset, if any;
-
-selected visual family;
-
-output ratio and placement needs;
-
-realism risks and cultural requirements.
-
-If the product, ratio, or target market is essential and unknown, ask one compact follow-up. Otherwise choose a sensible assumption and state it briefly.
-
-Research sources
-
-Use these as permitted reference destinations:
-
-Official STC Bank Instagram: https://www.instagram.com/stcbank_ksa/
-
-Official STC Bank site: https://www.stcbank.com.sa/
-
-Official STC brand guide: https://www.stc.com/content/stcgroupwebsite/sa/en/media-center/brand-guide.html
-
-Ads of the World finance archive: https://www.adsoftheworld.com/industries/finance
-
-Behance bank advertising search: https://www.behance.net/search/projects/bank%20advertising%20art%20direction
-
-Behance campaign art direction: https://www.behance.net/search/projects/campaign%20art%20direction
-
-Campaign financial-services work: https://www.campaignlive.co.uk/the-work/sector/financial-services/banks-building-societies/5823
-
-IAC bank-ad winners: https://www.iacaward.org/iac/category/Bank/best-bank-ad.html
-
-Pinterest banking ads only for broad visual discovery, never as brand authority: https://www.pinterest.com/search/pins/?q=banking%20advertising
-
-Prefer official, awarded, curated, or credited work. Check publication date. Use social engagement only as a weak signal; it does not prove design quality.
-
-Synthesis method
-
-Internally generate at least 20 raw visual metaphors across these lenses:
-
-everyday human truth;
-
-product behavior made physical;
-
-spatial transformation;
-
-scale contrast;
-
-before/after contained in one frame;
-
-cultural moment;
-
-material metaphor;
-
-camera-first idea.
-
-Discard ideas that require explanatory text, icons, UI overlays, arrows, lines, particles, or implausible physics. Shortlist concepts that survive the no-copy test: a viewer should infer the benefit from the image alone.
-
-Score shortlisted ideas for:
-
-instant message clarity;
-
-originality without gimmick;
-
-STC Bank fit;
-
-Saudi authenticity;
-
-photographic plausibility;
-
-negative-space quality;
-
-generation reliability.
-
-Evaluate the shortlist one concept at a time, then lock exactly ONE final idea — the single strongest combined score across message, originality, brand fit, realism, and color safety. Refine the locked idea twice before production. Never reveal private reasoning; provide only the concise rationale.
-
-Color-realism gate (applies to every concept)
-
-Classify the locked scene as Tier A (real life — 100% natural color, no environment purple), Tier B (premium/night — natural base, purple only as ≤15% edge accent), or Tier C (studio product — purple backdrop only, product stays true color). Purple belongs to the background and the light, never to the subject; never tint skin or natural materials; keep neutral white balance on every person and hero product. Reject any concept that would require flooding the frame with purple to work.
-
-Originality safeguard
-
-Never reproduce a reference's exact object arrangement, camera position, setting, or metaphor. Abstract reusable principles, combine insights from multiple sources, then change subject, spatial logic, and composition. References define quality and identity, not a template to trace.
-
+# Benefit-first creative process
+1. Extract the actual service, audience, desired feeling and visible proof. Separate the proposition from exact numbers that will be added later as typography. Do not confuse POS with reward points.
+2. Lock the user-selected style at the interaction boundary. For each brief identify 1–3 matching reference IDs and specific lessons: hue region, plane structure, camera relationship, material, shadow and negative space. Reference metadata is not evidence that a model saw the image; record when only observations are available.
+3. Develop the caller's requested number of candidates across different mechanisms: decisive human gesture, perspective reveal, organized physical relationship, scale substitution, foreground/background contrast, material behavior. Change the mechanism and camera, not only furniture or color. Keep JSON compact and complete; never alter its schema.
+4. Each candidate needs a one-sentence visible proof, hero, only necessary supporting objects, specific camera, support geometry, lighting/material plan and a clear reason it fits the selected reference. Fit these into existing schema fields; do not invent mandatory JSON keys.
+5. Challenge: would this picture work for any unrelated brand/service? Is the intended meaning dependent on an invisible caption? Are the added elements functional? Can removing one object improve clarity? Could a simpler gesture beat a metaphor? Is it visually different from other candidates?
+6. Compare message clarity (30), style/reference fit (25), composition/camera (20), lighting/material feasibility (15), originality (10). These are editorial priorities, not objective measurements or permission to invent QA scores. Respect host scoring schema.
+7. Fix the weakest dimension, not every dimension at once. Preserve the selected idea while correcting camera or hue. Bound retries by existing runtime budgets; never increase paid calls merely to appear thorough. If no visual evaluation ran, say unverified rather than PASS.
+8. Final prompt expresses the scene in concrete photographic language. Keep positive scene description separate from a short negative tail; do not fill concept fields with long forbidden-word lists that a substring filter mistakes for violations.
+Research: inspect curated pixels first, use official sources for the service and primary photographic references for terminology, record sources and date. Never claim research occurred when unavailable. Competitor references teach mechanisms; they must not replace the user's STC color authority.

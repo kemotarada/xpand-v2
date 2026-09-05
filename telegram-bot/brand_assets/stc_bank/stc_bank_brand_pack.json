@@ -1,9 +1,8 @@
 {
   "brand_id": "stc_bank",
   "brand_name": "STC Bank",
-  "version": "2.0",
+  "version": "4.0",
   "default_visual_family": "premium_realistic",
-
   "identity_keywords": [
     "modern Saudi banking",
     "premium financial confidence",
@@ -16,7 +15,6 @@
     "simple but memorable advertising ideas",
     "high-end material realism"
   ],
-
   "required_brand_signals": [
     "premium Saudi visual language",
     "advertising-grade composition",
@@ -29,7 +27,6 @@
     "confident modern banking tone",
     "STC Bank identity without depending on logos"
   ],
-
   "global_rules": {
     "purple_is_optional": true,
     "purple_is_not_default": true,
@@ -43,27 +40,19 @@
     "no_particle_effects": true,
     "no_repeated_counter_scene": true,
     "no_plain_pos_scene": true,
-    "no_card_on_pedestal_default": true,
+    "no_card_on_pedestal_default": false,
     "require_visual_mechanism": true,
     "require_advertising_style": true,
     "require_scene_novelty": true,
     "require_camera_intent": true,
     "require_copy_space": true,
     "copy_space_min_percent": 25,
-    "copy_space_max_percent": 40
+    "copy_space_max_percent": 40,
+    "no_graphic_overlays": true,
+    "no_visible_text_or_logos": true
   },
-
   "banned_patterns": [
-    "wooden checkout counter",
-    "generic merchant counter",
-    "generic boutique checkout",
-    "generic perfume boutique",
-    "generic fashion boutique",
-    "customer simply tapping a POS terminal",
-    "merchant standing behind a counter",
     "tablet beside POS terminal",
-    "worker packing a box in the background",
-    "person simply looking at a phone",
     "generic office desk",
     "smiling businessman",
     "handshake",
@@ -71,10 +60,7 @@
     "floating POS terminal",
     "floating phone",
     "empty purple room",
-    "plain purple wall",
     "purple neon fintech room",
-    "card on purple cube",
-    "card on pedestal",
     "network lines",
     "glowing payment trail",
     "hologram",
@@ -85,7 +71,6 @@
     "random fintech graphics",
     "cheap stock photo banking scene"
   ],
-
   "approved_mechanisms": [
     "physical visual bridge",
     "spatial continuity",
@@ -103,7 +88,6 @@
     "threshold metaphor",
     "controlled augmented realism"
   ],
-
   "style_families": {
     "premium_realistic": {
       "name": "Premium Realistic",
@@ -164,7 +148,6 @@
         "24mm controlled architectural perspective"
       ]
     },
-
     "premium_purple_architecture": {
       "name": "Premium Purple Architecture",
       "description": "Controlled STC-inspired purple architecture, geometric planes, premium reflections and product-focused advertising without cheap neon.",
@@ -206,7 +189,6 @@
         "use realistic reflections and contact shadows"
       ]
     },
-
     "premium_augmented_realism": {
       "name": "Premium Augmented Realism",
       "description": "A real photographic Saudi environment with one imaginative but physically believable advertising intervention.",
@@ -235,7 +217,6 @@
       ]
     }
   },
-
   "benefit_families": {
     "merchant_payments": {
       "required_messages": [
@@ -254,7 +235,6 @@
       ]
     }
   },
-
   "assets": [
     {
       "asset_id": "stc_dna_01",
@@ -264,9 +244,7 @@
         "brand_dna"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_purple_architecture",
-        "premium_augmented_realism"
+        "premium_realistic"
       ],
       "priority": 100,
       "notes": "Primary STC Bank campaign DNA reference."
@@ -279,8 +257,7 @@
         "brand_dna"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_purple_architecture"
+        "premium_augmented_realism"
       ],
       "priority": 99,
       "notes": "Premium composition, hierarchy and brand confidence reference."
@@ -293,8 +270,7 @@
         "brand_dna"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_augmented_realism"
+        "premium_realistic"
       ],
       "priority": 98,
       "notes": "Saudi lifestyle and premium photography reference."
@@ -307,8 +283,7 @@
         "brand_dna"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_purple_architecture"
+        "premium_realistic"
       ],
       "priority": 97,
       "notes": "Lighting, materials and campaign layout reference."
@@ -321,13 +296,11 @@
         "brand_dna"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_augmented_realism"
+        "premium_realistic"
       ],
       "priority": 96,
       "notes": "Advertising idea quality and visual simplicity reference."
     },
-
     {
       "asset_id": "stc_realistic_01",
       "path": "stc_bank/realistic/stc_realistic_01.jpg",
@@ -398,7 +371,6 @@
       "priority": 91,
       "notes": "Premium environmental advertising photography reference."
     },
-
     {
       "asset_id": "stc_purple_01",
       "path": "stc_bank/purple/stc_purple_01.jpg",
@@ -441,7 +413,6 @@
       "priority": 93,
       "notes": "Geometric brand-world composition reference."
     },
-
     {
       "asset_id": "stc_augmented_01",
       "path": "stc_bank/augmented/stc_augmented_01.jpg",
@@ -465,7 +436,7 @@
         "augmented_reference"
       ],
       "styles": [
-        "premium_augmented_realism"
+        "premium_realistic"
       ],
       "priority": 94,
       "notes": "Real-world photography combined with advertising metaphor."
@@ -484,7 +455,6 @@
       "priority": 93,
       "notes": "Symbolic realism and campaign storytelling reference."
     },
-
     {
       "asset_id": "stc_merchant_01",
       "path": "stc_bank/merchant/stc_merchant_01.jpg",
@@ -513,8 +483,7 @@
         "merchant_payments"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_augmented_realism"
+        "premium_purple_architecture"
       ],
       "priority": 97,
       "notes": "E-commerce and physical commerce visual relationship reference."
@@ -530,7 +499,6 @@
         "merchant_payments"
       ],
       "styles": [
-        "premium_realistic",
         "premium_purple_architecture"
       ],
       "priority": 96,
@@ -547,11 +515,248 @@
         "merchant_payments"
       ],
       "styles": [
-        "premium_realistic",
-        "premium_augmented_realism"
+        "premium_realistic"
       ],
       "priority": 95,
       "notes": "Original merchant-commerce advertising idea reference."
+    },
+    {
+      "asset_id": "stc_curated_01",
+      "path": "stc_bank/curated/stc_curated_01.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "White linen, khaki cloth, dark card; soft side light reveals tendons and fabric; diagonal hand/card gesture; lower copy overlay must be omitted."
+    },
+    {
+      "asset_id": "stc_curated_02",
+      "path": "stc_bank/curated/stc_curated_02.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Dark card lies along diagonal violet support; broad pale pool beneath hero, deep outer violet; silver band catches strip reflection; coherent card/base foreshortening."
+    },
+    {
+      "asset_id": "stc_curated_03",
+      "path": "stc_bank/curated/stc_curated_03.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Upright leaning black card, green metallic band, visible reflection below; back plane diagonal recedes; deep violet negative upper area; contact along card bottom."
+    },
+    {
+      "asset_id": "stc_curated_04",
+      "path": "stc_bank/curated/stc_curated_04.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Repeated dark rectangular cards progress along purple diagonal support; neutral and green bands separate variants; perspective-aligned sides and small contact shadows; no infographic banners."
+    },
+    {
+      "asset_id": "stc_curated_05",
+      "path": "stc_bank/curated/stc_curated_05.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Thin black card on a purple sloping top, dark vertical face, broad violet illumination behind; neutral metallic strip; align support/product directions, no neon outline."
+    },
+    {
+      "asset_id": "stc_curated_06",
+      "path": "stc_bank/curated/stc_curated_06.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Three stepped purple plinths create hierarchy; upright cards grounded on separate levels; bright top rims are physical reflections; dark fronts preserve contrast; upper copy space."
+    },
+    {
+      "asset_id": "stc_curated_07",
+      "path": "stc_bank/curated/stc_curated_07.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Coral/peach patterned fabric drapes over connected purple blocks, folds settle with gravity; sunglasses upper left; soft directional violet light with readable matte planes; warm accent dominates selectively."
+    },
+    {
+      "asset_id": "stc_curated_08",
+      "path": "stc_bank/curated/stc_curated_08.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "Cool glass daylight and navy clothing contrast warm skin; gray monitor near left, dark cup lower foreground; phone gaze supplies action; clean window geometry, soft background detail."
+    },
+    {
+      "asset_id": "stc_curated_09",
+      "path": "stc_bank/curated/stc_curated_09.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "White thobe and headcloth, warm lamp, dark glass skyline, localized violet bounce on background/chair edge; one phone in hand; omit floating IBAN label and all text."
+    },
+    {
+      "asset_id": "stc_curated_10",
+      "path": "stc_bank/curated/stc_curated_10.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "Warm hand, wood chair and sand against cyan sea/blue sky; phone at gaze height; smaller companions in distance, juice at side; clean warm/cool harmony with contextual depth."
+    },
+    {
+      "asset_id": "stc_curated_11",
+      "path": "stc_bank/curated/stc_curated_11.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "Phone standing on textured wood; large screen hero against softly receding shelves/controllers; warm wood with muted cool-violet depth; attached base shadow; do not reproduce store logos/UI."
+    },
+    {
+      "asset_id": "stc_curated_12",
+      "path": "stc_bank/curated/stc_curated_12.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "Phone dominates purple floor/backdrop, dark edge, broad grounded shadow; source has white floating UI cards: learn hero hierarchy only, exclude all overlay tiles/lettering."
+    },
+    {
+      "asset_id": "stc_curated_13",
+      "path": "stc_bank/curated/stc_curated_13.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "Dark tent fabric forms angular frame around snow and mountains; low warm sun at left with cool blue shadows; hands and knees anchor eye position; crisp phone, natural distance softness; not inherently surreal."
+    },
+    {
+      "asset_id": "stc_curated_14",
+      "path": "stc_bank/curated/stc_curated_14.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 110,
+      "notes": "One believable hand holds bright phone against saturated violet; dimensional fingers, soft skin shading, quiet right/upper field; omit all contacts, UI lettering and logos."
+    },
+    {
+      "asset_id": "stc_curated_15",
+      "path": "stc_bank/curated/stc_curated_15.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "augmented_reference"
+      ],
+      "styles": [
+        "premium_augmented_realism"
+      ],
+      "priority": 110,
+      "notes": "Large phone centered against landmarks/sky with reflected base; source uses collage and text. Learn scale hierarchy and warm architecture/cool sky only; no landmark collage or graphic overlays in new concepts."
+    },
+    {
+      "asset_id": "stc_curated_16",
+      "path": "stc_bank/curated/stc_curated_16.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "augmented_reference"
+      ],
+      "styles": [
+        "premium_augmented_realism"
+      ],
+      "priority": 110,
+      "notes": "Giant dark card acts as door leaf in purple wall; traveler and luggage at smaller coherent scale; warm destination light contrasts violet interior; learn scale/threshold mechanism without copying this scene."
+    },
+    {
+      "asset_id": "stc_curated_17",
+      "path": "stc_bank/curated/stc_curated_17.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "realistic_reference"
+      ],
+      "styles": [
+        "premium_realistic"
+      ],
+      "priority": 110,
+      "notes": "Two warm shawarma wraps in one hand, white storefront and clean blue sky; upward view, warm food highlights, legible context; remove signage/text/logo/card strip; avoid oversaturated food."
     }
   ]
 }

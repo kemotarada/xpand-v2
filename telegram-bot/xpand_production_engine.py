@@ -43,8 +43,8 @@
 # Therefore these rules can never disappear because of
 # character-budget compaction:
 #
-# - 15–22% integrated copy space
-# - NO giant blank upper third
+# - 25–40% integrated copy space
+# - NO artificial blank panel
 # - NO hero pushed into bottom
 # - NO stone/travertine pedestal
 # - NO phone/POS fusion
@@ -1435,10 +1435,10 @@ def safe_frame_instruction(
         )
         +
         ". Keep the hero visually substantial and not pushed "
-        "into the bottom half. Use roughly 15–22% integrated "
+        "into the bottom half. Use roughly 25–40% integrated "
         "calm copy space when appropriate. Negative space must "
         "come naturally from architecture, depth, light or "
-        "subject placement. Never create a giant empty upper third."
+        "subject placement. Never create a artificial empty panel."
     )
 
 
@@ -2385,8 +2385,8 @@ def build_stc_primary_reference_set(
     ]
 
     for group in (
-        campaign[:1],
         style[:1],
+        campaign[:1],
         service[:1],
     ):
 
@@ -2738,6 +2738,7 @@ def build_stc_brand_kit_context(
             stc_visual_family_for_brand_kit(
                 request
             ),
+        "selected_style_direction": __import__("xpand_stc_skill_runtime").style_direction(stc_visual_family_for_brand_kit(request)),
         "selected_assets":
             selected,
     }
@@ -3409,12 +3410,12 @@ Never use an unusual angle as a meaningless gimmick.
 COPY SPACE
 ----------
 
-Use roughly 15–22% integrated copy space when useful.
+Use roughly 25–40% integrated copy space when useful.
 
 Do NOT:
 - reserve 30–40% blank sky/wall automatically
 - push the hero into the bottom half
-- create a giant empty upper third
+- create a artificial empty panel
 
 TEXT / UI
 ---------
@@ -3537,11 +3538,11 @@ Final aspect ratio:
 Final resolution intent:
 {requested_size}
 
-Use approximately 15–22% integrated copy space.
+Use approximately 25–40% integrated copy space.
 
-NO giant blank upper third.
+NO artificial blank panel; quiet upper-third space is allowed.
 
-NO giant empty upper region.
+Keep negative space photographic and integrated.
 
 NO hero pushed into the bottom half merely to create
 copy space.
@@ -3592,7 +3593,10 @@ TEXT / UI
 
 NO generated text.
 
-NO generated logo.
+NO generated logo, including lettering on referenced cards or screens.
+NO graphic overlays, decorative lines, particles, sparkles or holograms.
+Physical support edges and real specular reflections are allowed.
+Purposeful purple platforms are allowed in the selected purple studio style.
 
 NO watermark.
 
@@ -3763,7 +3767,7 @@ No generic checkout tableau.
 No generic boutique counter.
 No customer simply presenting a POS toward camera.
 
-No giant blank upper third.
+No artificial blank panel; quiet upper-third space is allowed.
 No hero pushed into the bottom quarter.
 
 No plastic skin.
@@ -4103,7 +4107,7 @@ def compile_prompt(
             "final_renderer":
                 FINAL_IMAGE_MODEL,
             "copy_space_policy":
-                "15-22_percent_integrated",
+                "25-40_percent_integrated",
             "immutable_final_locks":
                 True,
             "permanent_stc_brand_grounding":
@@ -8050,7 +8054,7 @@ def run_production(
             "gemini_final_allowed":
                 False,
             "copy_space_policy":
-                "15-22_percent_integrated",
+                "25-40_percent_integrated",
             "immutable_final_locks":
                 True,
             "immutable_lock_version":
@@ -8352,7 +8356,7 @@ def get_production_engine_status() -> Dict[
             STC_QA_RELEASE_FLOOR,
 
         "copy_space_policy":
-            "15-22_percent_integrated",
+            "25-40_percent_integrated",
 
         "physical_reality_firewall":
             True,
@@ -8548,16 +8552,16 @@ if __name__ == "__main__":
     )
 
     tests[
-        "copy_space_15_22"
+        "copy_space_25_40"
     ] = (
-        "15–22%"
+        "25–40%"
         in frame
     )
 
     tests[
         "no_giant_upper_third"
     ] = (
-        "giant empty upper third"
+        "artificial empty panel"
         in frame
     )
 
@@ -8848,7 +8852,7 @@ if __name__ == "__main__":
     tests[
         "compiled_copy_space"
     ] = (
-        "15–22%"
+        "25–40%"
         in compiled.prompt
     )
 
@@ -8911,14 +8915,14 @@ if __name__ == "__main__":
     tests[
         "final_prompt_no_giant_space"
     ] = (
-        "NO giant blank upper third"
+        "NO artificial blank panel"
         in final_prompt
     )
 
     tests[
         "final_prompt_copy_space_immutable"
     ] = (
-        "15–22% integrated copy space"
+        "25–40% integrated copy space"
         in final_prompt
     )
 
@@ -9029,7 +9033,7 @@ if __name__ == "__main__":
             IMMUTABLE_LOCK_SENTINEL
             in forced
             and
-            "NO giant blank upper third"
+            "NO artificial blank panel"
             in forced
             and
             "NO phone/POS fusion"
@@ -9038,7 +9042,7 @@ if __name__ == "__main__":
             "NO random travertine pedestal"
             in forced
             and
-            "15–22% integrated copy space"
+            "25–40% integrated copy space"
             in forced
             and
             (
@@ -9124,7 +9128,7 @@ if __name__ == "__main__":
     tests[
         "repair_prompt_no_giant_space"
     ] = (
-        "NO giant blank upper third"
+        "NO artificial blank panel"
         in repair_prompt
     )
 
@@ -9572,10 +9576,10 @@ if __name__ == "__main__":
         "✅ Immutable repair locks survive compaction"
     )
     print(
-        "✅ NO giant blank upper third cannot be compacted away"
+        "✅ NO artificial blank panel cannot be compacted away"
     )
     print(
-        "✅ 15–22% copy-space lock cannot be compacted away"
+        "✅ 25–40% copy-space lock cannot be compacted away"
     )
     print(
         "✅ Phone/POS fusion lock cannot be compacted away"

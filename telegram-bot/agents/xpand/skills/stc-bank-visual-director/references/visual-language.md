@@ -1,63 +1,27 @@
-# STC Bank visual language distilled from supplied references
+# Camera and perspective vocabulary
+Names describe different axes: do not treat framing, lens, camera tilt and object rotation as synonyms. Numeric settings below are optional production starting points, not measured EXIF.
 
-## Observed visual families
+| Standard term | Meaning | Use and constraint |
+|---|---|---|
+| Eye-Level Shot | Camera at subject eye/product reference height | Human credibility; not mandatory centered framing |
+| Low-Angle Shot | Below subject, looking upward | Hero authority; preserve product proportions |
+| Worm’s-Eye View / Extreme Low-Angle Shot | Camera near the ground, looking steeply upward | Dramatic scale; retain contact plane, avoid oversized near hands |
+| High-Angle Shot | Camera above subject, looking downward | Relationships and gestures; not necessarily vertical |
+| Bird’s-Eye View | Elevated overview, often near overhead | Layout/relationships; specify actual tilt |
+| Top-Down / Overhead Shot | Optical axis perpendicular to horizontal support | Organized surfaces and contact; no visible distant horizon |
+| Elevated Three-Quarter View | Raised viewpoint plus oblique azimuth | Top and side faces, aligned cards/planes |
+| Three-Quarter View | Oblique subject azimuth | Depth; does not prescribe camera height |
+| Over-the-Shoulder Shot | Camera behind person with shoulder framing action | Phone plus environment; distinguish from first person |
+| First-Person POV | View corresponding to participant’s own eyes | Tent/hand action; hands must fit body and camera position |
+| Dutch Angle / Canted Frame | Camera roll tilts world verticals | Only intentional; diagonal object alone is not camera roll |
+| Close-Up / Detail Shot | Tight framing | Pocket-card or material gesture; not automatically macro |
+| Macro Shot | Close-focus/high reproduction ratio | Actual fine material details; not a generic dramatic angle |
+| Wide Environmental Shot | Broad framing with contextual depth | Explain situation; lens need not be ultra-wide |
+| Forced Perspective | Distance/alignment causes apparent scale relationship | One coherent camera position and matching shadows |
+| Two-Point Perspective | Two horizontal direction families have vanishing points | Purple architectural sets; shared directions share vanishing points |
+| Three-Point Perspective | Tilt adds convergence of verticals | High/low architecture; avoid arbitrary inconsistent convergence |
+| Orthographic Projection | Parallel rays, no perspective foreshortening | Technical projection, not ordinary product photography |
 
-### 1. Purple architectural studio
-
-- Deep violet-to-aubergine field with near-black falloff.
-- Geometric plinths, terraces, portals, folded planes, or shallow stages.
-- Hero cards and products sit parallel to a supporting purple plane; their perspective, edge direction, and vanishing lines agree.
-- Surfaces range from satin-matte to controlled semi-gloss. Reflections are narrow and intentional, never wet-floor glare.
-- Purple rim light, soft frontal key, delicate specular highlights, and firm but soft-edged contact shadows create luxury.
-- Accents are sparse: STC green is a focal punctuation, not a background wash.
-
-### 2. Premium real-world Saudi photography
-
-- Clean modern Saudi environments: contemporary home, airport, office, car interior, travel lounge, retail or lifestyle setting.
-- Natural daylight or motivated practical light; clear skin tones; restrained contrast; clean air and surfaces.
-- A candid but art-directed human action communicates the benefit.
-- Purple enters through a real prop, reflection, wardrobe accent, luggage, product, or controlled lightâ€”not an artificial overlay.
-- The frame feels photographic, current, affluent, and accessible rather than ostentatious.
-
-### 3. Photographic surreal metaphor
-
-- Begin with a believable real location or premium purple set.
-- Add one unexpected, legible metaphor: a portal, oversized threshold, spatial transition, product-as-architecture, or impossible-but-photoreal scale relationship.
-- The metaphor obeys perspective, light, material, gravity, occlusion, and shadow.
-- Avoid fantasy worlds, magical particles, glowing connection lines, busy composites, or multiple competing metaphors.
-
-## Composition grammar
-
-- One dominant hero silhouette readable at thumbnail size.
-- Strong diagonal, frame-within-frame, leading plane, or foreground occlusion may guide the eye.
-- Keep visual hierarchy: hero first, benefit context second, atmosphere third.
-- Place added objects on or parallel to violet bases when using studio architecture; align horizontal edges and vanishing points.
-- Maintain foreground breathing room and do not crop key product edges accidentally.
-- Negative space must be designed at capture time and may sit upper-right, upper-left, or a clean side column depending on hero direction.
-
-## Camera vocabulary
-
-Choose intentionally and name accurately:
-
-- Eye-level frontal shot: direct, trustworthy, product-led.
-- Three-quarter view: dimensional product or environmental storytelling.
-- High-angle shot: elevated camera looking down, useful for organized groupings.
-- Bird's-eye view / true top-down: optical axis nearly perpendicular to the ground; graphic organization without adding graphics.
-- Low-angle shot: camera below eye or product level, premium scale and confidence.
-- Worm's-eye view: extreme ground-level upward view; use rarely and preserve believable verticals.
-- Dutch angle: tilted horizon; generally avoid in banking unless explicitly justified.
-- Over-the-shoulder shot: app or action context, but screen must be blank/unreadable unless a verified screen asset is supplied.
-- Macro/detail shot: material, card edge, hand interaction, or tactile luxury.
-- Wide environmental shot: large idea with designed negative space.
-- Telephoto compression: elegant layering and controlled background scale.
-- Wide-angle perspective: immersive depth; avoid facial or product-edge distortion.
-
-## Lighting and material rules
-
-- Use motivated key light, soft fill, controlled negative fill, and restrained rim light.
-- Shadows must share direction, softness, and color temperature.
-- Reflections must match surface roughness and viewing angle; use Fresnel-appropriate edge reflections.
-- Purple spill may tint neutral objects lightly but must not destroy their true material color; it must never touch skin, faces, or hair, and never behave as a global filter over the frame.
-- Realism-first color: keep neutral white balance on every person and hero product; in real-life (lifestyle) scenes the environment stays 100% natural with no purple; purple belongs to the background and the light, never to the subject.
-- Prefer clean micro-contrast, smooth tonal transitions, realistic depth of field, and subtle filmic roll-off.
-- Avoid crushed blacks, neon clipping, bloom halos, metallic plastic, excessive grain, and artificial sharpness.
+Perspective is determined by viewpoint. Changing focal length from the same camera position changes framing, not perspective; moving back for matching framing produces apparent compression. “Isometric” is not a synonym for elevated three-quarter photography.
+Specify: camera at chosen height relative to hero, looking down/up by an approximate angle, oblique azimuth, level or rolled horizon, framing and focus target. Typical starting lenses: 35–50mm contextual, 70–100mm product detail; choose distance first. Do not stack all angles in one prompt.
+Observed supplied set: pocket detail, office eye-level oblique, beach rear three-quarter/over-shoulder, tent first-person POV, food low-angle, product elevated three-quarter, near-level frontal phone, stepped studio oblique. Worm's-eye and true top-down are creative extensions, not claimed observations.

@@ -1,0 +1,6 @@
+# Research record — 2026-09-05
+Primary style evidence: the 17 user-uploaded STC advertising JPEGs, indexed in reference-atlas.json; repository images were also visually inspected. Observations are visual interpretation, not official brand guidelines. Railway screenshots show variable NAMES, not their hidden values.
+Official service context: https://stcbank.com.sa/ and https://stcbank.com.sa/en/business — banking/app and merchant service framing; do not infer current promotion terms from historical ad images.
+Photographic terminology: https://www.adobe.com/creativecloud/photography/technique/perspective.html — spatial relationships, viewpoints and depth; https://www.adobe.com/creativecloud/video/production/cinematography/camera-shots-and-angles/low-angle-shot.html — below-subject/upward low-angle definition; https://lightroom.adobe.com/academy/principles/composition/point-of-view — viewpoint and convergence.
+Product photography: https://www.adobe.com/uk/creativecloud/photography/discover/product-photography.html — commercial still life and lifestyle product practice.
+Do not present optional camera/lighting starting points as measured settings of the supplied images. No claim of live generated-image validation was made during this upgrade.

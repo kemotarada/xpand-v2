@@ -75,8 +75,8 @@
 #
 # Keep copy space controlled and useful.
 #
-# - approximately 15–22%
-# - no giant blank upper third
+# - approximately 25–40%
+# - no artificial blank panel
 # - do not push the hero to the bottom
 #
 #
@@ -905,6 +905,8 @@ def resolve_stc_style_reply(
         "ثلاثة",
         "الثالث",
         "سريالي",
+        "فانتزي",
+        "fantasy",
         "معزز",
         "معززه",
         "معززة",
@@ -1177,6 +1179,16 @@ def is_campaign_request(
     return False
 
 
+def is_stc_prompt_only_request(text: str) -> bool:
+    source = normalized(text)
+    if not is_stc_bank_request(text):
+        return False
+    wants_prompt = bool(re.search(r"بروم[ب]?ت|برومت|\bprompt\b", source))
+    # An explicit request to also render remains image generation.
+    wants_render = contains_any(source, ("ولد الصورة", "ولّد الصورة", "انشئ الصورة ايضا", "وانشئ", "generate the image", "render the image"))
+    return wants_prompt and not wants_render
+
+
 def looks_like_image_generation_request(
     text: str,
 ) -> bool:
@@ -1185,6 +1197,9 @@ def looks_like_image_generation_request(
         text,
         12000,
     )
+
+    if is_stc_prompt_only_request(value):
+        return True
 
     if not value:
 
@@ -3114,11 +3129,11 @@ specific semantic family derived from the original request.
 COMPOSITION
 -----------
 
-Reserve approximately 15–22% of the frame as calm,
+Reserve approximately 25–40% of the frame as calm,
 naturally integrated copy space.
 
 Do NOT create:
-- a giant blank upper third
+- an artificial blank panel
 - an empty top half
 - a large dead wall solely for text
 - a hero pushed unnaturally to the bottom
@@ -5045,6 +5060,20 @@ def generate_and_deliver(
             get_stc_style_question()
         )
 
+    if is_stc_prompt_only_request(text):
+        from xpand_stc_skill_runtime import prompt_direction
+        prompt_writer = getattr(core, "_xpand_prompt_only_ask", None)
+        if not callable(prompt_writer):
+            raise RuntimeError("مسار كتابة البرومت غير متصل؛ أعد تشغيل الوكيل بعد تثبيت التحديث.")
+        direction = prompt_direction(detect_stc_visual_style(prompt))
+        answer = prompt_writer(chat_id, user_id,
+            "STC PROMPT-ONLY TASK. Return the requested English image prompt; do not call image tools.\n"
+            + direction + "\nUSER BRIEF:\n" + text)
+        if not answer:
+            raise RuntimeError("لم يرجع كاتب البرومت نصًا؛ لم يتم توليد أي صورة.")
+        core.send_message(chat_id, str(answer))
+        return {"output_kind": "prompt", "errors": [], "images": []}
+
     # =====================================================
     # REQUEST SETTINGS
     # =====================================================
@@ -6335,6 +6364,8 @@ def install(
         original_ask
     ):
 
+        core._xpand_prompt_only_ask = original_ask
+
         def xpand_visual_ask(
             chat_id,
             user_id,
@@ -6368,6 +6399,9 @@ def install(
                             "telegram_voice"
                         ),
                     )
+
+                    if result.get("output_kind") == "prompt":
+                        return "كتبتلك البرومت وبعثته."
 
                     if (
                         result.get(
@@ -6461,6 +6495,9 @@ def install(
                         "telegram_voice"
                     ),
                 )
+
+                if result.get("output_kind") == "prompt":
+                    return "كتبتلك البرومت وبعثته."
 
                 if (
                     result.get(
@@ -6616,7 +6653,7 @@ def install(
     )
 
     print(
-        "✅ STC Copy Space 15–22%"
+        "✅ STC Copy Space 25–40%"
     )
 
     print(
@@ -7000,21 +7037,21 @@ if __name__ == "__main__":
     )
 
     if (
-        "15–22%"
+        "25–40%"
         not in
         final_lock_test
         and
-        "15-22%"
+        "25-40%"
         not in
         final_lock_test
     ):
 
         failures.append(
-            "final_copy_space_15_22"
+            "final_copy_space_25_40"
         )
 
     if (
-        "giant blank upper third"
+        "artificial blank panel"
         not in
         final_lock_test.lower()
     ):
@@ -7499,11 +7536,11 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ final copy space 15–22%: PASS"
+        "✅ final copy space 25–40%: PASS"
     )
 
     print(
-        "✅ no giant blank upper third: PASS"
+        "✅ no artificial blank panel: PASS"
     )
 
     print(
