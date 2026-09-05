@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND CREATIVE BRAIN V2.0
+# XPAND UNIFIED VISUAL RUNTIME V3.2
 #
 # QUALITY-FIRST ADAPTIVE CREATIVE INTELLIGENCE
 #
