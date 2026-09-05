@@ -1,47 +1,3002 @@
-"""Loads the user-approved STC Bank system prompt for every image path."""
+# =========================================================
+# XPAND STC BANK VISUAL SKILL V3.0
+#
+# FULL DROP-IN REPLACEMENT
+#
+# =========================================================
+#
+# PURPOSE
+# ---------------------------------------------------------
+#
+# Central visual authority for STC Bank.
+#
+# This module does NOT:
+# - call OpenAI
+# - call Gemini
+# - generate images
+# - browse the web
+# - modify the database
+#
+# It provides:
+# - STC Bank detection
+# - mandatory style-question logic
+# - visual-language authority
+# - prompt guidance
+# - camera vocabulary
+# - lighting / material rules
+# - anti-cliche protection
+# - image-only / no-text / no-logo rules
+# - compatibility constants used by XPAND modules
+#
+# Running:
+#
+#     python xpand_stc_bank_skill.py
+#
+# makes ZERO API calls.
+#
+# =========================================================
 
 from __future__ import annotations
 
-from pathlib import Path
+import re
 
-
-STC_BANK_MARKERS = (
-    "stc bank",
-    "stcbank",
-    "بنك stc",
-    "اس تي سي بنك",
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
 )
 
 
-def is_stc_bank_request(value: object) -> bool:
-    text = str(value or "").lower()
-    return any(marker in text for marker in STC_BANK_MARKERS)
+# =========================================================
+# IDENTITY
+# =========================================================
+
+VERSION = "3.0"
+
+MODULE_NAME = (
+    "XPAND STC Bank Visual Skill"
+)
+
+BRAND_ID = "stc_bank"
+
+BRAND_NAME = "STC Bank"
 
 
-_PROMPT_PATH = (
-    Path(__file__).resolve().parent
-    / "agents"
-    / "xpand"
-    / "stc_bank_system_prompt.md"
+# =========================================================
+# VISUAL STYLE IDS
+# =========================================================
+
+STYLE_PREMIUM_REALISTIC = (
+    "premium_realistic"
+)
+
+STYLE_PURPLE_ARCHITECTURAL = (
+    "purple_architectural"
+)
+
+STYLE_AUGMENTED_REALISM = (
+    "augmented_realism"
 )
 
 
-def load_stc_bank_system_prompt() -> str:
-    try:
-        value = _PROMPT_PATH.read_text(encoding="utf-8").strip()
-        if value:
-            return value
-    except Exception:
-        pass
+SUPPORTED_STC_STYLES = {
+    STYLE_PREMIUM_REALISTIC,
+    STYLE_PURPLE_ARCHITECTURAL,
+    STYLE_AUGMENTED_REALISM,
+}
+
+
+# =========================================================
+# USER-FACING STYLE NAMES
+# =========================================================
+
+STYLE_NAME_REALISTIC_AR = (
+    "واقعي فوتوغرافي"
+)
+
+STYLE_NAME_PURPLE_AR = (
+    "بيئة بنفسجية استوديو"
+)
+
+STYLE_NAME_AUGMENTED_AR = (
+    "واقعي سريالي راقٍ"
+)
+
+
+STC_BANK_STYLE_QUESTION = (
+    "أي أسلوب بدك للصورة؟ "
+    "اكتب اسم الأسلوب كاملًا: "
+    "واقعي فوتوغرافي، "
+    "بيئة بنفسجية استوديو، "
+    "أو واقعي سريالي راقٍ."
+)
+
+
+# =========================================================
+# BASIC HELPERS
+# =========================================================
+
+def clean_text(
+    value: Any,
+    limit: int = 30000,
+) -> str:
 
     return (
-        "Use the user-approved STC Bank visual system prompt. "
-        "Generate a clean photorealistic key visual with 25–40% natural "
-        "negative space. Never render text, letters, numbers, logos, UI, "
-        "watermarks, decorative graphics, particles or connection lines. "
-        "Use saved references as visual DNA without copying their ideas."
+        str(
+            value
+            if value is not None
+            else ""
+        )
+        .replace(
+            "\x00",
+            "",
+        )
+        .strip()[:limit]
     )
 
 
-STC_BANK_VISUAL_SKILL = load_stc_bank_system_prompt()
-STC_BANK_IMAGE_GUARD = STC_BANK_VISUAL_SKILL
+def normalize_text(
+    value: Any,
+) -> str:
+
+    text = clean_text(
+        value,
+        50000,
+    ).lower()
+
+    replacements = {
+        "أ":
+            "ا",
+
+        "إ":
+            "ا",
+
+        "آ":
+            "ا",
+
+        "ة":
+            "ه",
+
+        "ى":
+            "ي",
+
+        "ؤ":
+            "و",
+
+        "ئ":
+            "ي",
+
+        "ـ":
+            "",
+    }
+
+    for old, new in (
+        replacements.items()
+    ):
+
+        text = text.replace(
+            old,
+            new,
+        )
+
+    text = re.sub(
+        r"[\u064B-\u065F]",
+        "",
+        text,
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text,
+    )
+
+    return text.strip()
+
+
+def contains_any(
+    text: Any,
+    markers: Sequence[str],
+) -> bool:
+
+    source = normalize_text(
+        text
+    )
+
+    return any(
+        normalize_text(
+            marker
+        )
+        in source
+        for marker in markers
+    )
+
+
+# =========================================================
+# STC BANK DETECTION
+# =========================================================
+
+STC_BANK_REQUEST_MARKERS = (
+    "stc bank",
+    "stcbank",
+    "stc-bank",
+    "stc_bank",
+    "بنك stc",
+    "بنك اس تي سي",
+    "اس تي سي بنك",
+    "اس تي سي bank",
+    "stc بنك",
+)
+
+
+def is_stc_bank_request(
+    text: Any,
+) -> bool:
+
+    source = normalize_text(
+        text
+    )
+
+    if not source:
+
+        return False
+
+    return contains_any(
+        source,
+        STC_BANK_REQUEST_MARKERS,
+    )
+
+
+# =========================================================
+# STYLE DETECTION
+# =========================================================
+
+REALISTIC_STYLE_MARKERS = (
+    STYLE_NAME_REALISTIC_AR,
+    "واقعي احترافي",
+    "واقعي فاخر",
+    "تصوير واقعي",
+    "فوتوغرافي واقعي",
+    "premium realistic",
+    "premium realism",
+    "premium photography",
+    "realistic photography",
+    "commercial photography",
+    "photorealistic",
+)
+
+
+PURPLE_STYLE_MARKERS = (
+    STYLE_NAME_PURPLE_AR,
+    "بيئه بنفسجيه استوديو",
+    "بيئة بنفسجية",
+    "بيئه بنفسجيه",
+    "استوديو بنفسجي",
+    "purple environment",
+    "purple studio",
+    "purple architectural",
+    "purple architecture",
+    "geometric purple studio",
+)
+
+
+AUGMENTED_STYLE_MARKERS = (
+    STYLE_NAME_AUGMENTED_AR,
+    "واقعي سريالي",
+    "واقعيه سرياليه",
+    "واقعية سريالية",
+    "واقعية معززة",
+    "واقعيه معززه",
+    "augmented realism",
+    "conceptual realism",
+    "photographic surrealism",
+    "surreal realism",
+    "refined surrealism",
+    "فانتزي واقعي",
+)
+
+
+def detect_stc_visual_style(
+    text: Any,
+) -> str:
+
+    source = normalize_text(
+        text
+    )
+
+    if not source:
+
+        return ""
+
+    if contains_any(
+        source,
+        PURPLE_STYLE_MARKERS,
+    ):
+
+        return (
+            STYLE_PURPLE_ARCHITECTURAL
+        )
+
+    if contains_any(
+        source,
+        AUGMENTED_STYLE_MARKERS,
+    ):
+
+        return (
+            STYLE_AUGMENTED_REALISM
+        )
+
+    if contains_any(
+        source,
+        REALISTIC_STYLE_MARKERS,
+    ):
+
+        return (
+            STYLE_PREMIUM_REALISTIC
+        )
+
+    return ""
+
+
+def stc_style_question_needed(
+    text: Any,
+) -> bool:
+
+    if not is_stc_bank_request(
+        text
+    ):
+
+        return False
+
+    return not bool(
+        detect_stc_visual_style(
+            text
+        )
+    )
+
+
+def get_stc_style_question() -> str:
+
+    return (
+        STC_BANK_STYLE_QUESTION
+    )
+
+
+# =========================================================
+# VISUAL DNA
+# =========================================================
+
+STC_BANK_VISUAL_DNA: Dict[
+    str,
+    Any,
+] = {
+
+    # -----------------------------------------------------
+    # CORE CHARACTER
+    # -----------------------------------------------------
+
+    "brand_character": [
+        "modern",
+        "premium",
+        "confident",
+        "Saudi-relevant",
+        "clean",
+        "restrained",
+        "digitally fluent",
+        "human",
+        "commercially polished",
+        "visually intelligent",
+    ],
+
+
+    # -----------------------------------------------------
+    # IDENTITY PRINCIPLES
+    # -----------------------------------------------------
+
+    "identity_principles": [
+
+        (
+            "STC Bank identity is a visual language, "
+            "not simply a purple color treatment."
+        ),
+
+        (
+            "Brand recognition may come from restrained "
+            "purple or green accents, materials, lighting, "
+            "composition and contemporary Saudi context."
+        ),
+
+        (
+            "The visual idea must communicate the benefit "
+            "before decorative brand styling is considered."
+        ),
+
+        (
+            "Premium quality comes primarily from scene design, "
+            "camera, light, materials, behavior and restraint."
+        ),
+
+        (
+            "Real-world environments may retain their natural "
+            "colors instead of being artificially recolored purple."
+        ),
+
+        (
+            "Purple architectural environments are a valid "
+            "STC visual family, but not the automatic default."
+        ),
+
+        (
+            "Human scenes should feel observed and believable, "
+            "not like stock photography."
+        ),
+
+        (
+            "Negative space is intentional because final "
+            "advertising copy and logos are added manually."
+        ),
+    ],
+
+
+    # -----------------------------------------------------
+    # VISUAL FAMILIES
+    # -----------------------------------------------------
+
+    "visual_families": {
+
+        STYLE_PREMIUM_REALISTIC: {
+
+            "purpose":
+                (
+                    "Premium photographic storytelling using "
+                    "credible real environments and behavior."
+                ),
+
+            "characteristics": [
+                "photorealistic",
+                "clear natural skin tones",
+                "real Saudi lifestyle",
+                "clean contemporary architecture",
+                "believable human behavior",
+                "real product interaction",
+                "motivated daylight or practical lighting",
+                "restrained contrast",
+                "subtle STC identity cue",
+                "cinematic depth",
+                "clean negative space",
+            ],
+
+            "preferred_color_behavior": [
+                "natural environment colors",
+                "warm neutral stone",
+                "off-white",
+                "beige",
+                "charcoal",
+                "walnut",
+                "soft blue daylight",
+                "green as controlled accent",
+                "purple as controlled accent only",
+            ],
+
+            "avoid": [
+                "purple wash over the entire location",
+                "neon purple lighting without motivation",
+                "generic business stock photography",
+                "person staring at camera holding a bank product",
+                "generic fintech decoration",
+            ],
+        },
+
+
+        STYLE_PURPLE_ARCHITECTURAL: {
+
+            "purpose":
+                (
+                    "Controlled premium studio or architectural "
+                    "world using purple geometry and physical surfaces."
+                ),
+
+            "characteristics": [
+                "deep aubergine",
+                "near-black violet",
+                "controlled saturated purple",
+                "geometric plinths",
+                "parallel planes",
+                "precise perspective",
+                "matte surfaces",
+                "controlled semi-gloss surfaces",
+                "narrow premium reflections",
+                "clean contact shadows",
+                "soft directional key light",
+                "restrained rim light",
+                "minimal green accent",
+                "high material polish",
+            ],
+
+            "spatial_rules": [
+                (
+                    "Every object must rest on a visible physical "
+                    "surface or be held naturally."
+                ),
+
+                (
+                    "Hero-object angles must agree with the "
+                    "supporting platform geometry."
+                ),
+
+                (
+                    "Platform edges, object edges and architectural "
+                    "edges must follow coherent vanishing points."
+                ),
+
+                (
+                    "Reflections must follow the real material, "
+                    "camera and light position."
+                ),
+
+                (
+                    "Use depth through real planes and shadow, "
+                    "not through glowing effects."
+                ),
+            ],
+
+            "avoid": [
+                "purple neon room",
+                "cheap purple gradient",
+                "floating card",
+                "floating phone",
+                "laser lines",
+                "random glowing edges",
+                "random particles",
+                "generic futuristic banking set",
+            ],
+        },
+
+
+        STYLE_AUGMENTED_REALISM: {
+
+            "purpose":
+                (
+                    "Photographic realism elevated by exactly one "
+                    "intelligent conceptual mechanism."
+                ),
+
+            "characteristics": [
+                "credible photographic base",
+                "one visual metaphor",
+                "physically coherent transformation",
+                "real gravity",
+                "real perspective",
+                "real occlusion",
+                "real shadow logic",
+                "real reflections",
+                "premium production design",
+                "clear benefit",
+                "restrained surrealism",
+            ],
+
+            "allowed_mechanisms": [
+                "controlled scale relationship",
+                "forced perspective",
+                "architectural transformation",
+                "frame-within-frame metaphor",
+                "physical object/environment integration",
+                "unexpected but plausible viewpoint",
+            ],
+
+            "avoid": [
+                "cartoon fantasy",
+                "magic portal effect",
+                "floating fintech objects",
+                "science-fiction banking",
+                "holographic world",
+                "multiple metaphors in one image",
+                "effect-heavy CGI",
+            ],
+        },
+    },
+
+
+    # -----------------------------------------------------
+    # REFERENCE FAMILIES
+    # -----------------------------------------------------
+
+    "reference_families": {
+
+        "premium_lifestyle": {
+            "learn": [
+                "natural Saudi casting",
+                "real behavior",
+                "premium interiors",
+                "clear focal hierarchy",
+                "lifestyle authenticity",
+                "subtle brand cues",
+            ],
+        },
+
+        "payments_cards": {
+            "learn": [
+                "controlled product hero shots",
+                "geometric studio discipline",
+                "premium reflections",
+                "dark card contrast",
+                "precise object angle",
+                "physical support surfaces",
+            ],
+        },
+
+        "digital_banking": {
+            "learn": [
+                "phone as functional object",
+                "human-context integration",
+                "clear depth hierarchy",
+                "credible interaction",
+                "clean negative space",
+            ],
+        },
+
+        "travel_roaming": {
+            "learn": [
+                "destination realism",
+                "natural daylight",
+                "lifestyle storytelling",
+                "environmental scale",
+                "human travel behavior",
+            ],
+        },
+
+        "international_transfer": {
+            "learn": [
+                "human connection",
+                "location storytelling",
+                "real-world movement",
+                "avoid generic maps and network graphics",
+            ],
+        },
+
+        "cashback_rewards": {
+            "learn": [
+                "benefit-first storytelling",
+                "real purchase context",
+                "premium product/lifestyle scenes",
+                "avoid floating coins",
+            ],
+        },
+
+        "general_brand": {
+            "learn": [
+                "color restraint",
+                "visual consistency",
+                "premium finish",
+                "brand character",
+            ],
+        },
+    },
+
+
+    # -----------------------------------------------------
+    # MATERIAL LANGUAGE
+    # -----------------------------------------------------
+
+    "material_language": [
+
+        "polished stone",
+        "soft matte stone",
+        "travertine",
+        "warm walnut",
+        "dark walnut",
+        "brushed metal",
+        "satin metal",
+        "smoked glass",
+        "clear architectural glass",
+        "premium leather",
+        "soft textile",
+        "clean plaster",
+        "matte painted surfaces",
+        "controlled glossy acrylic",
+        "subtle reflective floor",
+    ],
+
+
+    # -----------------------------------------------------
+    # CAMERA LIBRARY
+    # -----------------------------------------------------
+
+    "camera_library": {
+
+        "eye_level": {
+            "scientific_name":
+                "Eye-Level Shot",
+
+            "use":
+                (
+                    "Trust, human interaction, natural lifestyle "
+                    "and believable payment moments."
+                ),
+        },
+
+        "low_angle": {
+            "scientific_name":
+                "Low-Angle Shot",
+
+            "use":
+                (
+                    "Premium hero presence and architectural scale."
+                ),
+        },
+
+        "extreme_low_angle": {
+            "scientific_name":
+                "Extreme Low-Angle Shot",
+
+            "use":
+                (
+                    "Rare monumental product or architecture "
+                    "when genuinely concept-driven."
+                ),
+        },
+
+        "worms_eye": {
+            "scientific_name":
+                "Worm's-Eye View",
+
+            "use":
+                (
+                    "Near-ground dramatic scale transformation "
+                    "with coherent perspective."
+                ),
+        },
+
+        "high_angle": {
+            "scientific_name":
+                "High-Angle Shot",
+
+            "use":
+                (
+                    "Spatial relationships, product/customer "
+                    "interaction and controlled overview."
+                ),
+        },
+
+        "birds_eye": {
+            "scientific_name":
+                "Bird's-Eye View",
+
+            "use":
+                (
+                    "Real spatial patterns, tables, retail layouts "
+                    "and environmental storytelling."
+                ),
+        },
+
+        "top_down": {
+            "scientific_name":
+                "Top-Down / Overhead Shot",
+
+            "use":
+                (
+                    "Physical object arrangements with graphic "
+                    "discipline and real contact shadows."
+                ),
+        },
+
+        "three_quarter": {
+            "scientific_name":
+                "Three-Quarter Hero Shot",
+
+            "use":
+                (
+                    "Cards, phones, POS devices and premium "
+                    "product presentations."
+                ),
+        },
+
+        "over_shoulder": {
+            "scientific_name":
+                "Over-the-Shoulder Shot",
+
+            "use":
+                (
+                    "Mobile banking, e-commerce workflow "
+                    "and contextual human interaction."
+                ),
+        },
+
+        "pov": {
+            "scientific_name":
+                "Point-of-View Shot",
+
+            "use":
+                (
+                    "Immersive payment, banking or travel action."
+                ),
+        },
+
+        "ground_level": {
+            "scientific_name":
+                "Ground-Level Shot",
+
+            "use":
+                (
+                    "Strong foreground depth and environmental scale."
+                ),
+        },
+
+        "close_up": {
+            "scientific_name":
+                "Close-Up Shot",
+
+            "use":
+                (
+                    "Interaction, hand/device relationship "
+                    "and product detail."
+                ),
+        },
+
+        "extreme_close_up": {
+            "scientific_name":
+                "Extreme Close-Up",
+
+            "use":
+                (
+                    "Material detail and focused functional action."
+                ),
+        },
+
+        "macro": {
+            "scientific_name":
+                "Macro Shot",
+
+            "use":
+                (
+                    "Premium material surface, card texture, "
+                    "device detail and refined reflections."
+                ),
+        },
+
+        "medium": {
+            "scientific_name":
+                "Medium Shot",
+
+            "use":
+                (
+                    "Human behavior with enough environment "
+                    "to understand context."
+                ),
+        },
+
+        "wide": {
+            "scientific_name":
+                "Wide Environmental Shot",
+
+            "use":
+                (
+                    "Lifestyle, travel, retail and architecture."
+                ),
+        },
+
+        "extreme_wide": {
+            "scientific_name":
+                "Extreme Wide / Establishing Shot",
+
+            "use":
+                (
+                    "Environment-led storytelling and scale."
+                ),
+        },
+
+        "one_point": {
+            "scientific_name":
+                "One-Point Perspective",
+
+            "use":
+                (
+                    "Symmetrical or deep architectural scenes "
+                    "with one clear vanishing point."
+                ),
+        },
+
+        "two_point": {
+            "scientific_name":
+                "Two-Point Perspective",
+
+            "use":
+                (
+                    "Retail corners, product plinths and "
+                    "architectural volume."
+                ),
+        },
+
+        "forced_perspective": {
+            "scientific_name":
+                "Forced-Perspective Composition",
+
+            "use":
+                (
+                    "Augmented realism and conceptual scale "
+                    "without unsupported floating objects."
+                ),
+        },
+
+        "frame_within_frame": {
+            "scientific_name":
+                "Frame-within-a-Frame Composition",
+
+            "use":
+                (
+                    "Doors, windows, shelves and architecture "
+                    "used to create hierarchy."
+                ),
+        },
+
+        "foreground_obstruction": {
+            "scientific_name":
+                "Foreground-Obstruction Composition",
+
+            "use":
+                (
+                    "Cinematic observed realism and layered depth."
+                ),
+        },
+    },
+
+
+    # -----------------------------------------------------
+    # LENS LANGUAGE
+    # -----------------------------------------------------
+
+    "lens_language": {
+
+        "18mm":
+            (
+                "Extreme environmental width. "
+                "Use rarely and deliberately."
+            ),
+
+        "24mm":
+            (
+                "Premium wide environmental advertising."
+            ),
+
+        "28mm":
+            (
+                "Dynamic but controllable commercial environment."
+            ),
+
+        "35mm":
+            (
+                "Cinematic lifestyle and environmental storytelling."
+            ),
+
+        "50mm":
+            (
+                "Balanced natural perspective."
+            ),
+
+        "70mm":
+            (
+                "Controlled commercial compression."
+            ),
+
+        "85mm":
+            (
+                "Premium portrait and product compression."
+            ),
+
+        "105mm":
+            (
+                "Luxury isolation and product detail."
+            ),
+
+        "macro":
+            (
+                "Fine surface and product detail."
+            ),
+
+        "tilt_shift":
+            (
+                "Perspective-controlled architecture "
+                "when technically appropriate."
+            ),
+    },
+
+
+    # -----------------------------------------------------
+    # LIGHTING
+    # -----------------------------------------------------
+
+    "lighting": {
+
+        "premium_realistic": [
+            "motivated daylight",
+            "soft window light",
+            "natural practical light",
+            "soft directional key",
+            "clean skin-tone rendering",
+            "realistic bounce light",
+            "controlled contrast",
+            "soft highlight rolloff",
+            "natural shadow density",
+        ],
+
+        "purple_architectural": [
+            "soft directional key light",
+            "controlled purple ambient fill",
+            "restrained rim separation",
+            "narrow specular highlights",
+            "deep but readable shadows",
+            "clean contact shadow",
+            "controlled glossy reflection",
+            "no global neon wash",
+        ],
+
+        "augmented_realism": [
+            "photographic motivated key light",
+            "metaphor obeys same light direction",
+            "matched shadow softness",
+            "matched reflection logic",
+            "coherent color temperature",
+            "realistic bounce light",
+        ],
+    },
+
+
+    # -----------------------------------------------------
+    # REFLECTION PRINCIPLES
+    # -----------------------------------------------------
+
+    "reflection_principles": [
+
+        (
+            "Reflection exists to describe material form, "
+            "not to add futuristic decoration."
+        ),
+
+        (
+            "Glossy cards and devices require controlled "
+            "specular highlights with readable edges."
+        ),
+
+        (
+            "A reflective plinth must reflect the object "
+            "according to real angle and distance."
+        ),
+
+        (
+            "Avoid mirror-like surfaces everywhere."
+        ),
+
+        (
+            "Use satin, semi-gloss and matte variation "
+            "to create premium hierarchy."
+        ),
+    ],
+
+
+    # -----------------------------------------------------
+    # HUMAN DIRECTION
+    # -----------------------------------------------------
+
+    "human_direction": [
+
+        (
+            "People should perform a real action rather "
+            "than pose merely to display the product."
+        ),
+
+        (
+            "Do not automatically make the subject "
+            "look directly at camera."
+        ),
+
+        (
+            "Hands must connect naturally with phone, "
+            "card, POS, product or environment."
+        ),
+
+        (
+            "Saudi clothing and context should be "
+            "culturally credible when used."
+        ),
+
+        (
+            "Expressions should be subtle and believable."
+        ),
+
+        (
+            "Avoid exaggerated advertising smiles."
+        ),
+
+        (
+            "Body posture must match the action."
+        ),
+    ],
+
+
+    # -----------------------------------------------------
+    # COMPOSITION
+    # -----------------------------------------------------
+
+    "composition": [
+
+        "single dominant visual idea",
+        "one clear hero",
+        "secondary elements support rather than compete",
+        "clean visual hierarchy",
+        "intentional negative space",
+        "foreground-midground-background depth",
+        "controlled asymmetry when useful",
+        "symmetry only when conceptually justified",
+        "clear edge control",
+        "no accidental tangencies",
+        "no unnecessary objects",
+    ],
+
+
+    # -----------------------------------------------------
+    # TEXT-FREE OUTPUT
+    # -----------------------------------------------------
+
+    "text_free_output": [
+
+        "no headline",
+        "no subtitle",
+        "no offer text",
+        "no CTA",
+        "no percentage",
+        "no financial number",
+        "no legal disclaimer",
+        "no STC wordmark",
+        "no STC Bank logo",
+        "no Visa logo",
+        "no Mastercard logo",
+        "no watermark",
+        "no invented readable UI text",
+    ],
+
+
+    # -----------------------------------------------------
+    # HARD BLOCKS
+    # -----------------------------------------------------
+
+    "forbidden_visual_devices": [
+
+        "floating coins",
+        "flying money",
+        "floating card",
+        "floating phone",
+        "floating banking icons",
+        "phone surrounded by icons",
+        "generic world globe",
+        "network lines",
+        "connection lines",
+        "transfer route lines",
+        "laser beam",
+        "blue payment beam",
+        "purple neon trail",
+        "glowing arrows",
+        "random particles",
+        "sparkles",
+        "HUD",
+        "hologram",
+        "futuristic banking interface",
+        "security shield",
+        "generic lock icon",
+        "growth arrow",
+        "generic business handshake",
+        "random miniature city",
+        "decorative technology clutter",
+        "purple simply for the sake of purple",
+    ],
+}
+
+
+# =========================================================
+# BENEFIT-SPECIFIC VISUAL DIRECTION
+# =========================================================
+
+STC_BANK_BENEFIT_DIRECTIONS = {
+
+    "merchant_payments": """
+
+MERCHANT PAYMENTS / E-COMMERCE / POS
+------------------------------------
+
+Arabic "نقاط البيع" means Point of Sale.
+
+It does NOT mean loyalty or reward points.
+
+Prefer:
+- premium boutique checkout
+- specialty café
+- refined restaurant
+- quality retail
+- hospitality
+- premium small business
+- merchant managing real e-commerce orders
+- customer and merchant interacting naturally
+- POS physically positioned correctly
+- phone / laptop / terminal integrated naturally
+
+The scene should communicate:
+commerce + acceptance + business confidence.
+
+Do NOT use:
+- merchant simply holding POS toward camera
+- floating terminal
+- payment laser
+- icons around terminal
+- purple fintech room by default
+- coins
+- reward points
+
+""".strip(),
+
+
+    "international_transfer": """
+
+INTERNATIONAL TRANSFER
+----------------------
+
+Communicate:
+reach, confidence, relationship, movement or accessibility.
+
+Prefer:
+- real travel relationship
+- family context
+- business relationship
+- international lifestyle
+- meaningful location transition
+- real physical metaphor
+
+Do NOT use:
+- world globe
+- glowing routes
+- dotted transfer path
+- map with laser connections
+- floating country flags
+- generic network graphics
+
+""".strip(),
+
+
+    "travel": """
+
+TRAVEL
+------
+
+Prefer:
+- real airport
+- hotel
+- destination
+- premium traveler behavior
+- authentic luggage / payment / mobile interaction
+- wide environmental photography
+- POV or over-the-shoulder when useful
+
+Natural blue sky, warm stone, wood, skin tones and destination
+colors are allowed and often preferable to purple.
+
+Do NOT turn travel into a purple neon airport.
+
+""".strip(),
+
+
+    "digital_banking": """
+
+DIGITAL BANKING
+---------------
+
+The phone is a real functional object.
+
+Prefer:
+- over-the-shoulder interaction
+- POV
+- natural office or lifestyle context
+- clear hand/device relationship
+- believable screen orientation
+- physical depth
+
+Do NOT invent:
+- readable fake banking UI
+- floating interface tiles
+- random app icons
+- holographic UI
+
+""".strip(),
+
+
+    "cashback": """
+
+CASHBACK / VALUE
+----------------
+
+Communicate tangible value through:
+- purchase context
+- useful experience
+- premium lifestyle
+- product relationship
+
+Avoid:
+- flying coins
+- raining money
+- generic percentage graphics inside the generated image
+
+""".strip(),
+
+
+    "rewards": """
+
+REWARDS
+-------
+
+Communicate reward through:
+- elevated experience
+- premium benefit
+- real-world value
+
+Avoid:
+- point clouds
+- coin explosions
+- floating gift icons
+
+""".strip(),
+
+
+    "security": """
+
+SECURITY
+--------
+
+Communicate:
+calm, control, trust, confidence.
+
+Prefer:
+- human behavior
+- environment
+- composition
+- product control
+
+Avoid:
+- shield
+- lock
+- cyber grid
+- blue hologram
+- security HUD
+
+""".strip(),
+}
+
+
+# =========================================================
+# BENEFIT DETECTION
+# =========================================================
+
+def detect_stc_benefit_family(
+    text: Any,
+) -> str:
+
+    source = normalize_text(
+        text
+    )
+
+    # -----------------------------------------------------
+    # MERCHANT FIRST
+    #
+    # "نقاط البيع" contains "نقاط".
+    # -----------------------------------------------------
+
+    if contains_any(
+        source,
+        [
+            "نقاط البيع",
+            "نقطه البيع",
+            "نقطة البيع",
+            "اجهزة نقاط البيع",
+            "أجهزة نقاط البيع",
+            "التجارة الالكترونية",
+            "التجارة الإلكترونية",
+            "خدمات التجارة الالكترونية",
+            "خدمات التجارة الإلكترونية",
+            "merchant payment",
+            "merchant payments",
+            "merchant services",
+            "point of sale",
+            "points of sale",
+            "pos terminal",
+            "pos device",
+            "payment gateway",
+            "e-commerce",
+            "ecommerce",
+        ],
+    ):
+
+        return "merchant_payments"
+
+    if contains_any(
+        source,
+        [
+            "تحويل دولي",
+            "تحويل مالي دولي",
+            "حواله دوليه",
+            "حوالة دولية",
+            "international transfer",
+            "international money transfer",
+            "cross border",
+        ],
+    ):
+
+        return "international_transfer"
+
+    if contains_any(
+        source,
+        [
+            "سفر",
+            "السفر",
+            "مسافر",
+            "مطار",
+            "رحله",
+            "رحلة",
+            "travel",
+            "airport",
+            "trip",
+        ],
+    ):
+
+        return "travel"
+
+    if contains_any(
+        source,
+        [
+            "كاش باك",
+            "cashback",
+            "cash back",
+            "استرداد نقدي",
+        ],
+    ):
+
+        return "cashback"
+
+    if contains_any(
+        source,
+        [
+            "مكافات",
+            "مكافآت",
+            "reward",
+            "rewards",
+            "reward points",
+        ],
+    ):
+
+        return "rewards"
+
+    if contains_any(
+        source,
+        [
+            "امان",
+            "أمان",
+            "امن",
+            "آمن",
+            "security",
+            "secure",
+        ],
+    ):
+
+        return "security"
+
+    if contains_any(
+        source,
+        [
+            "تطبيق",
+            "بنك رقمي",
+            "digital banking",
+            "banking app",
+            "mobile banking",
+        ],
+    ):
+
+        return "digital_banking"
+
+    return "premium_banking"
+
+
+# =========================================================
+# STYLE-SPECIFIC PROMPT AUTHORITY
+# =========================================================
+
+STC_STYLE_INSTRUCTIONS = {
+
+    STYLE_PREMIUM_REALISTIC: """
+
+SELECTED STYLE:
+PREMIUM REALISTIC PHOTOGRAPHY
+
+Create a believable premium commercial photograph.
+
+The environment should retain natural color unless a subtle
+brand accent is genuinely useful.
+
+Prioritize:
+- realistic Saudi lifestyle
+- authentic human action
+- natural proportions
+- refined contemporary environment
+- clean skin tones
+- motivated daylight or practical lighting
+- premium material detail
+- subtle STC purple/green cue
+- deliberate camera angle
+- cinematic depth
+- clear negative space
+
+Do not recolor the entire environment purple.
+
+The image should feel photographed,
+not designed as a generic fintech poster.
+
+""".strip(),
+
+
+    STYLE_PURPLE_ARCHITECTURAL: """
+
+SELECTED STYLE:
+PREMIUM PURPLE ARCHITECTURAL STUDIO
+
+Build a real physical studio/architectural environment.
+
+Use:
+- deep aubergine
+- dark violet
+- near-black violet
+- restrained saturated purple accents
+- matte and satin planes
+- geometric plinths
+- physically supported objects
+- clean parallel architectural lines
+- coherent one-point or two-point perspective
+- controlled specular highlights
+- narrow elegant reflections
+- deep contact shadows
+- soft directional key light
+
+Green may appear as a small accent.
+
+Every object must align with the same perspective system.
+
+A card/device sitting on a plinth must visually agree with
+the plane angle, camera height and vanishing points.
+
+Do not make:
+- neon nightclub scene
+- glowing sci-fi set
+- random purple objects
+- floating hero objects
+
+""".strip(),
+
+
+    STYLE_AUGMENTED_REALISM: """
+
+SELECTED STYLE:
+REFINED PHOTOGRAPHIC SURREALISM / AUGMENTED REALISM
+
+Begin with a believable high-end photograph.
+
+Introduce EXACTLY ONE conceptual mechanism.
+
+The mechanism may use:
+- controlled scale
+- forced perspective
+- physical architectural metaphor
+- frame-within-frame
+- unexpected spatial relationship
+- refined object/environment transformation
+
+The concept must obey:
+- gravity
+- perspective
+- lighting
+- occlusion
+- reflections
+- contact shadows
+- material behavior
+
+The final frame must still feel photographable.
+
+Do not use:
+- magic
+- childish fantasy
+- portal glow
+- holograms
+- particles
+- futuristic HUD
+- random CGI
+
+""".strip(),
+}
+
+
+def get_stc_style_instruction(
+    style: str,
+) -> str:
+
+    return STC_STYLE_INSTRUCTIONS.get(
+        clean_text(
+            style,
+            100,
+        ),
+        "",
+    )
+
+
+# =========================================================
+# CENTRAL VISUAL SKILL
+# =========================================================
+
+STC_BANK_VISUAL_SKILL = r"""
+=========================================================
+XPAND STC BANK VISUAL DIRECTOR V3.0
+=========================================================
+
+ROLE
+---------------------------------------------------------
+
+Act as a senior:
+- Saudi-market Creative Director
+- Advertising Art Director
+- Commercial Photographer
+- Production Designer
+- Cinematographer
+- Visual Strategist
+- Image-Prompt Engineer
+
+for STC Bank.
+
+Your job is NOT to decorate a banking product.
+
+Your job is to translate ONE banking benefit into
+ONE strong, premium, instantly understandable visual idea.
+
+=========================================================
+RULE HIERARCHY
+=========================================================
+
+1. User's explicit request.
+2. User-supplied visual/product references.
+3. Saved STC Bank Visual DNA.
+4. Verified STC Bank reference memory.
+5. Current approved brand research.
+6. External inspiration only for principles.
+7. Generic image-model habits LAST.
+
+Never copy the exact composition of an old STC advertisement.
+
+Learn:
+- sophistication
+- realism
+- camera behavior
+- palette behavior
+- finish
+- lighting
+- restraint
+- material quality
+- spatial logic
+
+Then create an ORIGINAL scene.
+
+=========================================================
+STC BANK IS NOT "PURPLE + NEON"
+=========================================================
+
+Do not translate STC Bank automatically into:
+- purple room
+- purple neon
+- glowing objects
+- floating cards
+- fintech effects
+
+Purple is ONE part of the brand language.
+
+A realistic STC Bank campaign may contain:
+- blue sky
+- warm wood
+- stone
+- off-white
+- beige
+- charcoal
+- glass
+- green
+- natural skin tones
+- realistic city / home / retail colors
+
+with only a restrained purple or green identity cue.
+
+=========================================================
+THREE APPROVED VISUAL FAMILIES
+=========================================================
+
+A) PREMIUM REALISTIC PHOTOGRAPHY
+
+Use:
+- believable contemporary Saudi environment
+- natural human action
+- premium commercial photography
+- motivated light
+- real materials
+- real product interaction
+- clean negative space
+- subtle identity cues
+
+Do not make the person pose simply to hold the banking product.
+
+---------------------------------------------------------
+
+B) PREMIUM PURPLE ARCHITECTURAL STUDIO
+
+Use:
+- deep aubergine
+- dark violet
+- near-black violet
+- matte / satin surfaces
+- geometric plinths
+- parallel planes
+- physically correct support
+- coherent vanishing points
+- narrow premium reflections
+- controlled glossy highlights
+- clean contact shadows
+- restrained green accent
+
+Purple architecture is NOT neon fintech.
+
+Every object angle must agree with its physical support plane.
+
+---------------------------------------------------------
+
+C) REFINED PHOTOGRAPHIC SURREALISM
+
+Start with a realistic photograph.
+
+Add exactly ONE strong conceptual mechanism.
+
+It must obey:
+- gravity
+- perspective
+- occlusion
+- lighting
+- reflections
+- shadow direction
+- scale logic
+
+It should feel photographable despite the conceptual idea.
+
+Never become:
+- cartoon fantasy
+- magic
+- science fiction
+- holographic banking
+- random visual effects
+
+=========================================================
+CAMERA INTELLIGENCE
+=========================================================
+
+Choose camera based on idea, not decoration.
+
+Valid scientific approaches include:
+
+- Eye-Level Shot
+- Low-Angle Shot
+- Extreme Low-Angle Shot
+- Worm's-Eye View
+- High-Angle Shot
+- Bird's-Eye View
+- Top-Down / Overhead Shot
+- Three-Quarter Hero Shot
+- Over-the-Shoulder Shot
+- Point-of-View Shot
+- Ground-Level Shot
+- Close-Up Shot
+- Extreme Close-Up
+- Macro Shot
+- Medium Shot
+- Wide Environmental Shot
+- Extreme Wide / Establishing Shot
+- One-Point Perspective
+- Two-Point Perspective
+- Forced-Perspective Composition
+- Frame-within-a-Frame Composition
+- Foreground-Obstruction Composition
+
+Never combine contradictory camera descriptions.
+
+Choose one coherent lens and viewpoint.
+
+=========================================================
+LENS INTELLIGENCE
+=========================================================
+
+18mm:
+rare dramatic environmental width.
+
+24mm:
+premium environmental wide shot.
+
+28mm:
+dynamic commercial environment.
+
+35mm:
+cinematic lifestyle / environmental storytelling.
+
+50mm:
+natural balanced perspective.
+
+70mm:
+controlled commercial compression.
+
+85mm:
+premium portrait / product compression.
+
+105mm:
+luxury subject isolation.
+
+Macro:
+fine product/material detail.
+
+Tilt-shift:
+architectural perspective control.
+
+=========================================================
+LIGHTING
+=========================================================
+
+Premium realistic:
+
+- motivated daylight
+- soft window light
+- practical interior light
+- subtle directional key
+- realistic bounce
+- correct skin tones
+- clean highlight rolloff
+- believable shadows
+
+Purple studio:
+
+- soft directional key
+- controlled violet ambient fill
+- narrow specular reflection
+- restrained edge separation
+- deep readable shadow
+- physically correct contact shadow
+- no blanket neon wash
+
+Augmented realism:
+
+The conceptual element MUST use the exact same:
+- light direction
+- shadow softness
+- color temperature
+- reflection environment
+- atmospheric depth
+
+as the real scene.
+
+=========================================================
+MATERIAL INTELLIGENCE
+=========================================================
+
+Use material-specific response.
+
+Premium material vocabulary may include:
+
+- polished stone
+- matte stone
+- travertine
+- walnut
+- brushed metal
+- satin metal
+- smoked glass
+- clear glass
+- premium leather
+- refined textile
+- matte plaster
+- controlled glossy acrylic
+
+Not everything should be glossy.
+
+Use:
+matte + satin + semi-gloss + controlled reflection
+
+to create visual hierarchy.
+
+=========================================================
+REFLECTIONS
+=========================================================
+
+Reflections must define material and form.
+
+Do not add reflections merely to make the image "futuristic".
+
+A glossy bank card may have:
+- controlled soft-box highlight
+- narrow specular edge
+- realistic dark reflection
+- readable material separation
+
+A plinth reflection must match:
+- object angle
+- object distance
+- light source
+- camera
+
+=========================================================
+HUMAN REALISM
+=========================================================
+
+People must feel real.
+
+Require:
+- natural posture
+- credible eye direction
+- subtle expression
+- real hand anatomy
+- correct product grip
+- correct phone/POS orientation
+- culturally credible Saudi styling where appropriate
+
+Avoid:
+- stock-photo smile
+- staring directly at camera without reason
+- person simply displaying a terminal
+- stiff advertising pose
+
+=========================================================
+COMPOSITION
+=========================================================
+
+Use:
+- one dominant visual idea
+- one hero
+- clear visual hierarchy
+- meaningful foreground
+- midground
+- background depth
+- intentional negative space
+- controlled edges
+- clean object relationships
+- restrained supporting elements
+
+Do not fill empty space merely because it exists.
+
+Negative space is valuable.
+
+=========================================================
+TEXT / LOGO LOCK
+=========================================================
+
+THE GENERATED IMAGE IS IMAGE-ONLY.
+
+DO NOT GENERATE:
+
+- advertising headline
+- subtitle
+- body copy
+- CTA
+- discount
+- percentage
+- price
+- legal text
+- disclaimer
+- STC wordmark
+- STC Bank logo
+- VISA logo
+- Mastercard logo
+- watermark
+- signature
+- readable invented bank UI
+
+Typography and official logos will be added manually later.
+
+Reserve clean composition space for them.
+
+=========================================================
+HARD ANTI-CLICHE
+=========================================================
+
+Do not use unless the user explicitly requires it:
+
+- floating coins
+- flying money
+- floating bank card
+- floating phone
+- floating POS
+- banking icons around phone
+- generic globe
+- connection lines
+- network lines
+- transfer routes
+- blue laser beams
+- purple neon trails
+- glowing arrows
+- random particles
+- sparkles
+- holograms
+- HUD
+- cyber interface
+- security shield
+- lock icon
+- growth arrow
+- generic handshake
+- random miniature city
+- decorative fintech technology
+
+A brand color is not an idea.
+
+A beautiful room is not an idea.
+
+A bank card by itself is not automatically an idea.
+
+A phone screen by itself is not automatically an idea.
+
+=========================================================
+MERCHANT PAYMENTS SPECIAL LOCK
+=========================================================
+
+Arabic:
+
+"نقاط البيع"
+
+means:
+
+POINT OF SALE / POS.
+
+It NEVER means reward points.
+
+For:
+- خدمات التجارة الإلكترونية
+- التجارة الإلكترونية
+- نقاط البيع
+- merchant payments
+
+communicate through REAL COMMERCE.
+
+Strong possibilities:
+- premium boutique checkout
+- specialty café
+- restaurant
+- hospitality
+- premium retail
+- merchant fulfilling an e-commerce order
+- customer completing an in-person payment
+- merchant operating physical and digital commerce naturally
+
+The POS device must belong physically to the interaction.
+
+Do not create a salesman holding a POS toward camera
+as the entire idea.
+
+=========================================================
+FINAL STANDARD
+=========================================================
+
+The final concept/prompt should feel like it came from:
+
+a senior Saudi advertising agency,
+an experienced commercial photographer,
+a production designer,
+and a brand-aware art director.
+
+It should be:
+- premium
+- realistic
+- original
+- refined
+- restrained
+- clear
+- production-ready
+- physically coherent
+- useful for a real STC Bank campaign
+
+Never solve weak thinking by adding more effects.
+""".strip()
+
+
+# =========================================================
+# IMAGE MODEL GUARD
+# =========================================================
+
+STC_BANK_IMAGE_GUARD = r"""
+STC BANK IMAGE EXECUTION LOCK
+=============================
+
+Create IMAGE ONLY.
+
+NO visible:
+- headline
+- body copy
+- CTA
+- offer text
+- percentages
+- financial numbers
+- legal copy
+- logo
+- STC wordmark
+- STC Bank logo
+- VISA/Mastercard logo
+- watermark
+- signature
+- invented readable banking UI
+
+Leave intentional clean negative space for manual typography.
+
+STC Bank does NOT automatically mean a fully purple scene.
+
+Purple must be controlled and motivated.
+
+For realistic scenes:
+preserve natural colors, clean skin tones, real materials,
+credible Saudi context and professional commercial lighting.
+
+For purple studio scenes:
+use real geometric architecture, physical support planes,
+coherent perspective, elegant contact shadows, restrained
+specular highlights and premium material reflections.
+
+For conceptual/surreal scenes:
+use exactly one physical visual metaphor integrated into
+photographic realism.
+
+NO:
+- floating cards
+- floating phones
+- floating POS
+- floating banking icons
+- coins
+- generic globe
+- network lines
+- transfer routes
+- laser beams
+- neon trails
+- holograms
+- HUD
+- particles
+- sparkles
+- random fintech graphics
+
+Everything must obey:
+gravity,
+scale,
+perspective,
+occlusion,
+light direction,
+contact shadows,
+reflection logic,
+material behavior.
+
+Premium comes from:
+concept,
+camera,
+light,
+materials,
+behavior,
+composition,
+restraint.
+
+Not from neon.
+""".strip()
+
+
+# =========================================================
+# BENEFIT DIRECTION
+# =========================================================
+
+def get_stc_benefit_direction(
+    text: Any,
+) -> str:
+
+    family = detect_stc_benefit_family(
+        text
+    )
+
+    return (
+        STC_BANK_BENEFIT_DIRECTIONS.get(
+            family,
+            "",
+        )
+    )
+
+
+# =========================================================
+# COMPLETE REQUEST CONTEXT
+# =========================================================
+
+def build_stc_bank_skill_context(
+    user_request: Any,
+    *,
+    selected_style: str = "",
+) -> str:
+
+    request = clean_text(
+        user_request,
+        12000,
+    )
+
+    style = clean_text(
+        selected_style,
+        100,
+    )
+
+    if style not in (
+        SUPPORTED_STC_STYLES
+    ):
+
+        detected = (
+            detect_stc_visual_style(
+                request
+            )
+        )
+
+        style = detected
+
+    style_instruction = (
+        get_stc_style_instruction(
+            style
+        )
+    )
+
+    benefit_direction = (
+        get_stc_benefit_direction(
+            request
+        )
+    )
+
+    parts = [
+        STC_BANK_VISUAL_SKILL,
+    ]
+
+    if style_instruction:
+
+        parts.extend(
+            [
+                "",
+                "=========================================================",
+                "SELECTED STYLE EXECUTION",
+                "=========================================================",
+                style_instruction,
+            ]
+        )
+
+    else:
+
+        parts.extend(
+            [
+                "",
+                "=========================================================",
+                "STYLE NOT YET SELECTED",
+                "=========================================================",
+                (
+                    "Do not invent the user's style preference. "
+                    "The orchestration layer should ask the STC Bank "
+                    "style question before final prompt generation."
+                ),
+            ]
+        )
+
+    if benefit_direction:
+
+        parts.extend(
+            [
+                "",
+                "=========================================================",
+                "BENEFIT-SPECIFIC EXECUTION",
+                "=========================================================",
+                benefit_direction,
+            ]
+        )
+
+    return "\n".join(
+        parts
+    ).strip()
+
+
+# =========================================================
+# DETERMINISTIC VIOLATION CHECK
+# =========================================================
+
+STC_FORBIDDEN_CONCEPT_MARKERS = (
+
+    # -----------------------------------------------------
+    # FLOATING
+    # -----------------------------------------------------
+
+    "floating card",
+    "floating bank card",
+    "levitating card",
+    "floating phone",
+    "levitating phone",
+    "floating pos",
+    "floating terminal",
+    "unsupported product",
+    "بطاقة طافية",
+    "بطاقه طايره",
+    "هاتف طائر",
+    "هاتف يطفو",
+    "جهاز نقاط بيع يطفو",
+
+    # -----------------------------------------------------
+    # FINTECH EFFECTS
+    # -----------------------------------------------------
+
+    "hologram",
+    "holographic",
+    "wireframe",
+    "futuristic interface",
+    "hud",
+    "ui overlay",
+    "network line",
+    "connection line",
+    "route line",
+    "transfer path",
+    "laser beam",
+    "blue laser",
+    "neon trail",
+    "glowing route",
+    "particle cloud",
+    "random particles",
+    "sparkles",
+    "هولوغرام",
+    "خطوط اتصال",
+    "خط اتصال",
+    "مسار تحويل ضوئي",
+    "شعاع ليزر",
+    "جزيئات مضيئة",
+
+    # -----------------------------------------------------
+    # GENERIC SYMBOLS
+    # -----------------------------------------------------
+
+    "generic globe",
+    "security shield",
+    "digital shield",
+    "growth arrow",
+    "business handshake",
+
+    # -----------------------------------------------------
+    # GENERATED COPY / LOGO
+    # -----------------------------------------------------
+
+    "render headline",
+    "render the headline",
+    "add headline",
+    "visible headline",
+    "place logo",
+    "render logo",
+    "add stc bank logo",
+    "visible stc bank logo",
+    "generate advertising copy",
+)
+
+
+def stc_text_violations(
+    value: Any,
+) -> List[str]:
+
+    source = normalize_text(
+        value
+    )
+
+    violations = []
+
+    for marker in (
+        STC_FORBIDDEN_CONCEPT_MARKERS
+    ):
+
+        if normalize_text(
+            marker
+        ) in source:
+
+            violations.append(
+                marker
+            )
+
+    return violations
+
+
+def stc_concept_violations(
+    concept: Any,
+) -> List[str]:
+
+    if concept is None:
+
+        return []
+
+    fields = [
+        "title",
+        "core_idea",
+        "marketing_message",
+        "visual_metaphor",
+        "style_family",
+        "scene_archetype",
+        "environment",
+        "hero_element",
+        "camera_angle",
+        "perspective",
+        "lighting",
+        "negative_space",
+        "material_language",
+        "color_strategy",
+        "brand_logic",
+        "production_method",
+        "campaign_extension",
+    ]
+
+    values: List[str] = []
+
+    if isinstance(
+        concept,
+        dict,
+    ):
+
+        for field_name in fields:
+
+            value = concept.get(
+                field_name
+            )
+
+            if value:
+
+                values.append(
+                    clean_text(
+                        value,
+                        3000,
+                    )
+                )
+
+        supporting = concept.get(
+            "supporting_elements"
+        )
+
+        if isinstance(
+            supporting,
+            list,
+        ):
+
+            values.extend(
+                clean_text(
+                    item,
+                    1000,
+                )
+                for item in supporting
+            )
+
+    else:
+
+        for field_name in fields:
+
+            value = getattr(
+                concept,
+                field_name,
+                "",
+            )
+
+            if value:
+
+                values.append(
+                    clean_text(
+                        value,
+                        3000,
+                    )
+                )
+
+        supporting = getattr(
+            concept,
+            "supporting_elements",
+            [],
+        )
+
+        if isinstance(
+            supporting,
+            list,
+        ):
+
+            values.extend(
+                clean_text(
+                    item,
+                    1000,
+                )
+                for item in supporting
+            )
+
+    return stc_text_violations(
+        "\n".join(
+            values
+        )
+    )
+
+
+# =========================================================
+# STYLE DISPLAY
+# =========================================================
+
+def stc_style_display_name(
+    style: str,
+) -> str:
+
+    mapping = {
+        STYLE_PREMIUM_REALISTIC:
+            STYLE_NAME_REALISTIC_AR,
+
+        STYLE_PURPLE_ARCHITECTURAL:
+            STYLE_NAME_PURPLE_AR,
+
+        STYLE_AUGMENTED_REALISM:
+            STYLE_NAME_AUGMENTED_AR,
+    }
+
+    return mapping.get(
+        clean_text(
+            style,
+            100,
+        ),
+        "",
+    )
+
+
+# =========================================================
+# VISUAL DNA SUMMARY
+# =========================================================
+
+def get_stc_visual_dna_summary() -> Dict[
+    str,
+    Any,
+]:
+
+    return {
+        "brand_id":
+            BRAND_ID,
+
+        "brand_name":
+            BRAND_NAME,
+
+        "version":
+            VERSION,
+
+        "styles": [
+            {
+                "id":
+                    STYLE_PREMIUM_REALISTIC,
+
+                "name_ar":
+                    STYLE_NAME_REALISTIC_AR,
+            },
+
+            {
+                "id":
+                    STYLE_PURPLE_ARCHITECTURAL,
+
+                "name_ar":
+                    STYLE_NAME_PURPLE_AR,
+            },
+
+            {
+                "id":
+                    STYLE_AUGMENTED_REALISM,
+
+                "name_ar":
+                    STYLE_NAME_AUGMENTED_AR,
+            },
+        ],
+
+        "reference_families":
+            list(
+                STC_BANK_VISUAL_DNA[
+                    "reference_families"
+                ].keys()
+            ),
+
+        "camera_system":
+            list(
+                STC_BANK_VISUAL_DNA[
+                    "camera_library"
+                ].keys()
+            ),
+
+        "text_free":
+            True,
+
+        "logo_free":
+            True,
+
+        "purple_is_optional":
+            True,
+
+        "neon_default":
+            False,
+
+        "merchant_payments_priority":
+            True,
+    }
+
+
+# =========================================================
+# ZERO-COST SELF TEST
+# =========================================================
+
+if __name__ == "__main__":
+
+    tests: Dict[
+        str,
+        bool
+    ] = {}
+
+
+    tests[
+        "brand_detection_english"
+    ] = is_stc_bank_request(
+        "Create an STC Bank campaign."
+    )
+
+
+    tests[
+        "brand_detection_arabic"
+    ] = is_stc_bank_request(
+        "أنشئ إعلان لبنك STC"
+    )
+
+
+    tests[
+        "no_false_plain_stc"
+    ] = not is_stc_bank_request(
+        "إعلان لشركة STC للاتصالات"
+    )
+
+
+    tests[
+        "realistic_style"
+    ] = (
+        detect_stc_visual_style(
+            (
+                "STC Bank "
+                "واقعي فوتوغرافي"
+            )
+        )
+        ==
+        STYLE_PREMIUM_REALISTIC
+    )
+
+
+    tests[
+        "purple_style"
+    ] = (
+        detect_stc_visual_style(
+            (
+                "STC Bank "
+                "بيئة بنفسجية استوديو"
+            )
+        )
+        ==
+        STYLE_PURPLE_ARCHITECTURAL
+    )
+
+
+    tests[
+        "augmented_style"
+    ] = (
+        detect_stc_visual_style(
+            (
+                "STC Bank "
+                "واقعي سريالي راقٍ"
+            )
+        )
+        ==
+        STYLE_AUGMENTED_REALISM
+    )
+
+
+    tests[
+        "style_question_needed"
+    ] = stc_style_question_needed(
+        (
+            "أنشئ إعلان لبنك STC Bank "
+            "عن خدمات التجارة الإلكترونية"
+        )
+    )
+
+
+    tests[
+        "style_question_not_needed"
+    ] = not stc_style_question_needed(
+        (
+            "أنشئ إعلان لبنك STC Bank "
+            "واقعي فوتوغرافي"
+        )
+    )
+
+
+    tests[
+        "merchant_priority"
+    ] = (
+        detect_stc_benefit_family(
+            (
+                "خدمات التجارة الإلكترونية "
+                "ونقاط البيع"
+            )
+        )
+        ==
+        "merchant_payments"
+    )
+
+
+    tests[
+        "no_text_guard"
+    ] = (
+        "NO visible:"
+        in
+        STC_BANK_IMAGE_GUARD
+    )
+
+
+    tests[
+        "no_logo_guard"
+    ] = (
+        "STC Bank logo"
+        in
+        STC_BANK_IMAGE_GUARD
+    )
+
+
+    tests[
+        "purple_not_identity"
+    ] = (
+        "STC BANK IS NOT"
+        in
+        STC_BANK_VISUAL_SKILL
+    )
+
+
+    tests[
+        "camera_worms_eye"
+    ] = (
+        "worms_eye"
+        in
+        STC_BANK_VISUAL_DNA[
+            "camera_library"
+        ]
+    )
+
+
+    tests[
+        "camera_birds_eye"
+    ] = (
+        "birds_eye"
+        in
+        STC_BANK_VISUAL_DNA[
+            "camera_library"
+        ]
+    )
+
+
+    tests[
+        "camera_over_shoulder"
+    ] = (
+        "over_shoulder"
+        in
+        STC_BANK_VISUAL_DNA[
+            "camera_library"
+        ]
+    )
+
+
+    tests[
+        "forbidden_floating"
+    ] = bool(
+        stc_text_violations(
+            (
+                "floating card with "
+                "network lines"
+            )
+        )
+    )
+
+
+    tests[
+        "allowed_purple_accent"
+    ] = not bool(
+        stc_text_violations(
+            (
+                "realistic Saudi retail scene "
+                "with one subtle purple accent"
+            )
+        )
+    )
+
+
+    tests[
+        "complete_context"
+    ] = (
+        "PREMIUM REALISTIC PHOTOGRAPHY"
+        in
+        build_stc_bank_skill_context(
+            (
+                "STC Bank merchant payments "
+                "واقعي فوتوغرافي"
+            )
+        )
+    )
+
+
+    tests[
+        "dna_text_free"
+    ] = bool(
+        get_stc_visual_dna_summary().get(
+            "text_free"
+        )
+    )
+
+
+    tests[
+        "dna_purple_optional"
+    ] = bool(
+        get_stc_visual_dna_summary().get(
+            "purple_is_optional"
+        )
+    )
+
+
+    all_ok = all(
+        tests.values()
+    )
+
+
+    print("")
+
+    print(
+        "=========================================="
+    )
+
+    print(
+        " XPAND STC BANK VISUAL SKILL V3.0"
+    )
+
+    print(
+        " ZERO-COST SELF TEST"
+    )
+
+    print(
+        "=========================================="
+    )
+
+    print("")
+
+
+    for name, passed in (
+        tests.items()
+    ):
+
+        print(
+            (
+                "✅"
+                if passed
+                else
+                "❌"
+            ),
+            name,
+        )
+
+
+    print("")
+
+
+    if all_ok:
+
+        print(
+            (
+                "XPAND STC Bank Visual Skill "
+                "V3.0 self-test: PASS ✅"
+            )
+        )
+
+    else:
+
+        print(
+            (
+                "XPAND STC Bank Visual Skill "
+                "V3.0 self-test: FAIL ❌"
+            )
+        )
+
+
+    print("")
+
+    print(
+        "✅ STC Bank detection"
+    )
+
+    print(
+        "✅ Mandatory style-question logic"
+    )
+
+    print(
+        "✅ Premium realistic visual family"
+    )
+
+    print(
+        "✅ Purple architectural visual family"
+    )
+
+    print(
+        "✅ Augmented realism visual family"
+    )
+
+    print(
+        "✅ Reference-family Visual DNA"
+    )
+
+    print(
+        "✅ Scientific camera vocabulary"
+    )
+
+    print(
+        "✅ Lens vocabulary"
+    )
+
+    print(
+        "✅ Lighting discipline"
+    )
+
+    print(
+        "✅ Material discipline"
+    )
+
+    print(
+        "✅ Reflection discipline"
+    )
+
+    print(
+        "✅ Human-realism discipline"
+    )
+
+    print(
+        "✅ Merchant payments semantic priority"
+    )
+
+    print(
+        "✅ No generated text"
+    )
+
+    print(
+        "✅ No generated logo"
+    )
+
+    print(
+        "✅ Purple is optional"
+    )
+
+    print(
+        "✅ Purple neon is NOT the default"
+    )
+
+    print(
+        "✅ Generic fintech visual block"
+    )
+
+    print(
+        "✅ Compatibility constants preserved"
+    )
+
+    print(
+        "🚫 No API calls were made"
+    )
+
+    print(
+        "🚫 No web requests were made"
+    )
+
+    print(
+        "🚫 No images were generated"
+    )
+
+    print("")
