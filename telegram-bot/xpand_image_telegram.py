@@ -1,9 +1,13 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.3
+# XPAND UNIFIED VISUAL RUNTIME V3.4
 #
 # STABLE TELEGRAM IMAGE RUNTIME
 #
 # Telegram Text / Voice
+#        ↓
+# Image Intent
+#        ↓
+# STC Style Selection Gate
 #        ↓
 # Brand Detection
 #        ↓
@@ -11,13 +15,13 @@
 #        ↓
 # Semantic Benefit Director
 #        ↓
-# Creative Brain
+# Creative Brain V5
 #        ↓
 # Runtime State Classifier
 #        ↓
 # Masterpiece Production
 #        ↓
-# Smart Engine Fallback
+# Nano Banana 2 Smart Fallback
 #        ↓
 # Telegram Delivery
 #
@@ -26,6 +30,10 @@
 # - technical Creative Brain failure != quality failure
 # - technical failure NEVER blocks normal image generation
 # - Smart Engine fallback remains available
+# - STC Bank asks for style before generation when missing
+# - pending STC request is resumed after style answer
+# - Nano Banana 2 is STC Smart fallback default
+# - STC output is IMAGE ONLY: no copy / no logo
 # - install(core) is always available
 # - no shell commands belong in this file
 # =========================================================
@@ -36,6 +44,8 @@ import io
 import json
 import os
 import re
+import threading
+import time
 
 from typing import (
     Any,
@@ -53,15 +63,27 @@ import requests
 # =========================================================
 
 try:
-    from xpand_cost_guard import budget_status
+
+    from xpand_cost_guard import (
+        budget_status,
+    )
+
 except Exception:
 
     def budget_status() -> Dict[str, Any]:
+
         return {
-            "enabled": False,
-            "limit_usd": 0.0,
-            "reserved_usd": 0.0,
-            "remaining_usd": 0.0,
+            "enabled":
+                False,
+
+            "limit_usd":
+                0.0,
+
+            "reserved_usd":
+                0.0,
+
+            "remaining_usd":
+                0.0,
         }
 
 
@@ -74,6 +96,22 @@ from xpand_image_engine import (
     detect_image_size,
     generate_image,
     get_image_engine_status,
+)
+
+
+# =========================================================
+# STC BANK VISUAL SKILL
+# =========================================================
+
+from xpand_stc_bank_skill import (
+    STYLE_AUGMENTED_REALISM,
+    STYLE_PREMIUM_REALISTIC,
+    STYLE_PURPLE_ARCHITECTURAL,
+    detect_stc_visual_style,
+    get_stc_style_question,
+    is_stc_bank_request,
+    stc_style_display_name,
+    stc_style_question_needed,
 )
 
 
@@ -130,6 +168,7 @@ from xpand_production_engine import (
 # =========================================================
 
 try:
+
     from xpand_campaign_engine import (
         create_campaign_bible,
         get_asset_direction,
@@ -140,6 +179,7 @@ try:
 except Exception:
 
     create_campaign_bible = None
+
     get_asset_direction = None
 
     CAMPAIGN_ENGINE_AVAILABLE = False
@@ -149,9 +189,11 @@ except Exception:
 # MODULE
 # =========================================================
 
-VERSION = "3.3"
+VERSION = "3.4"
 
-MODULE_NAME = "XPAND Unified Visual Runtime"
+MODULE_NAME = (
+    "XPAND Unified Visual Runtime"
+)
 
 
 # =========================================================
@@ -252,14 +294,47 @@ MASTERPIECE_ALLOW_SMART_FALLBACK = str(
 }
 
 
+STC_STYLE_PENDING_TTL_SECONDS = max(
+    120,
+    int(
+        os.environ.get(
+            "XPAND_STC_STYLE_PENDING_TTL",
+            "1200",
+        )
+        or 1200
+    ),
+)
+
+
 # =========================================================
-# ERROR
+# ERRORS
 # =========================================================
 
 class MasterpieceGuardError(
     RuntimeError
 ):
     pass
+
+
+class STCStyleSelectionRequired(
+    RuntimeError
+):
+    pass
+
+
+# =========================================================
+# PENDING STC STYLE REQUESTS
+# =========================================================
+
+_PENDING_STC_STYLE: Dict[
+    str,
+    Dict[str, Any],
+] = {}
+
+
+_PENDING_STC_STYLE_LOCK = (
+    threading.RLock()
+)
 
 
 # =========================================================
@@ -295,17 +370,34 @@ def normalized(
     ).lower()
 
     replacements = {
-        "أ": "ا",
-        "إ": "ا",
-        "آ": "ا",
-        "ة": "ه",
-        "ى": "ي",
-        "ؤ": "و",
-        "ئ": "ي",
-        "ـ": "",
+        "أ":
+            "ا",
+
+        "إ":
+            "ا",
+
+        "آ":
+            "ا",
+
+        "ة":
+            "ه",
+
+        "ى":
+            "ي",
+
+        "ؤ":
+            "و",
+
+        "ئ":
+            "ي",
+
+        "ـ":
+            "",
     }
 
-    for old, new in replacements.items():
+    for old, new in (
+        replacements.items()
+    ):
 
         text = text.replace(
             old,
@@ -353,6 +445,7 @@ def safe_dict(
         value,
         dict,
     ):
+
         return value
 
     return {}
@@ -366,6 +459,7 @@ def safe_list(
         value,
         list,
     ):
+
         return value
 
     return []
@@ -411,6 +505,331 @@ def safe_json_string(
         result = "{}"
 
     return result[:limit]
+
+
+# =========================================================
+# STC STYLE PENDING HELPERS
+# =========================================================
+
+def pending_stc_style_key(
+    chat_id,
+    user_id,
+) -> str:
+
+    return (
+        str(
+            chat_id
+        )
+        +
+        ":"
+        +
+        str(
+            user_id
+        )
+    )
+
+
+def cleanup_pending_stc_styles() -> None:
+
+    now = time.time()
+
+    with _PENDING_STC_STYLE_LOCK:
+
+        expired = [
+            key
+            for key, value
+            in _PENDING_STC_STYLE.items()
+            if (
+                now
+                -
+                safe_float(
+                    value.get(
+                        "created_at",
+                        0,
+                    ),
+                    0,
+                )
+            )
+            >
+            STC_STYLE_PENDING_TTL_SECONDS
+        ]
+
+        for key in expired:
+
+            _PENDING_STC_STYLE.pop(
+                key,
+                None,
+            )
+
+
+def remember_pending_stc_style(
+    *,
+    chat_id,
+    user_id,
+    request_text: str,
+    source_channel: str,
+) -> None:
+
+    cleanup_pending_stc_styles()
+
+    key = pending_stc_style_key(
+        chat_id,
+        user_id,
+    )
+
+    with _PENDING_STC_STYLE_LOCK:
+
+        _PENDING_STC_STYLE[
+            key
+        ] = {
+            "request_text":
+                clean_text(
+                    request_text,
+                    12000,
+                ),
+
+            "source_channel":
+                clean_text(
+                    source_channel,
+                    100,
+                ),
+
+            "created_at":
+                time.time(),
+        }
+
+
+def get_pending_stc_style(
+    chat_id,
+    user_id,
+) -> Dict[str, Any]:
+
+    cleanup_pending_stc_styles()
+
+    key = pending_stc_style_key(
+        chat_id,
+        user_id,
+    )
+
+    with _PENDING_STC_STYLE_LOCK:
+
+        return dict(
+            _PENDING_STC_STYLE.get(
+                key,
+                {},
+            )
+        )
+
+
+def pop_pending_stc_style(
+    chat_id,
+    user_id,
+) -> Dict[str, Any]:
+
+    cleanup_pending_stc_styles()
+
+    key = pending_stc_style_key(
+        chat_id,
+        user_id,
+    )
+
+    with _PENDING_STC_STYLE_LOCK:
+
+        return dict(
+            _PENDING_STC_STYLE.pop(
+                key,
+                {},
+            )
+        )
+
+
+def resolve_stc_style_reply(
+    text: str,
+) -> str:
+
+    direct = detect_stc_visual_style(
+        text
+    )
+
+    if direct:
+
+        return direct
+
+    source = normalized(
+        text
+    ).strip()
+
+    if source in {
+        "1",
+        "١",
+        "واحد",
+        "الاول",
+        "الأول",
+        "واقعي",
+        "فوتوغرافي",
+    }:
+
+        return (
+            STYLE_PREMIUM_REALISTIC
+        )
+
+    if source in {
+        "2",
+        "٢",
+        "اثنين",
+        "الثاني",
+        "بنفسجي",
+        "استوديو",
+    }:
+
+        return (
+            STYLE_PURPLE_ARCHITECTURAL
+        )
+
+    if source in {
+        "3",
+        "٣",
+        "ثلاثه",
+        "ثلاثة",
+        "الثالث",
+        "سريالي",
+        "معزز",
+        "معززه",
+        "معززة",
+    }:
+
+        return (
+            STYLE_AUGMENTED_REALISM
+        )
+
+    return ""
+
+
+def build_stc_style_selected_request(
+    original_request: str,
+    style: str,
+) -> str:
+
+    display = (
+        stc_style_display_name(
+            style
+        )
+        or
+        style
+    )
+
+    return (
+        clean_text(
+            original_request,
+            12000,
+        )
+        +
+        "\n\n"
+        +
+        "الأسلوب البصري المطلوب: "
+        +
+        display
+        +
+        "."
+        +
+        "\n"
+        +
+        "هذه صورة إعلانية IMAGE-ONLY. "
+        +
+        "لا تضف نصوصًا أو شعارات داخل الصورة. "
+        +
+        "اترك مساحة سلبية نظيفة لإضافة النص والشعار يدويًا."
+    )
+
+
+def consume_pending_stc_style_reply(
+    *,
+    chat_id,
+    user_id,
+    text: str,
+) -> Optional[
+    Tuple[
+        str,
+        str,
+    ]
+]:
+
+    pending = get_pending_stc_style(
+        chat_id,
+        user_id,
+    )
+
+    if not pending:
+
+        return None
+
+    style = resolve_stc_style_reply(
+        text
+    )
+
+    if not style:
+
+        return None
+
+    pending = pop_pending_stc_style(
+        chat_id,
+        user_id,
+    )
+
+    original_request = clean_text(
+        pending.get(
+            "request_text",
+            "",
+        ),
+        12000,
+    )
+
+    if not original_request:
+
+        return None
+
+    merged = (
+        build_stc_style_selected_request(
+            original_request,
+            style,
+        )
+    )
+
+    source_channel = clean_text(
+        pending.get(
+            "source_channel",
+            "telegram_text",
+        ),
+        100,
+    )
+
+    return (
+        merged,
+        source_channel,
+    )
+
+
+def ask_for_stc_style(
+    core,
+    chat_id,
+) -> None:
+
+    question = (
+        get_stc_style_question()
+        +
+        "\n\n"
+        +
+        "1) واقعي فوتوغرافي\n"
+        +
+        "2) بيئة بنفسجية استوديو\n"
+        +
+        "3) واقعي سريالي راقٍ"
+    )
+
+    core.send_message(
+        chat_id,
+        question,
+    )
 
 
 # =========================================================
@@ -528,7 +947,6 @@ def is_campaign_request(
         flags=re.IGNORECASE,
     ):
 
-        # "campaign quality" alone is not campaign creation.
         if contains_any(
             source,
             [
@@ -749,12 +1167,6 @@ def detect_generation_mode(
 
         return "compare"
 
-    if is_masterpiece_request(
-        text
-    ):
-
-        return "best"
-
     if contains_any(
         text,
         [
@@ -772,8 +1184,8 @@ def detect_generation_mode(
         [
             "nano banana 2",
             "نانو بنانا 2",
+            "gemini 3.1 flash image",
             "google fast",
-            "gemini fast",
         ],
     ):
 
@@ -789,6 +1201,12 @@ def detect_generation_mode(
     ):
 
         return "fast"
+
+    if is_masterpiece_request(
+        text
+    ):
+
+        return "best"
 
     return "auto"
 
@@ -848,14 +1266,8 @@ def detect_runtime_brand(
             detected
         )
 
-    if contains_any(
-        text,
-        [
-            "stc bank",
-            "stc بنك",
-            "بنك stc",
-            "اس تي سي بنك",
-        ],
+    if is_stc_bank_request(
+        text
     ):
 
         return "stc_bank"
@@ -929,13 +1341,15 @@ def build_brand_context_for_request(
 
     try:
 
-        result = build_brand_memory_context(
-            core,
-            user_id,
-            brand_id,
-            request=request,
-            max_rules=70,
-            max_references=5,
+        result = (
+            build_brand_memory_context(
+                core,
+                user_id,
+                brand_id,
+                request=request,
+                max_rules=70,
+                max_references=5,
+            )
         )
 
         return safe_dict(
@@ -946,12 +1360,14 @@ def build_brand_context_for_request(
 
         try:
 
-            result = build_brand_memory_context(
-                core,
-                user_id,
-                brand_id,
-                max_rules=70,
-                max_references=5,
+            result = (
+                build_brand_memory_context(
+                    core,
+                    user_id,
+                    brand_id,
+                    max_rules=70,
+                    max_references=5,
+                )
             )
 
             return safe_dict(
@@ -1021,12 +1437,13 @@ def safe_brand_context_for_model(
                 context.get(
                     "rules"
                 )
-            )[:70],
+            )[:40],
 
         "references":
             [
                 item
-                for item in references[:5]
+                for item
+                in references[:3]
                 if isinstance(
                     item,
                     dict,
@@ -1141,8 +1558,9 @@ def detect_runtime_benefit_family(
         return "international_transfer"
 
     # IMPORTANT:
-    # merchant must run before rewards because
+    # merchant before rewards because
     # "نقاط البيع" contains "نقاط".
+
     if contains_any(
         text,
         MERCHANT_PAYMENTS_MARKERS,
@@ -1195,8 +1613,10 @@ def build_creative_request(
     str,
 ]:
 
-    family = detect_runtime_benefit_family(
-        original_request
+    family = (
+        detect_runtime_benefit_family(
+            original_request
+        )
     )
 
     if family == "merchant_payments":
@@ -1206,12 +1626,12 @@ XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is merchant payments:
 e-commerce services and point-of-sale acceptance.
 
-Arabic "نقاط البيع" means Point of Sale / POS,
-NOT loyalty points and NOT rewards.
+Arabic "نقاط البيع" means Point of Sale / POS.
+It does NOT mean loyalty points or rewards.
 
-The advertising idea must communicate a believable
-merchant commerce experience across physical POS and
-e-commerce without generic fintech decoration.
+Communicate the benefit through believable commerce:
+merchant, customer, product/order, environment and payment
+device working together naturally.
 
 Avoid:
 - reward points
@@ -1221,6 +1641,7 @@ Avoid:
 - network lines
 - laser payment paths
 - generic HUD interfaces
+- person simply holding POS toward camera
 """.strip()
 
     elif family == "international_transfer":
@@ -1228,7 +1649,8 @@ Avoid:
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is international transfer.
-If speed is mentioned, speed is only a supporting attribute.
+Use real human/place/relationship storytelling.
+Avoid maps, glowing routes and network graphics.
 """.strip()
 
     elif family == "travel":
@@ -1236,6 +1658,7 @@ If speed is mentioned, speed is only a supporting attribute.
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is travel.
+Use credible traveler behavior and premium real environments.
 """.strip()
 
     elif family == "cashback":
@@ -1243,6 +1666,7 @@ The primary commercial benefit is travel.
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is cashback.
+Communicate value through a tangible real-world experience.
 """.strip()
 
     elif family == "security":
@@ -1250,6 +1674,7 @@ The primary commercial benefit is cashback.
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is security.
+Communicate calm, control and confidence without shields/HUDs.
 """.strip()
 
     elif family == "rewards":
@@ -1257,6 +1682,7 @@ The primary commercial benefit is security.
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is rewards.
+Communicate through premium real experiences.
 """.strip()
 
     elif family == "speed":
@@ -1264,6 +1690,8 @@ The primary commercial benefit is rewards.
         semantic = """
 XPAND SEMANTIC PRIORITY:
 The primary commercial benefit is speed.
+Speed must be communicated through action and scene,
+not glowing visual effects.
 """.strip()
 
     else:
@@ -1375,8 +1803,10 @@ def creative_quality_passed(
 
         return False
 
-    metadata = creative_quality_metadata(
-        response
+    metadata = (
+        creative_quality_metadata(
+            response
+        )
     )
 
     metadata_passed = bool(
@@ -1447,8 +1877,10 @@ def creative_runtime_state(
                 {},
         }
 
-    metadata = creative_quality_metadata(
-        response
+    metadata = (
+        creative_quality_metadata(
+            response
+        )
     )
 
     winner = getattr(
@@ -1496,11 +1928,13 @@ def creative_runtime_state(
     if technical_failure:
 
         state = "technical_failure"
+
         allow_fallback = True
 
     elif not quality_gate_evaluated:
 
         state = "technical_failure"
+
         allow_fallback = True
 
     elif creative_quality_passed(
@@ -1565,7 +1999,11 @@ def masterpiece_guard_status(
         100,
     )
 
-    if creative_mode != CREATIVE_MODE_MASTERPIECE:
+    if (
+        creative_mode
+        !=
+        CREATIVE_MODE_MASTERPIECE
+    ):
 
         return {
             "allowed":
@@ -1628,7 +2066,9 @@ def masterpiece_guard_status(
                 "passed",
 
             "message":
-                "Masterpiece creative direction approved.",
+                (
+                    "Masterpiece creative direction approved."
+                ),
         }
 
     if state == "technical_failure":
@@ -1729,7 +2169,7 @@ def enforce_masterpiece_guard(
             "Reason:",
             status.get(
                 "code"
-            )
+            ),
         )
         print(
             status.get(
@@ -1768,7 +2208,7 @@ def enforce_masterpiece_guard(
             "Reason:",
             status.get(
                 "code"
-            )
+            ),
         )
         print(
             status.get(
@@ -1862,7 +2302,7 @@ def apply_brand_research(
                             research.get(
                                 "sources_used"
                             )
-                        )[:20],
+                        )[:12],
 
                     "mode_override":
                         clean_text(
@@ -2039,8 +2479,10 @@ def try_build_campaign(
 
         if winner:
 
-            approved_direction = concept_to_dict(
-                winner
+            approved_direction = (
+                concept_to_dict(
+                    winner
+                )
             )
 
     except Exception:
@@ -2053,19 +2495,35 @@ def try_build_campaign(
             core=core,
             user_id=user_id,
             brand_id=brand_id,
-            campaign_title=campaign_title_from_request(
-                original_prompt,
-                brand_id,
+            campaign_title=(
+                campaign_title_from_request(
+                    original_prompt,
+                    brand_id,
+                )
             ),
-            campaign_goal=original_prompt,
-            asset_count=detect_campaign_asset_count(
+            campaign_goal=(
                 original_prompt
             ),
-            brand_context=brand_context,
-            visual_references=references,
-            research_summary=research_summary,
-            research_sources=research_sources,
-            approved_creative_direction=approved_direction,
+            asset_count=(
+                detect_campaign_asset_count(
+                    original_prompt
+                )
+            ),
+            brand_context=(
+                brand_context
+            ),
+            visual_references=(
+                references
+            ),
+            research_summary=(
+                research_summary
+            ),
+            research_sources=(
+                research_sources
+            ),
+            approved_creative_direction=(
+                approved_direction
+            ),
             allow_fallback=True,
         )
 
@@ -2219,22 +2677,26 @@ def prepare_generation_input(
 
         brand_id = research_brand
 
-    brand_context = build_brand_context_for_request(
-        core,
-        user_id,
-        brand_id,
-        original_prompt,
+    brand_context = (
+        build_brand_context_for_request(
+            core,
+            user_id,
+            brand_id,
+            original_prompt,
+        )
     )
 
-    model_brand_context = safe_brand_context_for_model(
-        brand_context
+    model_brand_context = (
+        safe_brand_context_for_model(
+            brand_context
+        )
     )
 
     references = safe_list(
         brand_context.get(
             "references"
         )
-    )[:5]
+    )[:3]
 
     strict_masterpiece = bool(
         is_masterpiece_request(
@@ -2260,16 +2722,25 @@ def prepare_generation_input(
     )
 
     creative_response = None
+
     creative_error = ""
 
     try:
 
-        creative_response = run_creative_brain(
-            user_request=creative_request,
-            brand_context=model_brand_context,
-            visual_references=references,
-            mode=creative_mode,
-            top_count=3,
+        creative_response = (
+            run_creative_brain(
+                user_request=(
+                    creative_request
+                ),
+                brand_context=(
+                    model_brand_context
+                ),
+                visual_references=(
+                    references
+                ),
+                mode=creative_mode,
+                top_count=3,
+            )
         )
 
     except Exception as error:
@@ -2284,25 +2755,37 @@ def prepare_generation_input(
             creative_error,
         )
 
-    runtime_state = creative_runtime_state(
-        creative_response
+    runtime_state = (
+        creative_runtime_state(
+            creative_response
+        )
     )
 
     campaign = try_build_campaign(
         core=core,
         user_id=user_id,
         brand_id=brand_id,
-        original_prompt=original_prompt,
-        creative_response=creative_response,
-        brand_context=model_brand_context,
-        references=references,
-        research_summary=research.get(
-            "research_summary",
-            "",
+        original_prompt=(
+            original_prompt
         ),
-        research_sources=safe_list(
+        creative_response=(
+            creative_response
+        ),
+        brand_context=(
+            model_brand_context
+        ),
+        references=references,
+        research_summary=(
             research.get(
-                "sources_used"
+                "research_summary",
+                "",
+            )
+        ),
+        research_sources=(
+            safe_list(
+                research.get(
+                    "sources_used"
+                )
             )
         ),
     )
@@ -2328,17 +2811,21 @@ def prepare_generation_input(
             +
             safe_json_string(
                 model_brand_context,
-                12000,
+                10000,
             )
         )
 
-    winner_instruction = build_winner_instruction(
-        creative_response
+    winner_instruction = (
+        build_winner_instruction(
+            creative_response
+        )
     )
 
     if winner_instruction:
 
-        final_prompt += winner_instruction
+        final_prompt += (
+            winner_instruction
+        )
 
     campaign_execution = safe_dict(
         campaign.get(
@@ -2356,40 +2843,98 @@ def prepare_generation_input(
             +
             safe_json_string(
                 campaign_execution,
-                12000,
+                10000,
             )
         )
 
+    selected_stc_style = ""
+
     if brand_id == "stc_bank":
+
+        selected_stc_style = (
+            detect_stc_visual_style(
+                original_prompt
+            )
+        )
 
         final_prompt += """
 
 ========================================
-STC BANK PRODUCTION LOCK
+STC BANK FINAL EXECUTION LOCK
 ========================================
+
+IMAGE ONLY.
+
+Do NOT generate:
+- headline
+- subtitle
+- body copy
+- CTA
+- price
+- percentage
+- legal text
+- STC wordmark
+- STC Bank logo
+- VISA / Mastercard logo
+- watermark
+- readable invented banking UI
+
+Reserve clean negative space for manual typography and
+official brand assets.
 
 Create premium, realistic Saudi commercial advertising.
 
-Use STC Bank brand identity with restraint.
-Do not turn brand purple into random decoration.
+STC Bank identity is NOT "purple + neon".
 
-For merchant payments / e-commerce / POS:
-show a believable premium merchant/customer commerce moment.
+Purple is optional and controlled.
+Do not flood the entire environment with purple unless the
+selected style is explicitly a purple architectural studio.
 
-Do NOT use:
+Prefer:
+- believable human action
+- real Saudi environments
+- refined materials
+- accurate perspective
+- physically correct support
+- motivated light
+- elegant contact shadows
+- controlled reflections
+- clean composition
+- strong camera choice
+- premium negative space
+
+Never add:
 - floating coins
-- reward points
-- magic portals
+- floating cards
+- floating phones
+- floating POS devices
 - random HUD
+- connection lines
 - network lines
 - blue laser beams
-- floating banking cards
-- floating payment icons
-- generic fintech neon
+- purple neon trails
+- glowing transfer paths
+- random particles
+- generic fintech decoration
 
-The final image must look photographically believable,
-commercially usable and premium.
+For merchant payments / e-commerce / POS:
+communicate real commerce through merchant + customer +
+product/order + device + physical environment.
+
+Do not use a person simply pointing a POS terminal at camera.
 """.rstrip()
+
+    # =====================================================
+    # MODEL OVERRIDE
+    #
+    # Explicit request wins.
+    #
+    # Otherwise STC Smart fallback = Nano Banana 2.
+    # =====================================================
+
+    requested_mode = detect_generation_mode(
+        original_prompt
+    )
 
     mode_override = clean_text(
         research.get(
@@ -2399,13 +2944,17 @@ commercially usable and premium.
         100,
     )
 
-    if (
-        brand_id == "stc_bank"
-        and
-        not mode_override
-    ):
+    if requested_mode != "auto":
 
-        mode_override = "best"
+        mode_override = (
+            requested_mode
+        )
+
+    elif brand_id == "stc_bank":
+
+        mode_override = (
+            "google_fast"
+        )
 
     return {
         "original_prompt":
@@ -2422,6 +2971,9 @@ commercially usable and premium.
 
         "benefit_family":
             benefit_family,
+
+        "selected_stc_style":
+            selected_stc_style,
 
         "research_applied":
             bool(
@@ -2631,9 +3183,13 @@ def generate_masterpiece_images(
         prepared
     )
 
-    if status.get(
-        "route"
-    ) != "masterpiece":
+    if (
+        status.get(
+            "route"
+        )
+        !=
+        "masterpiece"
+    ):
 
         return (
             [],
@@ -2680,7 +3236,11 @@ def generate_masterpiece_images(
     )
 
     images: List[Any] = []
-    metadata: List[Dict[str, Any]] = []
+
+    metadata: List[
+        Dict[str, Any]
+    ] = []
+
     errors: List[str] = []
 
     for index in range(
@@ -2722,13 +3282,27 @@ def generate_masterpiece_images(
                 core=core,
                 user_id=user_id,
                 brand_id=brand_id,
-                original_request=request_text,
-                creative_direction=direction,
-                brand_context=brand_context,
-                camera_direction=camera,
-                aspect_ratio=aspect_ratio,
-                mode=PRODUCTION_MODE_MASTERPIECE,
-                target_model=TARGET_GEMINI,
+                original_request=(
+                    request_text
+                ),
+                creative_direction=(
+                    direction
+                ),
+                brand_context=(
+                    brand_context
+                ),
+                camera_direction=(
+                    camera
+                ),
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                mode=(
+                    PRODUCTION_MODE_MASTERPIECE
+                ),
+                target_model=(
+                    TARGET_GEMINI
+                ),
             )
 
             final_image = getattr(
@@ -2959,11 +3533,13 @@ def send_photo_bytes(
     ):
 
         raise RuntimeError(
-            "Telegram sendPhoto failed: "
-            +
-            clean_text(
-                payload,
-                2000,
+            (
+                "Telegram sendPhoto failed: "
+                +
+                clean_text(
+                    payload,
+                    2000,
+                )
             )
         )
 
@@ -3040,11 +3616,13 @@ def send_document_bytes(
     ):
 
         raise RuntimeError(
-            "Telegram sendDocument failed: "
-            +
-            clean_text(
-                payload,
-                2000,
+            (
+                "Telegram sendDocument failed: "
+                +
+                clean_text(
+                    payload,
+                    2000,
+                )
             )
         )
 
@@ -3125,54 +3703,58 @@ def deliver_generated_image(
 
     if SEND_PREVIEW:
 
-        preview_result = send_photo_bytes(
-            core,
-            chat_id,
-            image_bytes,
-            filename,
-            mime_type,
-            (
-                "XPAND "
-                +
-                str(
-                    index
-                )
-                +
-                "/"
-                +
-                str(
-                    total
-                )
-                +
+        preview_result = (
+            send_photo_bytes(
+                core,
+                chat_id,
+                image_bytes,
+                filename,
+                mime_type,
                 (
-                    "\n"
+                    "XPAND "
                     +
-                    model
-                    if model
-                    else ""
-                )
-            ),
+                    str(
+                        index
+                    )
+                    +
+                    "/"
+                    +
+                    str(
+                        total
+                    )
+                    +
+                    (
+                        "\n"
+                        +
+                        model
+                        if model
+                        else ""
+                    )
+                ),
+            )
         )
 
     if SEND_ORIGINAL:
 
-        original_result = send_document_bytes(
-            core,
-            chat_id,
-            image_bytes,
-            filename,
-            mime_type,
-            (
-                "النسخة الأصلية"
-                +
+        original_result = (
+            send_document_bytes(
+                core,
+                chat_id,
+                image_bytes,
+                filename,
+                mime_type,
                 (
-                    " | "
+                    "النسخة الأصلية"
                     +
-                    model
-                    if model
-                    else ""
-                )
-            ),
+                    (
+                        " | "
+                        +
+                        model
+                        if model
+                        else ""
+                    )
+                ),
+            )
         )
 
     return {
@@ -3234,6 +3816,19 @@ def generate_and_deliver(
             "اكتبلي وصف الصورة اللي بدك إياها."
         )
 
+    # =====================================================
+    # SAFETY NET:
+    # STC must have a selected visual style.
+    # =====================================================
+
+    if stc_style_question_needed(
+        prompt
+    ):
+
+        raise STCStyleSelectionRequired(
+            get_stc_style_question()
+        )
+
     number = detect_requested_image_count(
         prompt
     )
@@ -3282,11 +3877,15 @@ def generate_and_deliver(
 
     creative_score = None
 
-    winner = getattr(
-        creative_response,
-        "winner",
-        None,
-    ) if creative_response else None
+    winner = (
+        getattr(
+            creative_response,
+            "winner",
+            None,
+        )
+        if creative_response
+        else None
+    )
 
     if winner is not None:
 
@@ -3315,7 +3914,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND UNIFIED VISUAL REQUEST V3.3"
+        " XPAND UNIFIED VISUAL REQUEST V3.4"
     )
     print(
         "=========================================="
@@ -3329,6 +3928,14 @@ def generate_and_deliver(
     print(
         "benefit_family =",
         benefit_family,
+    )
+    print(
+        "stc_style =",
+        prepared.get(
+            "selected_stc_style"
+        )
+        or
+        "-",
     )
     print(
         "research =",
@@ -3350,8 +3957,10 @@ def generate_and_deliver(
         "creative_score =",
         (
             creative_score
-            if creative_score is not None
-            else "n/a"
+            if creative_score
+            is not None
+            else
+            "n/a"
         ),
     )
     print(
@@ -3376,6 +3985,12 @@ def generate_and_deliver(
         "allow_smart_engine_fallback =",
         runtime.get(
             "allow_smart_engine_fallback"
+        ),
+    )
+    print(
+        "smart_mode_override =",
+        prepared.get(
+            "mode_override"
         ),
     )
     print(
@@ -3444,21 +4059,27 @@ def generate_and_deliver(
 
     if use_masterpiece:
 
-        guard_status = enforce_masterpiece_guard(
-            prepared
+        guard_status = (
+            enforce_masterpiece_guard(
+                prepared
+            )
         )
 
-        if guard_status.get(
-            "route"
-        ) == "masterpiece":
+        if (
+            guard_status.get(
+                "route"
+            )
+            ==
+            "masterpiece"
+        ):
 
             try:
 
                 core.send_message(
                     chat_id,
                     (
-                        "تمام، الاتجاه الإبداعي اجتاز "
-                        "Masterpiece Gate. ببدأ الإنتاج."
+                        "الاتجاه الإبداعي اجتاز "
+                        "Masterpiece Gate، ببدأ الإنتاج."
                     ),
                 )
 
@@ -3489,7 +4110,7 @@ def generate_and_deliver(
                     "⚠️ Masterpiece produced no qualified image."
                 )
                 print(
-                    "⚡ Continuing with Smart Engine fallback."
+                    "⚡ Continuing with Nano Banana 2 Smart fallback."
                 )
 
         else:
@@ -3519,7 +4140,7 @@ def generate_and_deliver(
             )
 
     # =====================================================
-    # SMART ENGINE FALLBACK
+    # SMART FALLBACK
     # =====================================================
 
     smart_fallback_allowed = bool(
@@ -3554,8 +4175,14 @@ def generate_and_deliver(
             )
         )
 
-        # On a technical Creative Brain failure the image
-        # engine must be able to finish the user's request.
+        if (
+            mode == "auto"
+            and
+            brand_id == "stc_bank"
+        ):
+
+            mode = "google_fast"
+
         if (
             runtime.get(
                 "state"
@@ -3568,7 +4195,14 @@ def generate_and_deliver(
             "auto"
         ):
 
-            mode = "best"
+            mode = (
+                "google_fast"
+                if brand_id
+                ==
+                "stc_bank"
+                else
+                "best"
+            )
 
         print(
             "⚡ SMART IMAGE ENGINE"
@@ -3577,6 +4211,20 @@ def generate_and_deliver(
             +
             mode
         )
+
+        if (
+            brand_id
+            ==
+            "stc_bank"
+            and
+            mode
+            ==
+            "google_fast"
+        ):
+
+            print(
+                "🍌 STC SMART MODEL: Nano Banana 2"
+            )
 
         try:
 
@@ -3612,7 +4260,10 @@ def generate_and_deliver(
             ):
 
                 raise RuntimeError(
-                    "Smart image engine returned no image."
+                    (
+                        "Smart image engine "
+                        "returned no image."
+                    )
                 )
 
             images = safe_list(
@@ -3747,6 +4398,12 @@ def generate_and_deliver(
         "benefit_family":
             benefit_family,
 
+        "selected_stc_style":
+            prepared.get(
+                "selected_stc_style",
+                "",
+            ),
+
         "creative_mode":
             creative_mode,
 
@@ -3761,6 +4418,12 @@ def generate_and_deliver(
         "guard_route":
             guard_status.get(
                 "route"
+            ),
+
+        "smart_mode":
+            prepared.get(
+                "mode_override",
+                "",
             ),
 
         "images":
@@ -3787,6 +4450,110 @@ def handle_text_image_request(
     user_id,
     text,
 ) -> bool:
+
+    # =====================================================
+    # PENDING STC STYLE ANSWER
+    # =====================================================
+
+    resumed = (
+        consume_pending_stc_style_reply(
+            chat_id=chat_id,
+            user_id=user_id,
+            text=text,
+        )
+    )
+
+    if resumed:
+
+        resumed_request, source_channel = (
+            resumed
+        )
+
+        try:
+
+            style = (
+                detect_stc_visual_style(
+                    resumed_request
+                )
+            )
+
+            style_name = (
+                stc_style_display_name(
+                    style
+                )
+                or
+                style
+            )
+
+            core.send_message(
+                chat_id,
+                (
+                    "تمام، الأسلوب: "
+                    +
+                    style_name
+                    +
+                    " ✅\n"
+                    +
+                    "بكمل على نفس الطلب."
+                ),
+            )
+
+            result = generate_and_deliver(
+                core,
+                chat_id,
+                user_id,
+                resumed_request,
+                source_channel=(
+                    source_channel
+                    or
+                    "telegram_text"
+                ),
+            )
+
+            if result.get(
+                "errors"
+            ):
+
+                print(
+                    "⚠️ XPAND VISUAL PIPELINE INFO:",
+                    result.get(
+                        "errors"
+                    ),
+                )
+
+        except Exception as error:
+
+            message = clean_text(
+                error,
+                2000,
+            )
+
+            print(
+                "❌ STC RESUMED REQUEST:",
+                message,
+            )
+
+            try:
+
+                core.send_message(
+                    chat_id,
+                    (
+                        "صار خلل بالإنتاج البصري.\n"
+                        "الخطأ: "
+                        +
+                        message
+                    ),
+                )
+
+            except Exception:
+
+                pass
+
+        return True
+
+    # =====================================================
+    # BUDGET COMMAND
+    # =====================================================
 
     source = normalized(
         text
@@ -3839,6 +4606,50 @@ def handle_text_image_request(
 
         return False
 
+    prompt = extract_image_prompt(
+        text
+    )
+
+    # =====================================================
+    # NEW STC REQUEST WITHOUT STYLE
+    # =====================================================
+
+    if stc_style_question_needed(
+        prompt
+    ):
+
+        remember_pending_stc_style(
+            chat_id=chat_id,
+            user_id=user_id,
+            request_text=text,
+            source_channel=(
+                "telegram_text"
+            ),
+        )
+
+        try:
+
+            ask_for_stc_style(
+                core,
+                chat_id,
+            )
+
+        except Exception as error:
+
+            print(
+                "⚠️ STC STYLE QUESTION:",
+                clean_text(
+                    error,
+                    1000,
+                ),
+            )
+
+        return True
+
+    # =====================================================
+    # GENERATE
+    # =====================================================
+
     try:
 
         result = generate_and_deliver(
@@ -3859,6 +4670,28 @@ def handle_text_image_request(
                     "errors"
                 ),
             )
+
+    except STCStyleSelectionRequired:
+
+        remember_pending_stc_style(
+            chat_id=chat_id,
+            user_id=user_id,
+            request_text=text,
+            source_channel=(
+                "telegram_text"
+            ),
+        )
+
+        try:
+
+            ask_for_stc_style(
+                core,
+                chat_id,
+            )
+
+        except Exception:
+
+            pass
 
     except MasterpieceGuardError as error:
 
@@ -4026,6 +4859,75 @@ def install(
             user_message,
         ):
 
+            # =============================================
+            # PENDING STYLE ANSWER
+            # =============================================
+
+            resumed = (
+                consume_pending_stc_style_reply(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    text=user_message,
+                )
+            )
+
+            if resumed:
+
+                resumed_request, source_channel = (
+                    resumed
+                )
+
+                try:
+
+                    result = generate_and_deliver(
+                        core,
+                        chat_id,
+                        user_id,
+                        resumed_request,
+                        source_channel=(
+                            source_channel
+                            or
+                            "telegram_voice"
+                        ),
+                    )
+
+                    if result.get(
+                        "guard_route"
+                    ) == "smart_fallback":
+
+                        return (
+                            "تم. كملت نفس الطلب على "
+                            "Nano Banana 2 Smart Engine "
+                            "وبعثتلك الصورة."
+                        )
+
+                    return (
+                        "تم، كملت نفس الطلب "
+                        "وبعثتلك النتيجة."
+                    )
+
+                except Exception as error:
+
+                    message = clean_text(
+                        error,
+                        1500,
+                    )
+
+                    print(
+                        "❌ XPAND STC VOICE RESUME:",
+                        message,
+                    )
+
+                    return (
+                        "صار خلل بالإنتاج البصري: "
+                        +
+                        message
+                    )
+
+            # =============================================
+            # NON-IMAGE REQUEST
+            # =============================================
+
             if not looks_like_image_generation_request(
                 user_message
             ):
@@ -4036,6 +4938,37 @@ def install(
                     user_message,
                 )
 
+            # =============================================
+            # NEW STC REQUEST WITHOUT STYLE
+            # =============================================
+
+            if stc_style_question_needed(
+                user_message
+            ):
+
+                remember_pending_stc_style(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    request_text=user_message,
+                    source_channel=(
+                        "telegram_voice"
+                    ),
+                )
+
+                return (
+                    get_stc_style_question()
+                    +
+                    " 1) واقعي فوتوغرافي، "
+                    +
+                    "2) بيئة بنفسجية استوديو، "
+                    +
+                    "3) واقعي سريالي راقٍ."
+                )
+
+            # =============================================
+            # GENERATION
+            # =============================================
+
             try:
 
                 result = generate_and_deliver(
@@ -4043,12 +4976,24 @@ def install(
                     chat_id,
                     user_id,
                     user_message,
-                    source_channel="telegram_voice",
+                    source_channel=(
+                        "telegram_voice"
+                    ),
                 )
 
                 if result.get(
                     "guard_route"
                 ) == "smart_fallback":
+
+                    if result.get(
+                        "brand_id"
+                    ) == "stc_bank":
+
+                        return (
+                            "تم. كملت الطلب تلقائيًا "
+                            "عبر Nano Banana 2 "
+                            "وبعثتلك الصورة."
+                        )
 
                     return (
                         "تم. Creative Brain تعرّض لمشكلة، "
@@ -4059,6 +5004,21 @@ def install(
                 return (
                     "تم، ولّدتلك الصورة وبعثتلك "
                     "المعاينة والنسخة الأصلية."
+                )
+
+            except STCStyleSelectionRequired:
+
+                remember_pending_stc_style(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    request_text=user_message,
+                    source_channel=(
+                        "telegram_voice"
+                    ),
+                )
+
+                return (
+                    get_stc_style_question()
                 )
 
             except Exception as error:
@@ -4113,7 +5073,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.3"
+        " XPAND UNIFIED VISUAL RUNTIME V3.4"
     )
     print(
         "=================================================="
@@ -4126,6 +5086,30 @@ def install(
     )
     print(
         "✅ Voice Image Routing"
+    )
+    print(
+        "✅ STC Style Selection Gate"
+    )
+    print(
+        "✅ STC Pending Request Resume"
+    )
+    print(
+        "✅ STC Premium Realistic"
+    )
+    print(
+        "✅ STC Purple Architectural"
+    )
+    print(
+        "✅ STC Augmented Realism"
+    )
+    print(
+        "✅ STC Image-Only / No Copy"
+    )
+    print(
+        "✅ STC No Generated Logo"
+    )
+    print(
+        "✅ STC Nano Banana 2 Smart Default"
     )
     print(
         "✅ STC Bank Masterpiece Mode"
@@ -4190,6 +5174,21 @@ def install(
 
         "merchant_payments":
             True,
+
+        "stc_style_gate":
+            True,
+
+        "stc_pending_resume":
+            True,
+
+        "stc_nano_banana_2":
+            True,
+
+        "stc_no_generated_text":
+            True,
+
+        "stc_no_generated_logo":
+            True,
     }
 
 
@@ -4204,11 +5203,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND IMAGE TELEGRAM SELF TEST"
-    )
-    print(
-        " VERSION",
-        VERSION,
+        " XPAND IMAGE TELEGRAM V3.4 SELF TEST"
     )
     print(
         "=========================================="
@@ -4224,8 +5219,13 @@ if __name__ == "__main__":
             "install"
         )
 
-    merchant = detect_runtime_benefit_family(
-        "خدمات التجارة الإلكترونية ونقاط البيع"
+    merchant = (
+        detect_runtime_benefit_family(
+            (
+                "خدمات التجارة الإلكترونية "
+                "ونقاط البيع"
+            )
+        )
     )
 
     if merchant != "merchant_payments":
@@ -4256,6 +5256,107 @@ if __name__ == "__main__":
             "image_request"
         )
 
+    if not stc_style_question_needed(
+        (
+            "أنشئ صورة إعلانية "
+            "لبنك STC Bank"
+        )
+    ):
+
+        failures.append(
+            "style_question_needed"
+        )
+
+    if stc_style_question_needed(
+        (
+            "أنشئ صورة إعلانية "
+            "لبنك STC Bank "
+            "واقعي فوتوغرافي"
+        )
+    ):
+
+        failures.append(
+            "style_question_not_needed"
+        )
+
+    if (
+        resolve_stc_style_reply(
+            "1"
+        )
+        !=
+        STYLE_PREMIUM_REALISTIC
+    ):
+
+        failures.append(
+            "style_reply_1"
+        )
+
+    if (
+        resolve_stc_style_reply(
+            "2"
+        )
+        !=
+        STYLE_PURPLE_ARCHITECTURAL
+    ):
+
+        failures.append(
+            "style_reply_2"
+        )
+
+    if (
+        resolve_stc_style_reply(
+            "3"
+        )
+        !=
+        STYLE_AUGMENTED_REALISM
+    ):
+
+        failures.append(
+            "style_reply_3"
+        )
+
+    resumed_test = (
+        build_stc_style_selected_request(
+            (
+                "أنشئ إعلان STC Bank "
+                "عن نقاط البيع"
+            ),
+            STYLE_PREMIUM_REALISTIC,
+        )
+    )
+
+    if (
+        "واقعي فوتوغرافي"
+        not in
+        resumed_test
+    ):
+
+        failures.append(
+            "pending_request_style_merge"
+        )
+
+    if (
+        "لا تضف نصوصًا"
+        not in
+        resumed_test
+    ):
+
+        failures.append(
+            "no_text_merge"
+        )
+
+    if (
+        detect_generation_mode(
+            "استخدم nano banana 2"
+        )
+        !=
+        "google_fast"
+    ):
+
+        failures.append(
+            "nano_banana_2_route"
+        )
+
     if failures:
 
         print(
@@ -4264,7 +5365,10 @@ if __name__ == "__main__":
         )
 
         raise RuntimeError(
-            "XPAND image telegram self-test failed."
+            (
+                "XPAND image telegram "
+                "self-test failed."
+            )
         )
 
     print(
@@ -4280,9 +5384,30 @@ if __name__ == "__main__":
         "✅ image request detection: PASS"
     )
     print(
+        "✅ STC style question: PASS"
+    )
+    print(
+        "✅ explicit STC style bypasses question: PASS"
+    )
+    print(
+        "✅ style answer 1/2/3: PASS"
+    )
+    print(
+        "✅ pending request resume: PASS"
+    )
+    print(
+        "✅ STC no-text merge: PASS"
+    )
+    print(
+        "✅ Nano Banana 2 routing: PASS"
+    )
+    print(
         "✅ SELF TEST: PASS"
     )
     print(
         "🚫 No API calls were made"
+    )
+    print(
+        "🚫 No images were generated"
     )
     print("")
