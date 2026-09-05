@@ -1,0 +1,262 @@
+{
+  "brand_id": "stc_bank",
+  "brand_name": "STC Bank",
+  "identity_keywords": [
+    "modern Saudi banking",
+    "premium confidence",
+    "clean digital-first experience",
+    "refined purple and green brand accents",
+    "advanced but human",
+    "commercial sophistication",
+    "premium service design",
+    "trust and elegance"
+  ],
+  "required_brand_signals": [
+    "Saudi authenticity with premium execution",
+    "disciplined purple-green-white brand language",
+    "clean and high-end composition",
+    "financial confidence",
+    "smart digital-physical integration",
+    "advertising-grade polish",
+    "not generic fintech clutter"
+  ],
+  "banned_patterns": [
+    "wooden checkout counter",
+    "generic office",
+    "plain counter",
+    "floating card",
+    "generic fintech clutter",
+    "empty purple room",
+    "random neon",
+    "cheap stock-photo look",
+    "unrelated banking UI",
+    "overused card-on-pedestal composition"
+  ],
+  "approved_mechanisms": [
+    "commerce fusion",
+    "tap triggers fulfillment",
+    "merchant operating system",
+    "online-offline visual bridge",
+    "spatial choreography",
+    "benefit-as-mechanism",
+    "system confidence"
+  ],
+  "style_families": {
+    "premium_realistic": {
+      "mood": [
+        "luxury commercial realism",
+        "Saudi modern lifestyle",
+        "trust",
+        "elegance",
+        "refined confidence"
+      ],
+      "colors": [
+        "restrained purple accents",
+        "green accents",
+        "white",
+        "soft neutrals",
+        "premium stone and matte textures"
+      ],
+      "materials": [
+        "travertine",
+        "limestone",
+        "matte metal",
+        "premium packaging",
+        "architectural wood only as secondary support"
+      ],
+      "lighting": [
+        "soft daylight",
+        "premium commercial polish",
+        "controlled reflections",
+        "clean highlight discipline"
+      ],
+      "scene_rules": [
+        "look like a real ad campaign",
+        "not a generic documentary scene",
+        "preserve elegant copy space",
+        "show benefit through composition",
+        "show brand identity through art direction"
+      ]
+    },
+    "purple_architectural": {
+      "mood": [
+        "high-end studio control",
+        "bold brand confidence",
+        "premium architectural geometry"
+      ],
+      "colors": [
+        "deeper STC-inspired purple",
+        "green accents",
+        "white",
+        "graphite"
+      ],
+      "materials": [
+        "matte surfaces",
+        "architectural blocks",
+        "glass",
+        "metal"
+      ],
+      "lighting": [
+        "controlled studio light",
+        "soft gradients",
+        "premium reflections"
+      ],
+      "scene_rules": [
+        "purple is controlled, not noisy neon",
+        "premium brand architecture",
+        "no cheap product pedestal clichés"
+      ]
+    },
+    "augmented_realism": {
+      "mood": [
+        "conceptual but believable",
+        "high-end commercial imagination",
+        "future-ready"
+      ],
+      "colors": [
+        "brand-led purple-green accents",
+        "clean neutrals",
+        "controlled light glow"
+      ],
+      "materials": [
+        "polished surfaces",
+        "glass",
+        "metal",
+        "architectural minimalism"
+      ],
+      "lighting": [
+        "cinematic ad glow",
+        "controlled premium contrast",
+        "high-end realism"
+      ],
+      "scene_rules": [
+        "use imagination as an advertising mechanism",
+        "remain credible",
+        "never feel like sci-fi clutter"
+      ]
+    }
+  },
+  "assets": [
+    {
+      "asset_id": "stc_brand_dna_01",
+      "path": "stc_bank/dna/stc_brand_dna_01.jpg",
+      "kind": "image",
+      "roles": ["brand_dna"],
+      "tags": ["approved", "campaign", "brand-tone"],
+      "benefit_families": ["merchant_payments", "cards", "digital_services"],
+      "visual_families": ["premium_realistic", "purple_architectural", "augmented_realism"],
+      "priority": 98,
+      "notes": "Official or approved STC Bank campaign aesthetic reference."
+    },
+    {
+      "asset_id": "stc_brand_dna_02",
+      "path": "stc_bank/dna/stc_brand_dna_02.jpg",
+      "kind": "image",
+      "roles": ["brand_dna"],
+      "tags": ["approved", "campaign", "composition"],
+      "benefit_families": ["merchant_payments", "cards"],
+      "visual_families": ["premium_realistic", "purple_architectural"],
+      "priority": 96,
+      "notes": "Approved advertising composition style."
+    },
+    {
+      "asset_id": "stc_brand_dna_03",
+      "path": "stc_bank/dna/stc_brand_dna_03.jpg",
+      "kind": "image",
+      "roles": ["brand_dna"],
+      "tags": ["approved", "lifestyle", "saudi"],
+      "benefit_families": ["merchant_payments", "financing", "digital_services"],
+      "visual_families": ["premium_realistic", "augmented_realism"],
+      "priority": 95,
+      "notes": "Saudi lifestyle premium brand tone."
+    },
+    {
+      "asset_id": "stc_cards_01",
+      "path": "stc_bank/products/stc_cards_01.jpg",
+      "kind": "image",
+      "roles": ["physical_product"],
+      "tags": ["cards", "product", "official"],
+      "benefit_families": ["cards", "merchant_payments"],
+      "visual_families": ["premium_realistic", "purple_architectural"],
+      "priority": 92,
+      "notes": "Official card family visual reference."
+    },
+    {
+      "asset_id": "stc_cards_02",
+      "path": "stc_bank/products/stc_cards_02.jpg",
+      "kind": "image",
+      "roles": ["physical_product"],
+      "tags": ["cards", "product", "official"],
+      "benefit_families": ["cards", "merchant_payments"],
+      "visual_families": ["premium_realistic", "purple_architectural"],
+      "priority": 89,
+      "notes": "Alternative product shot."
+    },
+    {
+      "asset_id": "stc_app_ui_01",
+      "path": "stc_bank/ui/stc_app_ui_01.jpg",
+      "kind": "image",
+      "roles": ["ui_product"],
+      "tags": ["app", "ui", "official"],
+      "benefit_families": ["merchant_payments", "digital_services", "cards"],
+      "visual_families": ["premium_realistic", "augmented_realism"],
+      "priority": 91,
+      "notes": "Official app screen related to merchant or digital financial use."
+    },
+    {
+      "asset_id": "stc_app_ui_02",
+      "path": "stc_bank/ui/stc_app_ui_02.jpg",
+      "kind": "image",
+      "roles": ["ui_product"],
+      "tags": ["app", "ui", "official"],
+      "benefit_families": ["digital_services", "merchant_payments"],
+      "visual_families": ["premium_realistic", "augmented_realism"],
+      "priority": 88,
+      "notes": "Second app reference for variety."
+    },
+    {
+      "asset_id": "stc_layout_01",
+      "path": "stc_bank/layouts/stc_layout_01.jpg",
+      "kind": "image",
+      "roles": ["layout", "campaign_style"],
+      "tags": ["layout", "copy-space", "approved"],
+      "benefit_families": ["merchant_payments", "cards", "financing"],
+      "visual_families": ["premium_realistic", "purple_architectural"],
+      "priority": 90,
+      "notes": "Reference for visual hierarchy and copy-space discipline."
+    },
+    {
+      "asset_id": "stc_layout_02",
+      "path": "stc_bank/layouts/stc_layout_02.jpg",
+      "kind": "image",
+      "roles": ["layout", "campaign_style"],
+      "tags": ["layout", "composition", "approved"],
+      "benefit_families": ["merchant_payments", "digital_services"],
+      "visual_families": ["premium_realistic", "augmented_realism"],
+      "priority": 87,
+      "notes": "Reference for campaign framing and branded scene composition."
+    },
+    {
+      "asset_id": "stc_merchant_ref_01",
+      "path": "stc_bank/merchant/stc_merchant_ref_01.jpg",
+      "kind": "image",
+      "roles": ["brand_dna", "merchant_context"],
+      "tags": ["merchant", "saudi", "approved"],
+      "benefit_families": ["merchant_payments"],
+      "visual_families": ["premium_realistic"],
+      "priority": 94,
+      "notes": "Merchant-lifestyle reference aligned to STC identity."
+    },
+    {
+      "asset_id": "stc_merchant_ref_02",
+      "path": "stc_bank/merchant/stc_merchant_ref_02.jpg",
+      "kind": "image",
+      "roles": ["brand_dna", "merchant_context"],
+      "tags": ["merchant", "operations", "approved"],
+      "benefit_families": ["merchant_payments"],
+      "visual_families": ["premium_realistic", "augmented_realism"],
+      "priority": 93,
+      "notes": "Merchant operations aesthetic reference."
+    }
+  ]
+}
