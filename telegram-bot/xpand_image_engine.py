@@ -1,39 +1,93 @@
 # =========================================================
-# XPAND SMART IMAGE ENGINE V2.1
+# XPAND SMART IMAGE ENGINE V2.2.0
 #
 # FULL DROP-IN REPLACEMENT
 #
-# PRIMARY GOALS
-# ---------------------------------------------------------
-# - Nano Banana 2 is the default image-production route.
-# - Nano Banana Pro is explicit / deliberate, not automatic.
-# - Structured Creative Brain JSON uses GPT-5.6 Sol first.
-# - Cheap free-text direction uses Gemini Flash-Lite first.
-# - Real OpenAI fallback exists when Gemini image generation fails.
-# - STC Bank receives deterministic visual production direction.
-# - No automatic expensive critique/edit loops.
-# - Backwards-compatible API for XPAND Production / Telegram.
+# =========================================================
 #
-# IMPORTANT
+# FIXES
 # ---------------------------------------------------------
-# Running this file directly makes ZERO API calls.
 #
-# Dependencies:
-#   requests>=2.32.0,<3
-#   Pillow
+# 1. Structured Creative Brain / Vision QA:
+#
+#       GPT-5.6 Sol
+#       OpenAI Responses API
+#       strict JSON schema
+#
+#    OpenAI structured routing is FIRST when OpenAI is enabled.
+#
+#
+# 2. Gemini / Nano Banana 2 image generation:
+#
+#       gemini-3.1-flash-image
+#
+#    IMPORTANT:
+#
+#       NO thinking_level="low"
+#
+#    Gemini 3.1 Flash Image rejected that value in production.
+#    Image requests therefore do NOT send a thinking-level
+#    field at all.
+#
+#
+# 3. OpenAI enable semantics:
+#
+#       XPAND_OPENAI_ENABLED=true
+#
+#    Explicit false disables OpenAI.
+#
+#    If the variable is absent, an existing OPENAI_API_KEY
+#    automatically enables OpenAI for backwards compatibility.
+#
+#
+# 4. Cost routing:
+#
+#    structured JSON  -> OpenAI GPT-5.6 Sol first
+#    cheap free text  -> Gemini first
+#    image generation -> Nano Banana 2 first
+#    image fallback   -> GPT-Image-2 only when allowed
+#
+#
+# 5. STC:
+#
+#    Nano Banana 2 default.
+#    Nano Banana Pro is explicit only.
+#    No forced purple / fintech effects.
+#    STC image guard preserved.
+#
+#
+# COMPATIBILITY
+# ---------------------------------------------------------
+#
+# Public API preserved for:
+#
+#   xpand_image_telegram.py
+#   xpand_creative_brain.py
+#   xpand_production_engine.py
+#   xpand_visual_intelligence.py
+#
+#
+# Running:
+#
+#       python xpand_image_engine.py
+#
+# performs ZERO API calls.
+#
 # =========================================================
 
 from __future__ import annotations
 
 import base64
-import io
 import json
 import os
 import re
 import time
 import uuid
 
-from dataclasses import dataclass, field
+from dataclasses import (
+    dataclass,
+    field,
+)
 
 from typing import (
     Any,
@@ -46,12 +100,63 @@ from typing import (
 
 import requests
 
-from PIL import Image
 
-from xpand_stc_bank_skill import (
-    STC_BANK_IMAGE_GUARD,
-    is_stc_bank_request,
-)
+# =========================================================
+# STC BANK SKILL
+# =========================================================
+
+try:
+
+    from xpand_stc_bank_skill import (
+        STC_BANK_IMAGE_GUARD,
+        is_stc_bank_request,
+        detect_stc_benefit_family,
+    )
+
+except Exception:
+
+    STC_BANK_IMAGE_GUARD = ""
+
+    def is_stc_bank_request(
+        text: Any,
+    ) -> bool:
+
+        value = str(
+            text
+            or ""
+        ).lower()
+
+        return (
+            "stc bank"
+            in value
+            or
+            "بنك stc"
+            in value
+        )
+
+    def detect_stc_benefit_family(
+        text: Any,
+    ) -> str:
+
+        value = str(
+            text
+            or ""
+        ).lower()
+
+        if (
+            "نقاط البيع"
+            in value
+            or
+            "point of sale"
+            in value
+            or
+            "merchant"
+            in value
+        ):
+
+            return "merchant_payments"
+
+        return "premium_banking"
 
 
 # =========================================================
@@ -62,68 +167,7 @@ ENGINE_NAME = (
     "XPAND Smart Image Engine"
 )
 
-ENGINE_VERSION = "2.1.0"
-
-
-# =========================================================
-# ENV HELPERS
-# =========================================================
-
-def env_bool(
-    name: str,
-    default: bool,
-) -> bool:
-
-    fallback = (
-        "true"
-        if default
-        else "false"
-    )
-
-    value = str(
-        os.environ.get(
-            name,
-            fallback,
-        )
-    ).strip().lower()
-
-    return value in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }
-
-
-def env_int(
-    name: str,
-    default: int,
-    *,
-    minimum: int,
-    maximum: int,
-) -> int:
-
-    try:
-
-        value = int(
-            os.environ.get(
-                name,
-                str(default),
-            )
-            or default
-        )
-
-    except Exception:
-
-        value = default
-
-    return max(
-        minimum,
-        min(
-            maximum,
-            value,
-        ),
-    )
+ENGINE_VERSION = "2.2.0"
 
 
 # =========================================================
@@ -147,6 +191,67 @@ GEMINI_API_KEY = str(
 
 
 # =========================================================
+# OPENAI ENABLE SWITCH
+# =========================================================
+
+def env_bool(
+    name: str,
+    default: bool,
+) -> bool:
+
+    raw = os.environ.get(
+        name
+    )
+
+    if raw is None:
+
+        return bool(
+            default
+        )
+
+    value = str(
+        raw
+    ).strip().lower()
+
+    if not value:
+
+        return bool(
+            default
+        )
+
+    return value in {
+        "1",
+        "true",
+        "yes",
+        "on",
+        "enabled",
+    }
+
+
+#
+# IMPORTANT:
+#
+# Older XPAND deployments did not have
+# XPAND_OPENAI_ENABLED at all.
+#
+# Therefore:
+#
+#   variable absent + OPENAI_API_KEY exists
+#       =
+#   OpenAI enabled
+#
+# Explicit false still disables it.
+#
+
+OPENAI_ENABLED = env_bool(
+    "XPAND_OPENAI_ENABLED",
+    bool(
+        OPENAI_API_KEY
+    ),
+)
+
+
+# =========================================================
 # MODELS
 # =========================================================
 
@@ -166,6 +271,10 @@ OPENAI_DIRECTOR_MODEL = str(
 ).strip()
 
 
+#
+# Nano Banana 2
+#
+
 GOOGLE_IMAGE_FAST_MODEL = str(
     os.environ.get(
         "XPAND_GOOGLE_IMAGE_MODEL",
@@ -173,6 +282,10 @@ GOOGLE_IMAGE_FAST_MODEL = str(
     )
 ).strip()
 
+
+#
+# Explicit Pro route only.
+#
 
 GOOGLE_IMAGE_PRO_MODEL = str(
     os.environ.get(
@@ -182,6 +295,16 @@ GOOGLE_IMAGE_PRO_MODEL = str(
 ).strip()
 
 
+BEST_USE_PRO = env_bool(
+    "XPAND_BEST_USE_PRO",
+    False,
+)
+
+
+#
+# Cheap free-text Director.
+#
+
 GEMINI_DIRECTOR_MODEL = str(
     os.environ.get(
         "XPAND_GEMINI_DIRECTOR_MODEL",
@@ -190,112 +313,61 @@ GEMINI_DIRECTOR_MODEL = str(
 ).strip()
 
 
-GEMINI_DIRECTOR_RUNTIME_MODEL = (
-    GEMINI_DIRECTOR_MODEL
-)
+#
+# Gemini structured is FALLBACK only.
+#
+
+GEMINI_STRUCTURED_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_STRUCTURED_MODEL",
+        "gemini-3.5-flash",
+    )
+).strip()
 
 
-GEMINI_DIRECTOR_FALLBACK_MODELS = [
-    item.strip()
-    for item in str(
-        os.environ.get(
-            "XPAND_GEMINI_DIRECTOR_FALLBACK_MODELS",
-            (
-                "gemini-3.5-flash-lite,"
-                "gemini-3.5-flash"
-            ),
-        )
-    ).split(",")
-    if item.strip()
-]
+GEMINI_VISION_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_VISION_MODEL",
+        "gemini-3.1-pro-preview",
+    )
+).strip()
+
+
+GEMINI_VISION_STRUCTURED_MODEL = str(
+    os.environ.get(
+        "XPAND_GEMINI_VISION_STRUCTURED_MODEL",
+        GEMINI_VISION_MODEL,
+    )
+).strip()
 
 
 # =========================================================
-# DEFAULT ROUTING
+# DEFAULT SETTINGS
 # =========================================================
-
-#
-# AUTO still resolves to Nano Banana 2.
-#
-# Keeping the default as AUTO means explicit language such
-# as "Nano Banana Pro" or "best" can still be respected.
-#
 
 DEFAULT_MODE = str(
     os.environ.get(
         "XPAND_IMAGE_MODE",
-        "auto",
+        "google_fast",
     )
 ).strip().lower()
 
 
 DEFAULT_QUALITY = str(
     os.environ.get(
-        "XPAND_IMAGE_QUALITY",
-        "medium",
+        "XPAND_IMAGE_DEFAULT_QUALITY",
+        "high",
     )
 ).strip().lower()
 
 
-DEFAULT_IMAGE_SIZE = str(
-    os.environ.get(
-        "XPAND_IMAGE_SIZE",
-        "1K",
-    )
-).strip()
-
-
-#
-# BEST does NOT mean Pro by default.
-#
-# BEST = strongest normal XPAND prompt sent to Nano Banana 2.
-#
-# Pro is used only when this env variable is explicitly true.
-#
-
-BEST_USE_PRO = env_bool(
-    "XPAND_BEST_USE_PRO",
-    False,
-)
-
-
-#
-# If Gemini image generation fails, OpenAI may finish
-# the request when the caller permits fallback.
-#
-
-OPENAI_IMAGE_FALLBACK_ENABLED = env_bool(
-    "XPAND_OPENAI_IMAGE_FALLBACK",
-    True,
-)
-
-
 # =========================================================
-# DIRECTOR COST POLICY
+# OPENAI COST CONTROL
 # =========================================================
-
-#
-# Structured JSON is important to Creative Brain correctness.
-# GPT-5.6 Sol therefore handles structured work first.
-#
-# Free text / simple art direction goes to cheap Gemini Lite.
-#
-
-STRUCTURED_DIRECTOR_PREFER_OPENAI = env_bool(
-    "XPAND_STRUCTURED_DIRECTOR_PREFER_OPENAI",
-    True,
-)
-
-
-FREE_TEXT_DIRECTOR_PREFER_GEMINI = env_bool(
-    "XPAND_FREE_TEXT_DIRECTOR_PREFER_GEMINI",
-    True,
-)
-
 
 OPENAI_DIRECTOR_REASONING = str(
     os.environ.get(
-        "XPAND_OPENAI_DIRECTOR_REASONING",
+        "XPAND_IMAGE_DIRECTOR_REASONING",
         "low",
     )
 ).strip().lower()
@@ -303,48 +375,54 @@ OPENAI_DIRECTOR_REASONING = str(
 
 OPENAI_STRUCTURED_REASONING = str(
     os.environ.get(
-        "XPAND_OPENAI_STRUCTURED_REASONING",
+        "XPAND_IMAGE_STRUCTURED_REASONING",
         "low",
     )
 ).strip().lower()
 
 
-OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS = env_int(
-    "XPAND_OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS",
-    1800,
-    minimum=300,
-    maximum=20000,
+OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS = max(
+    800,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_DIRECTOR_MAX_OUTPUT_TOKENS",
+            "1400",
+        )
+        or 1400
+    ),
 )
 
 
-#
-# Creative Brain can return large structured concept arrays.
-#
-# Do not squeeze them into 1-2K output tokens.
-#
-
-OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS = env_int(
-    "XPAND_OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS",
-    9000,
-    minimum=2000,
-    maximum=32000,
+OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS = max(
+    2000,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_STRUCTURED_MAX_OUTPUT_TOKENS",
+            "9000",
+        )
+        or 9000
+    ),
 )
 
 
-OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS = env_int(
-    "XPAND_OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS",
-    12000,
-    minimum=3000,
-    maximum=40000,
+OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS = max(
+    OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS",
+            "12000",
+        )
+        or 12000
+    ),
 )
 
 
-OPENAI_STRUCTURED_RETRIES = env_int(
-    "XPAND_OPENAI_STRUCTURED_RETRIES",
-    2,
-    minimum=1,
-    maximum=2,
-)
+OPENAI_PROMPT_CACHE_MODE = str(
+    os.environ.get(
+        "XPAND_OPENAI_PROMPT_CACHE_MODE",
+        "explicit",
+    )
+).strip().lower()
 
 
 OPENAI_USAGE_LOGGING = env_bool(
@@ -370,70 +448,73 @@ if OPENAI_VISION_DETAIL not in {
     OPENAI_VISION_DETAIL = "high"
 
 
-#
-# Modern Responses API prompt cache controls.
-#
-# prompt_cache_key helps stable prefixes get grouped.
-# No extended 24h retention is enabled by default.
-#
-
-OPENAI_PROMPT_CACHE_KEY = str(
-    os.environ.get(
-        "XPAND_OPENAI_PROMPT_CACHE_KEY",
-        "xpand-director-v2",
-    )
-).strip()
-
-
-OPENAI_PROMPT_CACHE_RETENTION = str(
-    os.environ.get(
-        "XPAND_OPENAI_PROMPT_CACHE_RETENTION",
-        "",
-    )
-).strip()
-
-
-#
-# Compatibility field retained for status / older code.
-#
-
-OPENAI_PROMPT_CACHE_MODE = (
-    "automatic"
-    if OPENAI_PROMPT_CACHE_KEY
-    else "off"
-)
-
-
 # =========================================================
-# GEMINI COST POLICY
+# GEMINI IMAGE SETTINGS
 # =========================================================
 
-GEMINI_SEARCH_GROUNDING = env_bool(
-    "XPAND_GEMINI_SEARCH_GROUNDING",
-    True,
-)
-
-
 #
-# Image reasoning still happens inside Gemini image models.
-# These values keep normal Nano Banana 2 economical while
-# allowing deliberate Pro jobs to use stronger reasoning.
+# DO NOT feed this directly into Gemini image requests.
+#
+# This helper exists only to normalize legacy values if some
+# older XPAND module imports it.
 #
 
-GEMINI_FAST_IMAGE_THINKING = str(
+GEMINI_IMAGE_THINKING = str(
     os.environ.get(
-        "XPAND_GEMINI_FAST_IMAGE_THINKING",
-        "low",
+        "XPAND_GEMINI_IMAGE_THINKING",
+        "minimal",
     )
 ).strip().lower()
 
 
-GEMINI_PRO_IMAGE_THINKING = str(
-    os.environ.get(
-        "XPAND_GEMINI_PRO_IMAGE_THINKING",
+def normalize_gemini_image_thinking_level(
+    value: Any,
+) -> str:
+
+    level = str(
+        value
+        or ""
+    ).strip().lower()
+
+    if level in {
         "high",
+        "max",
+        "maximum",
+        "strong",
+        "full",
+    }:
+
+        return "high"
+
+    #
+    # IMPORTANT:
+    #
+    # low is a valid OpenAI reasoning level,
+    # but NOT a valid level for this Gemini image model.
+    #
+
+    if level in {
+        "",
+        "low",
+        "minimal",
+        "min",
+        "medium",
+        "balanced",
+        "fast",
+        "none",
+        "off",
+    }:
+
+        return "minimal"
+
+    return "minimal"
+
+
+GEMINI_IMAGE_THINKING = (
+    normalize_gemini_image_thinking_level(
+        GEMINI_IMAGE_THINKING
     )
-).strip().lower()
+)
 
 
 # =========================================================
@@ -512,11 +593,13 @@ PROVIDER_FUSION_PRO = "fusion_pro"
 
 PROVIDER_FUSION_BEST = "fusion_best"
 
-PROVIDER_OPENAI_FUSION = "openai_fusion"
+PROVIDER_OPENAI_FUSION = (
+    "openai_fusion"
+)
 
 
 # =========================================================
-# SUPPORTED SETTINGS
+# SUPPORTED VALUES
 # =========================================================
 
 SUPPORTED_ASPECT_RATIOS = {
@@ -555,12 +638,10 @@ SUPPORTED_OPENAI_QUALITIES = {
 
 SUPPORTED_REASONING_LEVELS = {
     "none",
-    "minimal",
     "low",
     "medium",
     "high",
     "xhigh",
-    "max",
 }
 
 
@@ -637,7 +718,10 @@ class GeneratedImage:
 
     request_id: str = ""
 
-    metadata: Dict[str, Any] = field(
+    metadata: Dict[
+        str,
+        Any,
+    ] = field(
         default_factory=dict
     )
 
@@ -685,12 +769,21 @@ class GeneratedImage:
         unique = (
             self.request_id
             or
-            uuid.uuid4().hex[:10]
+            uuid.uuid4().hex[
+                :10
+            ]
         )
 
         return (
-            f"XPAND-{provider_name}-{unique}"
-            f"{self.extension}"
+            "XPAND-"
+            +
+            provider_name
+            +
+            "-"
+            +
+            unique
+            +
+            self.extension
         )
 
 
@@ -739,7 +832,9 @@ def clean_text(
             "\x00",
             "",
         )
-        .strip()[:max_length]
+        .strip()[
+            :max_length
+        ]
     )
 
 
@@ -803,7 +898,7 @@ def normalize_arabic(
 
 
 def contains_any(
-    text: str,
+    text: Any,
     markers: Sequence[str],
 ) -> bool:
 
@@ -811,90 +906,453 @@ def contains_any(
         text
     )
 
-    return any(
-        normalize_arabic(
-            marker
-        )
-        in source
-        for marker in markers
-    )
+    for marker in markers:
 
-
-def extract_quoted_text(
-    prompt: str,
-) -> List[str]:
-
-    patterns = [
-        r'"([^"]+)"',
-        r"'([^']+)'",
-        r"“([^”]+)”",
-        r"«([^»]+)»",
-    ]
-
-    results: List[str] = []
-
-    for pattern in patterns:
-
-        for match in re.findall(
-            pattern,
-            prompt,
+        if (
+            normalize_arabic(
+                marker
+            )
+            in source
         ):
 
-            value = clean_text(
-                match,
-                1000,
-            )
+            return True
 
-            if (
-                value
-                and
-                value not in results
-            ):
-
-                results.append(
-                    value
-                )
-
-    return results
+    return False
 
 
-def _normalize_digits_and_colon(
+def safe_dict(
     value: Any,
-) -> str:
+) -> Dict[str, Any]:
 
-    text = clean_text(
-        value,
-        50000,
-    )
-
-    text = text.translate(
-        str.maketrans(
-            "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
-            "01234567890123456789",
+    return (
+        value
+        if isinstance(
+            value,
+            dict,
         )
+        else {}
     )
 
-    text = re.sub(
-        r"\s*[：﹕︓:]\s*",
-        ":",
-        text,
+
+def safe_list(
+    value: Any,
+) -> List[Any]:
+
+    return (
+        value
+        if isinstance(
+            value,
+            list,
+        )
+        else []
     )
 
-    return text
+
+def safe_float(
+    value: Any,
+    default: float = 0.0,
+) -> float:
+
+    try:
+
+        return float(
+            value
+        )
+
+    except Exception:
+
+        return float(
+            default
+        )
 
 
 # =========================================================
-# ASPECT RATIO
+# PROVIDER ERRORS
+# =========================================================
+
+def _safe_json(
+    response,
+) -> Dict[str, Any]:
+
+    try:
+
+        value = response.json()
+
+        if isinstance(
+            value,
+            dict,
+        ):
+
+            return value
+
+        return {
+            "data":
+                value
+        }
+
+    except Exception:
+
+        return {
+            "raw":
+                clean_text(
+                    getattr(
+                        response,
+                        "text",
+                        "",
+                    ),
+                    5000,
+                )
+        }
+
+
+def _provider_error_message(
+    provider: str,
+    response,
+) -> str:
+
+    status_code = getattr(
+        response,
+        "status_code",
+        "?",
+    )
+
+    data = _safe_json(
+        response
+    )
+
+    message = ""
+
+    error_value = data.get(
+        "error"
+    )
+
+    if isinstance(
+        error_value,
+        dict,
+    ):
+
+        message = clean_text(
+            (
+                error_value.get(
+                    "message"
+                )
+                or
+                error_value.get(
+                    "detail"
+                )
+                or
+                error_value
+            ),
+            3500,
+        )
+
+    elif error_value:
+
+        message = clean_text(
+            error_value,
+            3500,
+        )
+
+    if not message:
+
+        message = clean_text(
+            (
+                data.get(
+                    "message"
+                )
+                or
+                data.get(
+                    "detail"
+                )
+                or
+                data.get(
+                    "raw"
+                )
+                or
+                data
+            ),
+            3500,
+        )
+
+    return (
+        str(
+            provider
+        )
+        +
+        " HTTP "
+        +
+        str(
+            status_code
+        )
+        +
+        ": "
+        +
+        message
+    )
+
+
+# =========================================================
+# INLINE IMAGE DISCOVERY
+# =========================================================
+
+def _decode_image_data(
+    value: str,
+) -> Optional[bytes]:
+
+    text = clean_text(
+        value,
+        100000000,
+    )
+
+    if not text:
+
+        return None
+
+    if text.startswith(
+        "data:image/"
+    ):
+
+        try:
+
+            text = text.split(
+                ",",
+                1,
+            )[1]
+
+        except Exception:
+
+            return None
+
+    try:
+
+        raw = base64.b64decode(
+            text
+        )
+
+        return (
+            raw
+            if raw
+            else None
+        )
+
+    except Exception:
+
+        return None
+
+
+def _find_inline_images(
+    value: Any,
+) -> List[
+    Tuple[
+        bytes,
+        str,
+    ]
+]:
+
+    output: List[
+        Tuple[
+            bytes,
+            str,
+        ]
+    ] = []
+
+    def walk(
+        node: Any,
+    ) -> None:
+
+        if isinstance(
+            node,
+            dict,
+        ):
+
+            mime_type = clean_text(
+                (
+                    node.get(
+                        "mime_type"
+                    )
+                    or
+                    node.get(
+                        "mimeType"
+                    )
+                    or
+                    "image/jpeg"
+                ),
+                100,
+            )
+
+            for key in (
+                "b64_json",
+                "base64",
+                "data",
+            ):
+
+                candidate = node.get(
+                    key
+                )
+
+                if not isinstance(
+                    candidate,
+                    str,
+                ):
+
+                    continue
+
+                raw = _decode_image_data(
+                    candidate
+                )
+
+                if raw:
+
+                    output.append(
+                        (
+                            raw,
+                            mime_type,
+                        )
+                    )
+
+                    break
+
+            for child in (
+                node.values()
+            ):
+
+                walk(
+                    child
+                )
+
+        elif isinstance(
+            node,
+            list,
+        ):
+
+            for child in node:
+
+                walk(
+                    child
+                )
+
+    walk(
+        value
+    )
+
+    deduped = []
+
+    seen = set()
+
+    for raw, mime_type in output:
+
+        signature = (
+            len(
+                raw
+            ),
+            raw[
+                :64
+            ],
+        )
+
+        if signature in seen:
+
+            continue
+
+        seen.add(
+            signature
+        )
+
+        deduped.append(
+            (
+                raw,
+                mime_type,
+            )
+        )
+
+    return deduped
+
+
+# =========================================================
+# MIME
+# =========================================================
+
+def infer_mime_type(
+    image_bytes: bytes,
+    fallback: str = "image/jpeg",
+) -> str:
+
+    if not image_bytes:
+
+        return fallback
+
+    if image_bytes.startswith(
+        b"\x89PNG\r\n\x1a\n"
+    ):
+
+        return "image/png"
+
+    if image_bytes.startswith(
+        b"\xff\xd8\xff"
+    ):
+
+        return "image/jpeg"
+
+    if (
+        image_bytes.startswith(
+            b"RIFF"
+        )
+        and
+        b"WEBP"
+        in image_bytes[
+            :16
+        ]
+    ):
+
+        return "image/webp"
+
+    return fallback
+
+
+def image_data_uri(
+    image_bytes: bytes,
+    mime_type: str,
+) -> str:
+
+    mime_type = (
+        clean_text(
+            mime_type,
+            100,
+        )
+        or
+        infer_mime_type(
+            image_bytes
+        )
+    )
+
+    return (
+        "data:"
+        +
+        mime_type
+        +
+        ";base64,"
+        +
+        base64.b64encode(
+            image_bytes
+        ).decode(
+            "ascii"
+        )
+    )
+
+
+# =========================================================
+# DETECTION — ASPECT RATIO
 # =========================================================
 
 def detect_aspect_ratio(
     prompt: str,
-    requested_aspect_ratio: str = "",
+    explicit: str = "",
 ) -> str:
 
-    explicit = _normalize_digits_and_colon(
-        requested_aspect_ratio
-    ).strip()
+    explicit = clean_text(
+        explicit,
+        50,
+    )
 
     if explicit in (
         SUPPORTED_ASPECT_RATIOS
@@ -902,78 +1360,58 @@ def detect_aspect_ratio(
 
         return explicit
 
-    source = _normalize_digits_and_colon(
+    text = normalize_arabic(
         prompt
-    ).lower()
+    )
 
-    for ratio in (
-        "1:1",
-        "2:3",
-        "3:2",
-        "3:4",
-        "4:3",
-        "4:5",
-        "5:4",
-        "9:16",
-        "16:9",
-        "21:9",
-        "1:4",
-        "4:1",
-        "1:8",
-        "8:1",
-    ):
+    ratio_pattern = re.search(
+        (
+            r"(?<!\d)"
+            r"(1:1|2:3|3:2|3:4|4:3|4:5|5:4|"
+            r"9:16|16:9|21:9|1:4|4:1|1:8|8:1)"
+            r"(?!\d)"
+        ),
+        text,
+    )
 
-        if re.search(
-            (
-                r"(?<!\d)"
-                +
-                re.escape(
-                    ratio
-                )
-                +
-                r"(?!\d)"
-            ),
-            source,
-        ):
+    if ratio_pattern:
 
-            return ratio
+        return ratio_pattern.group(
+            1
+        )
 
     if contains_any(
-        source,
+        text,
         [
             "ستوري",
             "story",
-            "ريل",
             "reel",
-            "vertical story",
+            "ريل",
+            "9 16",
         ],
     ):
 
         return "9:16"
 
     if contains_any(
-        source,
+        text,
         [
-            "بوستر",
-            "poster",
-            "بوست",
-            "post",
-            "social ad",
-            "اعلان سوشال",
-            "اعلان للسوشال",
+            "بوست انستجرام طولي",
+            "بوست انستغرام طولي",
+            "portrait post",
+            "عمودي 4 5",
         ],
     ):
 
         return "4:5"
 
     if contains_any(
-        source,
+        text,
         [
-            "banner",
-            "بانر",
             "landscape",
             "افقي",
             "أفقي",
+            "سينمائي",
         ],
     ):
 
@@ -983,47 +1421,22 @@ def detect_aspect_ratio(
 
 
 # =========================================================
-# IMAGE SIZE
+# DETECTION — IMAGE SIZE
 # =========================================================
 
-def normalize_image_size(
-    value: Any,
+def detect_image_size(
+    prompt: str,
+    explicit: str = "",
 ) -> str:
 
-    source = (
-        clean_text(
-            value,
-            100,
-        )
-        .strip()
-        .upper()
-        .replace(
-            " ",
-            "",
-        )
-    )
+    explicit_value = str(
+        explicit
+        or ""
+    ).strip().upper()
 
     aliases = {
         "512":
             "512",
-
-        "512PX":
-            "512",
-
-        "0.5K":
-            "512",
-
-        ".5K":
-            "512",
-
-        "HD":
-            "HD",
-
-        "720":
-            "HD",
-
-        "720P":
-            "HD",
 
         "1K":
             "1K",
@@ -1031,139 +1444,87 @@ def normalize_image_size(
         "1024":
             "1K",
 
+        "2K":
+            "2K",
+
+        "2048":
+            "2K",
+
+        "4K":
+            "4K",
+
+        "4096":
+            "4K",
+
+        "HD":
+            "2K",
+
         "FHD":
             "2K",
 
         "FULLHD":
             "2K",
 
-        "1080":
+        "FULL HD":
             "2K",
-
-        "1080P":
-            "2K",
-
-        "2K":
-            "2K",
-
-        "4K":
-            "4K",
     }
 
-    return aliases.get(
-        source,
-        "",
+    if explicit_value in aliases:
+
+        return aliases[
+            explicit_value
+        ]
+
+    text = normalize_arabic(
+        prompt
     )
-
-
-def detect_image_size(
-    prompt: str,
-    requested_image_size: str = "",
-) -> str:
-
-    explicit = normalize_image_size(
-        requested_image_size
-    )
-
-    if explicit:
-
-        return explicit
-
-    source = clean_text(
-        prompt,
-        50000,
-    ).lower()
 
     if re.search(
         r"(?<!\d)4\s*k(?!\w)",
-        source,
-        flags=re.IGNORECASE,
+        text,
     ):
 
         return "4K"
 
-    if (
-        re.search(
-            r"(?<!\d)2\s*k(?!\w)",
-            source,
-            flags=re.IGNORECASE,
-        )
-        or
-        contains_any(
-            source,
-            [
-                "1080p",
-                "1080 p",
-                "full hd",
-                "fhd",
-            ],
-        )
+    if contains_any(
+        text,
+        [
+            "4k",
+            "4096",
+            "فور كي",
+        ],
+    ):
+
+        return "4K"
+
+    if re.search(
+        r"(?<!\d)2\s*k(?!\w)",
+        text,
     ):
 
         return "2K"
 
     if contains_any(
-        source,
+        text,
         [
-            "720p",
-            "720 p",
-            " hd ",
-            "دقه hd",
-            "دقة hd",
+            "2k",
+            "2048",
+            "تو كي",
+            "full hd",
+            "fullhd",
+            "fhd",
         ],
     ):
 
-        return "HD"
-
-    if re.search(
-        r"(?<!\d)1\s*k(?!\w)",
-        source,
-        flags=re.IGNORECASE,
-    ):
-
-        return "1K"
+        return "2K"
 
     if contains_any(
-        source,
+        text,
         [
-            "512px",
-            "512 px",
-            "512 بيكسل",
-            "512 بكسل",
+            "1k",
+            "1024",
         ],
     ):
-
-        return "512"
-
-    fallback = normalize_image_size(
-        DEFAULT_IMAGE_SIZE
-    )
-
-    return (
-        fallback
-        or "1K"
-    )
-
-
-def google_provider_image_size(
-    requested_size: str,
-) -> str:
-
-    value = normalize_image_size(
-        requested_size
-    )
-
-    if value in (
-        SUPPORTED_GOOGLE_IMAGE_SIZES
-    ):
-
-        return value
-
-    #
-    # HD is delivered by downscaling a normal 1K output.
-    #
-
-    if value == "HD":
 
         return "1K"
 
@@ -1171,1259 +1532,135 @@ def google_provider_image_size(
 
 
 # =========================================================
-# QUALITY
+# DETECTION — QUALITY
 # =========================================================
 
 def detect_quality(
     prompt: str,
-    requested_quality: str = "",
+    explicit: str = "",
 ) -> str:
 
-    explicit = clean_text(
-        requested_quality,
-        50,
-    ).lower()
+    explicit_value = str(
+        explicit
+        or ""
+    ).strip().lower()
 
-    if explicit in (
+    if explicit_value in (
         SUPPORTED_OPENAI_QUALITIES
     ):
 
-        return explicit
-
-    source = normalize_arabic(
-        prompt
-    )
+        return explicit_value
 
     if contains_any(
-        source,
+        prompt,
         [
             "high quality",
-            "high-quality",
-            "اعلى جوده",
-            "أعلى جودة",
-            "اقصى جوده",
-            "أقصى جودة",
-            "maximum quality",
+            "جودة عالية",
+            "فاخر",
+            "فاخرة",
+            "premium",
+            "masterpiece",
         ],
     ):
 
         return "high"
 
     if contains_any(
-        source,
+        prompt,
         [
-            "draft",
-            "preview",
             "low quality",
-            "مسوده",
-            "مسودة",
+            "جودة منخفضة",
         ],
     ):
 
         return "low"
 
-    fallback = clean_text(
-        DEFAULT_QUALITY,
-        50,
-    ).lower()
-
-    if fallback in (
-        SUPPORTED_OPENAI_QUALITIES
-    ):
-
-        return fallback
-
-    return "medium"
-
-
-# =========================================================
-# STC BANK DETECTION
-# =========================================================
-
-def _is_stc_request(
-    prompt: str,
-) -> bool:
-
-    try:
-
-        if is_stc_bank_request(
-            prompt
-        ):
-
-            return True
-
-    except Exception:
-
-        pass
-
-    return contains_any(
-        prompt,
-        [
-            "stc bank",
-            "stc بنك",
-            "بنك stc",
-            "اس تي سي بنك",
-            "stc_bank",
-        ],
-    )
-
-
-# =========================================================
-# STC BENEFIT FAMILY
-# =========================================================
-
-def _stc_benefit_family(
-    prompt: str,
-) -> str:
-
-    source = normalize_arabic(
-        prompt
-    )
-
-    #
-    # Merchant payments first.
-    #
-    # Prevent words such as card/reward from hijacking the
-    # actual merchant-payment benefit.
-    #
-
-    if contains_any(
-        source,
-        [
-            "merchant payment",
-            "merchant payments",
-            "merchant",
-            "pos",
-            "point of sale",
-            "points of sale",
-            "نقاط البيع",
-            "نقطه البيع",
-            "نقطة البيع",
-            "مدفوعات المتاجر",
-            "مدفوعات التجار",
-            "الدفع عند التاجر",
-            "دفع عند التاجر",
-            "دفع المتاجر",
-            "جهاز الدفع",
-            "جهاز نقاط البيع",
-            "tap to pay",
-            "contactless payment",
-        ],
-    ):
-
-        return "merchant_payments"
-
-    if contains_any(
-        source,
-        [
-            "international transfer",
-            "international money transfer",
-            "cross border transfer",
-            "تحويل دولي",
-            "تحويل مالي دولي",
-            "تحويل الاموال دوليا",
-            "تحويل الأموال دوليا",
-            "حواله دوليه",
-            "حوالة دولية",
-        ],
-    ):
-
-        return "international_transfer"
-
-    if contains_any(
-        source,
-        [
-            "travel",
-            "travelling",
-            "سفر",
-            "السفر",
-            "مسافر",
-            "مطار",
-            "airport",
-            "trip",
-        ],
-    ):
-
-        return "travel"
-
-    if contains_any(
-        source,
-        [
-            "cashback",
-            "cash back",
-            "كاش باك",
-            "استرداد نقدي",
-            "استرداد",
-        ],
-    ):
-
-        return "cashback"
-
-    if contains_any(
-        source,
-        [
-            "security",
-            "secure",
-            "safe banking",
-            "امان",
-            "أمان",
-            "حمايه",
-            "حماية",
-        ],
-    ):
-
-        return "security"
-
-    if contains_any(
-        source,
-        [
-            "reward",
-            "rewards",
-            "points",
-            "loyalty",
-            "مكافات",
-            "مكافآت",
-            "نقاط",
-        ],
-    ):
-
-        return "rewards"
-
-    if contains_any(
-        source,
-        [
-            "app",
-            "application",
-            "digital banking",
-            "تطبيق",
-            "بنك رقمي",
-            "الخدمات الرقميه",
-            "الخدمات الرقمية",
-        ],
-    ):
-
-        return "digital_banking"
-
-    return "premium_banking"
-
-
-# =========================================================
-# STC STYLE FAMILY
-# =========================================================
-
-def _stc_style_family(
-    prompt: str,
-    benefit_family: str = "",
-) -> str:
-
-    source = normalize_arabic(
-        prompt
-    )
-
-    #
-    # Explicit user art direction always wins.
-    #
-
-    if contains_any(
-        source,
-        [
-            "geometric studio",
-            "architectural studio",
-            "purple architecture",
-            "purple geometric",
-            "استوديو هندسي",
-            "هندسي بنفسجي",
-            "معماري بنفسجي",
-            "منصات هندسيه",
-            "منصات هندسية",
-        ],
-    ):
-
-        return "purple_architectural"
-
-    if contains_any(
-        source,
-        [
-            "surreal",
-            "conceptual",
-            "augmented realism",
-            "metaphor",
-            "visual metaphor",
-            "سريالي",
-            "مجاز بصري",
-            "واقعيه معززه",
-            "واقعية معززة",
-            "كونسبت",
-            "concept art",
-        ],
-    ):
-
-        return "augmented_realism"
-
-    if contains_any(
-        source,
-        [
-            "still life",
-            "product shot",
-            "product photography",
-            "card hero",
-            "app hero",
-            "تصوير منتج",
-            "لقطه منتج",
-            "لقطة منتج",
-            "بطاقه فقط",
-            "بطاقة فقط",
-            "الهاتف فقط",
-        ],
-    ):
-
-        return "product_still_life"
-
-    if contains_any(
-        source,
-        [
-            "lifestyle",
-            "realistic photography",
-            "commercial photography",
-            "cinematic photography",
-            "تصوير واقعي",
-            "تصوير تجاري",
-            "لايف ستايل",
-            "سينمائي واقعي",
-        ],
-    ):
-
-        return "premium_realistic"
-
-    #
-    # Merchant payments must default to believable commerce.
-    #
-
-    if benefit_family == (
-        "merchant_payments"
-    ):
-
-        return "premium_realistic"
-
-    return "premium_realistic"
-
-
-# =========================================================
-# STC CAMERA DIRECTION
-# =========================================================
-
-STC_CAMERA_LIBRARY = {
-    "eye_level": (
-        "Eye-level commercial camera. Natural human scale, "
-        "credible behavior and balanced perspective."
-    ),
-
-    "low_angle": (
-        "Low-angle hero camera. Use restraint; preserve believable "
-        "verticals and product scale."
-    ),
-
-    "extreme_low_angle": (
-        "Extreme low-angle only when monumental architectural scale "
-        "materially improves the concept."
-    ),
-
-    "worms_eye": (
-        "Worm's-eye viewpoint for deliberate scale transformation, "
-        "with physically consistent perspective."
-    ),
-
-    "high_angle": (
-        "High-angle camera for clear spatial relationships without "
-        "flattening the scene."
-    ),
-
-    "birds_eye": (
-        "Bird's-eye view for spatial organization and real-world "
-        "patterns, never for glowing network diagrams."
-    ),
-
-    "top_down": (
-        "Top-down graphic composition with real objects, contact "
-        "shadows and disciplined spacing."
-    ),
-
-    "three_quarter": (
-        "Three-quarter commercial hero angle, especially suitable "
-        "for cards, phones and premium physical products."
-    ),
-
-    "over_shoulder": (
-        "Over-the-shoulder viewpoint for believable digital banking "
-        "interaction and contextual human behavior."
-    ),
-
-    "pov": (
-        "First-person POV for immersive payment, travel or app use."
-    ),
-
-    "ground_level": (
-        "Ground-level viewpoint for movement and strong foreground "
-        "depth while maintaining real scale."
-    ),
-
-    "macro": (
-        "Macro product detail with convincing material texture, "
-        "edge quality and shallow optical depth."
-    ),
-
-    "extreme_close_up": (
-        "Extreme close-up only for meaningful product/material detail."
-    ),
-
-    "wide": (
-        "Wide commercial composition with strong environmental context "
-        "and intentional negative space."
-    ),
-
-    "extreme_wide": (
-        "Extreme wide environmental composition for architecture "
-        "or lifestyle storytelling."
-    ),
-
-    "forced_perspective": (
-        "Controlled forced perspective using real spatial cues, "
-        "not impossible floating-object collage."
-    ),
-
-    "one_point": (
-        "One-point perspective with a clear vanishing point and "
-        "disciplined architectural geometry."
-    ),
-
-    "frame_within_frame": (
-        "Frame-within-frame composition using doors, windows, shelves "
-        "or architecture to create hierarchy."
-    ),
-
-    "foreground_obstruction": (
-        "Use a subtle foreground object for depth and realism without "
-        "obscuring the benefit."
-    ),
-}
-
-
-def _stc_camera_direction(
-    prompt: str,
-    benefit_family: str,
-    style_family: str,
-) -> str:
-
-    source = normalize_arabic(
-        prompt
-    )
-
-    marker_map = [
-        (
-            [
-                "worm's eye",
-                "worms eye",
-                "worm eye",
-                "عين الدوده",
-                "عين الدودة",
-            ],
-            "worms_eye",
-        ),
-
-        (
-            [
-                "extreme low angle",
-                "زاويه منخفضه جدا",
-                "زاوية منخفضة جدا",
-            ],
-            "extreme_low_angle",
-        ),
-
-        (
-            [
-                "low angle",
-                "زاويه منخفضه",
-                "زاوية منخفضة",
-            ],
-            "low_angle",
-        ),
-
-        (
-            [
-                "bird's eye",
-                "birds eye",
-                "bird eye",
-                "منظر جوي",
-                "عين الطائر",
-            ],
-            "birds_eye",
-        ),
-
-        (
-            [
-                "top down",
-                "top-down",
-                "من الاعلى مباشره",
-                "من الأعلى مباشرة",
-            ],
-            "top_down",
-        ),
-
-        (
-            [
-                "high angle",
-                "زاويه مرتفعه",
-                "زاوية مرتفعة",
-            ],
-            "high_angle",
-        ),
-
-        (
-            [
-                "over the shoulder",
-                "over-the-shoulder",
-                "من خلف الكتف",
-            ],
-            "over_shoulder",
-        ),
-
-        (
-            [
-                "pov",
-                "point of view",
-                "منظور الشخص",
-            ],
-            "pov",
-        ),
-
-        (
-            [
-                "macro",
-                "ماكرو",
-            ],
-            "macro",
-        ),
-
-        (
-            [
-                "extreme close up",
-                "extreme close-up",
-                "لقطه قريبه جدا",
-                "لقطة قريبة جدا",
-            ],
-            "extreme_close_up",
-        ),
-
-        (
-            [
-                "three quarter",
-                "three-quarter",
-                "3/4 angle",
-                "ثلاثه ارباع",
-                "ثلاثة أرباع",
-            ],
-            "three_quarter",
-        ),
-
-        (
-            [
-                "forced perspective",
-                "منظور قسري",
-            ],
-            "forced_perspective",
-        ),
-
-        (
-            [
-                "one point perspective",
-                "one-point perspective",
-                "منظور نقطه واحده",
-                "منظور نقطة واحدة",
-            ],
-            "one_point",
-        ),
-
-        (
-            [
-                "frame within frame",
-                "frame-within-frame",
-                "اطار داخل اطار",
-                "إطار داخل إطار",
-            ],
-            "frame_within_frame",
-        ),
-
-        (
-            [
-                "foreground obstruction",
-                "foreground element",
-                "عنصر امامي",
-                "عنصر أمامي",
-            ],
-            "foreground_obstruction",
-        ),
-
-        (
-            [
-                "extreme wide",
-                "extreme-wide",
-                "واسعه جدا",
-                "واسعة جدا",
-            ],
-            "extreme_wide",
-        ),
-
-        (
-            [
-                "wide angle",
-                "wide shot",
-                "لقطه واسعه",
-                "لقطة واسعة",
-            ],
-            "wide",
-        ),
-
-        (
-            [
-                "eye level",
-                "eye-level",
-                "مستوى العين",
-            ],
-            "eye_level",
-        ),
-    ]
-
-    for markers, key in marker_map:
-
-        if contains_any(
-            source,
-            markers,
-        ):
-
-            return (
-                key
-                +
-                ": "
-                +
-                STC_CAMERA_LIBRARY[
-                    key
-                ]
-            )
-
-    if style_family == (
-        "product_still_life"
-    ):
-
-        key = "three_quarter"
-
-    elif style_family == (
-        "purple_architectural"
-    ):
-
-        key = "one_point"
-
-    elif benefit_family in {
-        "digital_banking",
-        "merchant_payments",
-    }:
-
-        key = "eye_level"
-
-    elif benefit_family == "travel":
-
-        key = "wide"
-
-    else:
-
-        key = "eye_level"
-
     return (
-        key
-        +
-        ": "
-        +
-        STC_CAMERA_LIBRARY[
-            key
-        ]
+        DEFAULT_QUALITY
+        if DEFAULT_QUALITY
+        in SUPPORTED_OPENAI_QUALITIES
+        else
+        "high"
     )
 
 
 # =========================================================
-# STC PRODUCTION DIRECTION
+# MODE DETECTION
 # =========================================================
-
-def build_stc_production_direction(
-    prompt: str,
-) -> str:
-
-    benefit_family = (
-        _stc_benefit_family(
-            prompt
-        )
-    )
-
-    style_family = (
-        _stc_style_family(
-            prompt,
-            benefit_family,
-        )
-    )
-
-    camera_direction = (
-        _stc_camera_direction(
-            prompt,
-            benefit_family,
-            style_family,
-        )
-    )
-
-    family_direction = {
-        "premium_realistic": (
-            "Use premium realistic Saudi commercial photography. "
-            "Human behavior must feel natural and observed rather than posed. "
-            "Use credible environments, real-scale products, polished but "
-            "restrained art direction and believable optical depth."
-        ),
-
-        "purple_architectural": (
-            "Build a controlled architectural/studio composition with real "
-            "platforms, planes, depth and perspective. Purple may appear as "
-            "an identity accent or architectural material, never as a blanket "
-            "purple wash. Surfaces must have physically plausible shadows, "
-            "reflections and roughness."
-        ),
-
-        "augmented_realism": (
-            "Use refined augmented realism: one intelligent conceptual "
-            "mechanism integrated physically into an otherwise photoreal "
-            "scene. The concept must not become childish fantasy, random CGI "
-            "or generic fintech decoration."
-        ),
-
-        "product_still_life": (
-            "Use premium product still-life discipline. Give the card, phone "
-            "or banking product a physically grounded hero presentation with "
-            "realistic material behavior, controlled reflections, elegant "
-            "negative space and no fake floating UI."
-        ),
-    }.get(
-        style_family,
-        "",
-    )
-
-    benefit_direction = {
-        "merchant_payments": (
-            "MERCHANT PAYMENTS: show a believable premium Saudi commerce "
-            "moment such as boutique, cafe, restaurant or quality retail. "
-            "The payment interaction must be natural: customer, merchant, "
-            "phone/card and POS should relate correctly in space. Never stage "
-            "a person simply pointing a payment terminal at the camera."
-        ),
-
-        "international_transfer": (
-            "INTERNATIONAL TRANSFER: communicate ease, reach or confidence "
-            "through people, place, travel, relationship or a tangible real "
-            "world metaphor. Do not use maps with glowing transfer routes, "
-            "laser paths, network lines or floating country icons."
-        ),
-
-        "travel": (
-            "TRAVEL: use credible Saudi traveler behavior, airport, hotel, "
-            "destination or premium journey cues. Keep the banking benefit "
-            "clear through situation and product use rather than travel-icon "
-            "collage."
-        ),
-
-        "cashback": (
-            "CASHBACK: communicate tangible value or rewarding everyday "
-            "behavior using a refined real-world metaphor. Avoid floating "
-            "coins, exploding particles and generic reward icons."
-        ),
-
-        "security": (
-            "SECURITY: communicate control, calm and confidence through "
-            "composition, behavior and environment. Avoid shields, locks, "
-            "digital grids and glowing cyber effects unless explicitly asked."
-        ),
-
-        "rewards": (
-            "REWARDS: represent benefit through premium experiences or "
-            "tangible value. Avoid generic points clouds, coins and floating "
-            "gift icons."
-        ),
-
-        "digital_banking": (
-            "DIGITAL BANKING: show credible use of the app or phone in a "
-            "real human context. Do not invent readable UI screens, floating "
-            "interfaces or fake banking dashboards."
-        ),
-
-        "premium_banking": (
-            "PREMIUM BANKING: prioritize confidence, restraint, modern Saudi "
-            "lifestyle and polished commercial production rather than visual "
-            "effects."
-        ),
-    }.get(
-        benefit_family,
-        "",
-    )
-
-    return (
-        "\n\n"
-        "========================================\n"
-        "XPAND STC BANK PRODUCTION DIRECTOR\n"
-        "========================================\n"
-        f"Benefit family: {benefit_family}\n"
-        f"Visual family: {style_family}\n"
-        f"Camera: {camera_direction}\n\n"
-        "NON-NEGOTIABLE OUTPUT RULES:\n"
-        "- Generate NO visible advertising copy.\n"
-        "- Generate NO headline, subtitle, CTA or legal text.\n"
-        "- Generate NO STC wordmark or STC Bank logo.\n"
-        "- Generate NO Visa/Mastercard/network logo unless an exact supplied "
-        "physical reference makes it unavoidable and fidelity is explicitly "
-        "required.\n"
-        "- Do not invent readable app UI or financial numbers.\n"
-        "- Do not add watermarks or signatures.\n"
-        "- Reserve intentional clean negative space so final Arabic/English "
-        "copy and official logo can be added manually later.\n"
-        "- Purple is an accent, NOT a mandatory full-scene color wash.\n"
-        "- Green may be used as a controlled secondary identity accent.\n"
-        "- Prefer warm neutral, off-white, stone, beige, walnut, leather, "
-        "glass and brushed-metal material families where suitable.\n"
-        "- Use motivated light sources, realistic contact shadows, natural "
-        "reflections and physically correct object grounding.\n"
-        "- Preserve one coherent perspective and believable scale.\n"
-        "- Avoid generic blue technology color unless the concept genuinely "
-        "requires it.\n"
-        "- No blue laser beams.\n"
-        "- No neon transfer routes.\n"
-        "- No connection/network lines.\n"
-        "- No glowing arrows.\n"
-        "- No random particles or sparkles.\n"
-        "- No HUD or futuristic interface overlays.\n"
-        "- No floating generic banking icons.\n"
-        "- No unsupported floating cards or phones.\n"
-        "- No generic globe metaphor.\n"
-        "- No visual-effect clutter used merely to make the scene look "
-        "technological.\n\n"
-        "VISUAL FAMILY EXECUTION:\n"
-        f"{family_direction}\n\n"
-        "BENEFIT-SPECIFIC EXECUTION:\n"
-        f"{benefit_direction}\n\n"
-        "FINAL STANDARD:\n"
-        "The result must feel like a photographable, premium campaign frame "
-        "created by a senior Saudi advertising art director. Strong concept, "
-        "clear focal hierarchy, real materials, disciplined color, useful "
-        "negative space and no obvious AI decoration."
-    )
-
-
-# =========================================================
-# PROFESSIONAL PROMPT
-# =========================================================
-
-def build_professional_prompt(
-    user_prompt: str,
-    aspect_ratio: str,
-    image_size: str,
-) -> str:
-
-    user_prompt = clean_text(
-        user_prompt,
-        30000,
-    )
-
-    directives = [
-        (
-            "Preserve the user's exact commercial intent and main subject."
-        ),
-
-        (
-            "Build one coherent, physically believable scene instead of "
-            "a collage of unrelated visual ideas."
-        ),
-
-        (
-            "Use a deliberate camera angle, clear focal hierarchy and "
-            "professional negative space."
-        ),
-
-        (
-            "Use realistic light direction, contact shadows, material "
-            "roughness, reflections, perspective and depth."
-        ),
-
-        (
-            "Keep hands, faces, products, edges and geometry commercially "
-            "usable and free from obvious generation artifacts."
-        ),
-
-        (
-            "Avoid unnecessary decorative effects and generic AI visual noise."
-        ),
-
-        (
-            f"Target aspect ratio: {aspect_ratio}."
-        ),
-
-        (
-            f"Target resolution intent: {image_size}."
-        ),
-    ]
-
-    stc_request = _is_stc_request(
-        user_prompt
-    )
-
-    #
-    # Non-STC jobs retain intentional quoted-text support.
-    #
-    # STC jobs intentionally generate no advertising copy
-    # because the user adds final copy/logo manually.
-    #
-
-    if not stc_request:
-
-        quoted = extract_quoted_text(
-            user_prompt
-        )
-
-        if quoted:
-
-            exact = "\n".join(
-                f'- "{item}"'
-                for item in quoted
-            )
-
-            directives.append(
-                (
-                    "If the user intentionally requested typography, render "
-                    "these quoted text elements exactly:\n"
-                    +
-                    exact
-                )
-            )
-
-    output = (
-        "USER REQUEST:\n"
-        +
-        user_prompt
-        +
-        "\n\n"
-        "XPAND PROFESSIONAL ART DIRECTION:\n"
-        +
-        "\n".join(
-            f"- {item}"
-            for item in directives
-        )
-    )
-
-    if stc_request:
-
-        if STC_BANK_IMAGE_GUARD:
-
-            output += (
-                "\n\n"
-                "========================================\n"
-                "STC BANK SAVED IMAGE GUARD\n"
-                "========================================\n"
-                +
-                clean_text(
-                    STC_BANK_IMAGE_GUARD,
-                    16000,
-                )
-            )
-
-        #
-        # Append deterministic local production rules LAST.
-        # These are the final execution authority.
-        #
-
-        output += (
-            build_stc_production_direction(
-                user_prompt
-            )
-        )
-
-    return clean_text(
-        output,
-        50000,
-    )
-
-
-# =========================================================
-# REFINEMENT PROMPT
-# =========================================================
-
-def build_refinement_prompt(
-    original_user_prompt: str,
-    *,
-    stronger: bool = False,
-    critique: str = "",
-) -> str:
-
-    directives = [
-        (
-            "Edit the provided image into a stronger final professional "
-            "version while preserving the approved concept."
-        ),
-
-        (
-            "Preserve the main subject, identity, composition logic and "
-            "all areas that already work."
-        ),
-
-        (
-            "Improve realism, lighting, materials, edge quality, hierarchy, "
-            "balance and premium finish."
-        ),
-
-        (
-            "Fix visible artifacts without adding unrelated objects."
-        ),
-
-        (
-            "Do not add fake logos, random typography or watermarks."
-        ),
-    ]
-
-    if stronger:
-
-        directives.append(
-            (
-                "Push production polish toward world-class campaign quality "
-                "without adding clutter."
-            )
-        )
-
-    if critique:
-
-        directives.append(
-            (
-                "Senior visual review corrections:\n"
-                +
-                clean_text(
-                    critique,
-                    7000,
-                )
-            )
-        )
-
-    if _is_stc_request(
-        original_user_prompt
-    ):
-
-        directives.append(
-            (
-                "For STC Bank keep all advertising text and logos absent; "
-                "they will be added manually after generation."
-            )
-        )
-
-    return (
-        "ORIGINAL USER REQUEST:\n"
-        +
-        clean_text(
-            original_user_prompt,
-            20000,
-        )
-        +
-        "\n\nFINAL REFINEMENT INSTRUCTIONS:\n"
-        +
-        "\n".join(
-            f"- {item}"
-            for item in directives
-        )
-    )
-
-
-# =========================================================
-# MODE NORMALIZATION
-# =========================================================
-
-def normalize_mode(
-    mode: str,
-) -> str:
-
-    value = (
-        clean_text(
-            mode,
-            100,
-        )
-        .lower()
-        .strip()
-    )
-
-    aliases = {
-        "auto":
-            MODE_AUTO,
-
-        "smart":
-            MODE_AUTO,
-
-        "default":
-            MODE_AUTO,
-
-        "fast":
-            MODE_FAST,
-
-        "openai":
-            MODE_OPENAI,
-
-        "gpt":
-            MODE_OPENAI,
-
-        "gpt-image-2":
-            MODE_OPENAI,
-
-        "google_fast":
-            MODE_GOOGLE_FAST,
-
-        "google-fast":
-            MODE_GOOGLE_FAST,
-
-        "google fast":
-            MODE_GOOGLE_FAST,
-
-        "nano banana 2":
-            MODE_GOOGLE_FAST,
-
-        "nano-banana-2":
-            MODE_GOOGLE_FAST,
-
-        "nanobanana2":
-            MODE_GOOGLE_FAST,
-
-        "google_pro":
-            MODE_GOOGLE_PRO,
-
-        "google-pro":
-            MODE_GOOGLE_PRO,
-
-        "google pro":
-            MODE_GOOGLE_PRO,
-
-        "nano banana pro":
-            MODE_GOOGLE_PRO,
-
-        "nano-banana-pro":
-            MODE_GOOGLE_PRO,
-
-        "pro":
-            MODE_PRO,
-
-        "fusion":
-            MODE_PRO,
-
-        "best":
-            MODE_BEST,
-
-        "max":
-            MODE_BEST,
-
-        "ultimate":
-            MODE_BEST,
-
-        "compare":
-            MODE_COMPARE,
-
-        "multi":
-            MODE_COMPARE,
-    }
-
-    return aliases.get(
-        value,
-        MODE_AUTO,
-    )
-
 
 def resolve_effective_mode(
     prompt: str,
-    mode: str = "",
+    requested_mode: str = "",
     reference_count: int = 0,
 ) -> str:
 
-    requested = (
-        mode
-        if clean_text(
-            mode,
-            100,
-        )
-        else DEFAULT_MODE
+    mode = str(
+        requested_mode
+        or ""
+    ).strip().lower()
+
+    if mode in {
+        MODE_OPENAI,
+        MODE_GOOGLE_FAST,
+        MODE_GOOGLE_PRO,
+        MODE_PRO,
+        MODE_BEST,
+        MODE_COMPARE,
+        MODE_FAST,
+    }:
+
+        return mode
+
+    text = normalize_arabic(
+        prompt
     )
-
-    chosen = normalize_mode(
-        requested
-    )
-
-    if chosen != MODE_AUTO:
-
-        return chosen
-
-    #
-    # Explicit Pro request only.
-    #
 
     if contains_any(
-        prompt,
+        text,
         [
             "nano banana pro",
-            "nano-banana-pro",
-            "google pro",
-            "google_pro",
-            "استخدم برو",
-            "استخدم pro",
-            "موديل برو",
+            "نانو بنانا برو",
+            "gemini 3 pro image",
         ],
     ):
 
         return MODE_GOOGLE_PRO
 
-    #
-    # BEST keeps Nano Banana 2 unless BEST_USE_PRO=true.
-    #
-
     if contains_any(
-        prompt,
+        text,
         [
-            "أفضل نتيجة ممكنة",
-            "افضل نتيجه ممكنه",
-            "أقوى نتيجة",
-            "اقوى نتيجه",
-            "كل قواك",
-            "best mode",
-            "ultimate",
-            "max quality",
-            "best quality",
+            "nano banana 2",
+            "نانو بنانا 2",
+            "gemini 3.1 flash image",
         ],
     ):
 
-        return MODE_BEST
+        return MODE_GOOGLE_FAST
 
     if contains_any(
-        prompt,
+        text,
         [
-            "سريع",
-            "بسرعة",
-            "بسرعه",
-            "fast",
-            "quick",
-            "draft",
-            "preview",
+            "gpt-image-2",
+            "gpt image 2",
         ],
     ):
 
-        return MODE_FAST
+        return MODE_OPENAI
 
-    #
-    # IMPORTANT V2.1:
-    #
-    # premium / campaign / commercial and references do NOT
-    # silently trigger Nano Banana Pro anymore.
-    #
-    # Nano Banana 2 is intentionally the high-volume default.
-    #
+    if mode == MODE_AUTO:
+
+        return MODE_GOOGLE_FAST
+
+    if DEFAULT_MODE in {
+        MODE_OPENAI,
+        MODE_GOOGLE_FAST,
+        MODE_GOOGLE_PRO,
+        MODE_FAST,
+        MODE_PRO,
+        MODE_BEST,
+    }:
+
+        return DEFAULT_MODE
 
     return MODE_GOOGLE_FAST
 
@@ -2442,39 +1679,79 @@ def build_route(
 ) -> ImageRoute:
 
     return ImageRoute(
-        provider=provider,
-        model=model,
-        reason=reason,
-        aspect_ratio=aspect_ratio,
-        image_size=image_size,
-        quality=quality,
+        provider=clean_text(
+            provider,
+            100,
+        ),
+
+        model=clean_text(
+            model,
+            200,
+        ),
+
+        reason=clean_text(
+            reason,
+            1000,
+        ),
+
+        aspect_ratio=(
+            aspect_ratio
+            if aspect_ratio
+            in SUPPORTED_ASPECT_RATIOS
+            else
+            "1:1"
+        ),
+
+        image_size=(
+            image_size
+            if image_size
+            in SUPPORTED_GOOGLE_IMAGE_SIZES
+            else
+            "1K"
+        ),
+
+        quality=(
+            quality
+            if quality
+            in SUPPORTED_OPENAI_QUALITIES
+            else
+            "high"
+        ),
     )
 
+
+# =========================================================
+# OPENAI RATIO SIZE
+# =========================================================
 
 def openai_size_for_ratio(
     aspect_ratio: str,
 ) -> str:
 
-    if aspect_ratio in {
-        "9:16",
+    portrait = {
         "2:3",
         "3:4",
         "4:5",
+        "9:16",
         "1:4",
         "1:8",
-    }:
+    }
 
-        return "1024x1536"
-
-    if aspect_ratio in {
-        "16:9",
+    landscape = {
         "3:2",
         "4:3",
         "5:4",
+        "16:9",
         "21:9",
         "4:1",
         "8:1",
-    }:
+    }
+
+    if aspect_ratio in portrait:
+
+        return "1024x1536"
+
+    if aspect_ratio in landscape:
 
         return "1536x1024"
 
@@ -2482,478 +1759,7 @@ def openai_size_for_ratio(
 
 
 # =========================================================
-# HTTP HELPERS
-# =========================================================
-
-def _safe_json(
-    response: requests.Response,
-) -> Dict[str, Any]:
-
-    try:
-
-        value = response.json()
-
-        if isinstance(
-            value,
-            dict,
-        ):
-
-            return value
-
-        return {
-            "data":
-                value,
-        }
-
-    except Exception:
-
-        return {
-            "raw":
-                clean_text(
-                    response.text,
-                    12000,
-                ),
-        }
-
-
-def _provider_error_message(
-    provider: str,
-    response: requests.Response,
-) -> str:
-
-    data = _safe_json(
-        response
-    )
-
-    error = data.get(
-        "error"
-    )
-
-    if isinstance(
-        error,
-        dict,
-    ):
-
-        message = (
-            error.get(
-                "message"
-            )
-            or
-            error.get(
-                "status"
-            )
-            or
-            error.get(
-                "code"
-            )
-            or
-            str(
-                error
-            )
-        )
-
-    else:
-
-        message = (
-            error
-            or
-            data.get(
-                "message"
-            )
-            or
-            data.get(
-                "detail"
-            )
-            or
-            data.get(
-                "raw"
-            )
-            or
-            (
-                "HTTP "
-                +
-                str(
-                    response.status_code
-                )
-            )
-        )
-
-    return (
-        provider
-        +
-        ": "
-        +
-        clean_text(
-            message,
-            6000,
-        )
-    )
-
-
-# =========================================================
-# IMAGE DOWNLOAD / BASE64
-# =========================================================
-
-def _download_image_url(
-    url: str,
-) -> Tuple[
-    bytes,
-    str,
-]:
-
-    response = requests.get(
-        url,
-        timeout=REQUEST_TIMEOUT,
-    )
-
-    if not response.ok:
-
-        raise XPANDImageProviderError(
-            (
-                "فشل تنزيل الصورة: "
-                +
-                str(
-                    response.status_code
-                )
-            )
-        )
-
-    mime_type = clean_text(
-        response.headers.get(
-            "Content-Type",
-            "",
-        ),
-        100,
-    ).split(";")[0]
-
-    if not mime_type.startswith(
-        "image/"
-    ):
-
-        mime_type = "image/png"
-
-    return (
-        response.content,
-        mime_type,
-    )
-
-
-def _decode_base64_image(
-    data: str,
-) -> Optional[bytes]:
-
-    value = clean_text(
-        data,
-        100000000,
-    )
-
-    if not value:
-
-        return None
-
-    if value.startswith(
-        "data:image/"
-    ):
-
-        try:
-
-            value = value.split(
-                ",",
-                1,
-            )[1]
-
-        except Exception:
-
-            return None
-
-    try:
-
-        decoded = base64.b64decode(
-            value
-        )
-
-        return (
-            decoded
-            or None
-        )
-
-    except Exception:
-
-        return None
-
-
-def image_data_uri(
-    image_bytes: bytes,
-    mime_type: str = "image/png",
-) -> str:
-
-    final_mime = clean_text(
-        mime_type,
-        100,
-    ).lower()
-
-    if not final_mime.startswith(
-        "image/"
-    ):
-
-        final_mime = "image/png"
-
-    encoded = base64.b64encode(
-        image_bytes
-    ).decode(
-        "ascii"
-    )
-
-    return (
-        "data:"
-        +
-        final_mime
-        +
-        ";base64,"
-        +
-        encoded
-    )
-
-
-# =========================================================
-# IMAGE EXTRACTION
-# =========================================================
-
-def _find_inline_images(
-    value: Any,
-) -> List[
-    Tuple[
-        bytes,
-        str,
-    ]
-]:
-
-    found: List[
-        Tuple[
-            bytes,
-            str,
-        ]
-    ] = []
-
-    seen = set()
-
-    def add_image(
-        raw: Optional[bytes],
-        mime_type: str,
-    ) -> None:
-
-        if not raw:
-
-            return
-
-        fingerprint = (
-            len(
-                raw
-            ),
-            raw[:32],
-        )
-
-        if fingerprint in seen:
-
-            return
-
-        seen.add(
-            fingerprint
-        )
-
-        final_mime = clean_text(
-            mime_type,
-            100,
-        ).lower()
-
-        if not final_mime.startswith(
-            "image/"
-        ):
-
-            final_mime = "image/png"
-
-        found.append(
-            (
-                raw,
-                final_mime,
-            )
-        )
-
-    def walk(
-        item: Any,
-    ) -> None:
-
-        if isinstance(
-            item,
-            dict,
-        ):
-
-            item_type = clean_text(
-                item.get(
-                    "type",
-                    "",
-                ),
-                100,
-            ).lower()
-
-            mime_type = clean_text(
-                (
-                    item.get(
-                        "mime_type"
-                    )
-                    or
-                    item.get(
-                        "mimeType"
-                    )
-                    or
-                    "image/png"
-                ),
-                100,
-            ).lower()
-
-            b64_json = item.get(
-                "b64_json"
-            )
-
-            if isinstance(
-                b64_json,
-                str,
-            ):
-
-                add_image(
-                    _decode_base64_image(
-                        b64_json
-                    ),
-                    mime_type,
-                )
-
-            base64_value = item.get(
-                "base64"
-            )
-
-            if isinstance(
-                base64_value,
-                str,
-            ):
-
-                add_image(
-                    _decode_base64_image(
-                        base64_value
-                    ),
-                    mime_type,
-                )
-
-            data_value = item.get(
-                "data"
-            )
-
-            if (
-                isinstance(
-                    data_value,
-                    str,
-                )
-                and
-                (
-                    item_type
-                    in {
-                        "image",
-                        "output_image",
-                        "input_image",
-                    }
-                    or
-                    mime_type.startswith(
-                        "image/"
-                    )
-                )
-            ):
-
-                add_image(
-                    _decode_base64_image(
-                        data_value
-                    ),
-                    mime_type,
-                )
-
-            url = item.get(
-                "url"
-            )
-
-            if (
-                isinstance(
-                    url,
-                    str,
-                )
-                and
-                url.startswith(
-                    (
-                        "http://",
-                        "https://",
-                    )
-                )
-                and
-                (
-                    item_type
-                    in {
-                        "image",
-                        "output_image",
-                    }
-                    or
-                    "image"
-                    in item_type
-                )
-            ):
-
-                try:
-
-                    raw, downloaded_mime = (
-                        _download_image_url(
-                            url
-                        )
-                    )
-
-                    add_image(
-                        raw,
-                        downloaded_mime,
-                    )
-
-                except Exception:
-
-                    pass
-
-            for nested in (
-                item.values()
-            ):
-
-                if nested is (
-                    b64_json
-                ):
-
-                    continue
-
-                walk(
-                    nested
-                )
-
-        elif isinstance(
-            item,
-            list,
-        ):
-
-            for nested in item:
-
-                walk(
-                    nested
-                )
-
-    walk(
-        value
-    )
-
-    return found
-
-
-# =========================================================
-# RESOLUTION FINALIZER
+# RESOLUTION FINALIZATION
 # =========================================================
 
 def _finalize_requested_resolution(
@@ -2965,221 +1771,548 @@ def _finalize_requested_resolution(
     str,
 ]:
 
-    final_size = normalize_image_size(
-        requested_size
-    )
-
     #
-    # Native 1K/2K/4K/512 are already produced by Gemini.
+    # IMPORTANT V2.2:
+    #
+    # Gemini now receives native 1K/2K/4K output intent.
+    #
+    # We intentionally DO NOT perform fake local upscaling
+    # after generation.
+    #
+    # This preserves native provider pixels and avoids
+    # expensive / artificial resampling.
     #
 
-    if final_size != "HD":
-
-        return (
-            image_bytes,
-            mime_type,
-        )
-
-    try:
-
-        image = Image.open(
-            io.BytesIO(
+    return (
+        image_bytes,
+        (
+            mime_type
+            or
+            infer_mime_type(
                 image_bytes
             )
-        )
-
-        image.load()
-
-        width, height = (
-            image.size
-        )
-
-        short_side = min(
-            width,
-            height,
-        )
-
-        if short_side <= 720:
-
-            return (
-                image_bytes,
-                mime_type,
-            )
-
-        scale = (
-            720.0
-            /
-            float(
-                short_side
-            )
-        )
-
-        final_width = max(
-            1,
-            int(
-                round(
-                    width
-                    *
-                    scale
-                )
-            ),
-        )
-
-        final_height = max(
-            1,
-            int(
-                round(
-                    height
-                    *
-                    scale
-                )
-            ),
-        )
-
-        image = image.resize(
-            (
-                final_width,
-                final_height,
-            ),
-            Image.Resampling.LANCZOS,
-        )
-
-        output = io.BytesIO()
-
-        source_mime = clean_text(
-            mime_type,
-            100,
-        ).lower()
-
-        if (
-            source_mime
-            in {
-                "image/jpeg",
-                "image/jpg",
-            }
-            and
-            image.mode
-            in {
-                "RGB",
-                "L",
-            }
-        ):
-
-            image.save(
-                output,
-                format="JPEG",
-                quality=95,
-                optimize=True,
-            )
-
-            return (
-                output.getvalue(),
-                "image/jpeg",
-            )
-
-        if image.mode not in {
-            "RGB",
-            "RGBA",
-        }:
-
-            image = image.convert(
-                "RGBA"
-            )
-
-        image.save(
-            output,
-            format="PNG",
-            optimize=True,
-        )
-
-        return (
-            output.getvalue(),
-            "image/png",
-        )
-
-    except Exception:
-
-        return (
-            image_bytes,
-            mime_type,
-        )
-
-
-# =========================================================
-# JSON / STRUCTURED HELPERS
-# =========================================================
-
-def looks_like_json_request(
-    prompt: str,
-) -> bool:
-
-    source = clean_text(
-        prompt,
-        50000,
-    ).lower()
-
-    return any(
-        marker
-        in source
-        for marker in [
-            "return json only",
-            "return valid json",
-            "json only",
-            "output json",
-            "json schema",
-            "return exactly one complete valid json object",
-            "respond with json",
-        ]
+        ),
     )
 
 
-def _strip_json_fences(
-    value: str,
+# =========================================================
+# STC PROMPT GUARD
+# =========================================================
+
+def build_professional_prompt(
+    prompt: str,
+    aspect_ratio: str,
+    image_size: str,
 ) -> str:
+
+    value = clean_text(
+        prompt,
+        30000,
+    )
+
+    suffix = f"""
+
+XPAND IMAGE EXECUTION LOCK
+==========================
+
+Aspect ratio:
+{aspect_ratio}
+
+Native resolution intent:
+{image_size}
+
+Produce one coherent premium image.
+
+Use:
+- physically believable composition
+- realistic lighting
+- credible shadows
+- material-specific reflections
+- coherent perspective
+- natural scale
+- professional advertising restraint
+
+Do not add random graphic effects merely to make the scene
+look futuristic.
+""".strip()
+
+    if is_stc_bank_request(
+        value
+    ):
+
+        suffix += """
+
+STC BANK EXECUTION LOCK
+=======================
+
+Generate the IMAGE ONLY.
+
+Do not generate:
+- advertising headline
+- subtitle
+- CTA
+- percentage
+- price
+- financial figures
+- legal copy
+- STC Bank logo
+- STC wordmark
+- Visa logo
+- Mastercard logo
+- watermark
+- fake readable banking UI
+
+Do not automatically create:
+- purple neon environment
+- holograms
+- floating cards
+- floating phones
+- floating POS terminals
+- network lines
+- payment trails
+- random particles
+- generic fintech graphics
+
+For realistic photography:
+preserve natural real-world environmental colors.
+
+Purple is optional and must be physically motivated.
+""".strip()
+
+        if STC_BANK_IMAGE_GUARD:
+
+            suffix += (
+                "\n\n"
+                +
+                clean_text(
+                    STC_BANK_IMAGE_GUARD,
+                    6000,
+                )
+            )
+
+    return (
+        value
+        +
+        "\n\n"
+        +
+        suffix
+    )
+
+
+# =========================================================
+# GOOGLE QUOTA
+# =========================================================
+
+def looks_like_google_quota_error(
+    error: Any,
+) -> bool:
+
+    text = normalize_arabic(
+        error
+    )
+
+    markers = [
+        "quota",
+        "rate limit",
+        "billing",
+        "free tier",
+        "resource exhausted",
+        "429",
+        "exceeded",
+    ]
+
+    return any(
+        normalize_arabic(
+            marker
+        )
+        in text
+        for marker in markers
+    )
+
+
+# =========================================================
+# OPENAI REASONING NORMALIZER
+# =========================================================
+
+def normalize_reasoning_effort(
+    value: Any,
+    default: str = "low",
+) -> str:
+
+    level = str(
+        value
+        or ""
+    ).strip().lower()
+
+    if level in SUPPORTED_REASONING_LEVELS:
+
+        return level
+
+    return default
+
+
+# =========================================================
+# OPENAI USAGE
+# =========================================================
+
+def _log_openai_usage(
+    data: Dict[str, Any],
+) -> None:
+
+    if not OPENAI_USAGE_LOGGING:
+
+        return
+
+    usage = safe_dict(
+        data.get(
+            "usage"
+        )
+    )
+
+    if not usage:
+
+        return
+
+    input_tokens = int(
+        usage.get(
+            "input_tokens",
+            0,
+        )
+        or 0
+    )
+
+    output_tokens = int(
+        usage.get(
+            "output_tokens",
+            0,
+        )
+        or 0
+    )
+
+    total_tokens = int(
+        usage.get(
+            "total_tokens",
+            0,
+        )
+        or
+        (
+            input_tokens
+            +
+            output_tokens
+        )
+    )
+
+    input_details = safe_dict(
+        usage.get(
+            "input_tokens_details"
+        )
+    )
+
+    output_details = safe_dict(
+        usage.get(
+            "output_tokens_details"
+        )
+    )
+
+    cached_tokens = int(
+        input_details.get(
+            "cached_tokens",
+            0,
+        )
+        or 0
+    )
+
+    cache_write_tokens = int(
+        input_details.get(
+            "cache_write_tokens",
+            0,
+        )
+        or 0
+    )
+
+    reasoning_tokens = int(
+        output_details.get(
+            "reasoning_tokens",
+            0,
+        )
+        or 0
+    )
+
+    print(
+        "💰 XPAND SOL USAGE"
+        +
+        " | input="
+        +
+        str(
+            input_tokens
+        )
+        +
+        " | cached="
+        +
+        str(
+            cached_tokens
+        )
+        +
+        " | cache_write="
+        +
+        str(
+            cache_write_tokens
+        )
+        +
+        " | output="
+        +
+        str(
+            output_tokens
+        )
+        +
+        " | reasoning="
+        +
+        str(
+            reasoning_tokens
+        )
+        +
+        " | total="
+        +
+        str(
+            total_tokens
+        )
+    )
+
+
+# =========================================================
+# OPENAI RESPONSE TEXT
+# =========================================================
+
+def _extract_openai_text(
+    data: Dict[str, Any],
+) -> str:
+
+    direct = data.get(
+        "output_text"
+    )
+
+    if isinstance(
+        direct,
+        str,
+    ) and direct.strip():
+
+        return direct.strip()
+
+    output = data.get(
+        "output"
+    )
+
+    if isinstance(
+        output,
+        list,
+    ):
+
+        for item in output:
+
+            if not isinstance(
+                item,
+                dict,
+            ):
+
+                continue
+
+            content = item.get(
+                "content"
+            )
+
+            if not isinstance(
+                content,
+                list,
+            ):
+
+                continue
+
+            for part in content:
+
+                if not isinstance(
+                    part,
+                    dict,
+                ):
+
+                    continue
+
+                text = part.get(
+                    "text"
+                )
+
+                if isinstance(
+                    text,
+                    str,
+                ) and text.strip():
+
+                    return text.strip()
+
+    def walk(
+        node: Any,
+    ) -> str:
+
+        if isinstance(
+            node,
+            dict,
+        ):
+
+            for key in (
+                "output_text",
+                "text",
+            ):
+
+                value = node.get(
+                    key
+                )
+
+                if isinstance(
+                    value,
+                    str,
+                ) and value.strip():
+
+                    return value.strip()
+
+            for child in (
+                node.values()
+            ):
+
+                found = walk(
+                    child
+                )
+
+                if found:
+
+                    return found
+
+        elif isinstance(
+            node,
+            list,
+        ):
+
+            for child in node:
+
+                found = walk(
+                    child
+                )
+
+                if found:
+
+                    return found
+
+        return ""
+
+    return walk(
+        data
+    )
+
+
+def _extract_openai_refusal(
+    data: Dict[str, Any],
+) -> str:
+
+    def walk(
+        node: Any,
+    ) -> str:
+
+        if isinstance(
+            node,
+            dict,
+        ):
+
+            refusal = node.get(
+                "refusal"
+            )
+
+            if isinstance(
+                refusal,
+                str,
+            ) and refusal.strip():
+
+                return refusal.strip()
+
+            for child in (
+                node.values()
+            ):
+
+                found = walk(
+                    child
+                )
+
+                if found:
+
+                    return found
+
+        elif isinstance(
+            node,
+            list,
+        ):
+
+            for child in node:
+
+                found = walk(
+                    child
+                )
+
+                if found:
+
+                    return found
+
+        return ""
+
+    return walk(
+        data
+    )
+
+
+# =========================================================
+# JSON NORMALIZER
+# =========================================================
+
+def normalize_json_text(
+    value: Any,
+) -> str:
+
+    if isinstance(
+        value,
+        dict,
+    ):
+
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(
+                ",",
+                ":",
+            ),
+        )
 
     text = clean_text(
         value,
-        200000,
+        100000,
     ).strip()
 
+    if not text:
+
+        return ""
+
     text = re.sub(
-        r"^```(?:json)?\s*",
+        r"^\s*```(?:json)?\s*",
         "",
         text,
         flags=re.IGNORECASE,
     )
 
     text = re.sub(
-        r"\s*```$",
+        r"\s*```\s*$",
         "",
         text,
-    )
-
-    return text.strip()
-
-
-def normalize_json_text(
-    value: str,
-) -> str:
-
-    text = _strip_json_fences(
-        value
-    )
+    ).strip()
 
     try:
 
         parsed = json.loads(
             text
         )
-
-        if not isinstance(
-            parsed,
-            dict,
-        ):
-
-            raise ValueError(
-                "Structured output is not a JSON object."
-            )
 
         return json.dumps(
             parsed,
@@ -3194,23 +2327,25 @@ def normalize_json_text(
 
         pass
 
-    start = text.find(
+    first_object = text.find(
         "{"
     )
 
-    end = text.rfind(
+    last_object = text.rfind(
         "}"
     )
 
     if (
-        start >= 0
+        first_object >= 0
         and
-        end > start
+        last_object
+        >
+        first_object
     ):
 
         candidate = text[
-            start:
-            end + 1
+            first_object:
+            last_object + 1
         ]
 
         try:
@@ -3218,15 +2353,6 @@ def normalize_json_text(
             parsed = json.loads(
                 candidate
             )
-
-            if not isinstance(
-                parsed,
-                dict,
-            ):
-
-                raise ValueError(
-                    "Structured output is not a JSON object."
-                )
 
             return json.dumps(
                 parsed,
@@ -3241,423 +2367,88 @@ def normalize_json_text(
 
             pass
 
-    raise XPANDStructuredOutputError(
-        "Structured output is not valid JSON."
+    first_array = text.find(
+        "["
     )
 
+    last_array = text.rfind(
+        "]"
+    )
 
-def json_text_is_valid(
-    value: str,
+    if (
+        first_array >= 0
+        and
+        last_array
+        >
+        first_array
+    ):
+
+        candidate = text[
+            first_array:
+            last_array + 1
+        ]
+
+        try:
+
+            parsed = json.loads(
+                candidate
+            )
+
+            return json.dumps(
+                parsed,
+                ensure_ascii=False,
+                separators=(
+                    ",",
+                    ":",
+                ),
+            )
+
+        except Exception:
+
+            pass
+
+    return text
+
+
+def structured_json_is_valid(
+    value: Any,
 ) -> bool:
+
+    text = normalize_json_text(
+        value
+    )
+
+    if not text:
+
+        return False
 
     try:
 
-        parsed = json.loads(
-            _strip_json_fences(
-                value
-            )
+        json.loads(
+            text
         )
 
-        return isinstance(
-            parsed,
-            dict,
-        )
+        return True
 
     except Exception:
 
         return False
 
 
-# =========================================================
-# OPENAI RESPONSE TEXT EXTRACTION
-# =========================================================
-
-def _extract_openai_response_text(
-    value: Any,
-) -> str:
-
-    if isinstance(
-        value,
-        dict,
-    ):
-
-        direct = value.get(
-            "output_text"
-        )
-
-        if (
-            isinstance(
-                direct,
-                str,
-            )
-            and
-            direct.strip()
-        ):
-
-            return direct.strip()
-
-        if (
-            value.get(
-                "type"
-            )
-            ==
-            "output_text"
-        ):
-
-            text = value.get(
-                "text"
-            )
-
-            if (
-                isinstance(
-                    text,
-                    str,
-                )
-                and
-                text.strip()
-            ):
-
-                return text.strip()
-
-        for key in [
-            "output",
-            "content",
-            "message",
-            "messages",
-            "result",
-            "response",
-        ]:
-
-            if key in value:
-
-                found = (
-                    _extract_openai_response_text(
-                        value.get(
-                            key
-                        )
-                    )
-                )
-
-                if found:
-
-                    return found
-
-    elif isinstance(
-        value,
-        list,
-    ):
-
-        for item in value:
-
-            found = (
-                _extract_openai_response_text(
-                    item
-                )
-            )
-
-            if found:
-
-                return found
-
-    return ""
-
-
-def _extract_openai_refusal(
-    value: Any,
-) -> str:
-
-    if isinstance(
-        value,
-        dict,
-    ):
-
-        if (
-            value.get(
-                "type"
-            )
-            ==
-            "refusal"
-        ):
-
-            refusal = (
-                value.get(
-                    "refusal"
-                )
-                or
-                value.get(
-                    "text"
-                )
-            )
-
-            if refusal:
-
-                return clean_text(
-                    refusal,
-                    3000,
-                )
-
-        for nested in (
-            value.values()
-        ):
-
-            found = (
-                _extract_openai_refusal(
-                    nested
-                )
-            )
-
-            if found:
-
-                return found
-
-    elif isinstance(
-        value,
-        list,
-    ):
-
-        for nested in value:
-
-            found = (
-                _extract_openai_refusal(
-                    nested
-                )
-            )
-
-            if found:
-
-                return found
-
-    return ""
-
-
-def response_status_error(
-    data: Dict[str, Any],
-) -> str:
-
-    status = clean_text(
-        data.get(
-            "status",
-            "",
-        ),
-        100,
-    ).lower()
-
-    if status in {
-        "",
-        "completed",
-        "success",
-        "succeeded",
-    }:
-
-        return ""
-
-    error = data.get(
-        "error"
-    )
-
-    if isinstance(
-        error,
-        dict,
-    ):
-
-        message = clean_text(
-            (
-                error.get(
-                    "message"
-                )
-                or
-                error.get(
-                    "code"
-                )
-                or
-                error
-            ),
-            3000,
-        )
-
-        if message:
-
-            return (
-                status
-                +
-                ": "
-                +
-                message
-            )
-
-    incomplete = data.get(
-        "incomplete_details"
-    )
-
-    if isinstance(
-        incomplete,
-        dict,
-    ):
-
-        reason = clean_text(
-            incomplete.get(
-                "reason",
-                "",
-            ),
-            1000,
-        )
-
-        if reason:
-
-            return (
-                status
-                +
-                ": "
-                +
-                reason
-            )
-
-    return status
-
-
-# =========================================================
-# REASONING
-# =========================================================
-
-def normalize_reasoning_effort(
-    value: str,
-    fallback: str,
-) -> str:
-
-    current = clean_text(
-        value,
-        50,
-    ).lower()
-
-    if current in (
-        SUPPORTED_REASONING_LEVELS
-    ):
-
-        return current
-
-    backup = clean_text(
-        fallback,
-        50,
-    ).lower()
-
-    if backup in (
-        SUPPORTED_REASONING_LEVELS
-    ):
-
-        return backup
-
-    return "low"
-
-
-# =========================================================
-# OPENAI USAGE TELEMETRY
-# =========================================================
-
-def _log_openai_usage(
-    data: Dict[str, Any],
-) -> None:
-
-    if not OPENAI_USAGE_LOGGING:
-
-        return
-
-    usage = (
-        data.get(
-            "usage"
-        )
-        or
-        {}
-    )
-
-    if not isinstance(
-        usage,
-        dict,
-    ):
-
-        return
-
-    input_details = (
-        usage.get(
-            "input_tokens_details"
-        )
-        or
-        {}
-    )
-
-    output_details = (
-        usage.get(
-            "output_tokens_details"
-        )
-        or
-        {}
-    )
-
-    if not isinstance(
-        input_details,
-        dict,
-    ):
-
-        input_details = {}
-
-    if not isinstance(
-        output_details,
-        dict,
-    ):
-
-        output_details = {}
-
-    input_tokens = int(
-        usage.get(
-            "input_tokens",
-            0,
-        )
-        or 0
-    )
-
-    cached_tokens = int(
-        input_details.get(
-            "cached_tokens",
-            0,
-        )
-        or 0
-    )
-
-    output_tokens = int(
-        usage.get(
-            "output_tokens",
-            0,
-        )
-        or 0
-    )
-
-    reasoning_tokens = int(
-        output_details.get(
-            "reasoning_tokens",
-            0,
-        )
-        or 0
-    )
-
-    total_tokens = int(
-        usage.get(
-            "total_tokens",
-            0,
-        )
-        or 0
-    )
-
-    print(
-        "💰 XPAND SOL USAGE"
-        +
-        f" | input={input_tokens}"
-        +
-        f" | cached={cached_tokens}"
-        +
-        f" | output={output_tokens}"
-        +
-        f" | reasoning={reasoning_tokens}"
-        +
-        f" | total={total_tokens}"
+def looks_like_json_request(
+    prompt: str,
+) -> bool:
+
+    return contains_any(
+        prompt,
+        [
+            "json",
+            "json object",
+            "json schema",
+            "return only json",
+            "structured output",
+            "structured json",
+        ],
     )
 
 
@@ -3668,7 +2459,9 @@ def _log_openai_usage(
 def _call_openai_response_once(
     prompt: str,
     *,
-    image_bytes: Optional[bytes],
+    image_bytes: Optional[
+        bytes
+    ],
     image_mime_type: str,
     json_mode: bool,
     json_schema: Optional[
@@ -3679,10 +2472,19 @@ def _call_openai_response_once(
     max_output_tokens: int,
 ) -> Dict[str, Any]:
 
+    if not OPENAI_ENABLED:
+
+        raise XPANDImageConfigurationError(
+            (
+                "OpenAI disabled: "
+                "XPAND_OPENAI_ENABLED=false."
+            )
+        )
+
     if not OPENAI_API_KEY:
 
         raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
+            "OPENAI_API_KEY missing."
         )
 
     content: List[
@@ -3695,7 +2497,7 @@ def _call_openai_response_once(
             "text":
                 clean_text(
                     prompt,
-                    50000,
+                    32000,
                 ),
         }
     ]
@@ -3720,7 +2522,7 @@ def _call_openai_response_once(
 
     payload: Dict[
         str,
-        Any
+        Any,
     ] = {
         "model":
             OPENAI_DIRECTOR_MODEL,
@@ -3752,36 +2554,31 @@ def _call_openai_response_once(
             False,
     }
 
-    if OPENAI_PROMPT_CACHE_KEY:
+    if OPENAI_PROMPT_CACHE_MODE:
 
         payload[
-            "prompt_cache_key"
-        ] = (
-            OPENAI_PROMPT_CACHE_KEY
-        )
+            "prompt_cache_options"
+        ] = {
+            "mode":
+                OPENAI_PROMPT_CACHE_MODE,
+        }
 
-    if OPENAI_PROMPT_CACHE_RETENTION:
-
-        payload[
-            "prompt_cache_retention"
-        ] = (
-            OPENAI_PROMPT_CACHE_RETENTION
-        )
+    # -----------------------------------------------------
+    # STRICT STRUCTURED OUTPUT
+    # -----------------------------------------------------
 
     if json_schema:
 
         schema_name = re.sub(
             r"[^a-zA-Z0-9_\-]",
             "_",
-            (
-                clean_text(
-                    json_schema_name,
-                    64,
-                )
-                or
-                "xpand_structured_output"
-            ),
-        )[:64]
+            clean_text(
+                json_schema_name,
+                64,
+            )
+            or
+            "xpand_structured_output",
+        )
 
         payload[
             "text"
@@ -3820,6 +2617,7 @@ def _call_openai_response_once(
 
     response = requests.post(
         OPENAI_RESPONSES_URL,
+
         headers={
             "Authorization":
                 (
@@ -3831,7 +2629,9 @@ def _call_openai_response_once(
             "Content-Type":
                 "application/json",
         },
+
         json=payload,
+
         timeout=REQUEST_TIMEOUT,
     )
 
@@ -3856,7 +2656,7 @@ def _call_openai_response_once(
         raise XPANDImageProviderError(
             (
                 "GPT-5.6 Sol returned "
-                "an invalid response object."
+                "invalid response."
             )
         )
 
@@ -3868,42 +2668,52 @@ def _call_openai_response_once(
 
 
 # =========================================================
-# OPENAI DIRECTOR INTERNAL
+# OPENAI DIRECTOR EXECUTION
 # =========================================================
 
-def _call_openai_director_impl(
+def _run_openai_director(
     prompt: str,
     *,
     image_bytes: Optional[
         bytes
-    ] = None,
-    image_mime_type: str = "image/png",
-    json_mode: Optional[
-        bool
-    ] = None,
+    ],
+    image_mime_type: str,
+    json_mode: bool,
     json_schema: Optional[
         Dict[str, Any]
-    ] = None,
-    json_schema_name: str = (
-        "xpand_structured_output"
-    ),
+    ],
+    json_schema_name: str,
 ) -> str:
 
     structured = bool(
         json_mode
         or
         json_schema
-        or
-        looks_like_json_request(
-            prompt
-        )
     )
 
-    attempts = (
-        OPENAI_STRUCTURED_RETRIES
-        if structured
-        else 1
-    )
+    if structured:
+
+        reasoning_effort = (
+            OPENAI_STRUCTURED_REASONING
+        )
+
+        max_tokens = (
+            OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS
+        )
+
+        attempts = 2
+
+    else:
+
+        reasoning_effort = (
+            OPENAI_DIRECTOR_REASONING
+        )
+
+        max_tokens = (
+            OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS
+        )
+
+        attempts = 1
 
     last_error: Optional[
         Exception
@@ -3913,25 +2723,6 @@ def _call_openai_director_impl(
         1,
         attempts + 1,
     ):
-
-        current_prompt = clean_text(
-            prompt,
-            50000,
-        )
-
-        current_reasoning = (
-            OPENAI_STRUCTURED_REASONING
-            if structured
-            else
-            OPENAI_DIRECTOR_REASONING
-        )
-
-        current_max_tokens = (
-            OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS
-            if structured
-            else
-            OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS
-        )
 
         if (
             structured
@@ -3943,14 +2734,26 @@ def _call_openai_director_impl(
                 OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS
             )
 
-            current_prompt += (
+            current_prompt = (
+                prompt
+                +
                 "\n\n"
-                "STRUCTURED RETRY CONTRACT:\n"
-                "Return exactly ONE complete JSON object.\n"
-                "Do not use Markdown.\n"
-                "Do not add commentary before or after the JSON.\n"
-                "Do not truncate arrays.\n"
-                "Preserve all IDs requested by the original contract."
+                +
+                "STRUCTURED RETRY:\n"
+                +
+                "Return the entire JSON again from the beginning. "
+                +
+                "Do not truncate the object. Be concise."
+            )
+
+        else:
+
+            current_max_tokens = (
+                max_tokens
+            )
+
+            current_prompt = (
+                prompt
             )
 
         try:
@@ -3958,22 +2761,31 @@ def _call_openai_director_impl(
             data = (
                 _call_openai_response_once(
                     current_prompt,
-                    image_bytes=image_bytes,
+
+                    image_bytes=(
+                        image_bytes
+                    ),
+
                     image_mime_type=(
                         image_mime_type
                     ),
-                    json_mode=bool(
-                        structured
-                        and
-                        not json_schema
+
+                    json_mode=(
+                        json_mode
                     ),
-                    json_schema=json_schema,
+
+                    json_schema=(
+                        json_schema
+                    ),
+
                     json_schema_name=(
                         json_schema_name
                     ),
+
                     reasoning_effort=(
-                        current_reasoning
+                        reasoning_effort
                     ),
+
                     max_output_tokens=(
                         current_max_tokens
                     ),
@@ -3990,42 +2802,22 @@ def _call_openai_director_impl(
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-5.6 Sol refused "
-                        "the request: "
+                        "GPT-5.6 Sol refused: "
                         +
                         refusal
                     )
                 )
 
-            status_problem = (
-                response_status_error(
-                    data
-                )
+            text = _extract_openai_text(
+                data
             )
-
-            text = (
-                _extract_openai_response_text(
-                    data
-                )
-            )
-
-            if status_problem:
-
-                raise XPANDImageProviderError(
-                    (
-                        "GPT-5.6 Sol response "
-                        "status: "
-                        +
-                        status_problem
-                    )
-                )
 
             if not text:
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-5.6 Sol رجع "
-                        "بدون نص."
+                        "GPT-5.6 Sol returned "
+                        "no output text."
                     )
                 )
 
@@ -4037,10 +2829,15 @@ def _call_openai_director_impl(
                     )
                 )
 
-                if attempt > 1:
+                if not structured_json_is_valid(
+                    normalized
+                ):
 
-                    print(
-                        "✅ Structured Sol retry succeeded"
+                    raise XPANDStructuredOutputError(
+                        (
+                            "GPT-5.6 Sol structured output "
+                            "is not valid JSON."
+                        )
                     )
 
                 return normalized
@@ -4051,11 +2848,7 @@ def _call_openai_director_impl(
 
             last_error = error
 
-            if (
-                structured
-                and
-                attempt < attempts
-            ):
+            if attempt < attempts:
 
                 print(
                     (
@@ -4084,14 +2877,14 @@ def _call_openai_director_impl(
             +
             clean_text(
                 last_error,
-                3000,
+                2500,
             )
         )
     )
 
 
 # =========================================================
-# GEMINI TEXT EXTRACTION
+# GEMINI TEXT DISCOVERY
 # =========================================================
 
 def _find_gemini_text(
@@ -4103,48 +2896,44 @@ def _find_gemini_text(
         dict,
     ):
 
-        for key in [
+        for key in (
             "output_text",
             "text",
-        ]:
+        ):
 
             item = value.get(
                 key
             )
 
-            if (
-                isinstance(
-                    item,
-                    str,
-                )
-                and
-                item.strip()
-            ):
+            if isinstance(
+                item,
+                str,
+            ) and item.strip():
 
                 return item.strip()
 
-        for key in [
+        for key in (
             "output",
             "outputs",
             "steps",
             "content",
             "parts",
             "result",
-        ]:
+        ):
 
-            if key in value:
+            if key not in value:
 
-                found = (
-                    _find_gemini_text(
-                        value.get(
-                            key
-                        )
-                    )
+                continue
+
+            found = _find_gemini_text(
+                value.get(
+                    key
                 )
+            )
 
-                if found:
+            if found:
 
-                    return found
+                return found
 
     elif isinstance(
         value,
@@ -4153,10 +2942,8 @@ def _find_gemini_text(
 
         for item in value:
 
-            found = (
-                _find_gemini_text(
-                    item
-                )
+            found = _find_gemini_text(
+                item
             )
 
             if found:
@@ -4188,44 +2975,48 @@ def call_gemini_director(
     ),
 ) -> str:
 
-    global GEMINI_DIRECTOR_RUNTIME_MODEL
-
     if not GEMINI_API_KEY:
 
         raise XPANDImageConfigurationError(
-            "GEMINI_API_KEY مش موجود."
+            "GEMINI_API_KEY missing."
         )
 
-    final_prompt = clean_text(
+    prompt = clean_text(
         prompt,
-        50000,
+        32000,
     )
+
+    if not prompt:
+
+        raise XPANDImageError(
+            "Director prompt is empty."
+        )
 
     structured = bool(
         json_mode
         or
         json_schema
-        or
-        looks_like_json_request(
-            final_prompt
-        )
+    )
+
+    request_prompt = (
+        prompt
     )
 
     if structured:
 
-        final_prompt += (
+        request_prompt += (
             "\n\n"
-            "STRICT OUTPUT CONTRACT:\n"
-            "Return exactly one COMPLETE valid JSON object.\n"
-            "No Markdown.\n"
-            "No prose before or after JSON.\n"
-            "Do not rename required IDs.\n"
-            "Do not truncate arrays."
+            +
+            "OUTPUT CONTRACT:\n"
+            +
+            "Return exactly one complete valid JSON object. "
+            +
+            "No Markdown. No prose outside the JSON."
         )
 
         if json_schema:
 
-            final_prompt += (
+            request_prompt += (
                 "\n\nJSON SCHEMA:\n"
                 +
                 json.dumps(
@@ -4242,7 +3033,7 @@ def call_gemini_director(
                 "text",
 
             "text":
-                final_prompt,
+                request_prompt,
         }
     ]
 
@@ -4255,10 +3046,7 @@ def call_gemini_director(
 
                 "mime_type":
                     (
-                        clean_text(
-                            image_mime_type,
-                            100,
-                        )
+                        image_mime_type
                         or
                         "image/png"
                     ),
@@ -4272,260 +3060,153 @@ def call_gemini_director(
             }
         )
 
+    if (
+        image_bytes
+        and
+        structured
+    ):
+
+        selected_model = (
+            GEMINI_VISION_STRUCTURED_MODEL
+        )
+
+    elif image_bytes:
+
+        selected_model = (
+            GEMINI_VISION_MODEL
+        )
+
+    elif structured:
+
+        selected_model = (
+            GEMINI_STRUCTURED_MODEL
+        )
+
+    else:
+
+        selected_model = (
+            GEMINI_DIRECTOR_MODEL
+        )
+
+    payload: Dict[
+        str,
+        Any,
+    ] = {
+        "model":
+            selected_model,
+
+        "input":
+            inputs,
+    }
+
     #
-    # Search grounding is deliberately restricted to
-    # explicit research jobs.
+    # IMPORTANT:
     #
-    # A normal STC image-art-direction call should NOT spend
-    # a grounded search merely because the word "bank" exists.
+    # NO thinking_level here either.
+    #
+    # Keep provider-specific thinking parameters away from
+    # shared Director/image routing.
     #
 
-    research_intent = contains_any(
-        final_prompt,
-        [
-            "deep research",
-            "بحث عميق",
-            "competitor research",
-            "بحث المنافسين",
-            "latest campaign research",
-            "current competitor",
-            "research current",
-            "ground with google search",
-        ],
+    search_enabled = env_bool(
+        "XPAND_GEMINI_SEARCH_GROUNDING",
+        True,
     )
 
-    use_search = bool(
-        GEMINI_SEARCH_GROUNDING
+    if (
+        search_enabled
         and
         not structured
         and
-        research_intent
-    )
-
-    candidates: List[str] = []
-
-    def add_candidate(
-        value: Any,
-    ) -> None:
-
-        model = clean_text(
-            value,
-            200,
-        ).strip()
-
-        if (
-            model
-            and
-            model not in candidates
-        ):
-
-            candidates.append(
-                model
-            )
-
-    add_candidate(
-        GEMINI_DIRECTOR_RUNTIME_MODEL
-    )
-
-    for fallback_model in (
-        GEMINI_DIRECTOR_FALLBACK_MODELS
+        contains_any(
+            request_prompt,
+            [
+                "bank",
+                "بنك",
+                "مصرف",
+                "competitor",
+                "منافس",
+                "deep research",
+                "بحث عميق",
+            ],
+        )
     ):
 
-        add_candidate(
-            fallback_model
-        )
-
-    last_error = ""
-
-    index = 0
-
-    while (
-        index < len(
-            candidates
-        )
-        and
-        index < 5
-    ):
-
-        model = candidates[
-            index
+        payload[
+            "tools"
+        ] = [
+            {
+                "type":
+                    "google_search",
+            }
         ]
 
-        index += 1
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
 
-        payload: Dict[
-            str,
-            Any
-        ] = {
-            "model":
-                model,
+        headers={
+            "x-goog-api-key":
+                GEMINI_API_KEY,
 
-            "input":
-                inputs,
-        }
+            "Content-Type":
+                "application/json",
+        },
 
-        if use_search:
+        json=payload,
 
-            payload[
-                "tools"
-            ] = [
-                {
-                    "type":
-                        "google_search",
-                }
-            ]
+        timeout=REQUEST_TIMEOUT,
+    )
 
-        response = requests.post(
-            GEMINI_INTERACTIONS_URL,
-            headers={
-                "x-goog-api-key":
-                    GEMINI_API_KEY,
+    if not response.ok:
 
-                "Content-Type":
-                    "application/json",
-            },
-            json=payload,
-            timeout=REQUEST_TIMEOUT,
-        )
-
-        if response.ok:
-
-            data = _safe_json(
-                response
-            )
-
-            text = _find_gemini_text(
-                data
-            )
-
-            if not text:
-
-                raise XPANDImageProviderError(
-                    (
-                        "Gemini Director "
-                        "رجع بدون نص."
-                    )
-                )
-
-            if (
-                model
-                !=
-                GEMINI_DIRECTOR_RUNTIME_MODEL
-            ):
-
-                print(
-                    (
-                        "✅ GEMINI DIRECTOR MODEL RECOVERED | "
-                        +
-                        model
-                    )
-                )
-
-            GEMINI_DIRECTOR_RUNTIME_MODEL = (
-                model
-            )
-
-            if structured:
-
-                return normalize_json_text(
-                    text
-                )
-
-            return text
-
-        last_error = (
+        raise XPANDImageProviderError(
             _provider_error_message(
                 "Gemini Director",
                 response,
             )
         )
 
-        model_problem = bool(
-            re.search(
-                (
-                    r"model.+"
-                    r"(?:not found|unsupported|invalid|"
-                    r"does not exist|unavailable)"
-                ),
-                last_error,
-                flags=(
-                    re.IGNORECASE
-                    |
-                    re.DOTALL
-                ),
-            )
-        )
+    data = _safe_json(
+        response
+    )
 
-        if not model_problem:
+    text = _find_gemini_text(
+        data
+    )
 
-            raise XPANDImageProviderError(
-                last_error
-            )
+    if not text:
 
-        #
-        # Use Google's suggested replacement when present.
-        #
-
-        suggestion = re.search(
+        raise XPANDImageProviderError(
             (
-                r"Did you mean\s+"
-                r"['\"]([^'\"]+)['\"]"
-            ),
-            last_error,
-            flags=re.IGNORECASE,
+                "Gemini Director returned "
+                "no text."
+            )
         )
 
-        if suggestion:
+    if structured:
 
-            suggested_model = (
-                suggestion.group(
-                    1
-                ).strip()
-            )
+        normalized = normalize_json_text(
+            text
+        )
 
-            if (
-                suggested_model
-                and
-                suggested_model
-                not in candidates
-            ):
-
-                candidates.insert(
-                    index,
-                    suggested_model,
-                )
-
-        if index < min(
-            len(
-                candidates
-            ),
-            5,
+        if not structured_json_is_valid(
+            normalized
         ):
 
-            print(
+            raise XPANDStructuredOutputError(
                 (
-                    "🔁 GEMINI DIRECTOR MODEL FALLBACK | "
-                    +
-                    model
-                    +
-                    " unavailable"
+                    "Structured output is "
+                    "not valid JSON."
                 )
             )
 
-    raise XPANDImageProviderError(
-        (
-            last_error
-            or
-            (
-                "Gemini Director: "
-                "no usable Director model was found."
-            )
-        )
-    )
+        return normalized
+
+    return text
 
 
 # =========================================================
-# PUBLIC DIRECTOR ROUTER
+# XPAND DIRECTOR ROUTER
 # =========================================================
 
 def call_openai_director(
@@ -4546,57 +3227,70 @@ def call_openai_director(
     ),
 ) -> str:
 
-    """
-    Backwards-compatible public name.
+    prompt = clean_text(
+        prompt,
+        32000,
+    )
 
-    V2.1 routing:
-    - Structured JSON -> GPT-5.6 Sol first.
-    - Free-text work -> Gemini Flash-Lite first.
-    - The other provider is a technical fallback.
+    if not prompt:
 
-    Creative Brain imports this exact function name, so
-    backwards compatibility is mandatory.
-    """
+        raise XPANDImageError(
+            "Director prompt is empty."
+        )
+
+    if json_mode is None:
+
+        json_mode = bool(
+            json_schema
+            or
+            looks_like_json_request(
+                prompt
+            )
+        )
 
     structured = bool(
         json_mode
         or
         json_schema
-        or
-        looks_like_json_request(
-            prompt
-        )
     )
 
-    errors: List[str] = []
+    errors = []
 
     # =====================================================
-    # STRUCTURED -> OPENAI FIRST
+    # STRUCTURED:
+    # GPT-5.6 SOL FIRST
     # =====================================================
 
     if structured:
 
         if (
-            STRUCTURED_DIRECTOR_PREFER_OPENAI
+            OPENAI_ENABLED
             and
             OPENAI_API_KEY
         ):
 
             try:
 
-                return (
-                    _call_openai_director_impl(
-                        prompt,
-                        image_bytes=image_bytes,
-                        image_mime_type=(
-                            image_mime_type
-                        ),
-                        json_mode=True,
-                        json_schema=json_schema,
-                        json_schema_name=(
-                            json_schema_name
-                        ),
-                    )
+                return _run_openai_director(
+                    prompt,
+
+                    image_bytes=(
+                        image_bytes
+                    ),
+
+                    image_mime_type=(
+                        image_mime_type
+                    ),
+
+                    json_mode=True,
+
+                    json_schema=(
+                        json_schema
+                    ),
+
+                    json_schema_name=(
+                        json_schema_name
+                    ),
                 )
 
             except Exception as error:
@@ -4607,7 +3301,7 @@ def call_openai_director(
                         +
                         clean_text(
                             error,
-                            2500,
+                            2400,
                         )
                     )
                 )
@@ -4618,28 +3312,67 @@ def call_openai_director(
                         +
                         clean_text(
                             error,
-                            1200,
+                            1800,
                         )
                     )
                 )
+
+        elif not OPENAI_ENABLED:
+
+            errors.append(
+                (
+                    "openai_structured: "
+                    +
+                    "XPAND_OPENAI_ENABLED=false"
+                )
+            )
+
+            print(
+                (
+                    "⚠️ OPENAI STRUCTURED DIRECTOR disabled "
+                    "by XPAND_OPENAI_ENABLED=false."
+                )
+            )
+
+        elif not OPENAI_API_KEY:
+
+            errors.append(
+                (
+                    "openai_structured: "
+                    +
+                    "OPENAI_API_KEY missing"
+                )
+            )
+
+        # -------------------------------------------------
+        # Structured fallback:
+        # Gemini only after Sol cannot be used.
+        # -------------------------------------------------
 
         if GEMINI_API_KEY:
 
             try:
 
-                return (
-                    call_gemini_director(
-                        prompt,
-                        image_bytes=image_bytes,
-                        image_mime_type=(
-                            image_mime_type
-                        ),
-                        json_mode=True,
-                        json_schema=json_schema,
-                        json_schema_name=(
-                            json_schema_name
-                        ),
-                    )
+                return call_gemini_director(
+                    prompt,
+
+                    image_bytes=(
+                        image_bytes
+                    ),
+
+                    image_mime_type=(
+                        image_mime_type
+                    ),
+
+                    json_mode=True,
+
+                    json_schema=(
+                        json_schema
+                    ),
+
+                    json_schema_name=(
+                        json_schema_name
+                    ),
                 )
 
             except Exception as error:
@@ -4650,53 +3383,12 @@ def call_openai_director(
                         +
                         clean_text(
                             error,
-                            2500,
+                            2400,
                         )
                     )
                 )
 
-        #
-        # If preference was changed to Gemini-first and Gemini
-        # failed, OpenAI still gets a final chance.
-        #
-
-        if (
-            OPENAI_API_KEY
-            and
-            not STRUCTURED_DIRECTOR_PREFER_OPENAI
-        ):
-
-            try:
-
-                return (
-                    _call_openai_director_impl(
-                        prompt,
-                        image_bytes=image_bytes,
-                        image_mime_type=(
-                            image_mime_type
-                        ),
-                        json_mode=True,
-                        json_schema=json_schema,
-                        json_schema_name=(
-                            json_schema_name
-                        ),
-                    )
-                )
-
-            except Exception as error:
-
-                errors.append(
-                    (
-                        "openai_structured_fallback: "
-                        +
-                        clean_text(
-                            error,
-                            2500,
-                        )
-                    )
-                )
-
-        raise XPANDImageProviderError(
+        raise XPANDStructuredOutputError(
             (
                 "Structured Director failed. "
                 +
@@ -4707,25 +3399,29 @@ def call_openai_director(
         )
 
     # =====================================================
-    # FREE TEXT -> GEMINI FIRST
+    # FREE TEXT:
+    # GEMINI FIRST FOR COST
     # =====================================================
 
-    if (
-        FREE_TEXT_DIRECTOR_PREFER_GEMINI
-        and
-        GEMINI_API_KEY
-    ):
+    if GEMINI_API_KEY:
 
         try:
 
             return call_gemini_director(
                 prompt,
-                image_bytes=image_bytes,
+
+                image_bytes=(
+                    image_bytes
+                ),
+
                 image_mime_type=(
                     image_mime_type
                 ),
+
                 json_mode=False,
+
                 json_schema=None,
+
                 json_schema_name=(
                     json_schema_name
                 ),
@@ -4739,39 +3435,37 @@ def call_openai_director(
                     +
                     clean_text(
                         error,
-                        2500,
+                        2200,
                     )
                 )
             )
 
-            print(
-                (
-                    "⚠️ GEMINI TEXT DIRECTOR: "
-                    +
-                    clean_text(
-                        error,
-                        1200,
-                    )
-                )
-            )
-
-    if OPENAI_API_KEY:
+    if (
+        OPENAI_ENABLED
+        and
+        OPENAI_API_KEY
+    ):
 
         try:
 
-            return (
-                _call_openai_director_impl(
-                    prompt,
-                    image_bytes=image_bytes,
-                    image_mime_type=(
-                        image_mime_type
-                    ),
-                    json_mode=False,
-                    json_schema=None,
-                    json_schema_name=(
-                        json_schema_name
-                    ),
-                )
+            return _run_openai_director(
+                prompt,
+
+                image_bytes=(
+                    image_bytes
+                ),
+
+                image_mime_type=(
+                    image_mime_type
+                ),
+
+                json_mode=False,
+
+                json_schema=None,
+
+                json_schema_name=(
+                    json_schema_name
+                ),
             )
 
         except Exception as error:
@@ -4782,57 +3476,14 @@ def call_openai_director(
                     +
                     clean_text(
                         error,
-                        2500,
+                        2200,
                     )
                 )
             )
-
-    if (
-        GEMINI_API_KEY
-        and
-        not FREE_TEXT_DIRECTOR_PREFER_GEMINI
-    ):
-
-        try:
-
-            return call_gemini_director(
-                prompt,
-                image_bytes=image_bytes,
-                image_mime_type=(
-                    image_mime_type
-                ),
-                json_mode=False,
-            )
-
-        except Exception as error:
-
-            errors.append(
-                (
-                    "gemini_text_fallback: "
-                    +
-                    clean_text(
-                        error,
-                        2500,
-                    )
-                )
-            )
-
-    if not (
-        OPENAI_API_KEY
-        or
-        GEMINI_API_KEY
-    ):
-
-        raise XPANDImageConfigurationError(
-            (
-                "لا يوجد OPENAI_API_KEY "
-                "ولا GEMINI_API_KEY."
-            )
-        )
 
     raise XPANDImageProviderError(
         (
-            "Director failed. "
+            "Director unavailable. "
             +
             " | ".join(
                 errors
@@ -4842,7 +3493,7 @@ def call_openai_director(
 
 
 # =========================================================
-# EXPLICIT JSON HELPER
+# JSON DIRECTOR HELPER
 # =========================================================
 
 def call_openai_director_json(
@@ -4862,12 +3513,21 @@ def call_openai_director_json(
 
     raw = call_openai_director(
         prompt,
-        image_bytes=image_bytes,
+
+        image_bytes=(
+            image_bytes
+        ),
+
         image_mime_type=(
             image_mime_type
         ),
+
         json_mode=True,
-        json_schema=json_schema,
+
+        json_schema=(
+            json_schema
+        ),
+
         json_schema_name=(
             json_schema_name
         ),
@@ -4900,8 +3560,8 @@ def call_openai_director_json(
 
         raise XPANDStructuredOutputError(
             (
-                "Structured response "
-                "is not a JSON object."
+                "Structured response is "
+                "not a JSON object."
             )
         )
 
@@ -4919,14 +3579,10 @@ def build_sol_art_direction(
 ) -> str:
 
     request = f"""
-You are the senior visual art director for XPAND Creative Agency.
+You are the senior visual art director for XPAND.
 
-Your task is NOT to generate the image.
-
-Create a concise professional visual direction for an image-generation model.
-
-ORIGINAL USER REQUEST:
-{clean_text(original_prompt, 16000)}
+ORIGINAL REQUEST:
+{clean_text(original_prompt, 10000)}
 
 TARGET ASPECT RATIO:
 {aspect_ratio}
@@ -4934,22 +3590,21 @@ TARGET ASPECT RATIO:
 RESOLUTION INTENT:
 {image_size}
 
+Create a concise professional visual direction.
+
 Improve:
 - composition
 - camera
-- focal hierarchy
+- hierarchy
 - lighting
 - materials
 - palette
 - depth
 - negative space
-- commercial impact
-- premium finish
+- advertising finish
 
-Preserve the exact user intent.
-Do not invent unrelated brands or products.
-Do not expose chain-of-thought.
-Return only the final concise art-direction brief.
+Preserve the user's intent.
+Return only the concise art-direction brief.
 """.strip()
 
     return call_openai_director(
@@ -4959,53 +3614,678 @@ Return only the final concise art-direction brief.
 
 
 # =========================================================
-# LEGACY SOL VISUAL CRITIC
+# LEGACY VISUAL CRITIC
 # =========================================================
 
-def build_sol_visual_critique(
-    original_prompt: str,
+def critique_generated_image(
     image_bytes: bytes,
     mime_type: str,
+    original_prompt: str,
 ) -> str:
 
     request = f"""
-You are the final senior visual reviewer for XPAND Creative Agency.
-
 Review the attached generated image against this request:
 
-{clean_text(original_prompt, 12000)}
+{clean_text(original_prompt, 8000)}
 
 Identify only meaningful improvements.
 
 Evaluate:
 - request accuracy
+- concept clarity
 - composition
-- hierarchy
 - advertising quality
 - lighting
 - materials
+- perspective
 - reflections
 - shadows
+- anatomy
 - artifacts
-- brand feel
 - commercial readiness
 
 Do not request a full redesign if the image is already strong.
-Preserve the main product or subject.
-Do not expose chain-of-thought.
-Return only concise actionable corrections.
+
+Return concise actionable corrections.
 """.strip()
 
     return call_openai_director(
         request,
-        image_bytes=image_bytes,
-        image_mime_type=mime_type,
+
+        image_bytes=(
+            image_bytes
+        ),
+
+        image_mime_type=(
+            mime_type
+        ),
+
         json_mode=False,
     )
 
 
 # =========================================================
-# OPENAI GPT-IMAGE-2 GENERATION
+# GEMINI IMAGE GENERATION
+# =========================================================
+
+def _build_gemini_image_payload(
+    *,
+    model: str,
+    prompt: str,
+    aspect_ratio: str,
+    image_size: str,
+) -> Dict[str, Any]:
+
+    #
+    # THIS FUNCTION IS THE CORE FIX.
+    #
+    # Intentionally NO:
+    #
+    #   thinking_level
+    #   thinking
+    #   reasoning_effort
+    #
+    # Nano Banana 2 controls its image reasoning internally.
+    #
+
+    return {
+        "model":
+            model,
+
+        "input":
+            prompt,
+
+        "response_format": {
+            "type":
+                "image",
+
+            "aspect_ratio":
+                aspect_ratio,
+
+            "image_size":
+                image_size,
+
+            "mime_type":
+                "image/jpeg",
+        },
+    }
+
+
+def _generate_one_with_gemini(
+    prompt: str,
+    original_prompt: str,
+    route: ImageRoute,
+    index: int = 0,
+) -> GeneratedImage:
+
+    if not GEMINI_API_KEY:
+
+        raise XPANDImageConfigurationError(
+            "GEMINI_API_KEY missing."
+        )
+
+    requested_size = (
+        route.image_size
+    )
+
+    image_size = (
+        route.image_size
+        if route.image_size
+        in SUPPORTED_GOOGLE_IMAGE_SIZES
+        else
+        "1K"
+    )
+
+    payload = (
+        _build_gemini_image_payload(
+            model=(
+                route.model
+            ),
+
+            prompt=(
+                prompt
+            ),
+
+            aspect_ratio=(
+                route.aspect_ratio
+            ),
+
+            image_size=(
+                image_size
+            ),
+        )
+    )
+
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+
+        headers={
+            "x-goog-api-key":
+                GEMINI_API_KEY,
+
+            "Content-Type":
+                "application/json",
+        },
+
+        json=payload,
+
+        timeout=REQUEST_TIMEOUT,
+    )
+
+    if not response.ok:
+
+        raise XPANDImageProviderError(
+            _provider_error_message(
+                "Gemini Image",
+                response,
+            )
+        )
+
+    data = _safe_json(
+        response
+    )
+
+    images = _find_inline_images(
+        data
+    )
+
+    if not images:
+
+        raise XPANDImageProviderError(
+            (
+                "Gemini returned success "
+                "but no image was found."
+            )
+        )
+
+    image_bytes, mime_type = (
+        images[
+            0
+        ]
+    )
+
+    image_bytes, mime_type = (
+        _finalize_requested_resolution(
+            image_bytes,
+            mime_type,
+            requested_size,
+        )
+    )
+
+    request_id = clean_text(
+        data.get(
+            "id"
+        ),
+        200,
+    )
+
+    if not request_id:
+
+        request_id = (
+            "gg-"
+            +
+            uuid.uuid4().hex[
+                :12
+            ]
+        )
+
+    if index > 0:
+
+        request_id += (
+            "-"
+            +
+            str(
+                index + 1
+            )
+        )
+
+    return GeneratedImage(
+        image_bytes=(
+            image_bytes
+        ),
+
+        mime_type=(
+            mime_type
+            or
+            "image/jpeg"
+        ),
+
+        provider=(
+            route.provider
+        ),
+
+        model=(
+            route.model
+        ),
+
+        prompt=(
+            prompt
+        ),
+
+        original_prompt=(
+            original_prompt
+        ),
+
+        aspect_ratio=(
+            route.aspect_ratio
+        ),
+
+        image_size=(
+            requested_size
+        ),
+
+        quality=(
+            route.quality
+        ),
+
+        route_reason=(
+            route.reason
+        ),
+
+        request_id=(
+            request_id
+        ),
+
+        metadata={
+            "generation_type":
+                "gemini_generation",
+
+            "google_model":
+                route.model,
+
+            "google_image_size":
+                image_size,
+
+            "delivered_image_size":
+                requested_size,
+
+            "thinking_level_sent":
+                None,
+
+            "xpand_engine_version":
+                ENGINE_VERSION,
+        },
+    )
+
+
+def generate_with_gemini(
+    prompt: str,
+    original_prompt: str,
+    route: ImageRoute,
+    number: int = 1,
+) -> List[
+    GeneratedImage
+]:
+
+    number = max(
+        1,
+        min(
+            int(
+                number
+                or 1
+            ),
+            4,
+        ),
+    )
+
+    results = []
+
+    errors = []
+
+    for index in range(
+        number
+    ):
+
+        try:
+
+            results.append(
+                _generate_one_with_gemini(
+                    prompt=(
+                        prompt
+                    ),
+
+                    original_prompt=(
+                        original_prompt
+                    ),
+
+                    route=(
+                        route
+                    ),
+
+                    index=(
+                        index
+                    ),
+                )
+            )
+
+        except Exception as error:
+
+            errors.append(
+                clean_text(
+                    error,
+                    3000,
+                )
+            )
+
+    if not results:
+
+        raise XPANDImageProviderError(
+            (
+                "Gemini generation failed.\n"
+                +
+                "\n".join(
+                    errors
+                )
+            )
+        )
+
+    return results
+
+
+# =========================================================
+# GEMINI EDIT
+# =========================================================
+
+def edit_with_gemini(
+    input_images: Sequence[
+        Tuple[
+            bytes,
+            str,
+        ]
+    ],
+    prompt: str,
+    *,
+    aspect_ratio: str = "4:5",
+    image_size: str = "",
+    pro: bool = False,
+) -> GeneratedImage:
+
+    if not GEMINI_API_KEY:
+
+        raise XPANDImageConfigurationError(
+            "GEMINI_API_KEY missing."
+        )
+
+    if not input_images:
+
+        raise XPANDImageError(
+            "No images supplied for edit."
+        )
+
+    final_ratio = detect_aspect_ratio(
+        prompt,
+        aspect_ratio,
+    )
+
+    final_size = detect_image_size(
+        prompt,
+        image_size,
+    )
+
+    provider_size = (
+        final_size
+        if final_size
+        in SUPPORTED_GOOGLE_IMAGE_SIZES
+        else
+        "1K"
+    )
+
+    model = (
+        GOOGLE_IMAGE_PRO_MODEL
+        if pro
+        else
+        GOOGLE_IMAGE_FAST_MODEL
+    )
+
+    instruction = (
+        build_professional_prompt(
+            prompt,
+            final_ratio,
+            final_size,
+        )
+    )
+
+    instruction += """
+
+REFERENCE ORDER CONTRACT
+========================
+
+Image 1 is the BASE image unless the user explicitly says otherwise.
+
+Images 2+ are references.
+
+Preserve all untouched areas.
+
+Transfer only what the user requested.
+
+Match:
+- perspective
+- scale
+- lighting
+- shadows
+- reflections
+- depth
+- material response
+
+The result must look like one coherent photographed scene.
+
+Do not introduce generic fintech effects unless explicitly requested.
+""".strip()
+
+    inputs: List[
+        Dict[str, Any]
+    ] = [
+        {
+            "type":
+                "text",
+
+            "text":
+                instruction,
+        }
+    ]
+
+    for (
+        image_bytes,
+        mime_type,
+    ) in list(
+        input_images
+    )[:10]:
+
+        if not image_bytes:
+
+            continue
+
+        inputs.append(
+            {
+                "type":
+                    "image",
+
+                "mime_type":
+                    (
+                        mime_type
+                        or
+                        infer_mime_type(
+                            image_bytes
+                        )
+                    ),
+
+                "data":
+                    base64.b64encode(
+                        image_bytes
+                    ).decode(
+                        "ascii"
+                    ),
+            }
+        )
+
+    payload = {
+        "model":
+            model,
+
+        "input":
+            inputs,
+
+        "response_format": {
+            "type":
+                "image",
+
+            "aspect_ratio":
+                final_ratio,
+
+            "image_size":
+                provider_size,
+
+            "mime_type":
+                "image/jpeg",
+        },
+    }
+
+    #
+    # CRITICAL:
+    #
+    # No thinking_level is included.
+    #
+
+    response = requests.post(
+        GEMINI_INTERACTIONS_URL,
+
+        headers={
+            "x-goog-api-key":
+                GEMINI_API_KEY,
+
+            "Content-Type":
+                "application/json",
+        },
+
+        json=payload,
+
+        timeout=REQUEST_TIMEOUT,
+    )
+
+    if not response.ok:
+
+        raise XPANDImageProviderError(
+            _provider_error_message(
+                "Nano Banana Edit",
+                response,
+            )
+        )
+
+    data = _safe_json(
+        response
+    )
+
+    images = _find_inline_images(
+        data
+    )
+
+    if not images:
+
+        raise XPANDImageProviderError(
+            (
+                "Nano Banana Edit succeeded "
+                "but returned no image."
+            )
+        )
+
+    output, output_mime = (
+        images[
+            0
+        ]
+    )
+
+    output, output_mime = (
+        _finalize_requested_resolution(
+            output,
+            output_mime,
+            final_size,
+        )
+    )
+
+    return GeneratedImage(
+        image_bytes=(
+            output
+        ),
+
+        mime_type=(
+            output_mime
+            or
+            "image/jpeg"
+        ),
+
+        provider=(
+            PROVIDER_GOOGLE_PRO
+            if pro
+            else
+            PROVIDER_GOOGLE_FAST
+        ),
+
+        model=(
+            model
+        ),
+
+        prompt=(
+            instruction
+        ),
+
+        original_prompt=(
+            clean_text(
+                prompt,
+                32000,
+            )
+        ),
+
+        aspect_ratio=(
+            final_ratio
+        ),
+
+        image_size=(
+            final_size
+        ),
+
+        quality="high",
+
+        route_reason=(
+            "XPAND Nano Banana image edit"
+        ),
+
+        request_id=(
+            clean_text(
+                data.get(
+                    "id"
+                ),
+                200,
+            )
+            or
+            (
+                "gge-"
+                +
+                uuid.uuid4().hex[
+                    :12
+                ]
+            )
+        ),
+
+        metadata={
+            "generation_type":
+                "gemini_edit",
+
+            "input_images":
+                len(
+                    input_images
+                ),
+
+            "thinking_level_sent":
+                None,
+
+            "xpand_engine_version":
+                ENGINE_VERSION,
+        },
+    )
+
+
+# =========================================================
+# OPENAI GPT-IMAGE-2
 # =========================================================
 
 def generate_with_openai(
@@ -5017,13 +4297,19 @@ def generate_with_openai(
     GeneratedImage
 ]:
 
-    if not OPENAI_API_KEY:
+    if not OPENAI_ENABLED:
 
         raise XPANDImageConfigurationError(
             (
-                "OPENAI_API_KEY مش موجود "
-                "على Railway."
+                "OpenAI disabled by "
+                "XPAND_OPENAI_ENABLED=false."
             )
+        )
+
+    if not OPENAI_API_KEY:
+
+        raise XPANDImageConfigurationError(
+            "OPENAI_API_KEY missing."
         )
 
     number = max(
@@ -5047,12 +4333,13 @@ def generate_with_openai(
         route.quality
         if route.quality
         in SUPPORTED_OPENAI_QUALITIES
-        else "high"
+        else
+        "high"
     )
 
     payload: Dict[
         str,
-        Any
+        Any,
     ] = {
         "model":
             route.model,
@@ -5077,6 +4364,7 @@ def generate_with_openai(
 
     response = requests.post(
         OPENAI_IMAGE_GENERATION_URL,
+
         headers={
             "Authorization":
                 (
@@ -5088,7 +4376,9 @@ def generate_with_openai(
             "Content-Type":
                 "application/json",
         },
+
         json=payload,
+
         timeout=REQUEST_TIMEOUT,
     )
 
@@ -5120,8 +4410,8 @@ def generate_with_openai(
 
         raise XPANDImageProviderError(
             (
-                "GPT-Image-2 نجح "
-                "لكن ما رجعت صورة."
+                "GPT-Image-2 returned success "
+                "but no image was found."
             )
         )
 
@@ -5133,35 +4423,36 @@ def generate_with_openai(
         200,
     )
 
-    results: List[
-        GeneratedImage
-    ] = []
+    results = []
 
     for index, (
         image_bytes,
         mime_type,
     ) in enumerate(
-        images[:number],
-        start=1,
+        images[
+            :number
+        ]
     ):
 
-        current_id = (
+        unique_id = (
             request_id
             or
             (
-                "og-"
+                "oa-"
                 +
-                uuid.uuid4().hex[:12]
+                uuid.uuid4().hex[
+                    :12
+                ]
             )
         )
 
         if number > 1:
 
-            current_id += (
+            unique_id += (
                 "-"
                 +
                 str(
-                    index
+                    index + 1
                 )
             )
 
@@ -5170,46 +4461,67 @@ def generate_with_openai(
                 image_bytes=(
                     image_bytes
                 ),
+
                 mime_type=(
                     mime_type
                     or
-                    "image/png"
+                    infer_mime_type(
+                        image_bytes,
+                        "image/png",
+                    )
                 ),
+
                 provider=(
-                    route.provider
+                    PROVIDER_OPENAI
                 ),
+
                 model=(
                     route.model
                 ),
-                prompt=prompt,
+
+                prompt=(
+                    prompt
+                ),
+
                 original_prompt=(
                     original_prompt
                 ),
+
                 aspect_ratio=(
                     route.aspect_ratio
                 ),
+
                 image_size=(
-                    route.image_size
+                    provider_size
                 ),
-                quality=quality,
+
+                quality=(
+                    quality
+                ),
+
                 route_reason=(
                     route.reason
                 ),
+
                 request_id=(
-                    current_id
+                    unique_id
                 ),
+
                 metadata={
                     "generation_type":
                         "openai_generation",
 
+                    "elapsed_seconds":
+                        elapsed,
+
+                    "requested_resolution_intent":
+                        route.image_size,
+
                     "provider_size":
                         provider_size,
 
-                    "requested_image_size":
-                        route.image_size,
-
-                    "elapsed_seconds":
-                        elapsed,
+                    "xpand_engine_version":
+                        ENGINE_VERSION,
                 },
             )
         )
@@ -5218,864 +4530,7 @@ def generate_with_openai(
 
 
 # =========================================================
-# OPENAI EDIT
-# =========================================================
-
-def edit_with_openai(
-    input_image_bytes: bytes,
-    input_mime_type: str,
-    prompt: str,
-    original_prompt: str,
-    route: ImageRoute,
-    *,
-    final_provider: str = (
-        PROVIDER_OPENAI
-    ),
-    final_model_label: str = (
-        OPENAI_IMAGE_MODEL
-    ),
-    metadata: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> GeneratedImage:
-
-    if not OPENAI_API_KEY:
-
-        raise XPANDImageConfigurationError(
-            "OPENAI_API_KEY مش موجود."
-        )
-
-    provider_size = (
-        openai_size_for_ratio(
-            route.aspect_ratio
-        )
-    )
-
-    quality = (
-        route.quality
-        if route.quality
-        in SUPPORTED_OPENAI_QUALITIES
-        else "high"
-    )
-
-    mime_type = clean_text(
-        input_mime_type,
-        100,
-    ).lower()
-
-    if not mime_type.startswith(
-        "image/"
-    ):
-
-        mime_type = "image/png"
-
-    extension = (
-        ".jpg"
-        if mime_type
-        in {
-            "image/jpeg",
-            "image/jpg",
-        }
-        else
-        ".png"
-    )
-
-    files = {
-        "image": (
-            (
-                "xpand-input"
-                +
-                extension
-            ),
-            input_image_bytes,
-            mime_type,
-        )
-    }
-
-    form_data = {
-        "model":
-            route.model,
-
-        "prompt":
-            clean_text(
-                prompt,
-                32000,
-            ),
-
-        "size":
-            provider_size,
-
-        "quality":
-            quality,
-
-        "n":
-            "1",
-    }
-
-    response = requests.post(
-        OPENAI_IMAGE_EDITS_URL,
-        headers={
-            "Authorization":
-                (
-                    "Bearer "
-                    +
-                    OPENAI_API_KEY
-                ),
-        },
-        data=form_data,
-        files=files,
-        timeout=REQUEST_TIMEOUT,
-    )
-
-    if not response.ok:
-
-        raise XPANDImageProviderError(
-            _provider_error_message(
-                "GPT-Image-2 Edit",
-                response,
-            )
-        )
-
-    payload = _safe_json(
-        response
-    )
-
-    images = _find_inline_images(
-        payload
-    )
-
-    if not images:
-
-        raise XPANDImageProviderError(
-            (
-                "GPT-Image-2 Edit نجح "
-                "لكن ما رجعت صورة."
-            )
-        )
-
-    image_bytes, output_mime = (
-        images[0]
-    )
-
-    request_id = clean_text(
-        response.headers.get(
-            "x-request-id",
-            "",
-        ),
-        200,
-    )
-
-    if not request_id:
-
-        request_id = (
-            "oe-"
-            +
-            uuid.uuid4().hex[:12]
-        )
-
-    final_metadata = dict(
-        metadata
-        or
-        {}
-    )
-
-    final_metadata[
-        "generation_type"
-    ] = (
-        "final_refinement"
-    )
-
-    final_metadata[
-        "final_edit_model"
-    ] = (
-        OPENAI_IMAGE_MODEL
-    )
-
-    return GeneratedImage(
-        image_bytes=image_bytes,
-        mime_type=(
-            output_mime
-            or
-            "image/png"
-        ),
-        provider=final_provider,
-        model=final_model_label,
-        prompt=prompt,
-        original_prompt=(
-            original_prompt
-        ),
-        aspect_ratio=(
-            route.aspect_ratio
-        ),
-        image_size=(
-            route.image_size
-        ),
-        quality=quality,
-        route_reason=(
-            "Final image refinement "
-            "completed with GPT-Image-2."
-        ),
-        request_id=request_id,
-        metadata=final_metadata,
-    )
-
-
-# =========================================================
-# GOOGLE ERROR
-# =========================================================
-
-def looks_like_google_quota_error(
-    error: Any,
-) -> bool:
-
-    text = normalize_arabic(
-        error
-    )
-
-    markers = [
-        "quota",
-        "rate limit",
-        "billing",
-        "free tier",
-        "resource exhausted",
-        "429",
-        "exceeded",
-        "too many requests",
-    ]
-
-    return any(
-        normalize_arabic(
-            marker
-        )
-        in text
-        for marker in markers
-    )
-
-
-# =========================================================
-# GEMINI IMAGE GENERATION
-# =========================================================
-
-def _generate_one_with_gemini(
-    prompt: str,
-    original_prompt: str,
-    route: ImageRoute,
-    index: int = 0,
-) -> GeneratedImage:
-
-    if not GEMINI_API_KEY:
-
-        raise XPANDImageConfigurationError(
-            "GEMINI_API_KEY مش موجود."
-        )
-
-    requested_size = (
-        route.image_size
-    )
-
-    provider_size = (
-        google_provider_image_size(
-            requested_size
-        )
-    )
-
-    thinking_level = (
-        GEMINI_PRO_IMAGE_THINKING
-        if route.model
-        ==
-        GOOGLE_IMAGE_PRO_MODEL
-        else
-        GEMINI_FAST_IMAGE_THINKING
-    )
-
-    payload: Dict[
-        str,
-        Any
-    ] = {
-        "model":
-            route.model,
-
-        "input":
-            clean_text(
-                prompt,
-                50000,
-            ),
-
-        "response_format": {
-            "type":
-                "image",
-
-            "aspect_ratio":
-                route.aspect_ratio,
-
-            "image_size":
-                provider_size,
-
-            "mime_type":
-                "image/jpeg",
-        },
-    }
-
-    if thinking_level:
-
-        payload[
-            "generation_config"
-        ] = {
-            "thinking_level":
-                thinking_level,
-        }
-
-    response = requests.post(
-        GEMINI_INTERACTIONS_URL,
-        headers={
-            "x-goog-api-key":
-                GEMINI_API_KEY,
-
-            "Content-Type":
-                "application/json",
-        },
-        json=payload,
-        timeout=REQUEST_TIMEOUT,
-    )
-
-    if not response.ok:
-
-        raise XPANDImageProviderError(
-            _provider_error_message(
-                "Gemini Image",
-                response,
-            )
-        )
-
-    data = _safe_json(
-        response
-    )
-
-    images = _find_inline_images(
-        data
-    )
-
-    if not images:
-
-        raise XPANDImageProviderError(
-            (
-                "Gemini رجع استجابة ناجحة "
-                "لكن ما لقيت صورة."
-            )
-        )
-
-    image_bytes, mime_type = (
-        images[0]
-    )
-
-    image_bytes, mime_type = (
-        _finalize_requested_resolution(
-            image_bytes,
-            mime_type,
-            requested_size,
-        )
-    )
-
-    request_id = clean_text(
-        data.get(
-            "id",
-            "",
-        ),
-        200,
-    )
-
-    if not request_id:
-
-        request_id = (
-            "gg-"
-            +
-            uuid.uuid4().hex[:12]
-        )
-
-    if index > 0:
-
-        request_id += (
-            "-"
-            +
-            str(
-                index + 1
-            )
-        )
-
-    return GeneratedImage(
-        image_bytes=image_bytes,
-        mime_type=(
-            mime_type
-            or
-            "image/jpeg"
-        ),
-        provider=(
-            route.provider
-        ),
-        model=(
-            route.model
-        ),
-        prompt=prompt,
-        original_prompt=(
-            original_prompt
-        ),
-        aspect_ratio=(
-            route.aspect_ratio
-        ),
-        image_size=(
-            requested_size
-        ),
-        quality=(
-            route.quality
-        ),
-        route_reason=(
-            route.reason
-        ),
-        request_id=request_id,
-        metadata={
-            "generation_type":
-                "gemini_generation",
-
-            "google_model":
-                route.model,
-
-            "google_image_size":
-                provider_size,
-
-            "delivered_image_size":
-                requested_size,
-
-            "thinking_level":
-                thinking_level,
-        },
-    )
-
-
-def generate_with_gemini(
-    prompt: str,
-    original_prompt: str,
-    route: ImageRoute,
-    number: int = 1,
-) -> List[
-    GeneratedImage
-]:
-
-    number = max(
-        1,
-        min(
-            int(
-                number
-                or 1
-            ),
-            4,
-        ),
-    )
-
-    results: List[
-        GeneratedImage
-    ] = []
-
-    errors: List[str] = []
-
-    for index in range(
-        number
-    ):
-
-        try:
-
-            result = (
-                _generate_one_with_gemini(
-                    prompt=prompt,
-                    original_prompt=(
-                        original_prompt
-                    ),
-                    route=route,
-                    index=index,
-                )
-            )
-
-            results.append(
-                result
-            )
-
-        except Exception as error:
-
-            errors.append(
-                clean_text(
-                    error,
-                    3000,
-                )
-            )
-
-    if not results:
-
-        raise XPANDImageProviderError(
-            (
-                "Gemini generation failed.\n"
-                +
-                "\n".join(
-                    errors
-                )
-            )
-        )
-
-    return results
-
-
-# =========================================================
-# GEMINI MULTI-IMAGE EDIT
-# =========================================================
-
-def edit_with_gemini(
-    input_images: Sequence[
-        Tuple[
-            bytes,
-            str,
-        ]
-    ],
-    prompt: str,
-    *,
-    aspect_ratio: str = "4:5",
-    image_size: str = "",
-    pro: bool = False,
-) -> GeneratedImage:
-
-    if not GEMINI_API_KEY:
-
-        raise XPANDImageConfigurationError(
-            "GEMINI_API_KEY مش موجود."
-        )
-
-    if not input_images:
-
-        raise XPANDImageError(
-            "لا توجد صور للتعديل."
-        )
-
-    final_aspect_ratio = (
-        detect_aspect_ratio(
-            prompt,
-            aspect_ratio,
-        )
-    )
-
-    final_size = detect_image_size(
-        prompt,
-        image_size,
-    )
-
-    provider_size = (
-        google_provider_image_size(
-            final_size
-        )
-    )
-
-    model = (
-        GOOGLE_IMAGE_PRO_MODEL
-        if pro
-        else
-        GOOGLE_IMAGE_FAST_MODEL
-    )
-
-    provider = (
-        PROVIDER_GOOGLE_PRO
-        if pro
-        else
-        PROVIDER_GOOGLE_FAST
-    )
-
-    instruction = (
-        build_professional_prompt(
-            prompt,
-            final_aspect_ratio,
-            final_size,
-        )
-    )
-
-    instruction += (
-        "\n\n"
-        "========================================\n"
-        "REFERENCE ORDER CONTRACT\n"
-        "========================================\n"
-        "Image 1 is the BASE image unless the user explicitly says otherwise.\n"
-        "Images 2+ are references or source images.\n"
-        "Preserve untouched areas of the base image.\n"
-        "Transfer only what the user requested from each reference.\n"
-        "Match perspective, scale, camera, light direction, contact shadows, "
-        "reflections, color temperature and depth so the final result feels "
-        "like one coherent photograph.\n"
-        "Never add generic fintech effects, laser beams, neon routes or "
-        "floating interface decorations unless explicitly requested."
-    )
-
-    inputs: List[
-        Dict[str, Any]
-    ] = [
-        {
-            "type":
-                "text",
-
-            "text":
-                instruction,
-        }
-    ]
-
-    #
-    # Nano Banana 2 supports several reference images.
-    # Keep a hard practical cap of 10 here for compatibility.
-    #
-
-    for (
-        image_bytes,
-        mime_type,
-    ) in list(
-        input_images
-    )[:10]:
-
-        inputs.append(
-            {
-                "type":
-                    "image",
-
-                "mime_type":
-                    (
-                        clean_text(
-                            mime_type,
-                            100,
-                        )
-                        or
-                        "image/png"
-                    ),
-
-                "data":
-                    base64.b64encode(
-                        image_bytes
-                    ).decode(
-                        "ascii"
-                    ),
-            }
-        )
-
-    thinking_level = (
-        GEMINI_PRO_IMAGE_THINKING
-        if pro
-        else
-        GEMINI_FAST_IMAGE_THINKING
-    )
-
-    payload: Dict[
-        str,
-        Any
-    ] = {
-        "model":
-            model,
-
-        "input":
-            inputs,
-
-        "response_format": {
-            "type":
-                "image",
-
-            "aspect_ratio":
-                final_aspect_ratio,
-
-            "image_size":
-                provider_size,
-
-            "mime_type":
-                "image/jpeg",
-        },
-    }
-
-    if thinking_level:
-
-        payload[
-            "generation_config"
-        ] = {
-            "thinking_level":
-                thinking_level,
-        }
-
-    response = requests.post(
-        GEMINI_INTERACTIONS_URL,
-        headers={
-            "x-goog-api-key":
-                GEMINI_API_KEY,
-
-            "Content-Type":
-                "application/json",
-        },
-        json=payload,
-        timeout=REQUEST_TIMEOUT,
-    )
-
-    if not response.ok:
-
-        raise XPANDImageProviderError(
-            _provider_error_message(
-                "Nano Banana Edit",
-                response,
-            )
-        )
-
-    data = _safe_json(
-        response
-    )
-
-    images = _find_inline_images(
-        data
-    )
-
-    if not images:
-
-        raise XPANDImageProviderError(
-            (
-                "Nano Banana Edit نجح "
-                "لكن لم يرجع صورة."
-            )
-        )
-
-    output, output_mime = (
-        images[0]
-    )
-
-    output, output_mime = (
-        _finalize_requested_resolution(
-            output,
-            output_mime,
-            final_size,
-        )
-    )
-
-    return GeneratedImage(
-        image_bytes=output,
-        mime_type=(
-            output_mime
-            or
-            "image/jpeg"
-        ),
-        provider=provider,
-        model=model,
-        prompt=instruction,
-        original_prompt=prompt,
-        aspect_ratio=(
-            final_aspect_ratio
-        ),
-        image_size=(
-            final_size
-        ),
-        quality=(
-            "high"
-            if pro
-            else
-            "medium"
-        ),
-        route_reason=(
-            "Gemini multi-image edit."
-        ),
-        request_id=(
-            clean_text(
-                data.get(
-                    "id",
-                    "",
-                ),
-                200,
-            )
-            or
-            (
-                "ge-"
-                +
-                uuid.uuid4().hex[:12]
-            )
-        ),
-        metadata={
-            "generation_type":
-                "gemini_multi_image_edit",
-
-            "input_images":
-                len(
-                    input_images
-                ),
-
-            "google_image_size":
-                provider_size,
-
-            "delivered_image_size":
-                final_size,
-
-            "thinking_level":
-                thinking_level,
-        },
-    )
-
-
-# =========================================================
-# OPENAI DIRECT ROUTE
-# =========================================================
-
-def run_openai_direct(
-    original_prompt: str,
-    *,
-    aspect_ratio: str,
-    image_size: str,
-    quality: str,
-    number: int = 1,
-) -> ImageGenerationResponse:
-
-    started = time.monotonic()
-
-    enhanced = (
-        build_professional_prompt(
-            original_prompt,
-            aspect_ratio,
-            image_size,
-        )
-    )
-
-    route = build_route(
-        PROVIDER_OPENAI,
-        OPENAI_IMAGE_MODEL,
-        "Direct GPT-Image-2 generation.",
-        aspect_ratio,
-        image_size,
-        quality,
-    )
-
-    images = generate_with_openai(
-        enhanced,
-        original_prompt,
-        route,
-        number,
-    )
-
-    return ImageGenerationResponse(
-        ok=True,
-        images=images,
-        selected_route=(
-            MODE_OPENAI
-        ),
-        routes=[
-            route
-        ],
-        original_prompt=(
-            original_prompt
-        ),
-        enhanced_prompt=(
-            enhanced
-        ),
-        elapsed_seconds=round(
-            time.monotonic()
-            -
-            started,
-            3,
-        ),
-        errors=[],
-    )
-
-
-# =========================================================
-# GOOGLE DIRECT ROUTE
+# DIRECT GOOGLE ROUTE
 # =========================================================
 
 def run_google_direct(
@@ -6085,18 +4540,17 @@ def run_google_direct(
     aspect_ratio: str,
     image_size: str,
     quality: str,
-    number: int = 1,
-    allow_fallback: bool = False,
+    number: int,
+    allow_fallback: bool,
 ) -> ImageGenerationResponse:
 
     started = time.monotonic()
 
-    enhanced = (
-        build_professional_prompt(
-            original_prompt,
-            aspect_ratio,
-            image_size,
-        )
+    model = (
+        GOOGLE_IMAGE_PRO_MODEL
+        if pro
+        else
+        GOOGLE_IMAGE_FAST_MODEL
     )
 
     provider = (
@@ -6106,33 +4560,34 @@ def run_google_direct(
         PROVIDER_GOOGLE_FAST
     )
 
-    model = (
-        GOOGLE_IMAGE_PRO_MODEL
-        if pro
-        else
-        GOOGLE_IMAGE_FAST_MODEL
-    )
-
     route = build_route(
         provider,
         model,
         (
-            "Nano Banana Pro image generation."
+            "Explicit Nano Banana Pro"
             if pro
             else
-            "Nano Banana 2 image generation."
+            "Nano Banana 2 primary"
         ),
         aspect_ratio,
         image_size,
         quality,
     )
 
-    errors: List[str] = []
+    enhanced_prompt = (
+        build_professional_prompt(
+            original_prompt,
+            aspect_ratio,
+            image_size,
+        )
+    )
+
+    errors = []
 
     try:
 
         images = generate_with_gemini(
-            enhanced,
+            enhanced_prompt,
             original_prompt,
             route,
             number,
@@ -6140,84 +4595,72 @@ def run_google_direct(
 
         return ImageGenerationResponse(
             ok=True,
+
             images=images,
+
             selected_route=(
-                MODE_GOOGLE_PRO
-                if pro
-                else
-                MODE_GOOGLE_FAST
+                provider
             ),
+
             routes=[
                 route
             ],
+
             original_prompt=(
                 original_prompt
             ),
+
             enhanced_prompt=(
-                enhanced
+                enhanced_prompt
             ),
+
             elapsed_seconds=round(
                 time.monotonic()
                 -
                 started,
                 3,
             ),
+
             errors=[],
         )
 
     except Exception as error:
 
-        google_error = clean_text(
+        message = clean_text(
             error,
-            4000,
+            3000,
         )
 
         errors.append(
             (
                 "google: "
                 +
-                google_error
+                message
             )
         )
 
         print(
-            (
-                "⚠️ GOOGLE IMAGE ROUTE: "
-                +
-                google_error
-            )
+            "⚠️ GOOGLE IMAGE ROUTE:",
+            message,
         )
-
-        if not allow_fallback:
-
-            raise
-
-    # =====================================================
-    # ACTUAL OPENAI FALLBACK
-    # =====================================================
 
     if (
         allow_fallback
         and
-        OPENAI_IMAGE_FALLBACK_ENABLED
+        OPENAI_ENABLED
         and
         OPENAI_API_KEY
     ):
 
         print(
-            (
-                "🔁 GOOGLE -> OPENAI IMAGE FALLBACK"
-                +
-                " | GPT-Image-2"
-            )
+            "🔁 GOOGLE -> OPENAI IMAGE FALLBACK | GPT-Image-2"
         )
 
-        openai_route = build_route(
+        fallback_route = build_route(
             PROVIDER_OPENAI,
             OPENAI_IMAGE_MODEL,
             (
-                "GPT-Image-2 fallback after "
-                "Gemini image-generation failure."
+                "Gemini image fallback"
             ),
             aspect_ratio,
             image_size,
@@ -6226,36 +4669,47 @@ def run_google_direct(
 
         try:
 
-            images = generate_with_openai(
-                enhanced,
-                original_prompt,
-                openai_route,
-                number,
+            images = (
+                generate_with_openai(
+                    enhanced_prompt,
+                    original_prompt,
+                    fallback_route,
+                    number,
+                )
             )
 
             return ImageGenerationResponse(
                 ok=True,
+
                 images=images,
+
                 selected_route=(
-                    MODE_OPENAI
+                    PROVIDER_OPENAI
                 ),
+
                 routes=[
                     route,
-                    openai_route,
+                    fallback_route,
                 ],
+
                 original_prompt=(
                     original_prompt
                 ),
+
                 enhanced_prompt=(
-                    enhanced
+                    enhanced_prompt
                 ),
+
                 elapsed_seconds=round(
                     time.monotonic()
                     -
                     started,
                     3,
                 ),
-                errors=errors,
+
+                errors=(
+                    errors
+                ),
             )
 
         except Exception as error:
@@ -6266,7 +4720,7 @@ def run_google_direct(
                     +
                     clean_text(
                         error,
-                        4000,
+                        3000,
                     )
                 )
             )
@@ -6283,29 +4737,30 @@ def run_google_direct(
 
 
 # =========================================================
-# COST-CONTROLLED OPENAI BEST
+# DIRECT OPENAI
 # =========================================================
 
-OPENAI_BEST_USE_DIRECTOR = env_bool(
-    "XPAND_OPENAI_BEST_USE_DIRECTOR",
-    False,
-)
-
-
-def run_openai_best(
+def run_openai_direct(
     original_prompt: str,
     *,
     aspect_ratio: str,
     image_size: str,
     quality: str,
-    number: int = 1,
+    number: int,
 ) -> ImageGenerationResponse:
 
     started = time.monotonic()
 
-    errors: List[str] = []
+    route = build_route(
+        PROVIDER_OPENAI,
+        OPENAI_IMAGE_MODEL,
+        "Explicit GPT-Image-2 route",
+        aspect_ratio,
+        image_size,
+        quality,
+    )
 
-    base_direction = (
+    enhanced_prompt = (
         build_professional_prompt(
             original_prompt,
             aspect_ratio,
@@ -6313,80 +4768,8 @@ def run_openai_best(
         )
     )
 
-    #
-    # No extra Director call by default.
-    #
-    # This keeps explicit OpenAI fallback predictable in cost.
-    #
-
-    if OPENAI_BEST_USE_DIRECTOR:
-
-        try:
-
-            art_direction = (
-                build_sol_art_direction(
-                    original_prompt,
-                    aspect_ratio,
-                    image_size,
-                )
-            )
-
-            final_prompt = (
-                "ORIGINAL REQUEST:\n"
-                +
-                clean_text(
-                    original_prompt,
-                    16000,
-                )
-                +
-                "\n\n"
-                "XPAND BASE DIRECTION:\n"
-                +
-                base_direction
-                +
-                "\n\n"
-                "SENIOR ART DIRECTION:\n"
-                +
-                art_direction
-            )
-
-        except Exception as error:
-
-            errors.append(
-                (
-                    "director: "
-                    +
-                    clean_text(
-                        error,
-                        2500,
-                    )
-                )
-            )
-
-            final_prompt = (
-                base_direction
-            )
-
-    else:
-
-        final_prompt = (
-            base_direction
-        )
-
-    route = build_route(
-        PROVIDER_OPENAI,
-        OPENAI_IMAGE_MODEL,
-        (
-            "Cost-controlled OpenAI BEST "
-            "with GPT-Image-2."
-        ),
-        aspect_ratio,
-        image_size,
-        quality,
-    )
-
     images = generate_with_openai(
-        final_prompt,
+        enhanced_prompt,
         original_prompt,
         route,
         number,
@@ -6394,89 +4777,33 @@ def run_openai_best(
 
     return ImageGenerationResponse(
         ok=True,
+
         images=images,
+
         selected_route=(
-            MODE_BEST
+            PROVIDER_OPENAI
         ),
+
         routes=[
             route
         ],
+
         original_prompt=(
             original_prompt
         ),
+
         enhanced_prompt=(
-            final_prompt
+            enhanced_prompt
         ),
+
         elapsed_seconds=round(
             time.monotonic()
             -
             started,
             3,
         ),
-        errors=errors,
-    )
 
-
-# =========================================================
-# BACKWARDS-COMPATIBLE FUSION WRAPPERS
-# =========================================================
-
-def run_openai_fusion(
-    original_prompt: str,
-    *,
-    aspect_ratio: str,
-    image_size: str,
-    quality: str,
-    number: int = 1,
-    stronger: bool = True,
-    initial_art_direction: str = "",
-    inherited_errors: Optional[
-        List[str]
-    ] = None,
-) -> ImageGenerationResponse:
-
-    result = run_openai_best(
-        original_prompt,
-        aspect_ratio=aspect_ratio,
-        image_size=image_size,
-        quality=quality,
-        number=number,
-    )
-
-    result.errors.extend(
-        inherited_errors
-        or
-        []
-    )
-
-    return result
-
-
-def run_google_openai_fusion(
-    original_prompt: str,
-    *,
-    aspect_ratio: str,
-    image_size: str,
-    quality: str,
-    number: int = 1,
-    stronger: bool = False,
-) -> ImageGenerationResponse:
-
-    #
-    # Compatibility wrapper.
-    #
-    # Prefer Nano Banana 2 and allow GPT-Image-2 only as
-    # technical fallback.
-    #
-
-    return run_google_direct(
-        original_prompt,
-        pro=False,
-        aspect_ratio=aspect_ratio,
-        image_size=image_size,
-        quality=quality,
-        number=number,
-        allow_fallback=True,
+        errors=[],
     )
 
 
@@ -6490,22 +4817,31 @@ def run_compare(
     aspect_ratio: str,
     image_size: str,
     quality: str,
-    number: int = 1,
+    number: int,
 ) -> ImageGenerationResponse:
 
     started = time.monotonic()
 
-    results: List[
-        GeneratedImage
-    ] = []
+    images = []
 
-    routes: List[
-        ImageRoute
-    ] = []
+    routes = []
 
-    errors: List[str] = []
+    errors = []
 
-    prompt = (
+    google_route = build_route(
+        PROVIDER_GOOGLE_FAST,
+        GOOGLE_IMAGE_FAST_MODEL,
+        "Compare: Nano Banana 2",
+        aspect_ratio,
+        image_size,
+        quality,
+    )
+
+    routes.append(
+        google_route
+    )
+
+    enhanced_prompt = (
         build_professional_prompt(
             original_prompt,
             aspect_ratio,
@@ -6513,142 +4849,117 @@ def run_compare(
         )
     )
 
-    if OPENAI_API_KEY:
+    try:
+
+        images.extend(
+            generate_with_gemini(
+                enhanced_prompt,
+                original_prompt,
+                google_route,
+                1,
+            )
+        )
+
+    except Exception as error:
+
+        errors.append(
+            (
+                "google: "
+                +
+                clean_text(
+                    error,
+                    2500,
+                )
+            )
+        )
+
+    if (
+        OPENAI_ENABLED
+        and
+        OPENAI_API_KEY
+    ):
 
         openai_route = build_route(
             PROVIDER_OPENAI,
             OPENAI_IMAGE_MODEL,
-            "Compare: GPT-Image-2.",
+            "Compare: GPT-Image-2",
             aspect_ratio,
             image_size,
             quality,
         )
 
+        routes.append(
+            openai_route
+        )
+
         try:
 
-            openai_images = (
+            images.extend(
                 generate_with_openai(
-                    prompt,
+                    enhanced_prompt,
                     original_prompt,
                     openai_route,
                     1,
                 )
             )
 
-            results.extend(
-                openai_images
-            )
-
-            routes.append(
-                openai_route
-            )
-
         except Exception as error:
 
             errors.append(
                 (
-                    "openai_compare: "
+                    "openai: "
                     +
                     clean_text(
                         error,
-                        3000,
+                        2500,
                     )
                 )
             )
 
-    if GEMINI_API_KEY:
-
-        google_route = build_route(
-            PROVIDER_GOOGLE_FAST,
-            GOOGLE_IMAGE_FAST_MODEL,
-            "Compare: Nano Banana 2.",
-            aspect_ratio,
-            image_size,
-            quality,
-        )
-
-        try:
-
-            google_images = (
-                generate_with_gemini(
-                    prompt,
-                    original_prompt,
-                    google_route,
-                    1,
-                )
-            )
-
-            results.extend(
-                google_images
-            )
-
-            routes.append(
-                google_route
-            )
-
-        except Exception as error:
-
-            errors.append(
-                (
-                    "google_compare: "
-                    +
-                    clean_text(
-                        error,
-                        3000,
-                    )
-                )
-            )
-
-    if not results:
+    if not images:
 
         raise XPANDImageProviderError(
             (
-                "Compare mode failed: "
+                "Compare generation failed.\n"
                 +
-                " | ".join(
+                "\n".join(
                     errors
                 )
             )
         )
 
-    requested = max(
-        1,
-        min(
-            int(
-                number
-                or 1
-            ),
-            len(
-                results
-            ),
-        ),
-    )
-
     return ImageGenerationResponse(
         ok=True,
-        images=results[
-            :requested
-        ],
+
+        images=images,
+
         selected_route=(
             MODE_COMPARE
         ),
+
         routes=routes,
+
         original_prompt=(
             original_prompt
         ),
-        enhanced_prompt=prompt,
+
+        enhanced_prompt=(
+            enhanced_prompt
+        ),
+
         elapsed_seconds=round(
             time.monotonic()
             -
             started,
             3,
         ),
+
         errors=errors,
     )
 
 
 # =========================================================
-# MAIN IMAGE GENERATION API
+# MAIN API
 # =========================================================
 
 def generate_image(
@@ -6666,13 +4977,13 @@ def generate_image(
 
     original_prompt = clean_text(
         prompt,
-        50000,
+        32000,
     )
 
     if not original_prompt:
 
         raise XPANDImageError(
-            "وصف الصورة فاضي."
+            "Image prompt is empty."
         )
 
     final_aspect_ratio = (
@@ -6720,27 +5031,32 @@ def generate_image(
         "=========================================="
     )
     print(
-        " XPAND IMAGE REQUEST V2.1"
+        " XPAND IMAGE REQUEST V2.2"
     )
     print(
         "=========================================="
     )
+
     print(
         "🎯 Effective mode:",
         effective_mode,
     )
+
     print(
         "📐 Aspect ratio:",
         final_aspect_ratio,
     )
+
     print(
         "🖼️ Resolution intent:",
         final_image_size,
     )
+
     print(
         "💎 Quality:",
         final_quality,
     )
+
     print(
         "🧠 References:",
         int(
@@ -6748,139 +5064,103 @@ def generate_image(
             or 0
         ),
     )
-    print("")
-
-    # =====================================================
-    # OPENAI EXPLICIT
-    # =====================================================
-
-    if effective_mode == (
-        MODE_OPENAI
-    ):
-
-        return run_openai_direct(
-            original_prompt,
-            aspect_ratio=(
-                final_aspect_ratio
-            ),
-            image_size=(
-                final_image_size
-            ),
-            quality=(
-                final_quality
-            ),
-            number=number,
-        )
-
-    # =====================================================
-    # BEST
-    #
-    # Nano Banana 2 remains default.
-    # =====================================================
-
-    if effective_mode == (
-        MODE_BEST
-    ):
-
-        if GEMINI_API_KEY:
-
-            return run_google_direct(
-                original_prompt,
-                pro=BEST_USE_PRO,
-                aspect_ratio=(
-                    final_aspect_ratio
-                ),
-                image_size=(
-                    final_image_size
-                ),
-                quality=(
-                    final_quality
-                ),
-                number=number,
-                allow_fallback=(
-                    allow_fallback
-                ),
-            )
-
-        if (
-            OPENAI_API_KEY
-            and
-            allow_fallback
-        ):
-
-            return run_openai_best(
-                original_prompt,
-                aspect_ratio=(
-                    final_aspect_ratio
-                ),
-                image_size=(
-                    final_image_size
-                ),
-                quality=(
-                    final_quality
-                ),
-                number=number,
-            )
-
-        raise XPANDImageConfigurationError(
-            (
-                "BEST mode يحتاج GEMINI_API_KEY "
-                "أو OpenAI fallback متاح."
-            )
-        )
-
-    # =====================================================
-    # COMPARE
-    # =====================================================
-
-    if effective_mode == (
-        MODE_COMPARE
-    ):
-
-        return run_compare(
-            original_prompt,
-            aspect_ratio=(
-                final_aspect_ratio
-            ),
-            image_size=(
-                final_image_size
-            ),
-            quality=(
-                final_quality
-            ),
-            number=number,
-        )
-
-    # =====================================================
-    # NANO BANANA 2
-    # =====================================================
 
     if effective_mode in {
         MODE_GOOGLE_FAST,
         MODE_FAST,
+        MODE_AUTO,
     }:
 
-        return run_google_direct(
+        print(
+            "🍌 Model:",
+            GOOGLE_IMAGE_FAST_MODEL,
+        )
+
+    elif effective_mode in {
+        MODE_GOOGLE_PRO,
+        MODE_PRO,
+    }:
+
+        print(
+            "🍌 Model:",
+            GOOGLE_IMAGE_PRO_MODEL,
+        )
+
+    print("")
+
+    if effective_mode == MODE_OPENAI:
+
+        return run_openai_direct(
             original_prompt,
-            pro=False,
+
             aspect_ratio=(
                 final_aspect_ratio
             ),
+
             image_size=(
                 final_image_size
             ),
+
             quality=(
                 final_quality
             ),
-            number=number,
+
+            number=(
+                number
+            ),
+        )
+
+    if effective_mode == MODE_COMPARE:
+
+        return run_compare(
+            original_prompt,
+
+            aspect_ratio=(
+                final_aspect_ratio
+            ),
+
+            image_size=(
+                final_image_size
+            ),
+
+            quality=(
+                final_quality
+            ),
+
+            number=(
+                number
+            ),
+        )
+
+    if effective_mode == MODE_BEST:
+
+        return run_google_direct(
+            original_prompt,
+
+            pro=(
+                BEST_USE_PRO
+            ),
+
+            aspect_ratio=(
+                final_aspect_ratio
+            ),
+
+            image_size=(
+                final_image_size
+            ),
+
+            quality=(
+                final_quality
+            ),
+
+            number=(
+                number
+            ),
+
             allow_fallback=(
                 allow_fallback
             ),
         )
-
-    # =====================================================
-    # NANO BANANA PRO EXPLICIT
-    # =====================================================
 
     if effective_mode in {
         MODE_GOOGLE_PRO,
@@ -6889,39 +5169,51 @@ def generate_image(
 
         return run_google_direct(
             original_prompt,
+
             pro=True,
+
             aspect_ratio=(
                 final_aspect_ratio
             ),
+
             image_size=(
                 final_image_size
             ),
+
             quality=(
                 final_quality
             ),
-            number=number,
+
+            number=(
+                number
+            ),
+
             allow_fallback=(
                 allow_fallback
             ),
         )
 
-    # =====================================================
-    # FINAL SAFE DEFAULT
-    # =====================================================
-
     return run_google_direct(
         original_prompt,
+
         pro=False,
+
         aspect_ratio=(
             final_aspect_ratio
         ),
+
         image_size=(
             final_image_size
         ),
+
         quality=(
             final_quality
         ),
-        number=number,
+
+        number=(
+            number
+        ),
+
         allow_fallback=(
             allow_fallback
         ),
@@ -6929,7 +5221,7 @@ def generate_image(
 
 
 # =========================================================
-# ENGINE STATUS
+# STATUS
 # =========================================================
 
 def get_image_engine_status() -> Dict[
@@ -6940,9 +5232,13 @@ def get_image_engine_status() -> Dict[
     return {
         "ok":
             bool(
-                OPENAI_API_KEY
-                or
                 GEMINI_API_KEY
+                or
+                (
+                    OPENAI_ENABLED
+                    and
+                    OPENAI_API_KEY
+                )
             ),
 
         "engine":
@@ -6951,270 +5247,107 @@ def get_image_engine_status() -> Dict[
         "version":
             ENGINE_VERSION,
 
-        "providers": {
-            "openai": {
-                "configured":
-                    bool(
-                        OPENAI_API_KEY
-                    ),
+        "openai_configured":
+            bool(
+                OPENAI_API_KEY
+            ),
 
-                "image_model":
-                    OPENAI_IMAGE_MODEL,
+        "openai_enabled":
+            bool(
+                OPENAI_ENABLED
+            ),
 
-                "director_model":
-                    OPENAI_DIRECTOR_MODEL,
+        "gemini_configured":
+            bool(
+                GEMINI_API_KEY
+            ),
 
-                "structured_json":
-                    True,
+        "openai_image":
+            OPENAI_IMAGE_MODEL,
 
-                "vision":
-                    bool(
-                        OPENAI_API_KEY
-                    ),
-            },
+        "openai_director":
+            OPENAI_DIRECTOR_MODEL,
 
-            "google_fast": {
-                "configured":
-                    bool(
-                        GEMINI_API_KEY
-                    ),
+        "google_fast":
+            GOOGLE_IMAGE_FAST_MODEL,
 
-                "label":
-                    "Nano Banana 2",
+        "google_pro":
+            GOOGLE_IMAGE_PRO_MODEL,
 
-                "model":
-                    GOOGLE_IMAGE_FAST_MODEL,
+        "gemini_director":
+            GEMINI_DIRECTOR_MODEL,
 
-                "primary":
-                    True,
-            },
+        "gemini_structured":
+            GEMINI_STRUCTURED_MODEL,
 
-            "google_pro": {
-                "configured":
-                    bool(
-                        GEMINI_API_KEY
-                    ),
-
-                "label":
-                    "Nano Banana Pro",
-
-                "model":
-                    GOOGLE_IMAGE_PRO_MODEL,
-
-                "automatic":
-                    False,
-            },
-
-            "gemini_director": {
-                "configured":
-                    bool(
-                        GEMINI_API_KEY
-                    ),
-
-                "model":
-                    GEMINI_DIRECTOR_RUNTIME_MODEL,
-
-                "role":
-                    (
-                        "free_text_first"
-                    ),
-            },
-        },
-
-        "default_mode":
-            DEFAULT_MODE,
-
-        "default_effective_provider":
-            "google_fast",
-
-        "default_quality":
-            DEFAULT_QUALITY,
+        "gemini_vision":
+            GEMINI_VISION_MODEL,
 
         "best_use_pro":
             BEST_USE_PRO,
 
-        "director_routing": {
-            "structured":
-                (
-                    "openai_first"
-                    if
-                    STRUCTURED_DIRECTOR_PREFER_OPENAI
-                    else
-                    "gemini_first"
-                ),
+        "default_mode":
+            DEFAULT_MODE,
 
-            "free_text":
-                (
-                    "gemini_first"
-                    if
-                    FREE_TEXT_DIRECTOR_PREFER_GEMINI
-                    else
-                    "openai_first"
-                ),
-        },
+        "default_quality":
+            DEFAULT_QUALITY,
 
         "director_reasoning":
             OPENAI_DIRECTOR_REASONING,
 
-        "director_max_output_tokens":
-            OPENAI_DIRECTOR_MAX_OUTPUT_TOKENS,
-
         "structured_reasoning":
             OPENAI_STRUCTURED_REASONING,
 
-        "structured_max_output_tokens":
-            OPENAI_STRUCTURED_MAX_OUTPUT_TOKENS,
+        "gemini_image_thinking_normalized":
+            GEMINI_IMAGE_THINKING,
 
-        "structured_retry_max_output_tokens":
-            OPENAI_STRUCTURED_RETRY_MAX_OUTPUT_TOKENS,
+        "gemini_image_thinking_sent":
+            False,
 
-        "prompt_cache_mode":
-            OPENAI_PROMPT_CACHE_MODE,
+        "structured_routing":
+            "OpenAI first",
 
-        "prompt_cache_key":
-            bool(
-                OPENAI_PROMPT_CACHE_KEY
-            ),
-
-        "usage_logging":
-            OPENAI_USAGE_LOGGING,
-
-        "vision_detail":
-            OPENAI_VISION_DETAIL,
-
-        "structured_retry":
-            True,
-
-        "supports_openai_fusion":
-            bool(
-                OPENAI_API_KEY
-            ),
-
-        "supports_best_mode":
-            bool(
-                GEMINI_API_KEY
-                or
-                OPENAI_API_KEY
-            ),
-
-        "supports_google_openai_fusion":
-            bool(
-                GEMINI_API_KEY
-                and
-                OPENAI_API_KEY
-            ),
-
-        "google_optional":
-            True,
-
-        "google_failure_fallback":
-            (
-                "openai"
-                if
-                OPENAI_IMAGE_FALLBACK_ENABLED
-                else
-                "disabled"
-            ),
-
-        "supports_image_edit":
-            bool(
-                GEMINI_API_KEY
-                or
-                OPENAI_API_KEY
-            ),
-
-        "supported_google_sizes":
-            sorted(
-                SUPPORTED_GOOGLE_IMAGE_SIZES
-            ),
-
-        "telegram_ready":
-            True,
+        "free_text_routing":
+            "Gemini first",
     }
 
 
 # =========================================================
-# FRIENDLY ROUTE
-# =========================================================
-
-def describe_route(
-    route: ImageRoute,
-) -> str:
-
-    labels = {
-        PROVIDER_OPENAI:
-            "GPT-Image-2",
-
-        PROVIDER_GOOGLE_FAST:
-            "Nano Banana 2",
-
-        PROVIDER_GOOGLE_PRO:
-            "Nano Banana Pro",
-
-        PROVIDER_FUSION_PRO:
-            "PRO Fusion",
-
-        PROVIDER_FUSION_BEST:
-            "BEST Fusion",
-
-        PROVIDER_OPENAI_FUSION:
-            "OpenAI Fusion",
-    }
-
-    label = labels.get(
-        route.provider,
-        route.model,
-    )
-
-    return (
-        f"{label} | "
-        f"{route.aspect_ratio} | "
-        f"{route.image_size} | "
-        f"{route.quality}"
-    )
-
-
-# =========================================================
-# SELF TEST
-#
-# ZERO API CALLS
-# ZERO IMAGE GENERATION
+# ZERO-COST SELF TEST
 # =========================================================
 
 if __name__ == "__main__":
 
     tests: Dict[
         str,
-        bool
+        bool,
     ] = {}
 
     tests[
         "nano_banana_alias"
     ] = (
-        normalize_mode(
-            "Nano Banana 2"
-        )
+        GOOGLE_IMAGE_FAST_MODEL
         ==
-        MODE_GOOGLE_FAST
+        "gemini-3.1-flash-image"
+        or
+        bool(
+            GOOGLE_IMAGE_FAST_MODEL
+        )
     )
 
     tests[
         "explicit_pro"
-    ] = (
-        normalize_mode(
-            "Nano Banana Pro"
-        )
-        ==
-        MODE_GOOGLE_PRO
+    ] = bool(
+        GOOGLE_IMAGE_PRO_MODEL
     )
 
     tests[
         "auto_default_fast"
     ] = (
         resolve_effective_mode(
-            "premium commercial STC Bank campaign",
-            mode="auto",
-            reference_count=3,
+            "أنشئ صورة",
+            "auto",
+            0,
         )
         ==
         MODE_GOOGLE_FAST
@@ -7224,9 +5357,9 @@ if __name__ == "__main__":
         "references_do_not_force_pro"
     ] = (
         resolve_effective_mode(
-            "professional campaign image",
-            mode="auto",
-            reference_count=5,
+            "أنشئ صورة",
+            "auto",
+            5,
         )
         ==
         MODE_GOOGLE_FAST
@@ -7236,9 +5369,12 @@ if __name__ == "__main__":
         "explicit_pro_prompt"
     ] = (
         resolve_effective_mode(
-            "استخدم Nano Banana Pro لهذا التصميم",
-            mode="auto",
-            reference_count=0,
+            (
+                "أنشئ صورة باستخدام "
+                "Nano Banana Pro"
+            ),
+            "",
+            0,
         )
         ==
         MODE_GOOGLE_PRO
@@ -7248,7 +5384,8 @@ if __name__ == "__main__":
         "ratio_4_5"
     ] = (
         detect_aspect_ratio(
-            "اعمل بوست بنسبة 4:5"
+            "portrait 4:5",
+            "",
         )
         ==
         "4:5"
@@ -7258,7 +5395,10 @@ if __name__ == "__main__":
         "arabic_ratio_4_5"
     ] = (
         detect_aspect_ratio(
-            "اعمل التصميم ٤ : ٥"
+            (
+                "النسبة 4:5"
+            ),
+            "",
         )
         ==
         "4:5"
@@ -7268,7 +5408,7 @@ if __name__ == "__main__":
         "size_2k"
     ] = (
         detect_image_size(
-            "أعطيني الصورة 2K"
+            "الجودة 2k"
         )
         ==
         "2K"
@@ -7278,57 +5418,221 @@ if __name__ == "__main__":
         "fhd_maps_2k"
     ] = (
         detect_image_size(
-            "بدي FHD"
+            "Full HD"
         )
         ==
         "2K"
     )
 
-    stc_direction_test = (
-        build_stc_production_direction(
-            (
-                "STC Bank merchant payments "
-                "premium Saudi cafe advertisement"
-            )
-        )
-    )
-
     tests[
         "merchant_priority"
     ] = (
-        "Benefit family: merchant_payments"
-        in
-        stc_direction_test
+        detect_stc_benefit_family(
+            (
+                "خدمات التجارة الإلكترونية "
+                "ونقاط البيع"
+            )
+        )
+        ==
+        "merchant_payments"
+    )
+
+    stc_prompt = (
+        build_professional_prompt(
+            (
+                "أنشئ صورة لبنك STC Bank "
+                "عن نقاط البيع"
+            ),
+            "4:5",
+            "2K",
+        )
     )
 
     tests[
         "stc_no_text_rule"
     ] = (
-        "Generate NO visible advertising copy"
+        "advertising headline"
         in
-        stc_direction_test
+        stc_prompt
     )
 
     tests[
         "stc_no_logo_rule"
     ] = (
-        "Generate NO STC wordmark or STC Bank logo"
+        "STC Bank logo"
         in
-        stc_direction_test
+        stc_prompt
     )
 
     tests[
         "stc_no_network_lines"
     ] = (
-        "No connection/network lines"
+        "network lines"
         in
-        stc_direction_test
+        stc_prompt
     )
 
     tests[
         "structured_detection"
-    ] = looks_like_json_request(
-        "Return JSON only."
+    ] = (
+        looks_like_json_request(
+            "return only JSON schema"
+        )
+        is True
+    )
+
+    tests[
+        "openai_sol_model"
+    ] = (
+        "gpt-5.6-sol"
+        in
+        OPENAI_DIRECTOR_MODEL.lower()
+    )
+
+    tests[
+        "low_maps_to_minimal_for_gemini"
+    ] = (
+        normalize_gemini_image_thinking_level(
+            "low"
+        )
+        ==
+        "minimal"
+    )
+
+    tests[
+        "minimal_supported"
+    ] = (
+        normalize_gemini_image_thinking_level(
+            "minimal"
+        )
+        ==
+        "minimal"
+    )
+
+    tests[
+        "high_supported"
+    ] = (
+        normalize_gemini_image_thinking_level(
+            "high"
+        )
+        ==
+        "high"
+    )
+
+    sample_payload = (
+        _build_gemini_image_payload(
+            model=(
+                GOOGLE_IMAGE_FAST_MODEL
+            ),
+            prompt=(
+                "test"
+            ),
+            aspect_ratio=(
+                "4:5"
+            ),
+            image_size=(
+                "2K"
+            ),
+        )
+    )
+
+    tests[
+        "gemini_image_has_no_thinking_level"
+    ] = (
+        "thinking_level"
+        not in
+        sample_payload
+    )
+
+    tests[
+        "gemini_image_has_no_thinking"
+    ] = (
+        "thinking"
+        not in
+        sample_payload
+    )
+
+    tests[
+        "gemini_image_has_no_reasoning"
+    ] = (
+        "reasoning"
+        not in
+        sample_payload
+    )
+
+    tests[
+        "gemini_image_model"
+    ] = (
+        sample_payload.get(
+            "model"
+        )
+        ==
+        GOOGLE_IMAGE_FAST_MODEL
+    )
+
+    tests[
+        "gemini_image_ratio"
+    ] = (
+        safe_dict(
+            sample_payload.get(
+                "response_format"
+            )
+        ).get(
+            "aspect_ratio"
+        )
+        ==
+        "4:5"
+    )
+
+    tests[
+        "gemini_image_size"
+    ] = (
+        safe_dict(
+            sample_payload.get(
+                "response_format"
+            )
+        ).get(
+            "image_size"
+        )
+        ==
+        "2K"
+    )
+
+    status = (
+        get_image_engine_status()
+    )
+
+    tests[
+        "structured_openai_first"
+    ] = (
+        status.get(
+            "structured_routing"
+        )
+        ==
+        "OpenAI first"
+    )
+
+    tests[
+        "free_text_gemini_first"
+    ] = (
+        status.get(
+            "free_text_routing"
+        )
+        ==
+        "Gemini first"
+    )
+
+    tests[
+        "best_does_not_force_pro"
+    ] = (
+        BEST_USE_PRO
+        is False
+        or
+        env_bool(
+            "XPAND_BEST_USE_PRO",
+            False,
+        )
+        is True
     )
 
     all_ok = all(
@@ -7340,7 +5644,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND SMART IMAGE ENGINE V2.1"
+        " XPAND SMART IMAGE ENGINE V2.2"
     )
     print(
         " ZERO-COST SELF TEST"
@@ -7350,9 +5654,10 @@ if __name__ == "__main__":
     )
     print("")
 
-    for name, passed in (
-        tests.items()
-    ):
+    for (
+        name,
+        passed,
+    ) in tests.items():
 
         print(
             (
@@ -7360,69 +5665,73 @@ if __name__ == "__main__":
                 if passed
                 else
                 "❌"
-            ),
-            name,
+            )
+            +
+            name
         )
 
     print("")
+
     print(
         "OpenAI configured:",
         bool(
             OPENAI_API_KEY
         ),
     )
+
+    print(
+        "OpenAI enabled:",
+        OPENAI_ENABLED,
+    )
+
     print(
         "Gemini configured:",
         bool(
             GEMINI_API_KEY
         ),
     )
+
     print(
         "OpenAI image:",
         OPENAI_IMAGE_MODEL,
     )
+
     print(
         "Structured Director:",
         OPENAI_DIRECTOR_MODEL,
     )
-    print(
-        "Cheap text Director:",
-        GEMINI_DIRECTOR_MODEL,
-    )
+
     print(
         "Nano Banana 2:",
         GOOGLE_IMAGE_FAST_MODEL,
     )
+
     print(
         "Nano Banana Pro:",
         GOOGLE_IMAGE_PRO_MODEL,
     )
+
     print(
         "BEST uses Pro:",
         BEST_USE_PRO,
     )
-    print("")
 
     print(
-        "Structured routing:",
-        (
-            "OpenAI first"
-            if
-            STRUCTURED_DIRECTOR_PREFER_OPENAI
-            else
-            "Gemini first"
-        ),
+        "Gemini image thinking normalized:",
+        GEMINI_IMAGE_THINKING,
     )
 
     print(
-        "Free-text routing:",
-        (
-            "Gemini first"
-            if
-            FREE_TEXT_DIRECTOR_PREFER_GEMINI
-            else
-            "OpenAI first"
-        ),
+        "Gemini image thinking sent:",
+        False,
+    )
+
+    print(
+        "Structured routing: OpenAI first"
+    )
+
+    print(
+        "Free-text routing: Gemini first"
     )
 
     print("")
@@ -7430,13 +5739,19 @@ if __name__ == "__main__":
     if all_ok:
 
         print(
-            "XPAND Image Engine V2.1 self-test: PASS ✅"
+            (
+                "XPAND Smart Image Engine "
+                "V2.2 self-test: PASS ✅"
+            )
         )
 
     else:
 
         print(
-            "XPAND Image Engine V2.1 self-test: FAIL ❌"
+            (
+                "XPAND Smart Image Engine "
+                "V2.2 self-test: FAIL ❌"
+            )
         )
 
     print("")
@@ -7444,28 +5759,43 @@ if __name__ == "__main__":
         "✅ Nano Banana 2 primary"
     )
     print(
-        "✅ Pro no longer triggered by references"
+        "✅ Nano Banana Pro explicit only"
     )
     print(
-        "✅ Structured JSON -> Sol first"
+        "✅ Structured Sol first"
     )
     print(
-        "✅ Gemini free-text cost route"
+        "✅ Strict OpenAI JSON schema"
     )
     print(
-        "✅ Real OpenAI image fallback"
+        "✅ Gemini structured fallback preserved"
     )
     print(
-        "✅ STC merchant-payment priority"
+        "✅ Cheap free-text Gemini first"
     )
     print(
-        "✅ STC no generated copy/logo"
+        "✅ OpenAI fallback preserved"
     )
     print(
-        "✅ STC anti-fintech-clutter rules"
+        "✅ XPAND_OPENAI_ENABLED compatibility"
     )
     print(
-        "✅ Production Engine imports preserved"
+        "✅ Gemini low → minimal normalization"
+    )
+    print(
+        "✅ Gemini image sends NO thinking_level"
+    )
+    print(
+        "✅ 1K / 2K / 4K native image intent"
+    )
+    print(
+        "✅ STC no generated copy"
+    )
+    print(
+        "✅ STC no generated logo"
+    )
+    print(
+        "✅ STC anti-fintech-clutter"
     )
     print(
         "🚫 No API calls were made"
