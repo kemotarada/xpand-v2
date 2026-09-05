@@ -1,995 +1,276 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.2
+# XPAND UNIFIED VISUAL RUNTIME V3.3
 #
-# QUALITY-FIRST ADAPTIVE CREATIVE INTELLIGENCE
+# STABLE TELEGRAM IMAGE RUNTIME
 #
-# =========================================================
-
-#
-# GOAL
-# ---------------------------------------------------------
-#
-# Preserve XPAND's strongest creative systems while reducing
-# unnecessary paid Director calls.
-#
-#
-# OLD V1.1 NORMAL MASTERPIECE PATH
-# ---------------------------------------------------------
-#
-# 20 concepts
-#   ↓
-# evaluation batches of 5
-#   ↓
-# 4 evaluation calls
-#   ↓
-# possible revisions
-#   ↓
-# possible challenger rounds
-#   ↓
-# camera call
-#   ↓
-# feasibility call
-#
-#
-# V2.0 QUALITY-FIRST PATH
-# ---------------------------------------------------------
-#
-# 20 concepts                    [MODEL CALL 1]
-#   ↓
-# FREE local anti-cliche /
-# completeness / diversity filter
-#   ↓
-# strongest 8
-#   ↓
-# ONE full Creative Review       [MODEL CALL 2]
-#   ↓
-# TARGET 82+
-#   ↓
-# if strong:
-#   Winner Finalizer             [MODEL CALL 3]
-#
-# if target not reached:
-#   ONE Recovery Board           [MODEL CALL 3]
-#   ↓
-# best real evaluated direction
-#
+# Telegram Text / Voice
+#        ↓
+# Brand Detection
+#        ↓
+# Brand Research / Memory
+#        ↓
+# Semantic Benefit Director
+#        ↓
+# Creative Brain
+#        ↓
+# Runtime State Classifier
+#        ↓
+# Masterpiece Production
+#        ↓
+# Smart Engine Fallback
+#        ↓
+# Telegram Delivery
 #
 # IMPORTANT
 # ---------------------------------------------------------
-#
-# - Still creates 20 initial Masterpiece directions.
-# - Still uses real model evaluation.
-# - Still uses:
-#     Creative Director
-#     Brand Guardian
-#     Production Expert
-#     Harsh Critic
-#     Anti-Cliche
-#     Visual Metaphor
-#     Camera Director
-#     Scene Feasibility
-#
-# - 82 remains the MASTERPIECE TARGET.
-#
-# - But Creative QA is no longer allowed to waste the user's
-#   request by looping indefinitely or blocking production
-#   merely because the best valid concept scored 80 instead
-#   of 82.
-#
-# - If the target is not reached after one intelligent
-#   recovery attempt, the strongest REAL-EVALUATED concept
-#   is released honestly as:
-#
-#       adaptive_release
-#       or
-#       best_available_release
-#
-# - No fake 58.75 fallback winner.
-# - No fake model evaluation.
-# - No image generation in this module.
-# - Self-test makes ZERO API calls.
-#
+# - technical Creative Brain failure != quality failure
+# - technical failure NEVER blocks normal image generation
+# - Smart Engine fallback remains available
+# - install(core) is always available
+# - no shell commands belong in this file
 # =========================================================
 
 from __future__ import annotations
 
-from xpand_stc_bank_skill import STC_BANK_VISUAL_SKILL, is_stc_bank_request
-
+import io
 import json
 import os
 import re
-
-from dataclasses import dataclass, field
 
 from typing import (
     Any,
     Dict,
     List,
     Optional,
-    Sequence,
     Tuple,
 )
 
+import requests
+
+
+# =========================================================
+# COST GUARD
+# =========================================================
+
+try:
+    from xpand_cost_guard import budget_status
+except Exception:
+
+    def budget_status() -> Dict[str, Any]:
+        return {
+            "enabled": False,
+            "limit_usd": 0.0,
+            "reserved_usd": 0.0,
+            "remaining_usd": 0.0,
+        }
+
+
+# =========================================================
+# BASE IMAGE ENGINE
+# =========================================================
+
 from xpand_image_engine import (
-    call_openai_director,
+    ENGINE_VERSION as SMART_ENGINE_VERSION,
+    detect_image_size,
+    generate_image,
+    get_image_engine_status,
 )
 
 
 # =========================================================
-# IDENTITY
+# BRAND RESEARCH
 # =========================================================
 
-VERSION = "4.0"
-
-MODULE_NAME = "XPAND Creative Brain"
-
-
-# =========================================================
-# MODES
-# =========================================================
-
-MODE_FAST = "fast"
-MODE_MASTERPIECE = "masterpiece"
+from xpand_brand_research import (
+    BRAND_PROFILES,
+    build_researched_prompt,
+    detect_brand,
+    should_apply_deep_research,
+)
 
 
 # =========================================================
-# QUALITY TARGETS
+# BRAND MEMORY
 # =========================================================
 
-#
-# Aspirational campaign-level target.
-#
+from xpand_brand_memory import (
+    build_brand_memory_context,
+    get_active_brand,
+    safe_brand_id,
+    set_active_brand,
+    upsert_brand_profile,
+)
 
-MASTERPIECE_MIN_SCORE = max(
-    70.0,
+
+# =========================================================
+# CREATIVE BRAIN
+# =========================================================
+
+from xpand_creative_brain import (
+    MODE_FAST as CREATIVE_MODE_FAST,
+    MODE_MASTERPIECE as CREATIVE_MODE_MASTERPIECE,
+    concept_to_dict,
+    run_creative_brain,
+)
+
+
+# =========================================================
+# PRODUCTION ENGINE
+# =========================================================
+
+from xpand_production_engine import (
+    MODE_MASTERPIECE as PRODUCTION_MODE_MASTERPIECE,
+    TARGET_GEMINI,
+    run_production,
+)
+
+
+# =========================================================
+# CAMPAIGN ENGINE
+# =========================================================
+
+try:
+    from xpand_campaign_engine import (
+        create_campaign_bible,
+        get_asset_direction,
+    )
+
+    CAMPAIGN_ENGINE_AVAILABLE = True
+
+except Exception:
+
+    create_campaign_bible = None
+    get_asset_direction = None
+
+    CAMPAIGN_ENGINE_AVAILABLE = False
+
+
+# =========================================================
+# MODULE
+# =========================================================
+
+VERSION = "3.3"
+
+MODULE_NAME = "XPAND Unified Visual Runtime"
+
+
+# =========================================================
+# SETTINGS
+# =========================================================
+
+SEND_PREVIEW = str(
+    os.environ.get(
+        "XPAND_IMAGE_SEND_PREVIEW",
+        "true",
+    )
+).strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+
+
+SEND_ORIGINAL = str(
+    os.environ.get(
+        "XPAND_IMAGE_SEND_ORIGINAL",
+        "true",
+    )
+).strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+
+
+MAX_GENERATED_IMAGES = max(
+    1,
     min(
-        98.0,
-        float(
+        4,
+        int(
             os.environ.get(
-                "XPAND_MASTERPIECE_MIN_SCORE",
-                "88",
+                "XPAND_IMAGE_MAX_IMAGES",
+                "4",
             )
-            or 88
+            or 4
         ),
     ),
 )
 
 
-#
-# Adaptive release floor.
-#
-# This does NOT replace the 82 target.
-#
-# It prevents a real 80/81-quality concept from causing
-# another expensive ideation loop or blocking the entire
-# image request.
-#
-
-MASTERPIECE_RELEASE_FLOOR = max(
-    65.0,
-    min(
-        MASTERPIECE_MIN_SCORE,
-        float(
-            os.environ.get(
-                "XPAND_MASTERPIECE_RELEASE_FLOOR",
-                "84",
-            )
-            or 84
-        ),
-    ),
-)
-
-
-FAST_MIN_SCORE = max(
-    40.0,
-    min(
-        90.0,
-        float(
-            os.environ.get(
-                "XPAND_FAST_CREATIVE_MIN_SCORE",
-                "65",
-            )
-            or 65
-        ),
-    ),
-)
-
-
-# =========================================================
-# COST / CALL POLICY
-# =========================================================
-
-#
-# Kept for compatibility with runtime metadata.
-#
-# V2 does not run 3 automatic full ideation rounds anymore.
-#
-# Maximum conceptual stages:
-#
-# 1. Initial ideation
-# 2. One recovery board if required
-#
-
-MASTERPIECE_MAX_IDEATION_ROUNDS = max(
+MASTERPIECE_MAX_IMAGES = max(
     1,
     min(
         3,
         int(
             os.environ.get(
-                "XPAND_MASTERPIECE_IDEATION_ROUNDS",
-                "2",
+                "XPAND_MASTERPIECE_MAX_IMAGES",
+                "3",
             )
-            or 2
+            or 3
         ),
     ),
 )
 
 
-#
-# Old name retained for compatibility.
-#
-# V2 does not separately revise several concepts.
-# Recovery is performed in ONE consolidated call.
-#
-
-MASTERPIECE_REVISION_CANDIDATES = max(
-    0,
-    min(
-        1,
-        int(
-            os.environ.get(
-                "XPAND_MASTERPIECE_REVISION_CANDIDATES",
-                "1",
-            )
-            or 1
-        ),
+TELEGRAM_TIMEOUT = max(
+    60,
+    int(
+        os.environ.get(
+            "XPAND_IMAGE_TELEGRAM_TIMEOUT",
+            "300",
+        )
+        or 300
     ),
 )
 
 
-MASTERPIECE_REVISION_FLOOR = max(
-    55.0,
-    min(
-        MASTERPIECE_MIN_SCORE,
-        float(
-            os.environ.get(
-                "XPAND_MASTERPIECE_REVISION_FLOOR",
-                "72",
-            )
-            or 72
-        ),
-    ),
-)
-
-
-#
-# Only this many concepts go to the expensive Review Board.
-#
-
-MASTERPIECE_SHORTLIST_SIZE = max(
-    5,
-    min(
-        10,
-        int(
-            os.environ.get(
-                "XPAND_CREATIVE_SHORTLIST_SIZE",
-                "10",
-            )
-            or 10
-        ),
-    ),
-)
-
-
-#
-# Compatibility name.
-#
-# V1.1 used this as actual batch size.
-# V2 evaluates one shortlist in one call.
-#
-
-EVALUATION_BATCH_SIZE = (
-    MASTERPIECE_SHORTLIST_SIZE
-)
-
-
-#
-# Structured model retry is deliberately conservative.
-#
-# Default 1 = no automatic duplicate evaluation call.
-#
-
-EVALUATION_RETRIES = max(
-    1,
-    min(
-        2,
-        int(
-            os.environ.get(
-                "XPAND_CREATIVE_EVALUATION_RETRIES",
-                "2",
-            )
-            or 2
-        ),
-    ),
-)
-
-
-#
-# Normal Masterpiece target:
-#
-# 1 ideation
-# 1 review
-# 1 finalizer OR recovery
-#
-
-MASTERPIECE_TARGET_DIRECTOR_CALLS = 4
-
-
-# =========================================================
-# STRICT TARGET SUB-SCORES
-# =========================================================
-
-MASTERPIECE_MIN_SUBSCORES = {
-    "message_clarity": 82,
-    "originality": 85,
-    "brand_fit": 85,
-    "visual_power": 85,
-    "feasibility": 70,
-    "perspective_integrity": 75,
-    "campaign_potential": 78,
-}
-
-
-# =========================================================
-# ADAPTIVE RELEASE SUB-SCORES
-# =========================================================
-
-MASTERPIECE_RELEASE_MIN_SUBSCORES = {
-    "message_clarity": 68,
-    "originality": 70,
-    "brand_fit": 72,
-    "visual_power": 70,
-    "feasibility": 60,
-    "perspective_integrity": 60,
-    "campaign_potential": 60,
-}
-
-
-# =========================================================
-# SCORE WEIGHTS
-# =========================================================
-
-SCORE_WEIGHTS = {
-    "message_clarity": 20,
-    "originality": 20,
-    "brand_fit": 20,
-    "visual_power": 15,
-    "feasibility": 10,
-    "perspective_integrity": 5,
-    "campaign_potential": 10,
-}
-
-
-# =========================================================
-# CONCEPT DISTRIBUTIONS
-# =========================================================
-
-MASTERPIECE_DISTRIBUTION = {
-    "simple_intelligent": 5,
-    "realistic_cinematic": 5,
-    "conceptual_photorealism": 5,
-    "scale_manipulation": 3,
-    "bold_experimental": 2,
-}
-
-
-#
-# Recovery does NOT generate another 20 concepts.
-#
-# It creates 3 materially different challengers and
-# evaluates them in the same paid Director call.
-#
-
-RECOVERY_DISTRIBUTION = {
-    "strategic_rebuild": 1,
-    "visual_metaphor_rebuild": 1,
-    "bold_challenger": 1,
-}
-
-
-#
-# Compatibility alias.
-#
-
-CHALLENGER_DISTRIBUTION = {
-    "simple_intelligent": 1,
-    "conceptual_photorealism": 1,
-    "bold_experimental": 1,
-}
-
-
-FAST_DISTRIBUTION = {
-    "simple_intelligent": 2,
-    "realistic_cinematic": 2,
-    "conceptual_photorealism": 1,
-    "bold_experimental": 1,
-}
-
-
-# =========================================================
-# CAMERA LIBRARY
-# =========================================================
-
-CAMERA_LIBRARY = {
-    "eye_level": {
-        "name": "Eye-Level Shot",
-        "use_for": [
-            "trust",
-            "natural interaction",
-            "balanced lifestyle scenes",
-        ],
-    },
-
-    "low_angle": {
-        "name": "Low-Angle Shot",
-        "use_for": [
-            "authority",
-            "premium status",
-            "heroic presence",
-        ],
-    },
-
-    "extreme_low_angle": {
-        "name": "Extreme Low-Angle Shot",
-        "use_for": [
-            "monumental scale",
-            "architectural drama",
-        ],
-    },
-
-    "worms_eye": {
-        "name": "Worm’s-Eye View",
-        "use_for": [
-            "scale transformation",
-            "unexpected perspective",
-        ],
-    },
-
-    "high_angle": {
-        "name": "High-Angle Shot",
-        "use_for": [
-            "overview",
-            "relationship between elements",
-        ],
-    },
-
-    "birds_eye": {
-        "name": "Bird’s-Eye View",
-        "use_for": [
-            "systems",
-            "routes",
-            "connections",
-            "spatial relationships",
-        ],
-    },
-
-    "top_down": {
-        "name": "Top-Down Shot",
-        "use_for": [
-            "graphic organization",
-            "structured layouts",
-        ],
-    },
-
-    "three_quarter": {
-        "name": "Three-Quarter Hero Shot",
-        "use_for": [
-            "bank cards",
-            "phones",
-            "premium products",
-        ],
-    },
-
-    "over_shoulder": {
-        "name": "Over-the-Shoulder Shot",
-        "use_for": [
-            "digital experience",
-            "banking interaction",
-        ],
-    },
-
-    "pov": {
-        "name": "Point-of-View Shot",
-        "use_for": [
-            "immersive experience",
-            "travel",
-            "payment moments",
-        ],
-    },
-
-    "ground_level": {
-        "name": "Ground-Level Shot",
-        "use_for": [
-            "movement",
-            "speed",
-            "travel",
-            "foreground depth",
-        ],
-    },
-
-    "macro": {
-        "name": "Macro Shot",
-        "use_for": [
-            "product detail",
-            "luxury textures",
-        ],
-    },
-
-    "extreme_closeup": {
-        "name": "Extreme Close-Up",
-        "use_for": [
-            "material detail",
-            "micro-interaction",
-        ],
-    },
-
-    "wide": {
-        "name": "Wide Environmental Shot",
-        "use_for": [
-            "travel",
-            "lifestyle",
-            "brand worlds",
-        ],
-    },
-
-    "extreme_wide": {
-        "name": "Extreme Wide Shot",
-        "use_for": [
-            "freedom",
-            "scale",
-            "possibility",
-        ],
-    },
-
-    "forced_perspective": {
-        "name": "Forced-Perspective Shot",
-        "use_for": [
-            "visual metaphor",
-            "scale manipulation",
-        ],
-    },
-
-    "central_one_point": {
-        "name": "Central One-Point Perspective",
-        "use_for": [
-            "precision",
-            "leading lines",
-            "structured environments",
-        ],
-    },
-
-    "frame_within_frame": {
-        "name": "Frame-within-a-Frame Composition",
-        "use_for": [
-            "focus",
-            "architecture",
-            "cinematic storytelling",
-        ],
-    },
-
-    "foreground_obstruction": {
-        "name": "Foreground-Obstruction Composition",
-        "use_for": [
-            "cinematic realism",
-            "depth",
-            "premium lifestyle photography",
-        ],
-    },
-}
-
-
-# =========================================================
-# LENS LIBRARY
-# =========================================================
-
-LENS_LIBRARY = {
-    "14-20mm":
-        "Extreme environmental drama with intentional perspective.",
-
-    "24mm":
-        "Wide premium environmental advertising.",
-
-    "28mm":
-        "Dynamic commercial environment with controlled perspective.",
-
-    "35mm":
-        "Cinematic environmental storytelling.",
-
-    "50mm":
-        "Balanced natural perspective.",
-
-    "85mm":
-        "Premium portrait compression.",
-
-    "105mm":
-        "Luxury portrait/product compression.",
-
-    "macro":
-        "Fine product and material detail.",
-
-    "tilt_shift":
-        "Architectural perspective control.",
-}
-
-
-# =========================================================
-# ANTI-CLICHE LIBRARY
-# =========================================================
-
-ANTI_CLICHE_LIBRARY = [
-    {
-        "id": "flying_money",
-        "markers": [
-            "عملات طائرة",
-            "فلوس طايره",
-            "فلوس طائرة",
-            "flying money",
-            "flying coins",
-            "money floating",
-        ],
-        "reason":
-            "Overused financial advertising symbol.",
-    },
-
-    {
-        "id": "phone_icons",
-        "markers": [
-            "هاتف محاط بايقونات",
-            "هاتف محاط بأيقونات",
-            "phone surrounded by icons",
-            "floating app icons",
-            "floating banking icons",
-        ],
-        "reason":
-            "Generic fintech visualization.",
-    },
-
-    {
-        "id": "security_shield",
-        "markers": [
-            "درع الامان",
-            "درع الأمان",
-            "security shield",
-            "digital shield",
-        ],
-        "reason":
-            "Common security cliché.",
-    },
-
-    {
-        "id": "growth_arrow",
-        "markers": [
-            "سهم صاعد",
-            "اسهم صاعده",
-            "أسهم صاعدة",
-            "upward arrow",
-            "rising graph",
-        ],
-        "reason":
-            "Generic business-growth symbolism.",
-    },
-
-    {
-        "id": "generic_globe",
-        "markers": [
-            "كره ارضيه",
-            "كرة أرضية",
-            "globe",
-            "world globe",
-            "planet earth",
-        ],
-        "reason":
-            "Overused international metaphor.",
-    },
-
-    {
-        "id": "travel_gate",
-        "markers": [
-            "بوابه سفر",
-            "بوابة سفر",
-            "travel gate",
-            "airport gate as portal",
-            "magic portal",
-            "magical portal",
-        ],
-        "reason":
-            "Common travel-campaign visual device.",
-    },
-
-    {
-        "id": "smiling_businessman",
-        "markers": [
-            "رجل اعمال يبتسم",
-            "رجل أعمال يبتسم",
-            "smiling businessman",
-            "businessman smiling",
-        ],
-        "reason":
-            "Generic corporate stock-photo cliché.",
-    },
-
-    {
-        "id": "floating_card",
-        "markers": [
-            "بطاقه تطفو",
-            "بطاقة تطفو",
-            "floating bank card",
-            "floating card",
-        ],
-        "reason":
-            "Weak product presentation unless physically justified.",
-    },
-
-    {
-        "id": "random_mini_city",
-        "markers": [
-            "مدينه مصغره",
-            "مدينة مصغرة",
-            "miniature city",
-            "tiny city",
-        ],
-        "reason":
-            "Common AI advertising visual without conceptual relevance.",
-    },
-
-    {
-        "id": "random_purple_elements",
-        "markers": [
-            "عناصر بنفسجيه عشوائيه",
-            "عناصر بنفسجية عشوائية",
-            "random purple objects",
-            "purple decorative elements",
-        ],
-        "reason":
-            "Brand color used as decoration instead of concept.",
-    },
-
-    {
-        "id": "handshake",
-        "markers": [
-            "مصافحه",
-            "مصافحة",
-            "handshake",
-            "business handshake",
-        ],
-        "reason":
-            "Overused trust/business cliché.",
-    },
-
-    {
-        "id": "piggy_bank",
-        "markers": [
-            "حصاله",
-            "حصالة",
-            "piggy bank",
-        ],
-        "reason":
-            "Overused savings metaphor.",
-    },
-
-    {
-        "id": "calculator_money",
-        "markers": [
-            "اله حاسبه",
-            "آلة حاسبة",
-            "calculator and money",
-        ],
-        "reason":
-            "Generic financial-services imagery.",
-    },
-
-    {
-        "id": "random_hud",
-        "markers": [
-            "hud",
-            "digital interface around",
-            "floating interface",
-            "دوائر تقنيه",
-            "دوائر تقنية",
-        ],
-        "reason":
-            "Generic futuristic banking treatment.",
-    },
-]
-
-
-# =========================================================
-# VISUAL METAPHOR LIBRARY
-# =========================================================
-
-METAPHOR_FAMILIES = {
-    "speed": [
-        "distance compression",
-        "instant spatial transformation",
-        "single uninterrupted motion",
-        "time collapsed into physical distance",
-    ],
-
-    "international_transfer": [
-        "two distant environments physically becoming one",
-        "distance folded into a single real space",
-        "two cultural spaces sharing one physical architecture",
-        "a real material transition eliminating perceived distance",
-    ],
-
-    "travel": [
-        "home and destination existing in one continuous physical world",
-        "destination changing around a constant traveler",
-        "movement represented through environmental transformation",
-        "travel utility integrated naturally into real human behavior",
-    ],
-
-    "security": [
-        "calm protected space inside a chaotic environment",
-        "precise architectural containment",
-        "fragile value protected by physical structure rather than symbols",
-    ],
-
-    "control": [
-        "complex environment resolving around one deliberate action",
-        "many paths becoming one precise system",
-    ],
-
-    "cashback": [
-        "value returning physically to its origin",
-        "one action producing a visible secondary benefit",
-    ],
-
-    "flexibility": [
-        "environment adapting around a stable user",
-        "one object changing function without changing identity",
-    ],
-
-    "rewards": [
-        "ordinary action revealing a premium secondary layer",
-        "small interaction producing disproportionate value",
-    ],
-
-    "digital_banking": [
-        "physical world behaving with digital simplicity",
-        "complex banking represented by one seamless physical gesture",
-    ],
-
-    "premium": [
-        "controlled simplicity",
-        "precision",
-        "confident scale",
-        "luxury through restraint rather than decoration",
-    ],
-}
-
-
-# =========================================================
-# DATA MODELS
-# =========================================================
-
-@dataclass
-class CreativeConcept:
-    concept_id: str
-
-    category: str
-
-    title: str
-
-    core_idea: str
-
-    marketing_message: str
-
-    visual_metaphor: str
-
-    environment: str
-
-    hero_element: str
-
-    supporting_elements: List[str]
-
-    camera_angle: str
-
-    lens: str
-
-    perspective: str
-
-    lighting: str
-
-    negative_space: str
-
-    brand_logic: str
-
-    production_method: str
-
-    campaign_extension: str
-
-    risks: List[str]
-
-    scores: Dict[str, float] = field(
-        default_factory=dict
+MASTERPIECE_REQUIRE_QA = str(
+    os.environ.get(
+        "XPAND_MASTERPIECE_REQUIRE_QA",
+        "true",
     )
+).strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
 
-    weighted_score: float = 0.0
 
-    cliche_hits: List[
-        Dict[str, str]
-    ] = field(
-        default_factory=list
+MASTERPIECE_ALLOW_SMART_FALLBACK = str(
+    os.environ.get(
+        "XPAND_MASTERPIECE_ALLOW_SMART_FALLBACK",
+        "true",
     )
-
-    debate: Dict[str, Any] = field(
-        default_factory=dict
-    )
-
-    feasibility: Dict[str, Any] = field(
-        default_factory=dict
-    )
-
-    evaluation_valid: bool = False
-
-    quality_gate_passed: bool = False
-
-    quality_gate_failures: List[
-        str
-    ] = field(
-        default_factory=list
-    )
-
-    generation_round: int = 1
-
-    revised_from: str = ""
-
-
-@dataclass
-class CreativeBrainResponse:
-    ok: bool
-
-    mode: str
-
-    request: str
-
-    total_concepts: int
-
-    concepts: List[
-        CreativeConcept
-    ]
-
-    top_concepts: List[
-        CreativeConcept
-    ]
-
-    winner: Optional[
-        CreativeConcept
-    ]
-
-    metadata: Dict[
-        str,
-        Any
-    ] = field(
-        default_factory=dict
-    )
-
-    errors: List[
-        str
-    ] = field(
-        default_factory=list
-    )
+).strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 
 # =========================================================
-# BASIC HELPERS
+# ERROR
+# =========================================================
+
+class MasterpieceGuardError(
+    RuntimeError
+):
+    pass
+
+
+# =========================================================
+# HELPERS
 # =========================================================
 
 def clean_text(
     value: Any,
     limit: int = 12000,
 ) -> str:
+
     return (
         str(
             value
@@ -1004,9 +285,10 @@ def clean_text(
     )
 
 
-def normalize_text(
+def normalized(
     value: Any,
 ) -> str:
+
     text = clean_text(
         value,
         30000,
@@ -1024,6 +306,7 @@ def normalize_text(
     }
 
     for old, new in replacements.items():
+
         text = text.replace(
             old,
             new,
@@ -1046,14 +329,15 @@ def normalize_text(
 
 def contains_any(
     text: str,
-    markers: Sequence[str],
+    markers,
 ) -> bool:
-    source = normalize_text(
+
+    source = normalized(
         text
     )
 
     return any(
-        normalize_text(
+        normalized(
             marker
         )
         in source
@@ -1061,113 +345,58 @@ def contains_any(
     )
 
 
-def safe_list(
-    value: Any,
-) -> List[Any]:
-    return (
-        value
-        if isinstance(
-            value,
-            list,
-        )
-        else []
-    )
-
-
 def safe_dict(
     value: Any,
 ) -> Dict[str, Any]:
-    return (
-        value
-        if isinstance(
-            value,
-            dict,
-        )
-        else {}
-    )
 
-
-# =========================================================
-# JSON HELPERS
-# =========================================================
-
-def extract_json_object(
-    value: str,
-) -> Dict[str, Any]:
-    text = clean_text(
+    if isinstance(
         value,
-        100000,
-    )
-
-    text = re.sub(
-        r"^```(?:json)?\s*",
-        "",
-        text,
-        flags=re.IGNORECASE,
-    )
-
-    text = re.sub(
-        r"\s*```$",
-        "",
-        text,
-    )
-
-    try:
-        parsed = json.loads(
-            text
-        )
-
-        if isinstance(
-            parsed,
-            dict,
-        ):
-            return parsed
-
-    except Exception:
-        pass
-
-    start = text.find(
-        "{"
-    )
-
-    end = text.rfind(
-        "}"
-    )
-
-    if (
-        start >= 0
-        and
-        end > start
+        dict,
     ):
-        try:
-            parsed = json.loads(
-                text[
-                    start:
-                    end + 1
-                ]
-            )
-
-            if isinstance(
-                parsed,
-                dict,
-            ):
-                return parsed
-
-        except Exception:
-            pass
+        return value
 
     return {}
 
 
-def compact_json_for_prompt(
+def safe_list(
     value: Any,
-    limit: int,
-) -> str:
-    if not value:
-        return "{}"
+) -> List[Any]:
+
+    if isinstance(
+        value,
+        list,
+    ):
+        return value
+
+    return []
+
+
+def safe_float(
+    value: Any,
+    default: float = 0.0,
+) -> float:
 
     try:
-        text = json.dumps(
+
+        return float(
+            value
+        )
+
+    except Exception:
+
+        return float(
+            default
+        )
+
+
+def safe_json_string(
+    value: Any,
+    limit: int = 16000,
+) -> str:
+
+    try:
+
+        result = json.dumps(
             value,
             ensure_ascii=False,
             separators=(
@@ -1178,5942 +407,3882 @@ def compact_json_for_prompt(
         )
 
     except Exception:
-        text = clean_text(
-            value,
-            limit,
-        )
 
-    if len(
+        result = "{}"
+
+    return result[:limit]
+
+
+# =========================================================
+# IMAGE INTENT
+# =========================================================
+
+IMAGE_ACTION_MARKERS = [
+    "اعمللي",
+    "اعمل لي",
+    "اعمل",
+    "صمملي",
+    "صمم لي",
+    "صمم",
+    "انشئ",
+    "أنشئ",
+    "سويلي",
+    "سوي لي",
+    "سوي",
+    "ولد",
+    "ولّد",
+    "generate",
+    "create",
+    "design",
+    "make",
+]
+
+
+IMAGE_ASSET_MARKERS = [
+    "صوره",
+    "صورة",
+    "صور",
+    "بوستر",
+    "poster",
+    "بوست",
+    "بوستات",
+    "post",
+    "posts",
+    "اعلان",
+    "إعلان",
+    "اعلانات",
+    "إعلانات",
+    "ad",
+    "ads",
+    "visual",
+    "key visual",
+    "campaign",
+    "حمله",
+    "حملة",
+]
+
+
+IMAGE_QUESTION_MARKERS = [
+    "اشرحلي",
+    "اشرح لي",
+    "شو افضل موديل",
+    "شو أفضل موديل",
+    "ايش افضل موديل",
+    "أي موديل",
+    "كيف بتشتغل",
+    "كيف تعمل",
+    "شو يعني",
+    "ما معنى",
+]
+
+
+MASTERPIECE_MARKERS = [
+    "xpand masterpiece",
+    "masterpiece",
+    "ماستر بيس",
+    "ماستربيس",
+    "اقصى قوتك",
+    "أقصى قوتك",
+    "كل قواك",
+    "افضل نتيجه ممكنه",
+    "أفضل نتيجة ممكنة",
+    "اقوى نتيجه",
+    "أقوى نتيجة",
+    "اعلى مستوى ممكن",
+    "أعلى مستوى ممكن",
+    "اقوى شغل",
+    "أقوى شغل",
+    "ultimate",
+    "max quality",
+]
+
+
+def is_campaign_request(
+    text: str,
+) -> bool:
+
+    source = normalized(
         text
-    ) <= limit:
-        return text
-
-    front = int(
-        limit
-        *
-        0.72
     )
 
-    back = max(
-        0,
-        limit
-        -
-        front
-        -
-        80
+    if contains_any(
+        source,
+        [
+            "سلسله بوستات",
+            "سلسلة بوستات",
+            "سلسله اعلانات",
+            "سلسلة اعلانات",
+            "سلسلة إعلانات",
+            "series of posts",
+            "series of ads",
+            "ad series",
+            "post series",
+        ],
+    ):
+
+        return True
+
+    if re.search(
+        r"(?:^|\s)(?:حمله|campaign)(?=\s|$)",
+        source,
+        flags=re.IGNORECASE,
+    ):
+
+        # "campaign quality" alone is not campaign creation.
+        if contains_any(
+            source,
+            [
+                "campaign quality",
+                "campaign-level",
+                "campaign level",
+                "بمستوى حملة",
+                "جودة حملة",
+            ],
+        ):
+
+            return False
+
+        return True
+
+    return False
+
+
+def looks_like_image_generation_request(
+    text: str,
+) -> bool:
+
+    value = clean_text(
+        text,
+        12000,
     )
 
-    return (
-        text[:front]
-        +
-        '\n"[XPAND_CONTEXT_COMPACTED]"\n'
-        +
-        (
-            text[-back:]
-            if back
-            else ""
+    if not value:
+
+        return False
+
+    source = normalized(
+        value
+    )
+
+    if source.startswith(
+        "/image"
+    ):
+
+        return True
+
+    if contains_any(
+        value,
+        IMAGE_QUESTION_MARKERS,
+    ):
+
+        return False
+
+    if is_campaign_request(
+        value
+    ):
+
+        return True
+
+    return bool(
+        contains_any(
+            value,
+            IMAGE_ACTION_MARKERS,
+        )
+        and
+        contains_any(
+            value,
+            IMAGE_ASSET_MARKERS,
         )
     )
 
 
+def is_masterpiece_request(
+    text: str,
+) -> bool:
+
+    return contains_any(
+        text,
+        MASTERPIECE_MARKERS,
+    )
+
+
 # =========================================================
-# SCORE HELPERS
+# IMAGE COUNT
 # =========================================================
 
-def clamp_score(
-    value: Any,
-) -> float:
+def detect_requested_image_count(
+    text: str,
+) -> int:
+
+    source = normalized(
+        text
+    )
+
+    patterns = [
+        (
+            r"\b([1-4])\s*"
+            r"(?:صور|صوره|صورة|نسخ|خيارات|بوستات)\b"
+        ),
+
+        (
+            r"\b(?:صور|نسخ|خيارات|بوستات)\s*"
+            r"([1-4])\b"
+        ),
+    ]
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            source,
+        )
+
+        if match:
+
+            return max(
+                1,
+                min(
+                    MAX_GENERATED_IMAGES,
+                    int(
+                        match.group(
+                            1
+                        )
+                    ),
+                ),
+            )
+
+    return 1
+
+
+# =========================================================
+# ASPECT RATIO
+# =========================================================
+
+def detect_aspect_ratio(
+    text: str,
+) -> str:
+
+    source = normalized(
+        text
+    )
+
+    source = source.translate(
+        str.maketrans(
+            "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
+            "01234567890123456789",
+        )
+    )
+
+    source = re.sub(
+        r"\s*[：﹕︓:]\s*",
+        ":",
+        source,
+    )
+
+    ratios = [
+        "1:1",
+        "4:5",
+        "5:4",
+        "9:16",
+        "16:9",
+        "2:3",
+        "3:2",
+        "3:4",
+        "4:3",
+        "21:9",
+    ]
+
+    for ratio in ratios:
+
+        if re.search(
+            rf"(?<!\d){re.escape(ratio)}(?!\d)",
+            source,
+        ):
+
+            return ratio
+
+    if contains_any(
+        source,
+        [
+            "ستوري",
+            "story",
+            "ريل",
+            "reel",
+        ],
+    ):
+
+        return "9:16"
+
+    if contains_any(
+        source,
+        [
+            "بوستر",
+            "poster",
+            "بوست",
+            "post",
+            "اعلان",
+            "إعلان",
+        ],
+    ):
+
+        return "4:5"
+
+    return "1:1"
+
+
+# =========================================================
+# GENERATION MODE
+# =========================================================
+
+def detect_generation_mode(
+    text: str,
+) -> str:
+
+    if contains_any(
+        text,
+        [
+            "compare",
+            "قارن الموديلات",
+            "كل موديل لحاله",
+        ],
+    ):
+
+        return "compare"
+
+    if is_masterpiece_request(
+        text
+    ):
+
+        return "best"
+
+    if contains_any(
+        text,
+        [
+            "nano banana pro",
+            "نانو بنانا برو",
+            "gemini 3 pro image",
+            "google pro",
+        ],
+    ):
+
+        return "google_pro"
+
+    if contains_any(
+        text,
+        [
+            "nano banana 2",
+            "نانو بنانا 2",
+            "google fast",
+            "gemini fast",
+        ],
+    ):
+
+        return "google_fast"
+
+    if contains_any(
+        text,
+        [
+            "سريع",
+            "fast mode",
+            "وضع سريع",
+        ],
+    ):
+
+        return "fast"
+
+    return "auto"
+
+
+# =========================================================
+# PROMPT
+# =========================================================
+
+def extract_image_prompt(
+    text: str,
+) -> str:
+
+    value = clean_text(
+        text,
+        12000,
+    )
+
+    if value.lower().startswith(
+        "/image"
+    ):
+
+        value = value[
+            len(
+                "/image"
+            ):
+        ].strip()
+
+    return value
+
+
+# =========================================================
+# BRAND
+# =========================================================
+
+def detect_runtime_brand(
+    core,
+    user_id,
+    text: str,
+) -> str:
+
     try:
-        number = float(
-            value
+
+        detected = clean_text(
+            detect_brand(
+                text
+            ),
+            100,
         )
 
     except Exception:
-        number = 0.0
 
-    return max(
-        0.0,
-        min(
-            100.0,
-            number,
-        ),
-    )
+        detected = ""
 
+    if detected:
 
-def calculate_weighted_score(
-    scores: Dict[str, Any],
-) -> float:
-    total = 0.0
-
-    for key, weight in (
-        SCORE_WEIGHTS.items()
-    ):
-        score = clamp_score(
-            scores.get(
-                key,
-                0,
-            )
+        return safe_brand_id(
+            detected
         )
 
-        total += (
-            score
-            *
-            (
-                float(
-                    weight
-                )
-                /
-                100.0
-            )
-        )
-
-    return round(
-        total,
-        2,
-    )
-
-
-# =========================================================
-# ANTI-CLICHE
-# =========================================================
-
-def detect_cliches(
-    concept_text: str,
-) -> List[
-    Dict[str, str]
-]:
-    hits: List[
-        Dict[str, str]
-    ] = []
-
-    source = normalize_text(
-        concept_text
-    )
-
-    for item in (
-        ANTI_CLICHE_LIBRARY
-    ):
-        matched = False
-
-        for marker in item[
-            "markers"
-        ]:
-            if normalize_text(
-                marker
-            ) in source:
-                matched = True
-                break
-
-        if matched:
-            hits.append(
-                {
-                    "id":
-                        item[
-                            "id"
-                        ],
-
-                    "reason":
-                        item[
-                            "reason"
-                        ],
-                }
-            )
-
-    return hits
-
-
-def apply_cliche_penalty(
-    weighted_score: float,
-    cliche_hits: List[
-        Dict[str, str]
-    ],
-) -> float:
-    if not cliche_hits:
-        return weighted_score
-
-    penalty = min(
-        35.0,
-        len(
-            cliche_hits
-        )
-        *
-        10.0,
-    )
-
-    return round(
-        max(
-            0.0,
-            weighted_score
-            -
-            penalty,
-        ),
-        2,
-    )
-
-
-# =========================================================
-# BENEFIT / METAPHOR
-# =========================================================
-
-def infer_benefit_family(
-    request: str,
-) -> str:
     if contains_any(
-        request,
+        text,
         [
+            "stc bank",
+            "stc بنك",
+            "بنك stc",
+            "اس تي سي بنك",
+        ],
+    ):
+
+        return "stc_bank"
+
+    try:
+
+        active = get_active_brand(
+            core,
+            user_id,
+        )
+
+        return safe_brand_id(
+            active
+        )
+
+    except Exception:
+
+        return ""
+
+
+def ensure_known_brand_profile(
+    core,
+    user_id,
+    brand_id: str,
+) -> None:
+
+    if not brand_id:
+
+        return
+
+    if brand_id == "stc_bank":
+
+        try:
+
+            profile = BRAND_PROFILES.get(
+                "stc_bank",
+                {},
+            )
+
+            if profile:
+
+                upsert_brand_profile(
+                    core,
+                    user_id,
+                    "stc_bank",
+                    "STC Bank KSA",
+                    profile,
+                )
+
+        except Exception as error:
+
+            print(
+                "⚠️ STC brand profile:",
+                clean_text(
+                    error,
+                    1000,
+                ),
+            )
+
+
+def build_brand_context_for_request(
+    core,
+    user_id,
+    brand_id: str,
+    request: str,
+) -> Dict[str, Any]:
+
+    if not brand_id:
+
+        return {}
+
+    try:
+
+        result = build_brand_memory_context(
+            core,
+            user_id,
+            brand_id,
+            request=request,
+            max_rules=70,
+            max_references=5,
+        )
+
+        return safe_dict(
+            result
+        )
+
+    except TypeError:
+
+        try:
+
+            result = build_brand_memory_context(
+                core,
+                user_id,
+                brand_id,
+                max_rules=70,
+                max_references=5,
+            )
+
+            return safe_dict(
+                result
+            )
+
+        except Exception as error:
+
+            print(
+                "⚠️ Brand Memory fallback:",
+                clean_text(
+                    error,
+                    1200,
+                ),
+            )
+
+            return {}
+
+    except Exception as error:
+
+        print(
+            "⚠️ Brand Memory:",
+            clean_text(
+                error,
+                1200,
+            ),
+        )
+
+        return {}
+
+
+def safe_brand_context_for_model(
+    context: Any,
+) -> Dict[str, Any]:
+
+    context = safe_dict(
+        context
+    )
+
+    references = safe_list(
+        context.get(
+            "references"
+        )
+    )
+
+    return {
+        "brand_id":
+            context.get(
+                "brand_id",
+                "",
+            ),
+
+        "profile":
+            context.get(
+                "profile",
+                {},
+            ),
+
+        "visual_profile":
+            context.get(
+                "visual_profile",
+                {},
+            ),
+
+        "rules":
+            safe_list(
+                context.get(
+                    "rules"
+                )
+            )[:70],
+
+        "references":
+            [
+                item
+                for item in references[:5]
+                if isinstance(
+                    item,
+                    dict,
+                )
+            ],
+
+        "reference_execution_context":
+            context.get(
+                "reference_execution_context",
+                {},
+            ),
+
+        "campaign":
+            context.get(
+                "campaign",
+                {},
+            ),
+    }
+
+
+# =========================================================
+# BENEFIT FAMILY
+# =========================================================
+
+INTERNATIONAL_TRANSFER_MARKERS = [
     "تحويل دولي",
     "تحويل مالي دولي",
     "تحويلات مالية دولية",
     "حوالة مالية دولية",
-    "حواله ماليه دوليه",
     "international transfer",
     "international money transfer",
-    "حول دولي",
-    "حواله دوليه",
-    "حوالة دولية",
 ]
-    ):
-        return (
-            "international_transfer"
-        )
+
+
+MERCHANT_PAYMENTS_MARKERS = [
+    "نقاط البيع",
+    "نقطة البيع",
+    "اجهزة نقاط البيع",
+    "أجهزة نقاط البيع",
+    "خدمات التجارة الالكترونية",
+    "خدمات التجارة الإلكترونية",
+    "التجارة الالكترونية",
+    "التجارة الإلكترونية",
+    "e-commerce",
+    "ecommerce",
+    "point of sale",
+    "points of sale",
+    "pos terminal",
+    "merchant payments",
+    "merchant services",
+    "payment gateway",
+    "بوابة الدفع",
+]
+
+
+CASHBACK_MARKERS = [
+    "كاش باك",
+    "cashback",
+    "استرداد نقدي",
+]
+
+
+SECURITY_MARKERS = [
+    "امان",
+    "أمان",
+    "امن",
+    "آمن",
+    "security",
+    "secure",
+]
+
+
+TRAVEL_MARKERS = [
+    "سفر",
+    "السفر",
+    "مسافر",
+    "رحلة",
+    "مطار",
+    "travel",
+    "airport",
+]
+
+
+REWARDS_MARKERS = [
+    "مكافآت",
+    "مكافات",
+    "نقاط مكافآت",
+    "reward points",
+    "rewards",
+]
+
+
+SPEED_MARKERS = [
+    "سرعة",
+    "سرعه",
+    "فوري",
+    "سريع",
+    "instant",
+    "fast",
+]
+
+
+def detect_runtime_benefit_family(
+    text: str,
+) -> str:
 
     if contains_any(
-        request,
-        [
-            "شريحتك",
-            "شريحة",
-            "roaming",
-            "تجوال",
-            "وجهة",
-            "وجهات",
-            "سفر",
-            "travel",
-            "مطارات",
-            "دفع دولي",
-            "الدفع الدولي",
-        ],
+        text,
+        INTERNATIONAL_TRANSFER_MARKERS,
     ):
-        return "travel"
+
+        return "international_transfer"
+
+    # IMPORTANT:
+    # merchant must run before rewards because
+    # "نقاط البيع" contains "نقاط".
+    if contains_any(
+        text,
+        MERCHANT_PAYMENTS_MARKERS,
+    ):
+
+        return "merchant_payments"
 
     if contains_any(
-        request,
-        [
-            "سرعه",
-            "سرعة",
-            "فوري",
-            "instant",
-            "fast",
-        ],
+        text,
+        CASHBACK_MARKERS,
     ):
-        return "speed"
 
-    if contains_any(
-        request,
-        [
-            "امان",
-            "أمان",
-            "امن",
-            "آمن",
-            "security",
-            "secure",
-        ],
-    ):
-        return "security"
-
-    if contains_any(
-        request,
-        [
-            "تحكم",
-            "control",
-            "اداره",
-            "إدارة",
-            "manage",
-        ],
-    ):
-        return "control"
-
-    if contains_any(
-        request,
-        [
-            "كاش باك",
-            "cashback",
-            "استرداد",
-        ],
-    ):
         return "cashback"
 
     if contains_any(
-        request,
-        [
-            "مرونه",
-            "مرونة",
-            "flexibility",
-            "flexible",
-        ],
+        text,
+        SECURITY_MARKERS,
     ):
-        return "flexibility"
+
+        return "security"
 
     if contains_any(
-        request,
-        [
-            "مكافات",
-            "مكافآت",
-            "rewards",
-            "points",
-            "نقاط",
-        ],
+        text,
+        TRAVEL_MARKERS,
     ):
+
+        return "travel"
+
+    if contains_any(
+        text,
+        REWARDS_MARKERS,
+    ):
+
         return "rewards"
 
     if contains_any(
-        request,
-        [
-            "تطبيق",
-            "app",
-            "رقمي",
-            "digital",
-            "بنك رقمي",
-        ],
+        text,
+        SPEED_MARKERS,
     ):
-        return "digital_banking"
+
+        return "speed"
 
     return "premium"
 
 
-def get_metaphor_seed(
-    request: str,
-) -> Dict[str, Any]:
-    family = infer_benefit_family(
-        request
+def build_creative_request(
+    original_request: str,
+) -> Tuple[
+    str,
+    str,
+]:
+
+    family = detect_runtime_benefit_family(
+        original_request
     )
 
-    return {
-        "family":
-            family,
-
-        "directions":
-            METAPHOR_FAMILIES.get(
-                family,
-                METAPHOR_FAMILIES[
-                    "premium"
-                ],
-            ),
-    }
-
-
-# STC Bank has its own approved visual system. These markers identify
-# execution defects, not subject matter that the user may legitimately ask
-# for. Requested phones, cities and motivated identity lighting stay valid.
-STC_FORBIDDEN_CONCEPT_MARKERS = (
-    "floating card", "floating phone", "levitating", "unsupported product",
-    "hologram", "holographic", "wireframe", "futuristic interface",
-    "connection line", "network line", "route line", "dotted path",
-    "laser beam", "transfer path",
-    "particle", "sparkle", "hud", "ui overlay",
-    "بطاقة طافية", "هاتف طائر", "هاتف يطفو", "يطفو", "تطفو",
-    "هولوغرام", "مسار تحويل ضوئي", "خط اتصال", "خطوط اتصال",
-)
-
-
-def stc_concept_violations(concept: "CreativeConcept") -> List[str]:
-    """Return deterministic STC execution risks for ranking and revision."""
-    source = normalize_text(
-        "\n".join(
-            [
-                concept.title,
-                concept.core_idea,
-                concept.marketing_message,
-                concept.visual_metaphor,
-                concept.environment,
-                concept.hero_element,
-                " ".join(concept.supporting_elements),
-                concept.campaign_extension,
-            ]
-        )
-    )
-    return [
-        marker
-        for marker in STC_FORBIDDEN_CONCEPT_MARKERS
-        if normalize_text(marker) in source
-    ]
-
-
-# =========================================================
-# CONTEXT COMPACTION
-# =========================================================
-
-def compact_brand_context(
-    brand_context: Any,
-    limit: int = 4500,
-) -> str:
-    if not brand_context:
-        return (
-            "No structured brand context supplied."
-        )
-
-    if isinstance(
-        brand_context,
-        str,
-    ):
-        return clean_text(
-            brand_context,
-            limit,
-        )
-
-    return compact_json_for_prompt(
-        brand_context,
-        limit,
-    )
-
-
-def compact_visual_references(
-    visual_references: Any,
-    limit: int = 3500,
-) -> str:
-    if not visual_references:
-        return (
-            "No Visual Reference DNA supplied."
-        )
-
-    if isinstance(
-        visual_references,
-        str,
-    ):
-        return clean_text(
-            visual_references,
-            limit,
-        )
-
-    return compact_json_for_prompt(
-        visual_references,
-        limit,
-    )
-
-
-def distribution_text(
-    distribution: Dict[
-        str,
-        int
-    ],
-) -> str:
-    return "\n".join(
-        (
-            f"- {category}: "
-            f"{count} concepts"
-        )
-        for (
-            category,
-            count
-        )
-        in distribution.items()
-    )
-
-
-# =========================================================
-# CONCEPT GENERATION PROMPT
-# =========================================================
-
-def build_concept_generation_prompt(
-    *,
-    user_request: str,
-    brand_context: Any = None,
-    visual_references: Any = None,
-    style_hint: str = "",
-    mode: str = MODE_MASTERPIECE,
-    round_number: int = 1,
-    failure_context: str = "",
-    challenger: bool = False,
-) -> str:
-    distribution = (
-        FAST_DISTRIBUTION
-        if mode == MODE_FAST
-        else
-        MASTERPIECE_DISTRIBUTION
-    )
-
-    stc_request = is_stc_bank_request(user_request)
-    metaphor_seed = (
-        {
-            "family": "STC Bank dedicated visual system",
-            "directions": [],
-        }
-        if stc_request
-        else get_metaphor_seed(user_request)
-    )
-
-    stc_skill = STC_BANK_VISUAL_SKILL if stc_request else ""
-
-    return f"""
-    {stc_skill}
-You are XPAND Creative Brain V2.
-
-Act as a top international advertising concept team.
-
-Do NOT generate an image.
-
-Do NOT expose chain-of-thought.
-
-Generate concise, materially different advertising concepts.
-
-==================================================
-USER REQUEST
-==================================================
-
-{clean_text(user_request, 6000)}
-
-==================================================
-BRAND EXECUTION CONTEXT
-==================================================
-
-{compact_brand_context(
-    brand_context,
-    3600
-)}
-
-==================================================
-VISUAL REFERENCE DNA
-==================================================
-
-{compact_visual_references(
-    visual_references,
-    2800
-)}
-
-==================================================
-STYLE HINT
-==================================================
-
-{clean_text(style_hint, 1000) or "Choose the strongest appropriate style."}
-
-==================================================
-BENEFIT FAMILY
-==================================================
-
-{metaphor_seed["family"]}
-
-Metaphor seeds:
-
-{compact_json_for_prompt(
-    metaphor_seed["directions"],
-    1700
-)}
-
-They are inspiration only.
-
-Do NOT mechanically copy them.
-
-For STC Bank, the empty seed list is intentional. Never replace it with
-generic fintech imagery. Develop the concept from the approved STC skill and
-the supplied references only.
-
-==================================================
-REQUIRED DISTRIBUTION
-==================================================
-
-{distribution_text(distribution)}
-
-==================================================
-MASTERPIECE CREATIVE STANDARD
-==================================================
-
-Generate EXACTLY:
-{sum(distribution.values())}
-concepts.
-
-They must NOT be minor variants of the same visual grammar.
-
-Every concept must have ONE dominant visual mechanism.
-
-The idea must be understandable from the image itself.
-
-Think like:
-
-- Creative Director
-- Advertising Strategist
-- Photographer
-- Production Designer
-- Visual Metaphor Specialist
-
-But do not include internal reasoning.
-
-Use concise production-ready decisions.
-
-==================================================
-HARD ANTI-CLICHE RULE
-==================================================
-
-Avoid unless transformed beyond recognition:
-
-- flying money
-- flying coins
-- generic globe
-- connection lines around the world
-- phone surrounded by icons
-- floating SIM card
-- floating bank card
-- security shield
-- growth arrows
-- magic portal
-- generic airport gate
-- smiling businessman
-- handshake
-- random miniature city
-- decorative purple objects
-- random HUD graphics
-- generic neon fintech imagery
-
-A brand color is not a concept.
-
-A landmark alone is not a concept.
-
-A beautiful room alone is not a concept.
-
-==================================================
-CAMERA
-==================================================
-
-Choose ONE coherent camera approach and ONE lens.
-
-Camera must serve the marketing idea.
-
-Do not mix contradictory lenses or perspectives.
-
-==================================================
-PRODUCTION
-==================================================
-
-The concept should preferably work in one strong image.
-
-If technically difficult, identify the production method
-honestly:
-
-single_generation
-composite
-inpainting
-controlled_edit
-
-==================================================
-OUTPUT
-==================================================
-
-Return JSON only:
-
-{{
-  "concepts": [
-    {{
-      "concept_id": "C01",
-      "category": "",
-      "title": "",
-      "core_idea": "",
-      "marketing_message": "",
-      "visual_metaphor": "",
-      "environment": "",
-      "hero_element": "",
-      "supporting_elements": [],
-      "camera_angle": "",
-      "lens": "",
-      "perspective": "",
-      "lighting": "",
-      "negative_space": "",
-      "brand_logic": "",
-      "production_method": "",
-      "campaign_extension": "",
-      "risks": []
-    }}
-  ]
-}}
-
-Do NOT score the concepts.
-
-Do NOT choose a winner.
-
-==================================================
-ACTIVE BRAND SKILL
-==================================================
-
-{stc_skill or "No dedicated brand skill activated."}
+    if family == "merchant_payments":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is merchant payments:
+e-commerce services and point-of-sale acceptance.
+
+Arabic "نقاط البيع" means Point of Sale / POS,
+NOT loyalty points and NOT rewards.
+
+The advertising idea must communicate a believable
+merchant commerce experience across physical POS and
+e-commerce without generic fintech decoration.
+
+Avoid:
+- reward points
+- cashback coins
+- floating money
+- floating banking icons
+- network lines
+- laser payment paths
+- generic HUD interfaces
 """.strip()
 
+    elif family == "international_transfer":
 
-# =========================================================
-# CONCEPT PARSING
-# =========================================================
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is international transfer.
+If speed is mentioned, speed is only a supporting attribute.
+""".strip()
 
-def concept_from_dict(
-    item: Dict[str, Any],
-    *,
-    fallback_id: str,
-    generation_round: int = 1,
-    revised_from: str = "",
-) -> CreativeConcept:
-    supporting = safe_list(
-        item.get(
-            "supporting_elements"
+    elif family == "travel":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is travel.
+""".strip()
+
+    elif family == "cashback":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is cashback.
+""".strip()
+
+    elif family == "security":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is security.
+""".strip()
+
+    elif family == "rewards":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is rewards.
+""".strip()
+
+    elif family == "speed":
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+The primary commercial benefit is speed.
+""".strip()
+
+    else:
+
+        semantic = """
+XPAND SEMANTIC PRIORITY:
+Visualize the real commercial benefit.
+Do not default to generic banking imagery.
+""".strip()
+
+    return (
+        clean_text(
+            original_request,
+            12000,
         )
+        +
+        "\n\n"
+        +
+        semantic,
+        family,
     )
-
-    risks = safe_list(
-        item.get(
-            "risks"
-        )
-    )
-
-    concept = CreativeConcept(
-        concept_id=(
-            clean_text(
-                item.get(
-                    "concept_id"
-                ),
-                100,
-            )
-            or fallback_id
-        ),
-
-        category=clean_text(
-            item.get(
-                "category"
-            ),
-            100,
-        ),
-
-        title=clean_text(
-            item.get(
-                "title"
-            ),
-            400,
-        ),
-
-        core_idea=clean_text(
-            item.get(
-                "core_idea"
-            ),
-            2200,
-        ),
-
-        marketing_message=clean_text(
-            item.get(
-                "marketing_message"
-            ),
-            1400,
-        ),
-
-        visual_metaphor=clean_text(
-            item.get(
-                "visual_metaphor"
-            ),
-            1600,
-        ),
-
-        environment=clean_text(
-            item.get(
-                "environment"
-            ),
-            1700,
-        ),
-
-        hero_element=clean_text(
-            item.get(
-                "hero_element"
-            ),
-            1000,
-        ),
-
-        supporting_elements=[
-            clean_text(
-                value,
-                600,
-            )
-            for value in supporting[:8]
-            if clean_text(
-                value,
-                600,
-            )
-        ],
-
-        camera_angle=clean_text(
-            item.get(
-                "camera_angle"
-            ),
-            500,
-        ),
-
-        lens=clean_text(
-            item.get(
-                "lens"
-            ),
-            200,
-        ),
-
-        perspective=clean_text(
-            item.get(
-                "perspective"
-            ),
-            700,
-        ),
-
-        lighting=clean_text(
-            item.get(
-                "lighting"
-            ),
-            900,
-        ),
-
-        negative_space=clean_text(
-            item.get(
-                "negative_space"
-            ),
-            700,
-        ),
-
-        brand_logic=clean_text(
-            item.get(
-                "brand_logic"
-            ),
-            1200,
-        ),
-
-        production_method=clean_text(
-            item.get(
-                "production_method"
-            ),
-            100,
-        ),
-
-        campaign_extension=clean_text(
-            item.get(
-                "campaign_extension"
-            ),
-            900,
-        ),
-
-        risks=[
-            clean_text(
-                value,
-                600,
-            )
-            for value in risks[:8]
-            if clean_text(
-                value,
-                600,
-            )
-        ],
-
-        generation_round=(
-            generation_round
-        ),
-
-        revised_from=clean_text(
-            revised_from,
-            100,
-        ),
-    )
-
-    concept_text = "\n".join(
-        [
-            concept.title,
-            concept.core_idea,
-            concept.visual_metaphor,
-            concept.environment,
-            concept.hero_element,
-            " ".join(
-                concept.supporting_elements
-            ),
-        ]
-    )
-
-    concept.cliche_hits = (
-        detect_cliches(
-            concept_text
-        )
-    )
-
-    return concept
-
-
-def parse_concepts(
-    payload: Dict[str, Any],
-    *,
-    generation_round: int = 1,
-) -> List[
-    CreativeConcept
-]:
-    raw_concepts = payload.get(
-        "concepts",
-        []
-    )
-
-    if not isinstance(
-        raw_concepts,
-        list,
-    ):
-        return []
-
-    concepts: List[
-        CreativeConcept
-    ] = []
-
-    for index, item in enumerate(
-        raw_concepts,
-        start=1,
-    ):
-        if not isinstance(
-            item,
-            dict,
-        ):
-            continue
-
-        concepts.append(
-            concept_from_dict(
-                item,
-                fallback_id=(
-                    "C"
-                    +
-                    str(index).zfill(2)
-                ),
-                generation_round=(
-                    generation_round
-                ),
-            )
-        )
-
-    return concepts
 
 
 # =========================================================
-# DUPLICATE SUPPRESSION
+# WINNER PROMPT
 # =========================================================
 
-def concept_fingerprint(
-    concept: CreativeConcept,
+def build_winner_instruction(
+    creative_response,
 ) -> str:
-    value = (
-        concept.title
-        + " "
-        + concept.core_idea
-        + " "
-        + concept.visual_metaphor
-        + " "
-        + concept.hero_element
+
+    if creative_response is None:
+
+        return ""
+
+    winner = getattr(
+        creative_response,
+        "winner",
+        None,
     )
 
-    value = normalize_text(
-        value
-    )
+    if winner is None:
 
-    value = re.sub(
-        r"[^a-z0-9\u0600-\u06FF ]+",
-        " ",
-        value,
-    )
+        return ""
 
-    words = [
-        word
-        for word in value.split()
-        if len(word) > 2
-    ]
+    try:
 
-    return " ".join(
-        words[:35]
-    )
-
-
-def deduplicate_concepts(
-    concepts: List[
-        CreativeConcept
-    ],
-    existing: Sequence[
-        CreativeConcept
-    ] = (),
-) -> List[
-    CreativeConcept
-]:
-    seen = {
-        concept_fingerprint(
-            item
+        direction = concept_to_dict(
+            winner
         )
-        for item in existing
-        if concept_fingerprint(
-            item
+
+    except Exception:
+
+        return ""
+
+    return (
+        "\n\n"
+        "========================================\n"
+        "XPAND APPROVED CREATIVE DIRECTION\n"
+        "========================================\n"
+        +
+        safe_json_string(
+            direction,
+            18000,
         )
+        +
+        "\n\n"
+        "Execute this direction faithfully. "
+        "Do not replace it with generic advertising imagery."
+    )
+
+
+# =========================================================
+# CREATIVE STATE
+# =========================================================
+
+def creative_quality_metadata(
+    response,
+) -> Dict[str, Any]:
+
+    if response is None:
+
+        return {}
+
+    return safe_dict(
+        getattr(
+            response,
+            "metadata",
+            {},
+        )
+    )
+
+
+def creative_quality_passed(
+    response,
+) -> bool:
+
+    if response is None:
+
+        return False
+
+    winner = getattr(
+        response,
+        "winner",
+        None,
+    )
+
+    if winner is None:
+
+        return False
+
+    metadata = creative_quality_metadata(
+        response
+    )
+
+    metadata_passed = bool(
+        metadata.get(
+            "quality_gate_passed",
+            getattr(
+                response,
+                "ok",
+                False,
+            ),
+        )
+    )
+
+    winner_passed = bool(
+        getattr(
+            winner,
+            "quality_gate_passed",
+            metadata_passed,
+        )
+    )
+
+    evaluation_valid = bool(
+        getattr(
+            winner,
+            "evaluation_valid",
+            True,
+        )
+    )
+
+    return bool(
+        metadata_passed
+        and
+        winner_passed
+        and
+        evaluation_valid
+    )
+
+
+def creative_runtime_state(
+    response,
+) -> Dict[str, Any]:
+
+    if response is None:
+
+        return {
+            "state":
+                "technical_failure",
+
+            "technical_failure":
+                True,
+
+            "quality_gate_evaluated":
+                False,
+
+            "quality_gate_passed":
+                False,
+
+            "allow_smart_engine_fallback":
+                True,
+
+            "failure_reason":
+                "creative_response_missing",
+
+            "winner":
+                None,
+
+            "metadata":
+                {},
+        }
+
+    metadata = creative_quality_metadata(
+        response
+    )
+
+    winner = getattr(
+        response,
+        "winner",
+        None,
+    )
+
+    technical_failure = bool(
+        metadata.get(
+            "technical_failure",
+            False,
+        )
+    )
+
+    quality_gate_evaluated = bool(
+        metadata.get(
+            "quality_gate_evaluated",
+            winner is not None,
+        )
+    )
+
+    quality_gate_passed = bool(
+        metadata.get(
+            "quality_gate_passed",
+            False,
+        )
+    )
+
+    allow_fallback = bool(
+        metadata.get(
+            "allow_smart_engine_fallback",
+            False,
+        )
+    )
+
+    failure_reason = clean_text(
+        metadata.get(
+            "failure_reason",
+            "",
+        ),
+        1000,
+    )
+
+    if technical_failure:
+
+        state = "technical_failure"
+        allow_fallback = True
+
+    elif not quality_gate_evaluated:
+
+        state = "technical_failure"
+        allow_fallback = True
+
+    elif creative_quality_passed(
+        response
+    ):
+
+        state = "approved"
+
+    else:
+
+        state = "quality_failed"
+
+        if not bool(
+            metadata.get(
+                "quality_target_blocks_production",
+                False,
+            )
+        ):
+
+            allow_fallback = True
+
+    return {
+        "state":
+            state,
+
+        "technical_failure":
+            technical_failure,
+
+        "quality_gate_evaluated":
+            quality_gate_evaluated,
+
+        "quality_gate_passed":
+            quality_gate_passed,
+
+        "allow_smart_engine_fallback":
+            allow_fallback,
+
+        "failure_reason":
+            failure_reason,
+
+        "winner":
+            winner,
+
+        "metadata":
+            metadata,
     }
 
-    output = []
 
-    for concept in concepts:
-        fingerprint = (
-            concept_fingerprint(
-                concept
+# =========================================================
+# MASTERPIECE GUARD
+# =========================================================
+
+def masterpiece_guard_status(
+    prepared: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    creative_mode = clean_text(
+        prepared.get(
+            "creative_mode",
+            "",
+        ),
+        100,
+    )
+
+    if creative_mode != CREATIVE_MODE_MASTERPIECE:
+
+        return {
+            "allowed":
+                True,
+
+            "route":
+                "normal",
+
+            "code":
+                "not_masterpiece",
+
+            "message":
+                "Normal image route.",
+        }
+
+    if (
+        prepared.get(
+            "campaign_required"
+        )
+        and
+        not prepared.get(
+            "campaign_validated"
+        )
+    ):
+
+        return {
+            "allowed":
+                False,
+
+            "route":
+                "blocked",
+
+            "code":
+                "campaign_quality_gate_failed",
+
+            "message":
+                "Campaign validation did not pass.",
+        }
+
+    runtime = creative_runtime_state(
+        prepared.get(
+            "creative_response"
+        )
+    )
+
+    state = runtime.get(
+        "state"
+    )
+
+    if state == "approved":
+
+        return {
+            "allowed":
+                True,
+
+            "route":
+                "masterpiece",
+
+            "code":
+                "passed",
+
+            "message":
+                "Masterpiece creative direction approved.",
+        }
+
+    if state == "technical_failure":
+
+        return {
+            "allowed":
+                True,
+
+            "route":
+                "smart_fallback",
+
+            "code":
+                "creative_brain_technical_fallback",
+
+            "message":
+                (
+                    "Creative Brain technical failure. "
+                    "Continue through Smart Engine."
+                ),
+
+            "failure_reason":
+                runtime.get(
+                    "failure_reason",
+                    "",
+                ),
+        }
+
+    if (
+        runtime.get(
+            "allow_smart_engine_fallback"
+        )
+        or
+        MASTERPIECE_ALLOW_SMART_FALLBACK
+    ):
+
+        return {
+            "allowed":
+                True,
+
+            "route":
+                "smart_fallback",
+
+            "code":
+                "creative_quality_fallback",
+
+            "message":
+                (
+                    "Creative quality target not reached. "
+                    "Continue through Smart Engine."
+                ),
+        }
+
+    return {
+        "allowed":
+            False,
+
+        "route":
+            "blocked",
+
+        "code":
+            "creative_quality_gate_failed",
+
+        "message":
+            (
+                "Creative Quality Gate did not pass "
+                "and fallback is disabled."
+            ),
+    }
+
+
+def enforce_masterpiece_guard(
+    prepared: Dict[str, Any],
+) -> Dict[str, Any]:
+
+    status = masterpiece_guard_status(
+        prepared
+    )
+
+    route = status.get(
+        "route"
+    )
+
+    if not status.get(
+        "allowed"
+    ):
+
+        print("")
+        print(
+            "=========================================="
+        )
+        print(
+            " MASTERPIECE INTEGRATION GUARD: BLOCKED"
+        )
+        print(
+            "=========================================="
+        )
+        print(
+            "Reason:",
+            status.get(
+                "code"
+            )
+        )
+        print(
+            status.get(
+                "message"
+            )
+        )
+        print("")
+
+        raise MasterpieceGuardError(
+            status.get(
+                "message"
+            )
+            or
+            "Masterpiece guard blocked production."
+        )
+
+    if route == "masterpiece":
+
+        print(
+            "✅ MASTERPIECE INTEGRATION GUARD: PASSED"
+        )
+
+    elif route == "smart_fallback":
+
+        print("")
+        print(
+            "=========================================="
+        )
+        print(
+            " MASTERPIECE INTEGRATION GUARD: FALLBACK"
+        )
+        print(
+            "=========================================="
+        )
+        print(
+            "Reason:",
+            status.get(
+                "code"
+            )
+        )
+        print(
+            status.get(
+                "message"
+            )
+        )
+        print(
+            "✅ Smart Engine fallback is allowed."
+        )
+        print("")
+
+    return status
+
+
+# =========================================================
+# RESEARCH
+# =========================================================
+
+def apply_brand_research(
+    prompt: str,
+) -> Dict[str, Any]:
+
+    result = {
+        "applied":
+            False,
+
+        "final_prompt":
+            prompt,
+
+        "research_summary":
+            "",
+
+        "sources_used":
+            [],
+
+        "mode_override":
+            "",
+
+        "brand_id":
+            "",
+    }
+
+    try:
+
+        if not should_apply_deep_research(
+            prompt
+        ):
+
+            return result
+
+        research = build_researched_prompt(
+            prompt
+        )
+
+        if not isinstance(
+            research,
+            dict,
+        ):
+
+            return result
+
+        if research.get(
+            "applied"
+        ):
+
+            result.update(
+                {
+                    "applied":
+                        True,
+
+                    "final_prompt":
+                        clean_text(
+                            research.get(
+                                "final_prompt",
+                                prompt,
+                            ),
+                            32000,
+                        ),
+
+                    "research_summary":
+                        clean_text(
+                            research.get(
+                                "research_summary",
+                                "",
+                            ),
+                            7000,
+                        ),
+
+                    "sources_used":
+                        safe_list(
+                            research.get(
+                                "sources_used"
+                            )
+                        )[:20],
+
+                    "mode_override":
+                        clean_text(
+                            research.get(
+                                "mode_override",
+                                "",
+                            ),
+                            100,
+                        ),
+
+                    "brand_id":
+                        clean_text(
+                            research.get(
+                                "brand_id",
+                                "",
+                            ),
+                            100,
+                        ),
+                }
+            )
+
+    except Exception as error:
+
+        print(
+            "⚠️ Brand research:",
+            clean_text(
+                error,
+                1600,
+            ),
+        )
+
+    return result
+
+
+# =========================================================
+# CAMPAIGN
+# =========================================================
+
+def campaign_title_from_request(
+    text: str,
+    brand_id: str,
+) -> str:
+
+    source = clean_text(
+        text,
+        500,
+    )
+
+    if source:
+
+        return source[:120]
+
+    return (
+        brand_id
+        +
+        " Campaign"
+    )
+
+
+def detect_campaign_asset_count(
+    text: str,
+) -> int:
+
+    source = normalized(
+        text
+    )
+
+    match = re.search(
+        (
+            r"\b([2-9]|1[0-9]|20)\b"
+            r".{0,50}?"
+            r"(?:بوستات|اعلانات|إعلانات|assets|posts|ads)"
+        ),
+        source,
+    )
+
+    if match:
+
+        return max(
+            2,
+            min(
+                20,
+                int(
+                    match.group(
+                        1
+                    )
+                ),
+            ),
+        )
+
+    return 3
+
+
+def try_build_campaign(
+    *,
+    core,
+    user_id,
+    brand_id: str,
+    original_prompt: str,
+    creative_response,
+    brand_context: Dict[str, Any],
+    references: List[Any],
+    research_summary: str,
+    research_sources: List[Any],
+) -> Dict[str, Any]:
+
+    if not is_campaign_request(
+        original_prompt
+    ):
+
+        return {
+            "required":
+                False,
+
+            "validated":
+                False,
+
+            "bible":
+                None,
+
+            "execution":
+                {},
+        }
+
+    if not CAMPAIGN_ENGINE_AVAILABLE:
+
+        return {
+            "required":
+                True,
+
+            "validated":
+                False,
+
+            "bible":
+                None,
+
+            "execution":
+                {},
+
+            "error":
+                "campaign_engine_unavailable",
+        }
+
+    if not creative_quality_passed(
+        creative_response
+    ):
+
+        return {
+            "required":
+                True,
+
+            "validated":
+                False,
+
+            "bible":
+                None,
+
+            "execution":
+                {},
+
+            "error":
+                "creative_direction_not_approved",
+        }
+
+    approved_direction = {}
+
+    try:
+
+        winner = getattr(
+            creative_response,
+            "winner",
+            None,
+        )
+
+        if winner:
+
+            approved_direction = concept_to_dict(
+                winner
+            )
+
+    except Exception:
+
+        approved_direction = {}
+
+    try:
+
+        bible = create_campaign_bible(
+            core=core,
+            user_id=user_id,
+            brand_id=brand_id,
+            campaign_title=campaign_title_from_request(
+                original_prompt,
+                brand_id,
+            ),
+            campaign_goal=original_prompt,
+            asset_count=detect_campaign_asset_count(
+                original_prompt
+            ),
+            brand_context=brand_context,
+            visual_references=references,
+            research_summary=research_summary,
+            research_sources=research_sources,
+            approved_creative_direction=approved_direction,
+            allow_fallback=True,
+        )
+
+        metadata = safe_dict(
+            getattr(
+                bible,
+                "metadata",
+                {},
             )
         )
 
-        if (
-            fingerprint
+        validated = bool(
+            not metadata.get(
+                "fallback",
+                False,
+            )
             and
-            fingerprint in seen
-        ):
-            continue
+            metadata.get(
+                "quality_status",
+                "validated",
+            )
+            ==
+            "validated"
+        )
 
-        if fingerprint:
-            seen.add(
-                fingerprint
+        execution = {}
+
+        if callable(
+            get_asset_direction
+        ):
+
+            try:
+
+                execution = safe_dict(
+                    get_asset_direction(
+                        bible,
+                        1,
+                    )
+                )
+
+            except Exception:
+
+                execution = {}
+
+        return {
+            "required":
+                True,
+
+            "validated":
+                validated,
+
+            "bible":
+                bible,
+
+            "execution":
+                execution,
+        }
+
+    except Exception as error:
+
+        print(
+            "⚠️ Campaign Bible:",
+            clean_text(
+                error,
+                2000,
+            ),
+        )
+
+        return {
+            "required":
+                True,
+
+            "validated":
+                False,
+
+            "bible":
+                None,
+
+            "execution":
+                {},
+
+            "error":
+                clean_text(
+                    error,
+                    2000,
+                ),
+        }
+
+
+# =========================================================
+# PREPARE REQUEST
+# =========================================================
+
+def prepare_generation_input(
+    core,
+    user_id,
+    prompt: str,
+) -> Dict[str, Any]:
+
+    original_prompt = clean_text(
+        prompt,
+        12000,
+    )
+
+    brand_id = detect_runtime_brand(
+        core,
+        user_id,
+        original_prompt,
+    )
+
+    if brand_id:
+
+        try:
+
+            set_active_brand(
+                core,
+                user_id,
+                brand_id,
             )
 
-        output.append(
+        except Exception:
+
+            pass
+
+        ensure_known_brand_profile(
+            core,
+            user_id,
+            brand_id,
+        )
+
+    research = apply_brand_research(
+        original_prompt
+    )
+
+    research_prompt = clean_text(
+        research.get(
+            "final_prompt",
+            original_prompt,
+        ),
+        32000,
+    )
+
+    research_brand = safe_brand_id(
+        research.get(
+            "brand_id",
+            "",
+        )
+    )
+
+    if research_brand:
+
+        brand_id = research_brand
+
+    brand_context = build_brand_context_for_request(
+        core,
+        user_id,
+        brand_id,
+        original_prompt,
+    )
+
+    model_brand_context = safe_brand_context_for_model(
+        brand_context
+    )
+
+    references = safe_list(
+        brand_context.get(
+            "references"
+        )
+    )[:5]
+
+    strict_masterpiece = bool(
+        is_masterpiece_request(
+            original_prompt
+        )
+        or
+        brand_id
+        ==
+        "stc_bank"
+    )
+
+    creative_mode = (
+        CREATIVE_MODE_MASTERPIECE
+        if strict_masterpiece
+        else
+        CREATIVE_MODE_FAST
+    )
+
+    creative_request, benefit_family = (
+        build_creative_request(
+            original_prompt
+        )
+    )
+
+    creative_response = None
+    creative_error = ""
+
+    try:
+
+        creative_response = run_creative_brain(
+            user_request=creative_request,
+            brand_context=model_brand_context,
+            visual_references=references,
+            mode=creative_mode,
+            top_count=3,
+        )
+
+    except Exception as error:
+
+        creative_error = clean_text(
+            error,
+            4000,
+        )
+
+        print(
+            "⚠️ Creative Brain exception:",
+            creative_error,
+        )
+
+    runtime_state = creative_runtime_state(
+        creative_response
+    )
+
+    campaign = try_build_campaign(
+        core=core,
+        user_id=user_id,
+        brand_id=brand_id,
+        original_prompt=original_prompt,
+        creative_response=creative_response,
+        brand_context=model_brand_context,
+        references=references,
+        research_summary=research.get(
+            "research_summary",
+            "",
+        ),
+        research_sources=safe_list(
+            research.get(
+                "sources_used"
+            )
+        ),
+    )
+
+    final_prompt = research_prompt
+
+    final_prompt += (
+        "\n\n"
+        "========================================\n"
+        "XPAND COMMERCIAL INTENT\n"
+        "========================================\n"
+        +
+        creative_request
+    )
+
+    if model_brand_context:
+
+        final_prompt += (
+            "\n\n"
+            "========================================\n"
+            "BRAND MEMORY CONTEXT\n"
+            "========================================\n"
+            +
+            safe_json_string(
+                model_brand_context,
+                12000,
+            )
+        )
+
+    winner_instruction = build_winner_instruction(
+        creative_response
+    )
+
+    if winner_instruction:
+
+        final_prompt += winner_instruction
+
+    campaign_execution = safe_dict(
+        campaign.get(
+            "execution"
+        )
+    )
+
+    if campaign_execution:
+
+        final_prompt += (
+            "\n\n"
+            "========================================\n"
+            "CAMPAIGN VISUAL BIBLE\n"
+            "========================================\n"
+            +
+            safe_json_string(
+                campaign_execution,
+                12000,
+            )
+        )
+
+    if brand_id == "stc_bank":
+
+        final_prompt += """
+
+========================================
+STC BANK PRODUCTION LOCK
+========================================
+
+Create premium, realistic Saudi commercial advertising.
+
+Use STC Bank brand identity with restraint.
+Do not turn brand purple into random decoration.
+
+For merchant payments / e-commerce / POS:
+show a believable premium merchant/customer commerce moment.
+
+Do NOT use:
+- floating coins
+- reward points
+- magic portals
+- random HUD
+- network lines
+- blue laser beams
+- floating banking cards
+- floating payment icons
+- generic fintech neon
+
+The final image must look photographically believable,
+commercially usable and premium.
+""".rstrip()
+
+    mode_override = clean_text(
+        research.get(
+            "mode_override",
+            "",
+        ),
+        100,
+    )
+
+    if (
+        brand_id == "stc_bank"
+        and
+        not mode_override
+    ):
+
+        mode_override = "best"
+
+    return {
+        "original_prompt":
+            original_prompt,
+
+        "final_prompt":
+            clean_text(
+                final_prompt,
+                50000,
+            ),
+
+        "brand_id":
+            brand_id,
+
+        "benefit_family":
+            benefit_family,
+
+        "research_applied":
+            bool(
+                research.get(
+                    "applied"
+                )
+            ),
+
+        "research_summary":
+            research.get(
+                "research_summary",
+                "",
+            ),
+
+        "research_sources":
+            safe_list(
+                research.get(
+                    "sources_used"
+                )
+            ),
+
+        "mode_override":
+            mode_override,
+
+        "brand_context":
+            brand_context,
+
+        "model_brand_context":
+            model_brand_context,
+
+        "references":
+            references,
+
+        "creative_mode":
+            creative_mode,
+
+        "strict_masterpiece":
+            strict_masterpiece,
+
+        "creative_response":
+            creative_response,
+
+        "creative_error":
+            creative_error,
+
+        "creative_runtime_state":
+            runtime_state,
+
+        "campaign_required":
+            bool(
+                campaign.get(
+                    "required"
+                )
+            ),
+
+        "campaign_validated":
+            bool(
+                campaign.get(
+                    "validated"
+                )
+            ),
+
+        "campaign_bible":
+            campaign.get(
+                "bible"
+            ),
+
+        "campaign_execution":
+            campaign_execution,
+    }
+
+
+# =========================================================
+# CREATIVE DIRECTION
+# =========================================================
+
+def creative_direction_for_index(
+    creative_response,
+    index: int,
+) -> Tuple[
+    Dict[str, Any],
+    Dict[str, Any],
+]:
+
+    if creative_response is None:
+
+        return (
+            {},
+            {},
+        )
+
+    concepts = safe_list(
+        getattr(
+            creative_response,
+            "top_concepts",
+            [],
+        )
+    )
+
+    concept = None
+
+    if concepts:
+
+        concept = concepts[
+            min(
+                index,
+                len(
+                    concepts
+                )
+                -
+                1,
+            )
+        ]
+
+    if concept is None:
+
+        concept = getattr(
+            creative_response,
+            "winner",
+            None,
+        )
+
+    if concept is None:
+
+        return (
+            {},
+            {},
+        )
+
+    try:
+
+        direction = concept_to_dict(
             concept
         )
 
-    return output
+    except Exception:
 
-
-def assign_round_ids(
-    concepts: List[
-        CreativeConcept
-    ],
-    round_number: int,
-) -> None:
-    used = set()
-
-    for index, concept in enumerate(
-        concepts,
-        start=1,
-    ):
-        base = (
-            clean_text(
-                concept.concept_id,
-                80,
-            )
-            or
-            (
-                "C"
-                +
-                str(index).zfill(2)
-            )
+        return (
+            {},
+            {},
         )
 
-        if round_number > 1:
-            base = (
-                "R"
-                +
-                str(round_number)
-                +
-                "-"
-                +
-                base
-            )
-
-        candidate = base
-        suffix = 2
-
-        while candidate in used:
-            candidate = (
-                base
-                +
-                "-"
-                +
-                str(suffix)
-            )
-
-            suffix += 1
-
-        used.add(
-            candidate
+    debate = safe_dict(
+        getattr(
+            concept,
+            "debate",
+            {},
         )
-
-        concept.concept_id = (
-            candidate
-        )
-
-        concept.generation_round = (
-            round_number
-        )
-
-
-# =========================================================
-# MODEL CALL TELEMETRY
-# =========================================================
-
-def register_model_call(
-    telemetry: Optional[
-        Dict[str, Any]
-    ],
-    label: str,
-) -> None:
-    if telemetry is None:
-        return
-
-    telemetry[
-        "director_calls"
-    ] = (
-        int(
-            telemetry.get(
-                "director_calls",
-                0,
-            )
-        )
-        +
-        1
     )
 
-    history = telemetry.setdefault(
-        "director_call_history",
-        [],
+    camera = safe_dict(
+        debate.get(
+            "camera_director"
+        )
     )
 
-    history.append(
-        label
+    if not camera:
+
+        camera = {
+            "camera_angle":
+                getattr(
+                    concept,
+                    "camera_angle",
+                    "",
+                ),
+
+            "lens":
+                getattr(
+                    concept,
+                    "lens",
+                    "",
+                ),
+
+            "perspective":
+                getattr(
+                    concept,
+                    "perspective",
+                    "",
+                ),
+        }
+
+    return (
+        direction,
+        camera,
     )
 
 
 # =========================================================
-# GENERATE INITIAL POOL
+# MASTERPIECE PRODUCTION
 # =========================================================
 
-def generate_concept_pool(
+def generate_masterpiece_images(
     *,
-    user_request: str,
-    brand_context: Any = None,
-    visual_references: Any = None,
-    style_hint: str = "",
-    mode: str = MODE_MASTERPIECE,
-    round_number: int = 1,
-    failure_context: str = "",
-    challenger: bool = False,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> List[
-    CreativeConcept
+    core,
+    user_id,
+    request_text: str,
+    prepared: Dict[str, Any],
+    number: int,
+    aspect_ratio: str,
+) -> Tuple[
+    List[Any],
+    List[Dict[str, Any]],
+    List[str],
 ]:
-    prompt = (
-        build_concept_generation_prompt(
-            user_request=user_request,
-            brand_context=brand_context,
-            visual_references=visual_references,
-            style_hint=style_hint,
-            mode=mode,
-            round_number=round_number,
-            failure_context=failure_context,
-            challenger=challenger,
-        )
+
+    status = enforce_masterpiece_guard(
+        prepared
     )
 
-    prompt += """
+    if status.get(
+        "route"
+    ) != "masterpiece":
 
-XPAND BANKING CREATIVE INTELLIGENCE
-===================================
-When the request concerns a bank, fintech, card, transfer, cashback, travel,
-payments or digital banking, study the current visual and strategic patterns
-used by leading regional and international banks through available search
-grounding. Extract patterns in art direction, camera, production design,
-human behavior, restraint, materials, copy space and product integration.
-Do not copy a campaign, slogan or composition. Convert the evidence into an
-original concept tailored to the current commercial benefit and the active
-brand's saved Visual DNA.
-
-Every shortlisted concept must be physically producible and photorealistic:
-one coherent perspective, motivated light sources, correct contact shadows,
-believable scale, real material roughness, natural depth of field and no
-generic AI decoration. Never use blue laser beams, random neon trails,
-connection lines, glowing arrows, floating cards, globes or interface icons
-unless the user explicitly requests that exact device.
-""".strip()
-
-    register_model_call(
-        telemetry,
-        "ideation",
-    )
-
-    raw = call_openai_director(
-        prompt,
-        json_mode=True,
-    )
-
-    payload = extract_json_object(
-        raw
-    )
-
-    concepts = parse_concepts(
-        payload,
-        generation_round=round_number,
-    )
-
-    # Record STC violations for ranking and revision, but never delete every
-    # candidate or block image production. Quality rules guide selection;
-    # they are not a production stop switch.
-    if is_stc_bank_request(user_request):
-        for concept in concepts:
-            violations = stc_concept_violations(concept)
-            if violations:
-                concept.debate["stc_hard_rejection"] = violations
-                concept.cliche_hits.extend(
-                    {
-                        "id": "stc_visual_violation",
-                        "reason": "STC visual rule: " + marker,
-                    }
-                    for marker in violations
+        return (
+            [],
+            [],
+            [
+                (
+                    "masterpiece_skipped: "
+                    +
+                    clean_text(
+                        status.get(
+                            "code",
+                            "smart_fallback",
+                        ),
+                        500,
+                    )
                 )
-
-    expected = (
-        sum(
-            FAST_DISTRIBUTION.values()
+            ],
         )
-        if mode == MODE_FAST
-        else
-        sum(
-            MASTERPIECE_DISTRIBUTION.values()
+
+    creative_response = prepared.get(
+        "creative_response"
+    )
+
+    brand_id = prepared.get(
+        "brand_id",
+        "",
+    )
+
+    brand_context = safe_dict(
+        prepared.get(
+            "model_brand_context"
         )
     )
 
-    minimum_usable = (
-        3
-        if is_stc_bank_request(user_request)
-        else max(
-            3,
-            int(expected * 0.60),
-        )
+    number = max(
+        1,
+        min(
+            MASTERPIECE_MAX_IMAGES,
+            int(
+                number
+                or 1
+            ),
+        ),
     )
 
-    if len(
-        concepts
-    ) < minimum_usable:
-        raise RuntimeError(
-            (
-                "Creative Brain returned too few usable concepts: "
-                +
+    images: List[Any] = []
+    metadata: List[Dict[str, Any]] = []
+    errors: List[str] = []
+
+    for index in range(
+        number
+    ):
+
+        direction, camera = (
+            creative_direction_for_index(
+                creative_response,
+                index,
+            )
+        )
+
+        if not direction:
+
+            errors.append(
+                "masterpiece_direction_missing"
+            )
+
+            break
+
+        try:
+
+            print("")
+            print(
+                "🎬 MASTERPIECE PRODUCTION",
                 str(
-                    len(concepts)
+                    index + 1
                 )
                 +
                 "/"
                 +
-                str(expected)
+                str(
+                    number
+                ),
             )
-        )
 
-    assign_round_ids(
-        concepts,
-        round_number,
-    )
-
-    return concepts
-
-
-# =========================================================
-# FREE LOCAL PREFLIGHT
-# =========================================================
-
-def local_preflight_score(
-    concept: CreativeConcept,
-) -> float:
-    #
-    # IMPORTANT:
-    #
-    # This is NOT the Masterpiece score.
-    #
-    # It is only a FREE shortlist relevance/completeness
-    # score so the expensive model does not have to review
-    # all 20 full concepts.
-    #
-
-    score = 50.0
-
-    required_text = [
-        concept.core_idea,
-        concept.marketing_message,
-        concept.visual_metaphor,
-        concept.environment,
-        concept.hero_element,
-        concept.camera_angle,
-        concept.lens,
-        concept.perspective,
-        concept.lighting,
-        concept.negative_space,
-        concept.brand_logic,
-    ]
-
-    completion = sum(
-        1
-        for value in required_text
-        if clean_text(
-            value,
-            20,
-        )
-    )
-
-    score += (
-        completion
-        /
-        len(required_text)
-        *
-        24.0
-    )
-
-    if concept.visual_metaphor:
-        score += 5.0
-
-    if concept.camera_angle:
-        score += 3.0
-
-    if concept.lens:
-        score += 2.0
-
-    if concept.negative_space:
-        score += 2.0
-
-    if concept.brand_logic:
-        score += 4.0
-
-    if concept.production_method in {
-        "single_generation",
-        "composite",
-        "inpainting",
-        "controlled_edit",
-        "multi_pass",
-    }:
-        score += 2.0
-
-    risk_penalty = min(
-        6.0,
-        len(
-            concept.risks
-        )
-        *
-        1.0,
-    )
-
-    score -= risk_penalty
-
-    score -= (
-        len(
-            concept.cliche_hits
-        )
-        *
-        18.0
-    )
-
-    return round(
-        max(
-            0.0,
-            min(
-                100.0,
-                score,
-            ),
-        ),
-        2,
-    )
-
-
-def shortlist_concepts(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    *,
-    limit: int,
-) -> List[
-    CreativeConcept
-]:
-    scored = []
-
-    for concept in concepts:
-        preflight = (
-            local_preflight_score(
-                concept
+            production = run_production(
+                core=core,
+                user_id=user_id,
+                brand_id=brand_id,
+                original_request=request_text,
+                creative_direction=direction,
+                brand_context=brand_context,
+                camera_direction=camera,
+                aspect_ratio=aspect_ratio,
+                mode=PRODUCTION_MODE_MASTERPIECE,
+                target_model=TARGET_GEMINI,
             )
-        )
 
-        concept.debate[
-            "local_preflight"
-        ] = {
-            "score":
-                preflight,
-
-            "model_evaluation":
-                False,
-
-            "purpose":
-                "free_shortlist_only",
-        }
-
-        scored.append(
-            concept
-        )
-
-    #
-    # Clean ideas first.
-    #
-
-    clean_pool = [
-        concept
-        for concept in scored
-        if not concept.cliche_hits
-    ]
-
-    dirty_pool = [
-        concept
-        for concept in scored
-        if concept.cliche_hits
-    ]
-
-    clean_pool.sort(
-        key=lambda item:
-            float(
-                safe_dict(
-                    item.debate.get(
-                        "local_preflight"
-                    )
-                ).get(
-                    "score",
-                    0,
-                )
-            ),
-        reverse=True,
-    )
-
-    dirty_pool.sort(
-        key=lambda item:
-            float(
-                safe_dict(
-                    item.debate.get(
-                        "local_preflight"
-                    )
-                ).get(
-                    "score",
-                    0,
-                )
-            ),
-        reverse=True,
-    )
-
-    selected: List[
-        CreativeConcept
-    ] = []
-
-    used_categories = set()
-
-    #
-    # First pass:
-    # diversity.
-    #
-
-    for concept in clean_pool:
-        if len(selected) >= limit:
-            break
-
-        category = (
-            concept.category
-            or
-            "uncategorized"
-        )
-
-        if category in used_categories:
-            continue
-
-        selected.append(
-            concept
-        )
-
-        used_categories.add(
-            category
-        )
-
-    #
-    # Second pass:
-    # strongest remaining clean concepts.
-    #
-
-    selected_ids = {
-        item.concept_id
-        for item in selected
-    }
-
-    for concept in clean_pool:
-        if len(selected) >= limit:
-            break
-
-        if concept.concept_id in (
-            selected_ids
-        ):
-            continue
-
-        selected.append(
-            concept
-        )
-
-        selected_ids.add(
-            concept.concept_id
-        )
-
-    #
-    # Only if the generator produced too few clean concepts,
-    # allow the least-bad cliché concept into REVIEW.
-    #
-    # It still cannot pass the final Anti-Cliche gate unless
-    # the model explicitly reframes it in Recovery.
-    #
-
-    for concept in dirty_pool:
-        if len(selected) >= limit:
-            break
-
-        if concept.concept_id in (
-            selected_ids
-        ):
-            continue
-
-        selected.append(
-            concept
-        )
-
-        selected_ids.add(
-            concept.concept_id
-        )
-
-    return selected[:limit]
-
-
-# =========================================================
-# EVALUATION PAYLOAD
-# =========================================================
-
-def concept_payload_for_evaluation(
-    concept: CreativeConcept,
-) -> Dict[str, Any]:
-    return {
-        "concept_id":
-            concept.concept_id,
-
-        "category":
-            concept.category,
-
-        "title":
-            concept.title,
-
-        "core_idea":
-            concept.core_idea,
-
-        "marketing_message":
-            concept.marketing_message,
-
-        "visual_metaphor":
-            concept.visual_metaphor,
-
-        "environment":
-            concept.environment,
-
-        "hero_element":
-            concept.hero_element,
-
-        "supporting_elements":
-            concept.supporting_elements,
-
-        "camera_angle":
-            concept.camera_angle,
-
-        "lens":
-            concept.lens,
-
-        "perspective":
-            concept.perspective,
-
-        "lighting":
-            concept.lighting,
-
-        "negative_space":
-            concept.negative_space,
-
-        "brand_logic":
-            concept.brand_logic,
-
-        "production_method":
-            concept.production_method,
-
-        "campaign_extension":
-            concept.campaign_extension,
-
-        "risks":
-            concept.risks,
-
-        "anti_cliche_hits":
-            concept.cliche_hits,
-
-        "generation_round":
-            concept.generation_round,
-
-        "revised_from":
-            concept.revised_from,
-    }
-
-
-# =========================================================
-# SINGLE REVIEW BOARD
-# =========================================================
-
-def build_evaluation_prompt(
-    *,
-    user_request: str,
-    concepts: List[
-        CreativeConcept
-    ],
-    brand_context: Any = None,
-    visual_references: Any = None,
-) -> str:
-    concepts_json = (
-        compact_json_for_prompt(
-            [
-                concept_payload_for_evaluation(
-                    concept
-                )
-                for concept in concepts
-            ],
-            8200,
-        )
-    )
-
-    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
-
-    return f"""
-{stc_skill}
-
-You are XPAND Masterpiece Creative Review Board.
-
-Do NOT generate an image.
-
-Do NOT expose chain-of-thought.
-
-Review ONLY the shortlisted concepts below.
-
-This one review replaces multiple repetitive evaluation
-batches, so evaluate carefully.
-
-==================================================
-ORIGINAL REQUEST
-==================================================
-
-{clean_text(user_request, 4200)}
-
-==================================================
-BRAND CONTEXT
-==================================================
-
-{compact_brand_context(
-    brand_context,
-    2600
-)}
-
-==================================================
-VISUAL REFERENCE DNA
-==================================================
-
-{compact_visual_references(
-    visual_references,
-    2200
-)}
-
-==================================================
-SHORTLIST
-==================================================
-
-{concepts_json}
-
-==================================================
-REVIEW ROLES
-==================================================
-
-For every concept act as:
-
-1. Creative Director
-2. Brand Guardian
-3. Production Expert
-4. Harsh Critic
-
-Return concise conclusions only.
-
-==================================================
-SCORE CALIBRATION
-==================================================
-
-50 = ordinary / weak
-60 = acceptable but generic
-70 = good professional
-75 = strong
-82 = campaign-level Masterpiece
-88 = exceptional
-92+ = rare
-
-Do NOT inflate scores.
-
-A visually pretty scene with weak strategy cannot score 82+.
-
-==================================================
-SCORING
-==================================================
-
-Score 0-100:
-
-- message_clarity
-- originality
-- brand_fit
-- visual_power
-- feasibility
-- perspective_integrity
-- campaign_potential
-
-Python calculates the weighted score.
-
-==================================================
-ANTI-CLICHE
-==================================================
-
-A cliché cannot be rescued by brand colors.
-
-Reject generic:
-
-- globe
-- floating money
-- floating card/SIM
-- magic portal
-- connection lines
-- generic businessman
-- phone with icons
-- decorative purple shapes
-- random futuristic HUD
-
-==================================================
-CAMERA / PRODUCTION
-==================================================
-
-For each concept also return a concise camera review and
-scene-feasibility assessment.
-
-This information may become the production fallback if
-a separate winner-finalization call is unnecessary.
-
-==================================================
-OUTPUT
-==================================================
-
-Return JSON only:
-
-{{
-  "evaluations": [
-    {{
-      "concept_id": "C01",
-
-      "scores": {{
-        "message_clarity": 0,
-        "originality": 0,
-        "brand_fit": 0,
-        "visual_power": 0,
-        "feasibility": 0,
-        "perspective_integrity": 0,
-        "campaign_potential": 0
-      }},
-
-      "creative_director": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "brand_guardian": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "production_expert": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "harsh_critic": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "camera_review": {{
-        "current_camera_valid": true,
-        "recommended_camera_angle": "",
-        "recommended_lens": "",
-        "perspective": "",
-        "reason": ""
-      }},
-
-      "feasibility": {{
-        "feasible_in_single_image": true,
-        "complexity_level": "low",
-        "recommended_production": "single_generation",
-        "split_required": false,
-        "recommended_passes": [],
-        "feasibility_notes": ""
-      }},
-
-      "revision_required": false,
-
-      "revision_instruction": ""
-    }}
-  ]
-}}
-
-Return exactly one evaluation for each supplied concept.
-
-==================================================
-FINAL NON-NEGOTIABLE BRAND AUDIT
-==================================================
-
-{stc_skill or "No dedicated brand skill activated."}
-""".strip()
-
-
-# =========================================================
-# APPLY EVALUATION
-# =========================================================
-
-def apply_evaluation(
-    concept: CreativeConcept,
-    evaluation: Dict[str, Any],
-) -> None:
-    scores = safe_dict(
-        evaluation.get(
-            "scores"
-        )
-    )
-
-    required = set(
-        SCORE_WEIGHTS.keys()
-    )
-
-    supplied = {
-        key
-        for key in scores.keys()
-        if key in required
-    }
-
-    evaluation_valid = (
-        supplied
-        ==
-        required
-    )
-
-    normalized_scores = {
-        key:
-            clamp_score(
-                scores.get(
-                    key,
-                    0,
-                )
+            final_image = getattr(
+                production,
+                "final_image",
+                None,
             )
-        for key in SCORE_WEIGHTS
-    }
 
-    weighted = (
-        calculate_weighted_score(
-            normalized_scores
-        )
-    )
-
-    weighted = (
-        apply_cliche_penalty(
-            weighted,
-            concept.cliche_hits,
-        )
-    )
-
-    local_preflight = (
-        safe_dict(
-            concept.debate.get(
-                "local_preflight"
+            qa = getattr(
+                production,
+                "qa",
+                None,
             )
-        )
-    )
 
-    concept.scores = (
-        normalized_scores
-    )
-
-    concept.weighted_score = (
-        weighted
-    )
-
-    concept.evaluation_valid = (
-        evaluation_valid
-    )
-
-    concept.debate = {
-        "local_preflight":
-            local_preflight,
-
-        "creative_director":
-            safe_dict(
-                evaluation.get(
-                    "creative_director"
-                )
-            ),
-
-        "brand_guardian":
-            safe_dict(
-                evaluation.get(
-                    "brand_guardian"
-                )
-            ),
-
-        "production_expert":
-            safe_dict(
-                evaluation.get(
-                    "production_expert"
-                )
-            ),
-
-        "harsh_critic":
-            safe_dict(
-                evaluation.get(
-                    "harsh_critic"
-                )
-            ),
-
-        "camera_review":
-            safe_dict(
-                evaluation.get(
-                    "camera_review"
-                )
-            ),
-
-        "revision_required":
-            bool(
-                evaluation.get(
-                    "revision_required",
+            qa_passed = bool(
+                qa
+                and
+                getattr(
+                    qa,
+                    "passed",
                     False,
                 )
-            ),
+            )
 
-        "revision_instruction":
-            clean_text(
-                evaluation.get(
-                    "revision_instruction",
-                    "",
+            best_score = safe_float(
+                getattr(
+                    production,
+                    "best_score",
+                    0,
                 ),
-                1800,
-            ),
-    }
-
-    concept.feasibility = (
-        safe_dict(
-            evaluation.get(
-                "feasibility"
-            )
-        )
-    )
-
-
-# =========================================================
-# ONE-CALL SHORTLIST EVALUATION
-# =========================================================
-
-def evaluate_concept_batch(
-    *,
-    user_request: str,
-    concepts: List[
-        CreativeConcept
-    ],
-    brand_context: Any = None,
-    visual_references: Any = None,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> Dict[
-    str,
-    Dict[str, Any]
-]:
-    #
-    # Public compatibility function.
-    #
-    # V2 evaluates the entire supplied shortlist as ONE batch.
-    #
-
-    expected_ids = {
-        concept.concept_id
-        for concept in concepts
-    }
-
-    best_map: Dict[
-        str,
-        Dict[str, Any]
-    ] = {}
-
-    last_error = None
-
-    def evaluation_items(payload: Any) -> List[Dict[str, Any]]:
-        """Accept harmless Gemini wrapper variations without weakening review."""
-        if isinstance(payload, list):
-            return [item for item in payload if isinstance(item, dict)]
-        if not isinstance(payload, dict):
-            return []
-        for key in ("evaluations", "reviews", "results", "items"):
-            value = payload.get(key)
-            if isinstance(value, list):
-                return [item for item in value if isinstance(item, dict)]
-        keyed: List[Dict[str, Any]] = []
-        for key, value in payload.items():
-            if key in expected_ids and isinstance(value, dict):
-                item = dict(value)
-                item.setdefault("concept_id", key)
-                keyed.append(item)
-        if keyed:
-            return keyed
-        for value in payload.values():
-            nested = evaluation_items(value)
-            if nested and any("concept_id" in item for item in nested):
-                return nested
-        return []
-
-    # Evaluate five concepts at a time. A ten-concept multimodal board produced
-    # overly large JSON and occasionally returned no usable IDs at all.
-    chunks = [concepts[index:index + 5] for index in range(0, len(concepts), 5)]
-    for chunk_index, chunk in enumerate(chunks, start=1):
-        chunk_ids = {item.concept_id for item in chunk}
-        for attempt in range(1, EVALUATION_RETRIES + 1):
-            pending_concepts = [
-                item for item in chunk if item.concept_id not in best_map
-            ]
-            if not pending_concepts:
-                break
-            try:
-                prompt = build_evaluation_prompt(
-                    user_request=user_request,
-                    concepts=pending_concepts,
-                    brand_context=brand_context,
-                    visual_references=visual_references,
-                )
-                if attempt > 1:
-                    prompt += (
-                        "\n\nRETRY CONTRACT: Return evaluations ONLY for these "
-                        "still-missing IDs: "
-                        + ", ".join(item.concept_id for item in pending_concepts)
-                        + ". Do not rename IDs or include commentary."
-                    )
-                register_model_call(
-                    telemetry,
-                    "creative_review_chunk_"
-                    + str(chunk_index)
-                    + ("" if attempt == 1 else "_retry"),
-                )
-                raw = call_openai_director(prompt, json_mode=True)
-                payload = extract_json_object(raw)
-                parsed_items = evaluation_items(payload)
-                for item in parsed_items:
-                    if not isinstance(item, dict):
-                        continue
-                    concept_id = clean_text(item.get("concept_id"), 100)
-                    if concept_id in chunk_ids:
-                        best_map[concept_id] = item
-                chunk_missing = chunk_ids - set(best_map.keys())
-                if not chunk_missing:
-                    break
-                if not parsed_items:
-                    print(
-                        "⚠️ Review Board JSON shape unsupported | keys="
-                        + ",".join(list(payload.keys())[:12])
-                    )
-                last_error = RuntimeError(
-                    "Creative review missing: " + ", ".join(sorted(chunk_missing))
-                )
-                print(
-                    "⚠️ Review Board chunk incomplete"
-                    + " | chunk=" + str(chunk_index)
-                    + " | missing=" + str(len(chunk_missing))
-                )
-            except Exception as error:
-                last_error = error
-                print(
-                    "⚠️ Review Board chunk failed | chunk="
-                    + str(chunk_index)
-                    + " | " + clean_text(error, 1200)
-                )
-
-    missing = expected_ids - set(best_map.keys())
-    if not missing:
-        return best_map
-    last_error = RuntimeError(
-        "Creative review missing: " + ", ".join(sorted(missing))
-    )
-
-    if best_map:
-        return best_map
-
-    raise RuntimeError(
-        (
-            "Creative Review Board failed: "
-            +
-            clean_text(
-                last_error,
-                1800,
-            )
-        )
-    )
-
-
-def evaluate_concept_pool(
-    *,
-    user_request: str,
-    concepts: List[
-        CreativeConcept
-    ],
-    brand_context: Any = None,
-    visual_references: Any = None,
-    mode: str = MODE_MASTERPIECE,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> List[
-    CreativeConcept
-]:
-    if not concepts:
-        return []
-
-    try:
-        evaluation_map = (
-            evaluate_concept_batch(
-                user_request=user_request,
-                concepts=concepts,
-                brand_context=brand_context,
-                visual_references=visual_references,
-                telemetry=telemetry,
-            )
-        )
-
-    except Exception as error:
-        print(
-            (
-                "❌ Creative review unavailable: "
-                +
-                clean_text(
-                    error,
-                    1600,
-                )
-            )
-        )
-
-        evaluation_map = {}
-
-    for concept in concepts:
-        evaluation = (
-            evaluation_map.get(
-                concept.concept_id
-            )
-        )
-
-        if isinstance(
-            evaluation,
-            dict,
-        ):
-            apply_evaluation(
-                concept,
-                evaluation,
-            )
-
-        elif mode == MODE_FAST:
-            apply_fast_fallback_score(
-                concept
-            )
-
-        else:
-            concept.scores = {}
-            concept.weighted_score = 0.0
-            concept.evaluation_valid = False
-
-            concept.debate[
-                "evaluation_error"
-            ] = (
-                "No valid model evaluation received."
-            )
-
-    return concepts
-
-
-# =========================================================
-# FAST FALLBACK ONLY
-# =========================================================
-
-def apply_fast_fallback_score(
-    concept: CreativeConcept,
-) -> None:
-    fallback_scores = {
-        "message_clarity": 60,
-
-        "originality": (
-            35
-            if concept.cliche_hits
-            else 60
-        ),
-
-        "brand_fit": 60,
-        "visual_power": 60,
-        "feasibility": 55,
-        "perspective_integrity": 55,
-        "campaign_potential": 55,
-    }
-
-    concept.scores = (
-        fallback_scores
-    )
-
-    concept.weighted_score = (
-        apply_cliche_penalty(
-            calculate_weighted_score(
-                fallback_scores
-            ),
-            concept.cliche_hits,
-        )
-    )
-
-    concept.evaluation_valid = (
-        False
-    )
-
-    concept.debate[
-        "fallback_scoring"
-    ] = True
-
-
-# =========================================================
-# ROLE APPROVAL
-# =========================================================
-
-def role_approved(
-    value: Any,
-) -> bool:
-    if not isinstance(
-        value,
-        dict,
-    ):
-        return False
-
-    return bool(
-        value.get(
-            "approved",
-            False,
-        )
-    )
-
-
-# =========================================================
-# STRICT 82+ TARGET GATE
-# =========================================================
-
-def target_gate_failures(
-    concept: CreativeConcept,
-) -> List[str]:
-    failures: List[
-        str
-    ] = []
-
-    if not concept.evaluation_valid:
-        failures.append(
-            "no_valid_model_evaluation"
-        )
-
-    if (
-        concept.weighted_score
-        <
-        MASTERPIECE_MIN_SCORE
-    ):
-        failures.append(
-            (
-                "weighted_score_"
-                +
-                str(
-                    concept.weighted_score
-                )
-                +
-                "_below_"
-                +
-                str(
-                    MASTERPIECE_MIN_SCORE
-                )
-            )
-        )
-
-    for key, minimum in (
-        MASTERPIECE_MIN_SUBSCORES.items()
-    ):
-        value = clamp_score(
-            concept.scores.get(
-                key,
                 0,
             )
-        )
 
-        if value < minimum:
-            failures.append(
-                (
-                    key
-                    +
-                    "_"
-                    +
-                    str(value)
-                    +
-                    "_below_"
-                    +
-                    str(minimum)
-                )
-            )
-
-    if concept.cliche_hits:
-        failures.append(
-            (
-                "anti_cliche_hits:"
-                +
-                ",".join(
-                    item.get(
-                        "id",
-                        "",
-                    )
-                    for item in (
-                        concept.cliche_hits
-                    )
-                    if item.get(
-                        "id"
-                    )
-                )
-            )
-        )
-
-    for role in [
-        "creative_director",
-        "brand_guardian",
-        "production_expert",
-        "harsh_critic",
-    ]:
-        if not role_approved(
-            concept.debate.get(
-                role
-            )
-        ):
-            failures.append(
-                (
-                    role
-                    +
-                    "_rejected"
-                )
-            )
-
-    if concept.debate.get(
-        "revision_required",
-        False,
-    ):
-        failures.append(
-            "revision_required"
-        )
-
-    return failures
-
-
-# =========================================================
-# ADAPTIVE RELEASE GATE
-# =========================================================
-
-def adaptive_release_failures(
-    concept: CreativeConcept,
-) -> List[str]:
-    failures: List[
-        str
-    ] = []
-
-    if not concept.evaluation_valid:
-        failures.append(
-            "no_valid_model_evaluation"
-        )
-
-    if (
-        concept.weighted_score
-        <
-        MASTERPIECE_RELEASE_FLOOR
-    ):
-        failures.append(
-            (
-                "weighted_score_below_release_floor_"
-                +
-                str(
-                    MASTERPIECE_RELEASE_FLOOR
-                )
-            )
-        )
-
-    for key, minimum in (
-        MASTERPIECE_RELEASE_MIN_SUBSCORES.items()
-    ):
-        value = clamp_score(
-            concept.scores.get(
-                key,
-                0,
-            )
-        )
-
-        if value < minimum:
-            failures.append(
-                (
-                    key
-                    +
-                    "_below_release_"
-                    +
-                    str(minimum)
-                )
-            )
-
-    if concept.cliche_hits:
-        failures.append(
-            "anti_cliche_hard_block"
-        )
-
-    #
-    # Real experts must still approve.
-    #
-
-    for role in [
-        "creative_director",
-        "brand_guardian",
-        "production_expert",
-        "harsh_critic",
-    ]:
-        if not role_approved(
-            concept.debate.get(
-                role
-            )
-        ):
-            failures.append(
-                (
-                    role
-                    +
-                    "_rejected"
-                )
-            )
-
-    return failures
-
-
-def evaluate_quality_gate(
-    concept: CreativeConcept,
-    *,
-    mode: str,
-) -> Tuple[
-    bool,
-    List[str]
-]:
-    if mode == MODE_FAST:
-        failures = []
-
-        if (
-            concept.weighted_score
-            <
-            FAST_MIN_SCORE
-        ):
-            failures.append(
-                (
-                    "weighted_score_below_"
-                    +
-                    str(
-                        FAST_MIN_SCORE
-                    )
-                )
-            )
-
-        return (
-            not failures,
-            failures,
-        )
-
-    strict_failures = (
-        target_gate_failures(
-            concept
-        )
-    )
-
-    if not strict_failures:
-        concept.debate[
-            "quality_release_level"
-        ] = "target_82_plus"
-
-        return (
-            True,
-            [],
-        )
-
-    release_failures = (
-        adaptive_release_failures(
-            concept
-        )
-    )
-
-    if not release_failures:
-        concept.debate[
-            "quality_release_level"
-        ] = "adaptive_release"
-
-        concept.debate[
-            "target_gate_failures"
-        ] = strict_failures
-
-        return (
-            True,
-            [],
-        )
-
-    concept.debate[
-        "target_gate_failures"
-    ] = strict_failures
-
-    concept.debate[
-        "adaptive_release_failures"
-    ] = release_failures
-
-    return (
-        False,
-        release_failures,
-    )
-
-
-def refresh_quality_gates(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    *,
-    mode: str,
-) -> None:
-    for concept in concepts:
-        passed, failures = (
-            evaluate_quality_gate(
-                concept,
-                mode=mode,
-            )
-        )
-
-        concept.quality_gate_passed = (
-            passed
-        )
-
-        concept.quality_gate_failures = (
-            failures
-        )
-
-
-def concept_passes_review(
-    concept: CreativeConcept,
-    mode: str = MODE_MASTERPIECE,
-) -> bool:
-    passed, failures = (
-        evaluate_quality_gate(
-            concept,
-            mode=mode,
-        )
-    )
-
-    concept.quality_gate_passed = (
-        passed
-    )
-
-    concept.quality_gate_failures = (
-        failures
-    )
-
-    return passed
-
-
-# =========================================================
-# RANKING
-# =========================================================
-
-def rank_concepts(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-) -> List[
-    CreativeConcept
-]:
-    return sorted(
-        list(
-            concepts
-        ),
-        key=lambda item:
-            (
-                1
-                if item.evaluation_valid
-                else 0,
-
-                1
-                if not item.cliche_hits
-                else 0,
-
-                item.weighted_score,
-            ),
-        reverse=True,
-    )
-
-
-def select_top_concepts(
-    concepts: List[
-        CreativeConcept
-    ],
-    limit: int = 3,
-    mode: str = MODE_MASTERPIECE,
-    qualified_only: bool = True,
-) -> List[
-    CreativeConcept
-]:
-    refresh_quality_gates(
-        concepts,
-        mode=mode,
-    )
-
-    if qualified_only:
-        pool = [
-            concept
-            for concept in concepts
-            if concept.quality_gate_passed
-        ]
-
-    else:
-        pool = list(
-            concepts
-        )
-
-    ordered = rank_concepts(
-        pool
-    )
-
-    selected: List[
-        CreativeConcept
-    ] = []
-
-    used_categories = set()
-
-    for concept in ordered:
-        if len(selected) >= limit:
-            break
-
-        category = (
-            concept.category
-            or
-            "uncategorized"
-        )
-
-        if category in used_categories:
-            continue
-
-        selected.append(
-            concept
-        )
-
-        used_categories.add(
-            category
-        )
-
-    selected_ids = {
-        item.concept_id
-        for item in selected
-    }
-
-    for concept in ordered:
-        if len(selected) >= limit:
-            break
-
-        if concept.concept_id in (
-            selected_ids
-        ):
-            continue
-
-        selected.append(
-            concept
-        )
-
-        selected_ids.add(
-            concept.concept_id
-        )
-
-    return selected
-
-
-# =========================================================
-# FAILURE CONTEXT
-# =========================================================
-
-def build_failure_context(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    limit: int = 4,
-) -> str:
-    ranked = rank_concepts(
-        concepts
-    )
-
-    payload = []
-
-    for concept in ranked[:limit]:
-        payload.append(
-            {
-                "id":
-                    concept.concept_id,
-
-                "title":
-                    concept.title,
-
-                "idea":
-                    clean_text(
-                        concept.core_idea,
-                        500,
-                    ),
-
-                "metaphor":
-                    clean_text(
-                        concept.visual_metaphor,
-                        400,
-                    ),
-
-                "score":
-                    concept.weighted_score,
-
-                "scores":
-                    concept.scores,
-
-                "target_failures":
-                    concept.debate.get(
-                        "target_gate_failures",
-                        [],
-                    ),
-
-                "release_failures":
-                    concept.debate.get(
-                        "adaptive_release_failures",
-                        [],
-                    ),
-
-                "revision_instruction":
-                    clean_text(
-                        concept.debate.get(
-                            "revision_instruction",
-                            "",
-                        ),
-                        500,
-                    ),
-            }
-        )
-
-    return compact_json_for_prompt(
-        payload,
-        4800,
-    )
-
-
-# =========================================================
-# ONE-CALL RECOVERY BOARD
-# =========================================================
-
-def build_recovery_prompt(
-    *,
-    user_request: str,
-    failed_concepts: Sequence[
-        CreativeConcept
-    ],
-    brand_context: Any,
-    visual_references: Any,
-) -> str:
-    failure_context = (
-        build_failure_context(
-            failed_concepts,
-            limit=4,
-        )
-    )
-
-    stc_request = is_stc_bank_request(user_request)
-    metaphor_seed = (
-        {
-            "family": "STC Bank dedicated visual system",
-            "directions": [],
-        }
-        if stc_request
-        else get_metaphor_seed(user_request)
-    )
-    stc_skill = STC_BANK_VISUAL_SKILL if stc_request else ""
-
-    return f"""
-{stc_skill}
-
-You are XPAND Masterpiece Recovery Board.
-
-The first creative shortlist was professionally evaluated
-but did not reach the desired 82+ Masterpiece target.
-
-This is the ONLY automatic recovery round.
-
-Do NOT expose chain-of-thought.
-
-Do NOT make cosmetic rewrites of failed ideas.
-
-Create THREE materially stronger directions and evaluate
-them inside this same response.
-
-==================================================
-ORIGINAL REQUEST
-==================================================
-
-{clean_text(user_request, 4500)}
-
-==================================================
-FAILED STRONGEST DIRECTIONS
-==================================================
-
-{failure_context}
-
-==================================================
-BRAND
-==================================================
-
-{compact_brand_context(
-    brand_context,
-    2600
-)}
-
-==================================================
-VISUAL REFERENCE DNA
-==================================================
-
-{compact_visual_references(
-    visual_references,
-    2200
-)}
-
-==================================================
-BENEFIT / METAPHOR FAMILY
-==================================================
-
-{metaphor_seed["family"]}
-
-==================================================
-RECOVERY RULES
-==================================================
-
-Change the conceptual mechanism.
-
-If the previous ideas used:
-
-- split scenes
-- portals
-- landmarks as the main idea
-- floating technology
-- decorative brand colors
-- generic interiors
-- literal banking symbols
-
-find a different visual grammar.
-
-The new concepts must:
-
-- communicate without copy
-- be brand-native
-- be visually striking
-- be photographically believable
-- avoid clichés
-- have a strong camera strategy
-- be producible
-- preserve meaningful negative space
-
-==================================================
-SCORING
-==================================================
-
-Use the same calibration:
-
-70 = good
-75 = strong
-82 = campaign-level Masterpiece
-88 = exceptional
-92+ = rare
-
-Score:
-
-message_clarity
-originality
-brand_fit
-visual_power
-feasibility
-perspective_integrity
-campaign_potential
-
-==================================================
-OUTPUT
-==================================================
-
-Return JSON only:
-
-{{
-  "concepts": [
-    {{
-      "concept_id": "RC01",
-      "category": "strategic_rebuild",
-      "title": "",
-      "core_idea": "",
-      "marketing_message": "",
-      "visual_metaphor": "",
-      "environment": "",
-      "hero_element": "",
-      "supporting_elements": [],
-      "camera_angle": "",
-      "lens": "",
-      "perspective": "",
-      "lighting": "",
-      "negative_space": "",
-      "brand_logic": "",
-      "production_method": "",
-      "campaign_extension": "",
-      "risks": []
-    }}
-  ],
-
-  "evaluations": [
-    {{
-      "concept_id": "RC01",
-
-      "scores": {{
-        "message_clarity": 0,
-        "originality": 0,
-        "brand_fit": 0,
-        "visual_power": 0,
-        "feasibility": 0,
-        "perspective_integrity": 0,
-        "campaign_potential": 0
-      }},
-
-      "creative_director": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "brand_guardian": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "production_expert": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "harsh_critic": {{
-        "approved": true,
-        "verdict": ""
-      }},
-
-      "camera_review": {{
-        "current_camera_valid": true,
-        "recommended_camera_angle": "",
-        "recommended_lens": "",
-        "perspective": "",
-        "reason": ""
-      }},
-
-      "feasibility": {{
-        "feasible_in_single_image": true,
-        "complexity_level": "",
-        "recommended_production": "",
-        "split_required": false,
-        "recommended_passes": [],
-        "feasibility_notes": ""
-      }},
-
-      "revision_required": false,
-      "revision_instruction": ""
-    }}
-  ]
-}}
-
-Return exactly 3 concepts and exactly 3 evaluations.
-
-For STC Bank, every recovered concept must pass the dedicated skill's hard
-rejection gate. Do not repair a forbidden idea cosmetically; replace its
-entire visual mechanism.
-
-{stc_skill or "No dedicated brand skill activated."}
-""".strip()
-
-
-def run_recovery_board(
-    *,
-    user_request: str,
-    failed_concepts: Sequence[
-        CreativeConcept
-    ],
-    brand_context: Any,
-    visual_references: Any,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> List[
-    CreativeConcept
-]:
-    prompt = build_recovery_prompt(
-        user_request=user_request,
-        failed_concepts=failed_concepts,
-        brand_context=brand_context,
-        visual_references=visual_references,
-    )
-
-    register_model_call(
-        telemetry,
-        "masterpiece_recovery",
-    )
-
-    raw = call_openai_director(
-        prompt,
-        json_mode=True,
-    )
-
-    payload = extract_json_object(
-        raw
-    )
-
-    concepts = parse_concepts(
-        payload,
-        generation_round=2,
-    )
-
-    if is_stc_bank_request(user_request):
-        for concept in concepts:
-            violations = stc_concept_violations(concept)
-            if violations:
-                concept.debate["stc_hard_rejection"] = violations
-                concept.cliche_hits.extend(
-                    {
-                        "id": "stc_visual_violation",
-                        "reason": "STC visual rule: " + marker,
-                    }
-                    for marker in violations
-                )
-
-    concepts = concepts[:3]
-
-    if not concepts:
-        return []
-
-    assign_round_ids(
-        concepts,
-        2,
-    )
-
-    #
-    # Preserve model IDs before assigning our R2 prefix.
-    #
-    evaluations = safe_list(
-        payload.get(
-            "evaluations"
-        )
-    )
-
-    evaluation_map = {}
-
-    for item in evaluations:
-        if not isinstance(
-            item,
-            dict,
-        ):
-            continue
-
-        concept_id = clean_text(
-            item.get(
-                "concept_id"
-            ),
-            100,
-        )
-
-        if concept_id:
-            evaluation_map[
-                concept_id
-            ] = item
-
-    #
-    # Match by original RC number when possible.
-    #
-
-    for index, concept in enumerate(
-        concepts,
-        start=1,
-    ):
-        possible_ids = [
-            (
-                "RC"
-                +
-                str(index).zfill(2)
-            ),
-            (
-                "C"
-                +
-                str(index).zfill(2)
-            ),
-            concept.concept_id,
-        ]
-
-        evaluation = None
-
-        for possible in (
-            possible_ids
-        ):
-            if possible in (
-                evaluation_map
-            ):
-                evaluation = (
-                    evaluation_map[
-                        possible
-                    ]
-                )
-                break
-
-        if (
-            evaluation is None
-            and
-            index - 1
-            <
-            len(
-                evaluations
-            )
-            and
-            isinstance(
-                evaluations[
-                    index - 1
-                ],
-                dict,
-            )
-        ):
-            evaluation = (
-                evaluations[
-                    index - 1
-                ]
-            )
-
-        if isinstance(
-            evaluation,
-            dict,
-        ):
-            apply_evaluation(
-                concept,
-                evaluation,
-            )
-
-            #
-            # Recovery review already contains camera and
-            # feasibility. Use that as production fallback.
-            #
-
-            camera_review = safe_dict(
-                concept.debate.get(
-                    "camera_review"
-                )
-            )
-
-            if camera_review:
-                concept.debate[
-                    "camera_director"
-                ] = {
-                    "camera_angle":
-                        camera_review.get(
-                            "recommended_camera_angle",
-                            concept.camera_angle,
-                        ),
-
-                    "lens":
-                        camera_review.get(
-                            "recommended_lens",
-                            concept.lens,
-                        ),
-
-                    "perspective_type":
-                        camera_review.get(
-                            "perspective",
-                            concept.perspective,
-                        ),
-
-                    "creative_reason":
-                        camera_review.get(
-                            "reason",
-                            "",
-                        ),
-
-                    "camera_lock_instruction":
-                        (
-                            "Preserve this camera strategy "
-                            "during production."
+            metadata.append(
+                {
+                    "best_score":
+                        best_score,
+
+                    "qa_passed":
+                        qa_passed,
+
+                    "errors":
+                        safe_list(
+                            getattr(
+                                production,
+                                "errors",
+                                [],
+                            )
                         ),
                 }
+            )
 
-    return concepts
+            if final_image is None:
 
-
-# =========================================================
-# FINAL WINNER DIRECTOR
-# =========================================================
-
-def build_winner_finalization_prompt(
-    *,
-    user_request: str,
-    winner: CreativeConcept,
-    brand_context: Any,
-    visual_references: Any,
-) -> str:
-    stc_skill = STC_BANK_VISUAL_SKILL if is_stc_bank_request(user_request) else ""
-
-    return f"""
-{stc_skill}
-
-You are XPAND Final Creative Production Director.
-
-The advertising concept below has already been selected.
-
-Do NOT invent a new campaign idea.
-
-Do NOT expose chain-of-thought.
-
-Your job is to convert the approved concept into a precise
-production direction for the image engine.
-
-==================================================
-ORIGINAL REQUEST
-==================================================
-
-{clean_text(user_request, 4000)}
-
-==================================================
-WINNING CONCEPT
-==================================================
-
-{compact_json_for_prompt(
-    concept_payload_for_evaluation(
-        winner
-    ),
-    5500
-)}
-
-==================================================
-MODEL REVIEW
-==================================================
-
-{compact_json_for_prompt(
-    winner.debate,
-    3000
-)}
-
-==================================================
-BRAND
-==================================================
-
-{compact_brand_context(
-    brand_context,
-    2200
-)}
-
-==================================================
-VISUAL REFERENCE DNA
-==================================================
-
-{compact_visual_references(
-    visual_references,
-    1800
-)}
-
-==================================================
-FINAL PRODUCTION DECISIONS
-==================================================
-
-Lock:
-
-- best camera angle
-- camera height
-- lens
-- camera distance
-- horizon
-- perspective
-- vanishing-point logic
-- depth strategy
-- composition hierarchy
-- negative space
-- lighting logic
-- material logic
-- brand color logic
-- human behavior if present
-- production feasibility
-
-Do not make the scene more complicated than necessary.
-
-For STC Bank, do not introduce any unapproved light effect, route, graphic
-line, hologram, particle, floating object, or generic fintech decoration during
-finalization. A smartphone is allowed when it is relevant to the service and
-is naturally held or physically supported. Preserve only a concept that passes
-the dedicated hard gate.
-
-==================================================
-OUTPUT
-==================================================
-
-Return JSON only:
-
-{{
-  "camera_director": {{
-    "camera_angle": "",
-    "camera_height": "",
-    "camera_direction": "",
-    "shot_type": "",
-    "lens": "",
-    "camera_distance": "",
-    "horizon_position": "",
-    "perspective_type": "",
-    "vanishing_points": "",
-    "depth_strategy": "",
-    "creative_reason": "",
-    "generation_risk": "",
-    "camera_lock_instruction": ""
-  }},
-
-  "feasibility": {{
-    "feasible": true,
-    "complexity_level": "",
-    "recommended_strategy": "",
-    "passes": [],
-    "single_image_risks": [],
-    "product_lock_risks": [],
-    "final_recommendation": ""
-  }},
-
-  "production_blueprint": {{
-    "composition": "",
-    "negative_space": "",
-    "lighting": "",
-    "materials": "",
-    "brand_execution": "",
-    "human_direction": "",
-    "do_not_change": []
-  }}
-}}
-
-{stc_skill or "No dedicated brand skill activated."}
-""".strip()
-
-
-def finalize_winner(
-    *,
-    user_request: str,
-    winner: CreativeConcept,
-    brand_context: Any,
-    visual_references: Any,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> None:
-    register_model_call(
-        telemetry,
-        "winner_finalizer",
-    )
-
-    raw = call_openai_director(
-        build_winner_finalization_prompt(
-            user_request=user_request,
-            winner=winner,
-            brand_context=brand_context,
-            visual_references=visual_references,
-        ),
-        json_mode=True,
-    )
-
-    payload = extract_json_object(
-        raw
-    )
-
-    if not payload:
-        return
-
-    camera = safe_dict(
-        payload.get(
-            "camera_director"
-        )
-    )
-
-    feasibility = safe_dict(
-        payload.get(
-            "feasibility"
-        )
-    )
-
-    blueprint = safe_dict(
-        payload.get(
-            "production_blueprint"
-        )
-    )
-
-    if camera:
-        winner.debate[
-            "camera_director"
-        ] = camera
-
-        if clean_text(
-            camera.get(
-                "camera_angle"
-            ),
-            200,
-        ):
-            winner.camera_angle = (
-                clean_text(
-                    camera.get(
-                        "camera_angle"
-                    ),
-                    500,
+                errors.append(
+                    "masterpiece_final_image_missing"
                 )
-            )
 
-        if clean_text(
-            camera.get(
-                "lens"
-            ),
-            100,
-        ):
-            winner.lens = (
-                clean_text(
-                    camera.get(
-                        "lens"
-                    ),
-                    200,
-                )
-            )
-
-        if clean_text(
-            camera.get(
-                "perspective_type"
-            ),
-            300,
-        ):
-            winner.perspective = (
-                clean_text(
-                    camera.get(
-                        "perspective_type"
-                    ),
-                    700,
-                )
-            )
-
-    if feasibility:
-        winner.feasibility.update(
-            feasibility
-        )
-
-    if blueprint:
-        winner.debate[
-            "production_blueprint"
-        ] = blueprint
-
-
-# =========================================================
-# COMPATIBILITY CAMERA DIRECTOR
-# =========================================================
-
-def build_camera_director_prompt(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    visual_references: Any = None,
-) -> str:
-    return f"""
-You are XPAND Camera Angle Director.
-
-Do not redesign the approved concept.
-
-REQUEST:
-{clean_text(user_request, 4000)}
-
-CONCEPT:
-{compact_json_for_prompt(
-    concept_payload_for_evaluation(
-        concept
-    ),
-    5000
-)}
-
-REFERENCES:
-{compact_visual_references(
-    visual_references,
-    2000
-)}
-
-CAMERAS:
-{compact_json_for_prompt(
-    CAMERA_LIBRARY,
-    3500
-)}
-
-LENSES:
-{compact_json_for_prompt(
-    LENS_LIBRARY,
-    1600
-)}
-
-Return JSON only:
-
-{{
-  "camera_angle": "",
-  "camera_height": "",
-  "camera_direction": "",
-  "shot_type": "",
-  "lens": "",
-  "camera_distance": "",
-  "horizon_position": "",
-  "perspective_type": "",
-  "vanishing_points": "",
-  "depth_strategy": "",
-  "creative_reason": "",
-  "generation_risk": "",
-  "camera_lock_instruction": ""
-}}
-""".strip()
-
-
-def direct_camera(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    visual_references: Any = None,
-) -> Dict[str, Any]:
-    raw = call_openai_director(
-        build_camera_director_prompt(
-            user_request=user_request,
-            concept=concept,
-            visual_references=visual_references,
-        ),
-        json_mode=True,
-    )
-
-    return extract_json_object(
-        raw
-    )
-
-
-# =========================================================
-# COMPATIBILITY FEASIBILITY CHECK
-# =========================================================
-
-def build_feasibility_prompt(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    visual_references: Any = None,
-) -> str:
-    return f"""
-You are XPAND Production Feasibility Expert.
-
-Do not redesign the concept unless technically necessary.
-
-REQUEST:
-{clean_text(user_request, 4000)}
-
-CONCEPT:
-{compact_json_for_prompt(
-    concept_payload_for_evaluation(
-        concept
-    ),
-    5200
-)}
-
-REFERENCES:
-{compact_visual_references(
-    visual_references,
-    2200
-)}
-
-Return JSON only:
-
-{{
-  "feasible": true,
-  "complexity_level": "",
-  "recommended_strategy": "",
-  "passes": [],
-  "single_image_risks": [],
-  "product_lock_risks": [],
-  "final_recommendation": ""
-}}
-""".strip()
-
-
-def check_scene_feasibility(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    visual_references: Any = None,
-) -> Dict[str, Any]:
-    raw = call_openai_director(
-        build_feasibility_prompt(
-            user_request=user_request,
-            concept=concept,
-            visual_references=visual_references,
-        ),
-        json_mode=True,
-    )
-
-    return extract_json_object(
-        raw
-    )
-
-
-# =========================================================
-# LEGACY REVISION COMPATIBILITY
-#
-# V2 run_creative_brain does NOT use this function.
-# =========================================================
-
-def build_revision_prompt(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    brand_context: Any = None,
-    visual_references: Any = None,
-) -> str:
-    return f"""
-You are XPAND Senior Creative Director.
-
-Improve this concept materially.
-
-Do not generate an image.
-
-REQUEST:
-{clean_text(user_request, 4000)}
-
-CURRENT CONCEPT:
-{compact_json_for_prompt(
-    concept_payload_for_evaluation(
-        concept
-    ),
-    5000
-)}
-
-BRAND:
-{compact_brand_context(
-    brand_context,
-    2200
-)}
-
-REFERENCES:
-{compact_visual_references(
-    visual_references,
-    1800
-)}
-
-Return JSON only:
-
-{{
-  "concept_id": "{concept.concept_id}-REV",
-  "category": "{concept.category}",
-  "title": "",
-  "core_idea": "",
-  "marketing_message": "",
-  "visual_metaphor": "",
-  "environment": "",
-  "hero_element": "",
-  "supporting_elements": [],
-  "camera_angle": "",
-  "lens": "",
-  "perspective": "",
-  "lighting": "",
-  "negative_space": "",
-  "brand_logic": "",
-  "production_method": "",
-  "campaign_extension": "",
-  "risks": []
-}}
-""".strip()
-
-
-def revise_concept(
-    *,
-    user_request: str,
-    concept: CreativeConcept,
-    brand_context: Any = None,
-    visual_references: Any = None,
-) -> Optional[
-    CreativeConcept
-]:
-    raw = call_openai_director(
-        build_revision_prompt(
-            user_request=user_request,
-            concept=concept,
-            brand_context=brand_context,
-            visual_references=visual_references,
-        ),
-        json_mode=True,
-    )
-
-    payload = extract_json_object(
-        raw
-    )
-
-    if not payload:
-        return None
-
-    revised = concept_from_dict(
-        payload,
-        fallback_id=(
-            concept.concept_id
-            +
-            "-REV"
-        ),
-        generation_round=(
-            concept.generation_round
-        ),
-        revised_from=(
-            concept.concept_id
-        ),
-    )
-
-    revised.concept_id = (
-        concept.concept_id
-        +
-        "-REV"
-    )
-
-    if not revised.category:
-        revised.category = (
-            concept.category
-        )
-
-    return revised
-
-
-def select_revision_candidates(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-) -> List[
-    CreativeConcept
-]:
-    candidates = [
-        item
-        for item in concepts
-        if (
-            item.evaluation_valid
-            and
-            item.weighted_score
-            >=
-            MASTERPIECE_REVISION_FLOOR
-        )
-    ]
-
-    return rank_concepts(
-        candidates
-    )[
-        :MASTERPIECE_REVISION_CANDIDATES
-    ]
-
-
-# =========================================================
-# BEST-AVAILABLE RELEASE
-# =========================================================
-
-def best_real_evaluated_concept(
-    concepts: Sequence[
-        CreativeConcept
-    ],
-) -> Optional[
-    CreativeConcept
-]:
-    clean_valid = [
-        item
-        for item in concepts
-        if (
-            item.evaluation_valid
-            and
-            not item.cliche_hits
-        )
-    ]
-
-    if clean_valid:
-        return rank_concepts(
-            clean_valid
-        )[0]
-
-    valid = [
-        item
-        for item in concepts
-        if item.evaluation_valid
-    ]
-
-    if valid:
-        return rank_concepts(
-            valid
-        )[0]
-
-    return None
-
-
-def release_best_available(
-    concept: CreativeConcept,
-) -> None:
-    #
-    # IMPORTANT:
-    #
-    # This is NOT a fake score.
-    #
-    # The concept must already have a REAL model evaluation.
-    #
-    # We are only changing the role of the quality gate from
-    # "block the entire production" to:
-    #
-    # "82 target not reached; use strongest real candidate."
-    #
-
-    concept.quality_gate_passed = (
-        True
-    )
-
-    concept.debate[
-        "quality_release_level"
-    ] = (
-        "best_available_release"
-    )
-
-    concept.debate[
-        "target_gate_passed"
-    ] = False
-
-    concept.debate[
-        "best_available_policy"
-    ] = (
-        "Real model evaluation preserved. "
-        "82 target was not reached after recovery, "
-        "but production is allowed to continue."
-    )
-
-    concept.quality_gate_failures = []
-
-
-# =========================================================
-# ROUND SUMMARY
-# =========================================================
-
-def build_round_summary(
-    *,
-    round_number: int,
-    concepts: Sequence[
-        CreativeConcept
-    ],
-    qualified: Sequence[
-        CreativeConcept
-    ],
-    revisions: int,
-) -> Dict[str, Any]:
-    valid = [
-        item
-        for item in concepts
-        if item.evaluation_valid
-    ]
-
-    best = (
-        rank_concepts(
-            valid
-        )[0]
-        if valid
-        else None
-    )
-
-    return {
-        "round":
-            round_number,
-
-        "concepts":
-            len(
-                concepts
-            ),
-
-        "valid_evaluations":
-            len(
-                valid
-            ),
-
-        "qualified":
-            len(
-                qualified
-            ),
-
-        "best_score":
-            (
-                best.weighted_score
-                if best
-                else 0
-            ),
-
-        "best_id":
-            (
-                best.concept_id
-                if best
-                else ""
-            ),
-
-        "revisions_generated":
-            revisions,
-    }
-
-
-# =========================================================
-# WINNER ENRICHMENT COMPATIBILITY
-# =========================================================
-
-def enrich_winner(
-    *,
-    user_request: str,
-    winner: CreativeConcept,
-    visual_references: Any,
-    errors: List[str],
-    brand_context: Any = None,
-    telemetry: Optional[
-        Dict[str, Any]
-    ] = None,
-) -> None:
-    try:
-        finalize_winner(
-            user_request=user_request,
-            winner=winner,
-            brand_context=brand_context,
-            visual_references=visual_references,
-            telemetry=telemetry,
-        )
-
-    except Exception as error:
-        errors.append(
-            (
-                "winner_finalizer: "
-                +
-                clean_text(
-                    error,
-                    2500,
-                )
-            )
-        )
-
-
-# =========================================================
-# MASTER CREATIVE BRAIN V2
-# =========================================================
-
-def run_creative_brain(
-    *,
-    user_request: str,
-    brand_context: Any = None,
-    visual_references: Any = None,
-    style_hint: str = "",
-    mode: str = MODE_MASTERPIECE,
-    top_count: int = 3,
-) -> CreativeBrainResponse:
-    user_request = clean_text(
-        user_request,
-        12000,
-    )
-
-    if not user_request:
-        raise ValueError(
-            "Creative request is empty."
-        )
-
-    mode = clean_text(
-        mode,
-        100,
-    ).lower()
-
-    if mode not in {
-        MODE_FAST,
-        MODE_MASTERPIECE,
-    }:
-        mode = (
-            MODE_MASTERPIECE
-        )
-
-    top_count = max(
-        1,
-        min(
-            int(
-                top_count
-                or 3
-            ),
-            5,
-        ),
-    )
-
-    errors: List[
-        str
-    ] = []
-
-    telemetry: Dict[
-        str,
-        Any
-    ] = {
-        "director_calls":
-            0,
-
-        "director_call_history":
-            [],
-
-        "initial_concepts":
-            0,
-
-        "challenger_concepts":
-            0,
-
-        "shortlisted_concepts":
-            0,
-
-        "recovery_used":
-            False,
-    }
-
-    all_concepts: List[
-        CreativeConcept
-    ] = []
-
-    round_summaries: List[
-        Dict[str, Any]
-    ] = []
-
-    winner: Optional[
-        CreativeConcept
-    ] = None
-
-    release_level = ""
-
-    print("")
-    print(
-        "=========================================="
-    )
-    print(
-        " XPAND CREATIVE BRAIN V2.0"
-    )
-    print(
-        " QUALITY-FIRST ADAPTIVE"
-    )
-    print(
-        "=========================================="
-    )
-
-    print(
-        "Mode:",
-        mode,
-    )
-
-    print(
-        "Masterpiece target:",
-        MASTERPIECE_MIN_SCORE,
-    )
-
-    print(
-        "Adaptive release floor:",
-        MASTERPIECE_RELEASE_FLOOR,
-    )
-
-    print(
-        "Initial concepts:",
-        (
-            sum(
-                MASTERPIECE_DISTRIBUTION.values()
-            )
-            if mode
-            ==
-            MODE_MASTERPIECE
-            else
-            sum(
-                FAST_DISTRIBUTION.values()
-            )
-        ),
-    )
-
-    print(
-        "Paid review shortlist:",
-        MASTERPIECE_SHORTLIST_SIZE,
-    )
-
-    print(
-        "Target Director calls:",
-        MASTERPIECE_TARGET_DIRECTOR_CALLS,
-    )
-
-    print("")
-
-    # =====================================================
-    # MODEL CALL 1
-    # INITIAL IDEATION
-    # =====================================================
-
-    try:
-        concepts = generate_concept_pool(
-            user_request=user_request,
-            brand_context=brand_context,
-            visual_references=visual_references,
-            style_hint=style_hint,
-            mode=mode,
-            round_number=1,
-            telemetry=telemetry,
-        )
-
-    except Exception as error:
-        primary_error = clean_text(
-            error,
-            3000,
-        )
-        errors.append(
-            (
-                "concept_generation: "
-                +
-                primary_error
-            )
-        )
-        print(
-            "⚠️ Primary ideation unavailable:",
-            primary_error,
-        )
-        print(
-            "🔁 Running compact ideation recovery..."
-        )
-
-        try:
-            concepts = generate_concept_pool(
-                user_request=user_request,
-                brand_context=brand_context,
-                visual_references=visual_references,
-                style_hint=style_hint,
-                mode=MODE_FAST,
-                round_number=1,
-                failure_context=(
-                    "The full ideation response failed or was incomplete. "
-                    "Return a compact valid JSON concept batch with concise "
-                    "fields and no markdown outside the JSON object."
-                ),
-                telemetry=telemetry,
-            )
-            print(
-                "✅ Compact ideation recovery:",
-                len(concepts),
-            )
-
-        except Exception as recovery_error:
-            recovery_text = clean_text(
-                recovery_error,
-                3000,
-            )
-            errors.append(
-                "compact_ideation_recovery: "
-                + recovery_text
-            )
-            print(
-                "❌ Compact ideation recovery failed:",
-                recovery_text,
-            )
-
-            return CreativeBrainResponse(
-                ok=False,
-                mode=mode,
-                request=user_request,
-                total_concepts=0,
-                concepts=[],
-                top_concepts=[],
-                winner=None,
-                metadata={
-                    "version": VERSION,
-                    "quality_gate_passed": False,
-                    "masterpiece_min_score": MASTERPIECE_MIN_SCORE,
-                    "masterpiece_target_score": MASTERPIECE_MIN_SCORE,
-                    "director_calls": telemetry["director_calls"],
-                    "director_call_history": telemetry["director_call_history"],
-                },
-                errors=errors,
-            )
-
-    concepts = deduplicate_concepts(
-        concepts
-    )
-
-    all_concepts.extend(
-        concepts
-    )
-
-    telemetry[
-        "initial_concepts"
-    ] = len(
-        concepts
-    )
-
-    print(
-        (
-            "✅ Initial concepts: "
-            +
-            str(
-                len(concepts)
-            )
-        )
-    )
-
-    # =====================================================
-    # MODEL CALL 2 — INDEPENDENT CHALLENGER POOL
-    # =====================================================
-
-    if (
-        mode == MODE_MASTERPIECE
-        and MASTERPIECE_MAX_IDEATION_ROUNDS >= 2
-    ):
-        print("")
-        print("⚔️ Running independent Challenger ideation board...")
-        try:
-            challenger_concepts = generate_concept_pool(
-                user_request=user_request,
-                brand_context=brand_context,
-                visual_references=visual_references,
-                style_hint=style_hint,
-                mode=mode,
-                round_number=2,
-                failure_context=(
-                    "Create a radically different independent pool. Do not "
-                    "repeat obvious banking, phone, globe, portal, landmark "
-                    "or light-route mechanisms. Prioritize premium photographic "
-                    "realism, one dominant hero, natural brand color behavior, "
-                    "strong balance and defensible unusual camera viewpoints."
-                ),
-                challenger=True,
-                telemetry=telemetry,
-            )
-            challenger_concepts = deduplicate_concepts(
-                challenger_concepts,
-                all_concepts,
-            )
-            telemetry["challenger_concepts"] = len(challenger_concepts)
-            concepts.extend(challenger_concepts)
-            all_concepts.extend(challenger_concepts)
-            print(
-                "✅ Challenger concepts:",
-                len(challenger_concepts),
-                "| combined pool:",
-                len(concepts),
-            )
-        except Exception as error:
-            errors.append(
-                "challenger_ideation: "
-                + clean_text(error, 3000)
-            )
-            print("⚠️ Challenger ideation unavailable; continuing safely.")
-
-    # =====================================================
-    # FREE LOCAL SHORTLIST
-    # =====================================================
-
-    shortlist_limit = (
-        MASTERPIECE_SHORTLIST_SIZE
-        if mode
-        ==
-        MODE_MASTERPIECE
-        else
-        min(
-            6,
-            len(concepts),
-        )
-    )
-
-    shortlist = shortlist_concepts(
-        concepts,
-        limit=shortlist_limit,
-    )
-
-    telemetry[
-        "shortlisted_concepts"
-    ] = len(
-        shortlist
-    )
-
-    print(
-        (
-            "✅ FREE local shortlist: "
-            +
-            str(
-                len(shortlist)
-            )
-            +
-            "/"
-            +
-            str(
-                len(concepts)
-            )
-        )
-    )
-
-    print(
-        "🚫 No model call used for shortlist"
-    )
-
-    # =====================================================
-    # MODEL CALL 2
-    # ONE FULL REVIEW BOARD
-    # =====================================================
-
-    try:
-        evaluate_concept_pool(
-            user_request=user_request,
-            concepts=shortlist,
-            brand_context=brand_context,
-            visual_references=visual_references,
-            mode=mode,
-            telemetry=telemetry,
-        )
-
-    except Exception as error:
-        errors.append(
-            (
-                "creative_review: "
-                +
-                clean_text(
-                    error,
-                    3000,
-                )
-            )
-        )
-
-    refresh_quality_gates(
-        shortlist,
-        mode=mode,
-    )
-
-    released = select_top_concepts(
-        shortlist,
-        limit=top_count,
-        mode=mode,
-        qualified_only=True,
-    )
-
-    if released:
-        winner = released[0]
-
-        release_level = clean_text(
-            winner.debate.get(
-                "quality_release_level",
-                "target_82_plus",
-            ),
-            100,
-        )
-
-        print(
-            (
-                "🏆 CREATIVE RELEASE"
-                +
-                " | "
-                +
-                winner.concept_id
-                +
-                " | score="
-                +
-                str(
-                    winner.weighted_score
-                )
-                +
-                " | level="
-                +
-                release_level
-            )
-        )
-
-        round_summaries.append(
-            build_round_summary(
-                round_number=1,
-                concepts=shortlist,
-                qualified=released,
-                revisions=0,
-            )
-        )
-
-    # =====================================================
-    # MASTERPIECE RECOVERY
-    # MODEL CALL 3
-    # =====================================================
-
-    recovery_concepts: List[
-        CreativeConcept
-    ] = []
-
-    if (
-        mode == MODE_MASTERPIECE
-        and
-        winner is None
-    ):
-        telemetry[
-            "recovery_used"
-        ] = True
-
-        print("")
-        print(
-            "🧠 82+ target not reached."
-        )
-
-        print(
-            "🔁 Running ONE consolidated Recovery Board..."
-        )
-
-        try:
-            recovery_concepts = (
-                run_recovery_board(
-                    user_request=user_request,
-                    failed_concepts=shortlist,
-                    brand_context=brand_context,
-                    visual_references=visual_references,
-                    telemetry=telemetry,
-                )
-            )
-
-        except Exception as error:
-            errors.append(
-                (
-                    "masterpiece_recovery: "
-                    +
-                    clean_text(
-                        error,
-                        3000,
-                    )
-                )
-            )
-
-            recovery_concepts = []
-
-        recovery_concepts = (
-            deduplicate_concepts(
-                recovery_concepts,
-                all_concepts,
-            )
-        )
-
-        all_concepts.extend(
-            recovery_concepts
-        )
-
-        refresh_quality_gates(
-            recovery_concepts,
-            mode=MODE_MASTERPIECE,
-        )
-
-        recovery_released = (
-            select_top_concepts(
-                recovery_concepts,
-                limit=top_count,
-                mode=MODE_MASTERPIECE,
-                qualified_only=True,
-            )
-        )
-
-        if recovery_released:
-            winner = (
-                recovery_released[0]
-            )
-
-            released = (
-                recovery_released
-            )
-
-            release_level = clean_text(
-                winner.debate.get(
-                    "quality_release_level",
-                    "adaptive_release",
-                ),
-                100,
-            )
-
-            print(
-                (
-                    "🏆 RECOVERY WINNER"
-                    +
-                    " | "
-                    +
-                    winner.concept_id
-                    +
-                    " | score="
-                    +
-                    str(
-                        winner.weighted_score
-                    )
-                    +
-                    " | level="
-                    +
-                    release_level
-                )
-            )
-
-        round_summaries.append(
-            build_round_summary(
-                round_number=2,
-                concepts=recovery_concepts,
-                qualified=recovery_released,
-                revisions=len(
-                    recovery_concepts
-                ),
-            )
-        )
-
-    # =====================================================
-    # BEST AVAILABLE REAL-EVALUATED RELEASE
-    #
-    # QUALITY TARGET MAY FAIL.
-    # THE USER'S PRODUCTION DOES NOT.
-    # =====================================================
-
-    if (
-        mode == MODE_MASTERPIECE
-        and
-        winner is None
-    ):
-        best_available = (
-            best_real_evaluated_concept(
-                all_concepts
-            )
-        )
-
-        if best_available is not None:
-            winner = (
-                best_available
-            )
-
-            release_best_available(
-                winner
-            )
-
-            released = [
-                winner
-            ]
-
-            release_level = (
-                "best_available_release"
-            )
-
-            print("")
-            print(
-                (
-                    "⚠️ Masterpiece target "
-                    +
-                    str(
-                        MASTERPIECE_MIN_SCORE
-                    )
-                    +
-                    " not reached."
-                )
-            )
-
-            print(
-                (
-                    "✅ Continuing with strongest REAL-EVALUATED concept"
-                    +
-                    " | "
-                    +
-                    winner.concept_id
-                    +
-                    " | score="
-                    +
-                    str(
-                        winner.weighted_score
-                    )
-                )
-            )
-
-    # =====================================================
-    # FAST MODE FALLBACK
-    # =====================================================
-
-    if (
-        mode == MODE_FAST
-        and
-        winner is None
-    ):
-        ranked = rank_concepts(
-            shortlist
-        )
-
-        if ranked:
-            winner = ranked[0]
-
-            winner.quality_gate_passed = (
-                True
-            )
-
-            winner.quality_gate_failures = []
-
-            winner.debate[
-                "quality_release_level"
-            ] = "fast_best_available"
-
-            released = [
-                winner
-            ]
-
-            release_level = (
-                "fast_best_available"
-            )
-
-    # =====================================================
-    # MODEL CALL 3
-    # WINNER FINALIZER
-    #
-    # Only when Recovery did NOT already consume Call 3.
-    # =====================================================
-
-    if (
-        winner is not None
-        and
-        not telemetry[
-            "recovery_used"
-        ]
-    ):
-        try:
-            finalize_winner(
-                user_request=user_request,
-                winner=winner,
-                brand_context=brand_context,
-                visual_references=visual_references,
-                telemetry=telemetry,
-            )
-
-        except Exception as error:
-            errors.append(
-                (
-                    "winner_finalizer: "
-                    +
-                    clean_text(
-                        error,
-                        3000,
-                    )
-                )
-            )
-
-            #
-            # Do NOT block production.
-            #
-            # The Review Board already supplied camera and
-            # feasibility fallback information.
-            #
-
-            camera_review = safe_dict(
-                winner.debate.get(
-                    "camera_review"
-                )
-            )
-
-            if camera_review:
-                winner.debate[
-                    "camera_director"
-                ] = {
-                    "camera_angle":
-                        camera_review.get(
-                            "recommended_camera_angle",
-                            winner.camera_angle,
-                        ),
-
-                    "lens":
-                        camera_review.get(
-                            "recommended_lens",
-                            winner.lens,
-                        ),
-
-                    "perspective_type":
-                        camera_review.get(
-                            "perspective",
-                            winner.perspective,
-                        ),
-
-                    "creative_reason":
-                        camera_review.get(
-                            "reason",
-                            "",
-                        ),
-                }
-
-    # =====================================================
-    # FINAL TOP CONCEPTS
-    # =====================================================
-
-    if winner is not None:
-        winner.quality_gate_passed = (
-            True
-        )
-
-    qualified_top = [
-        item
-        for item in (
-            rank_concepts(
-                all_concepts
-            )
-        )
-        if item.quality_gate_passed
-    ]
-
-    if winner is not None:
-        #
-        # Ensure winner is first.
-        #
-        top_concepts = [
-            winner
-        ]
-
-        for concept in qualified_top:
-            if len(
-                top_concepts
-            ) >= top_count:
-                break
-
-            if (
-                concept.concept_id
-                ==
-                winner.concept_id
-            ):
                 continue
 
-            top_concepts.append(
-                concept
+            if (
+                MASTERPIECE_REQUIRE_QA
+                and
+                not qa_passed
+            ):
+
+                errors.append(
+                    (
+                        "masterpiece_qa_failed:"
+                        +
+                        str(
+                            best_score
+                        )
+                    )
+                )
+
+                print(
+                    "⚠️ Masterpiece QA failed. "
+                    "Smart Engine fallback will be used."
+                )
+
+                continue
+
+            images.append(
+                final_image
             )
 
-    else:
-        #
-        # This only occurs if no real model evaluation was
-        # obtained at all.
-        #
-        # We do NOT manufacture a fake quality score.
-        #
-        top_concepts = select_top_concepts(
-            all_concepts,
-            limit=top_count,
-            mode=mode,
-            qualified_only=False,
+        except Exception as error:
+
+            message = clean_text(
+                error,
+                4000,
+            )
+
+            errors.append(
+                (
+                    "masterpiece_"
+                    +
+                    str(
+                        index + 1
+                    )
+                    +
+                    ": "
+                    +
+                    message
+                )
+            )
+
+            print(
+                "⚠️ MASTERPIECE FAILED:",
+                message,
+            )
+
+    return (
+        images,
+        metadata,
+        errors,
+    )
+
+
+# =========================================================
+# TELEGRAM API
+# =========================================================
+
+def telegram_api_url(
+    core,
+    method: str,
+) -> str:
+
+    token = clean_text(
+        getattr(
+            core,
+            "TELEGRAM_BOT_TOKEN",
+            "",
+        )
+        or
+        os.environ.get(
+            "TELEGRAM_BOT_TOKEN",
+            "",
+        ),
+        2000,
+    )
+
+    if not token:
+
+        raise RuntimeError(
+            "TELEGRAM_BOT_TOKEN missing"
         )
 
-    quality_gate_passed = bool(
-        winner
+    return (
+        "https://api.telegram.org/bot"
+        +
+        token
+        +
+        "/"
+        +
+        method
     )
 
-    # =====================================================
-    # EFFECTIVE INTEGRATION FLOOR
-    #
-    # xpand_image_telegram.py V3.1 currently uses
-    # metadata["masterpiece_min_score"] as an integration
-    # threshold.
-    #
-    # Preserve 82 separately as the real target.
-    #
-    # For adaptive/best-available release we expose the
-    # actual release threshold so a quality target does not
-    # become a hard production blocker.
-    # =====================================================
 
-    effective_integration_floor = (
-        MASTERPIECE_MIN_SCORE
+def send_photo_bytes(
+    core,
+    chat_id,
+    image_bytes: bytes,
+    filename: str,
+    mime_type: str,
+    caption: str,
+) -> Dict[str, Any]:
+
+    buffer = io.BytesIO(
+        image_bytes
     )
+
+    buffer.name = filename
+
+    response = requests.post(
+        telegram_api_url(
+            core,
+            "sendPhoto",
+        ),
+
+        data={
+            "chat_id":
+                str(
+                    chat_id
+                ),
+
+            "caption":
+                clean_text(
+                    caption,
+                    1000,
+                ),
+        },
+
+        files={
+            "photo": (
+                filename,
+                buffer,
+                mime_type
+                or
+                "image/png",
+            )
+        },
+
+        timeout=TELEGRAM_TIMEOUT,
+    )
+
+    try:
+
+        payload = response.json()
+
+    except Exception:
+
+        payload = {
+            "ok":
+                False,
+
+            "description":
+                response.text,
+        }
+
+    if (
+        not response.ok
+        or
+        not payload.get(
+            "ok"
+        )
+    ):
+
+        raise RuntimeError(
+            "Telegram sendPhoto failed: "
+            +
+            clean_text(
+                payload,
+                2000,
+            )
+        )
+
+    return payload
+
+
+def send_document_bytes(
+    core,
+    chat_id,
+    image_bytes: bytes,
+    filename: str,
+    mime_type: str,
+    caption: str,
+) -> Dict[str, Any]:
+
+    buffer = io.BytesIO(
+        image_bytes
+    )
+
+    buffer.name = filename
+
+    response = requests.post(
+        telegram_api_url(
+            core,
+            "sendDocument",
+        ),
+
+        data={
+            "chat_id":
+                str(
+                    chat_id
+                ),
+
+            "caption":
+                clean_text(
+                    caption,
+                    1000,
+                ),
+        },
+
+        files={
+            "document": (
+                filename,
+                buffer,
+                mime_type
+                or
+                "application/octet-stream",
+            )
+        },
+
+        timeout=TELEGRAM_TIMEOUT,
+    )
+
+    try:
+
+        payload = response.json()
+
+    except Exception:
+
+        payload = {
+            "ok":
+                False,
+
+            "description":
+                response.text,
+        }
+
+    if (
+        not response.ok
+        or
+        not payload.get(
+            "ok"
+        )
+    ):
+
+        raise RuntimeError(
+            "Telegram sendDocument failed: "
+            +
+            clean_text(
+                payload,
+                2000,
+            )
+        )
+
+    return payload
+
+
+# =========================================================
+# DELIVERY
+# =========================================================
+
+def deliver_generated_image(
+    core,
+    *,
+    chat_id,
+    image,
+    index: int,
+    total: int,
+) -> Dict[str, Any]:
+
+    image_bytes = getattr(
+        image,
+        "image_bytes",
+        b"",
+    )
+
+    if not image_bytes:
+
+        raise RuntimeError(
+            "Generated image contains no bytes."
+        )
+
+    filename = clean_text(
+        getattr(
+            image,
+            "filename",
+            "",
+        ),
+        500,
+    )
+
+    if not filename:
+
+        filename = (
+            "xpand-"
+            +
+            str(
+                index
+            )
+            +
+            ".png"
+        )
+
+    mime_type = clean_text(
+        getattr(
+            image,
+            "mime_type",
+            "",
+        ),
+        100,
+    )
+
+    if not mime_type:
+
+        mime_type = "image/png"
+
+    model = clean_text(
+        getattr(
+            image,
+            "model",
+            "",
+        ),
+        300,
+    )
+
+    preview_result = {}
+
+    original_result = {}
+
+    if SEND_PREVIEW:
+
+        preview_result = send_photo_bytes(
+            core,
+            chat_id,
+            image_bytes,
+            filename,
+            mime_type,
+            (
+                "XPAND "
+                +
+                str(
+                    index
+                )
+                +
+                "/"
+                +
+                str(
+                    total
+                )
+                +
+                (
+                    "\n"
+                    +
+                    model
+                    if model
+                    else ""
+                )
+            ),
+        )
+
+    if SEND_ORIGINAL:
+
+        original_result = send_document_bytes(
+            core,
+            chat_id,
+            image_bytes,
+            filename,
+            mime_type,
+            (
+                "النسخة الأصلية"
+                +
+                (
+                    " | "
+                    +
+                    model
+                    if model
+                    else ""
+                )
+            ),
+        )
+
+    return {
+        "model":
+            model,
+
+        "provider":
+            clean_text(
+                getattr(
+                    image,
+                    "provider",
+                    "",
+                ),
+                200,
+            ),
+
+        "filename":
+            filename,
+
+        "mime_type":
+            mime_type,
+
+        "byte_size":
+            len(
+                image_bytes
+            ),
+
+        "preview_sent":
+            bool(
+                preview_result
+            ),
+
+        "original_sent":
+            bool(
+                original_result
+            ),
+    }
+
+
+# =========================================================
+# GENERATE + DELIVER
+# =========================================================
+
+def generate_and_deliver(
+    core,
+    chat_id,
+    user_id,
+    text,
+    source_channel: str = "telegram_text",
+) -> Dict[str, Any]:
+
+    prompt = extract_image_prompt(
+        text
+    )
+
+    if not prompt:
+
+        raise RuntimeError(
+            "اكتبلي وصف الصورة اللي بدك إياها."
+        )
+
+    number = detect_requested_image_count(
+        prompt
+    )
+
+    aspect_ratio = detect_aspect_ratio(
+        prompt
+    )
+
+    image_size = detect_image_size(
+        prompt
+    )
+
+    prepared = prepare_generation_input(
+        core,
+        user_id,
+        prompt,
+    )
+
+    final_prompt = prepared.get(
+        "final_prompt",
+        prompt,
+    )
+
+    brand_id = prepared.get(
+        "brand_id",
+        "",
+    )
+
+    benefit_family = prepared.get(
+        "benefit_family",
+        "",
+    )
+
+    creative_mode = prepared.get(
+        "creative_mode",
+        CREATIVE_MODE_FAST,
+    )
+
+    creative_response = prepared.get(
+        "creative_response"
+    )
+
+    runtime = creative_runtime_state(
+        creative_response
+    )
+
+    creative_score = None
+
+    winner = getattr(
+        creative_response,
+        "winner",
+        None,
+    ) if creative_response else None
 
     if winner is not None:
-        if (
-            release_level
-            ==
-            "adaptive_release"
-        ):
-            effective_integration_floor = (
-                min(
-                    MASTERPIECE_RELEASE_FLOOR,
-                    winner.weighted_score,
-                )
-            )
 
-        elif (
-            release_level
-            ==
-            "best_available_release"
-        ):
-            effective_integration_floor = (
-                winner.weighted_score
-            )
+        creative_score = safe_float(
+            getattr(
+                winner,
+                "weighted_score",
+                0,
+            ),
+            0,
+        )
 
-        elif mode == MODE_FAST:
-            effective_integration_floor = (
-                min(
-                    FAST_MIN_SCORE,
-                    winner.weighted_score,
-                )
-            )
+    try:
 
-    # =====================================================
-    # FINAL LOG
-    # =====================================================
+        core.send_action(
+            chat_id,
+            "upload_photo",
+        )
+
+    except Exception:
+
+        pass
 
     print("")
     print(
         "=========================================="
     )
-
-    if winner:
-        print(
-            " XPAND CREATIVE SELECTION COMPLETE"
-        )
-
-        print(
-            "=========================================="
-        )
-
-        print(
-            "Winner:",
-            winner.concept_id,
-        )
-
-        print(
-            "Score:",
-            winner.weighted_score,
-        )
-
-        print(
-            "82+ target reached:",
-            (
-                winner.weighted_score
-                >=
-                MASTERPIECE_MIN_SCORE
-            ),
-        )
-
-        print(
-            "Release level:",
-            release_level,
-        )
-
-        print(
-            "Director calls:",
-            telemetry[
-                "director_calls"
-            ],
-        )
-
-        print(
-            "Call path:",
-            " → ".join(
-                telemetry[
-                    "director_call_history"
-                ]
-            ),
-        )
-
-    else:
-        print(
-            " CREATIVE MODEL EVALUATION UNAVAILABLE"
-        )
-
-        print(
-            "=========================================="
-        )
-
-        print(
-            "No fake winner created."
-        )
-
-        print(
-            "A technical/model failure prevented real evaluation."
-        )
-
+    print(
+        " XPAND UNIFIED VISUAL REQUEST V3.3"
+    )
+    print(
+        "=========================================="
+    )
+    print(
+        "brand =",
+        brand_id
+        or
+        "-",
+    )
+    print(
+        "benefit_family =",
+        benefit_family,
+    )
+    print(
+        "research =",
+        prepared.get(
+            "research_applied"
+        ),
+    )
+    print(
+        "creative_mode =",
+        creative_mode,
+    )
+    print(
+        "creative_state =",
+        runtime.get(
+            "state"
+        ),
+    )
+    print(
+        "creative_score =",
+        (
+            creative_score
+            if creative_score is not None
+            else "n/a"
+        ),
+    )
+    print(
+        "technical_failure =",
+        runtime.get(
+            "technical_failure"
+        ),
+    )
+    print(
+        "quality_gate_evaluated =",
+        runtime.get(
+            "quality_gate_evaluated"
+        ),
+    )
+    print(
+        "quality_gate_passed =",
+        runtime.get(
+            "quality_gate_passed"
+        ),
+    )
+    print(
+        "allow_smart_engine_fallback =",
+        runtime.get(
+            "allow_smart_engine_fallback"
+        ),
+    )
+    print(
+        "aspect_ratio =",
+        aspect_ratio,
+    )
+    print(
+        "image_size =",
+        image_size,
+    )
+    print(
+        "requested_images =",
+        number,
+    )
+    print(
+        "selected_references =",
+        len(
+            prepared.get(
+                "references",
+                [],
+            )
+        ),
+    )
+    print(
+        "campaign_required =",
+        prepared.get(
+            "campaign_required"
+        ),
+    )
+    print(
+        "campaign_validated =",
+        prepared.get(
+            "campaign_validated"
+        ),
+    )
     print("")
 
-    return CreativeBrainResponse(
-        ok=quality_gate_passed,
+    images: List[Any] = []
 
-        mode=mode,
-
-        request=user_request,
-
-        total_concepts=len(
-            all_concepts
-        ),
-
-        concepts=all_concepts,
-
-        top_concepts=top_concepts,
-
-        winner=winner,
-
-        metadata={
-            "version":
-                VERSION,
-
-            "architecture":
-                "quality_first_adaptive",
-
-            "distribution":
-                (
-                    FAST_DISTRIBUTION
-                    if mode
-                    ==
-                    MODE_FAST
-                    else
-                    MASTERPIECE_DISTRIBUTION
-                ),
-
-            "challenger_distribution":
-                CHALLENGER_DISTRIBUTION,
-
-            "recovery_distribution":
-                RECOVERY_DISTRIBUTION,
-
-            "score_weights":
-                SCORE_WEIGHTS,
-
-            #
-            # IMPORTANT:
-            #
-            # This is the integration release floor used by
-            # the existing Telegram V3.1 guard.
-            #
-            "masterpiece_min_score":
-                effective_integration_floor,
-
-            #
-            # This remains the real creative target.
-            #
-            "masterpiece_target_score":
-                MASTERPIECE_MIN_SCORE,
-
-            "masterpiece_release_floor":
-                MASTERPIECE_RELEASE_FLOOR,
-
-            "masterpiece_min_subscores":
-                MASTERPIECE_MIN_SUBSCORES,
-
-            "masterpiece_release_min_subscores":
-                MASTERPIECE_RELEASE_MIN_SUBSCORES,
-
-            "masterpiece_max_rounds":
-                MASTERPIECE_MAX_IDEATION_ROUNDS,
-
-            "evaluation_batch_size":
-                EVALUATION_BATCH_SIZE,
-
-            "evaluation_retries":
-                EVALUATION_RETRIES,
-
-            "initial_concepts":
-                telemetry[
-                    "initial_concepts"
-                ],
-
-            "shortlisted_concepts":
-                telemetry[
-                    "shortlisted_concepts"
-                ],
-
-            "director_calls":
-                telemetry[
-                    "director_calls"
-                ],
-
-            "director_call_history":
-                telemetry[
-                    "director_call_history"
-                ],
-
-            "director_call_target":
-                MASTERPIECE_TARGET_DIRECTOR_CALLS,
-
-            "recovery_used":
-                telemetry[
-                    "recovery_used"
-                ],
-
-            "release_level":
-                release_level,
-
-            "target_quality_gate_passed":
-                bool(
-                    winner
-                    and
-                    winner.weighted_score
-                    >=
-                    MASTERPIECE_MIN_SCORE
-                ),
-
-            "quality_gate_enabled":
-                (
-                    mode
-                    ==
-                    MODE_MASTERPIECE
-                ),
-
-            #
-            # Integration release state.
-            #
-            # This is TRUE for:
-            #
-            # - target 82+
-            # - adaptive release
-            # - best real evaluated release
-            #
-            "quality_gate_passed":
-                quality_gate_passed,
-
-            "quality_target_blocks_production":
-                False,
-
-            "fake_fallback_winner_allowed":
-                False,
-
-            "real_model_evaluation_required":
-                True,
-
-            "anti_cliche_enabled":
-                True,
-
-            "visual_metaphor_enabled":
-                True,
-
-            "creative_debate_enabled":
-                True,
-
-            "brand_guardian_enabled":
-                True,
-
-            "production_expert_enabled":
-                True,
-
-            "harsh_critic_enabled":
-                True,
-
-            "camera_director_enabled":
-                True,
-
-            "scene_feasibility_enabled":
-                True,
-
-            "local_shortlist_enabled":
-                True,
-
-            "automatic_revision_enabled":
-                False,
-
-            "automatic_reideation_enabled":
-                bool(
-                    mode
-                    ==
-                    MODE_MASTERPIECE
-                ),
-
-            "single_recovery_policy":
-                True,
-
-            "rounds":
-                round_summaries,
-        },
-
-        errors=errors,
-    )
-
-
-# =========================================================
-# SERIALIZER
-# =========================================================
-
-def concept_to_dict(
-    concept: CreativeConcept,
-) -> Dict[str, Any]:
-    return {
-        "concept_id":
-            concept.concept_id,
-
-        "category":
-            concept.category,
-
-        "title":
-            concept.title,
-
-        "core_idea":
-            concept.core_idea,
-
-        "marketing_message":
-            concept.marketing_message,
-
-        "visual_metaphor":
-            concept.visual_metaphor,
-
-        "environment":
-            concept.environment,
-
-        "hero_element":
-            concept.hero_element,
-
-        "supporting_elements":
-            concept.supporting_elements,
-
-        "camera_angle":
-            concept.camera_angle,
-
-        "lens":
-            concept.lens,
-
-        "perspective":
-            concept.perspective,
-
-        "lighting":
-            concept.lighting,
-
-        "negative_space":
-            concept.negative_space,
-
-        "brand_logic":
-            concept.brand_logic,
-
-        "production_method":
-            concept.production_method,
-
-        "campaign_extension":
-            concept.campaign_extension,
-
-        "risks":
-            concept.risks,
-
-        "scores":
-            concept.scores,
-
-        "weighted_score":
-            concept.weighted_score,
-
-        "cliche_hits":
-            concept.cliche_hits,
-
-        "debate":
-            concept.debate,
-
-        "feasibility":
-            concept.feasibility,
-
-        "evaluation_valid":
-            concept.evaluation_valid,
-
-        "quality_gate_passed":
-            concept.quality_gate_passed,
-
-        "quality_gate_failures":
-            concept.quality_gate_failures,
-
-        "generation_round":
-            concept.generation_round,
-
-        "revised_from":
-            concept.revised_from,
-    }
-
-
-def response_to_dict(
-    response: CreativeBrainResponse,
-) -> Dict[str, Any]:
-    return {
-        "ok":
-            response.ok,
-
-        "mode":
-            response.mode,
-
-        "request":
-            response.request,
-
-        "total_concepts":
-            response.total_concepts,
-
-        "top_concepts": [
-            concept_to_dict(
-                item
-            )
-            for item in (
-                response.top_concepts
-            )
-        ],
-
-        "winner": (
-            concept_to_dict(
-                response.winner
-            )
-            if response.winner
-            else None
-        ),
-
-        "metadata":
-            response.metadata,
-
-        "errors":
-            response.errors,
-    }
-
-
-# =========================================================
-# HUMAN SUMMARY
-# =========================================================
-
-def build_top_concepts_summary(
-    response: CreativeBrainResponse,
-) -> str:
-    if not response.top_concepts:
-        return (
-            "ما طلعت اتجاهات إبداعية كافية."
-        )
-
-    lines: List[
-        str
+    production_metadata: List[
+        Dict[str, Any]
     ] = []
 
-    lines.append(
-        (
-            "XPAND Creative Brain | "
-            +
-            response.mode.upper()
-        )
-    )
+    pipeline_errors: List[str] = []
 
-    lines.append(
-        (
-            "تم تطوير "
-            +
-            str(
-                response.total_concepts
-            )
-            +
-            " اتجاه إبداعي."
-        )
-    )
-
-    if (
-        response.mode
+    use_masterpiece = (
+        creative_mode
         ==
-        MODE_MASTERPIECE
-    ):
-        lines.append(
-            (
-                "Creative target: "
-                +
-                str(
-                    response.metadata.get(
-                        "masterpiece_target_score",
-                        MASTERPIECE_MIN_SCORE,
-                    )
-                )
-                +
-                "+"
-            )
+        CREATIVE_MODE_MASTERPIECE
+    )
+
+    guard_status = {
+        "allowed":
+            True,
+
+        "route":
+            "normal",
+
+        "code":
+            "not_masterpiece",
+    }
+
+    # =====================================================
+    # MASTERPIECE ROUTE
+    # =====================================================
+
+    if use_masterpiece:
+
+        guard_status = enforce_masterpiece_guard(
+            prepared
         )
 
-        lines.append(
+        if guard_status.get(
+            "route"
+        ) == "masterpiece":
+
+            try:
+
+                core.send_message(
+                    chat_id,
+                    (
+                        "تمام، الاتجاه الإبداعي اجتاز "
+                        "Masterpiece Gate. ببدأ الإنتاج."
+                    ),
+                )
+
+            except Exception:
+
+                pass
+
             (
-                "Release: "
+                images,
+                production_metadata,
+                masterpiece_errors,
+            ) = generate_masterpiece_images(
+                core=core,
+                user_id=user_id,
+                request_text=prompt,
+                prepared=prepared,
+                number=number,
+                aspect_ratio=aspect_ratio,
+            )
+
+            pipeline_errors.extend(
+                masterpiece_errors
+            )
+
+            if not images:
+
+                print(
+                    "⚠️ Masterpiece produced no qualified image."
+                )
+                print(
+                    "⚡ Continuing with Smart Engine fallback."
+                )
+
+        else:
+
+            print(
+                "⚡ Masterpiece skipped"
+                +
+                " | route="
                 +
                 clean_text(
-                    response.metadata.get(
-                        "release_level",
+                    guard_status.get(
+                        "route",
                         "",
                     ),
                     100,
                 )
+                +
+                " | reason="
+                +
+                clean_text(
+                    guard_status.get(
+                        "code",
+                        "",
+                    ),
+                    300,
+                )
+            )
+
+    # =====================================================
+    # SMART ENGINE FALLBACK
+    # =====================================================
+
+    smart_fallback_allowed = bool(
+        not use_masterpiece
+        or
+        guard_status.get(
+            "route"
+        )
+        ==
+        "smart_fallback"
+        or
+        MASTERPIECE_ALLOW_SMART_FALLBACK
+    )
+
+    if (
+        not images
+        and
+        smart_fallback_allowed
+    ):
+
+        mode = (
+            clean_text(
+                prepared.get(
+                    "mode_override",
+                    "",
+                ),
+                100,
+            )
+            or
+            detect_generation_mode(
+                prompt
             )
         )
 
-    lines.append("")
+        # On a technical Creative Brain failure the image
+        # engine must be able to finish the user's request.
+        if (
+            runtime.get(
+                "state"
+            )
+            ==
+            "technical_failure"
+            and
+            mode
+            ==
+            "auto"
+        ):
 
-    for index, concept in enumerate(
-        response.top_concepts,
+            mode = "best"
+
+        print(
+            "⚡ SMART IMAGE ENGINE"
+            +
+            " | mode="
+            +
+            mode
+        )
+
+        try:
+
+            result = generate_image(
+                final_prompt,
+                mode=mode,
+                number=number,
+                aspect_ratio=aspect_ratio,
+                image_size=image_size,
+                reference_count=len(
+                    prepared.get(
+                        "references",
+                        [],
+                    )
+                ),
+                allow_fallback=True,
+            )
+
+            if (
+                not getattr(
+                    result,
+                    "ok",
+                    False,
+                )
+                or
+                not safe_list(
+                    getattr(
+                        result,
+                        "images",
+                        [],
+                    )
+                )
+            ):
+
+                raise RuntimeError(
+                    "Smart image engine returned no image."
+                )
+
+            images = safe_list(
+                result.images
+            )
+
+            pipeline_errors.extend(
+                safe_list(
+                    getattr(
+                        result,
+                        "errors",
+                        [],
+                    )
+                )
+            )
+
+        except Exception as error:
+
+            message = clean_text(
+                error,
+                4000,
+            )
+
+            pipeline_errors.append(
+                "smart_engine: "
+                +
+                message
+            )
+
+            print(
+                "❌ SMART IMAGE ENGINE:",
+                message,
+            )
+
+            raise
+
+    if not images:
+
+        raise RuntimeError(
+            (
+                "لم يتم تسليم صورة لأن Masterpiece "
+                "وSmart Engine لم يرجعا نتيجة صالحة."
+            )
+        )
+
+    # =====================================================
+    # DELIVERY
+    # =====================================================
+
+    delivered = []
+
+    for index, image in enumerate(
+        images,
         start=1,
     ):
-        lines.append(
-            (
-                str(index)
-                +
-                ") "
-                +
-                concept.title
+
+        delivered.append(
+            deliver_generated_image(
+                core,
+                chat_id=chat_id,
+                image=image,
+                index=index,
+                total=len(
+                    images
+                ),
             )
         )
 
-        lines.append(
-            (
-                "الفكرة: "
-                +
-                concept.core_idea
-            )
+    qa_scores = [
+        safe_float(
+            item.get(
+                "best_score",
+                0,
+            ),
+            0,
         )
-
-        lines.append(
-            (
-                "الزاوية: "
-                +
-                concept.camera_angle
-                +
-                (
-                    (
-                        " | "
-                        +
-                        concept.lens
-                    )
-                    if concept.lens
-                    else ""
-                )
-            )
+        for item in production_metadata
+        if safe_float(
+            item.get(
+                "best_score",
+                0,
+            ),
+            0,
         )
+        >
+        0
+    ]
 
-        lines.append(
-            (
-                "التقييم: "
-                +
-                str(
-                    concept.weighted_score
-                )
-                +
-                "/100"
-            )
-        )
+    print("")
+    print(
+        "=========================================="
+    )
+    print(
+        " XPAND IMAGE DELIVERY COMPLETE"
+    )
+    print(
+        "=========================================="
+    )
+    print(
+        "images =",
+        len(
+            delivered
+        ),
+    )
+    print(
+        "creative_route =",
+        guard_status.get(
+            "route"
+        ),
+    )
+    print(
+        "errors =",
+        len(
+            pipeline_errors
+        ),
+    )
+    print("")
 
-        lines.append("")
+    return {
+        "ok":
+            True,
 
-    return "\n".join(
-        lines
-    ).strip()
+        "runtime_version":
+            VERSION,
+
+        "source_channel":
+            source_channel,
+
+        "brand_id":
+            brand_id,
+
+        "benefit_family":
+            benefit_family,
+
+        "creative_mode":
+            creative_mode,
+
+        "creative_state":
+            runtime.get(
+                "state"
+            ),
+
+        "creative_score":
+            creative_score,
+
+        "guard_route":
+            guard_status.get(
+                "route"
+            ),
+
+        "images":
+            delivered,
+
+        "qa_scores":
+            qa_scores,
+
+        "production_metadata":
+            production_metadata,
+
+        "errors":
+            pipeline_errors,
+    }
 
 
 # =========================================================
-# LOCAL SELF TEST
-#
-# ZERO API CALLS.
-# ZERO PAID USAGE.
+# TEXT HANDLER
+# =========================================================
+
+def handle_text_image_request(
+    core,
+    chat_id,
+    user_id,
+    text,
+) -> bool:
+
+    source = normalized(
+        text
+    )
+
+    if source in {
+        "/xpand_budget",
+        "ميزانية اوبن اي",
+        "ميزانيه اوبن اي",
+        "openai budget",
+    }:
+
+        status = budget_status()
+
+        core.send_message(
+            chat_id,
+            (
+                "💰 حد OpenAI اليومي\n"
+                +
+                "الحالة: "
+                +
+                (
+                    "مفعّل"
+                    if status.get(
+                        "enabled"
+                    )
+                    else
+                    "مغلق"
+                )
+                +
+                "\nالحد: $"
+                +
+                f"{safe_float(status.get('limit_usd'), 0):.2f}"
+                +
+                "\nالمحجوز: $"
+                +
+                f"{safe_float(status.get('reserved_usd'), 0):.2f}"
+                +
+                "\nالمتبقي: $"
+                +
+                f"{safe_float(status.get('remaining_usd'), 0):.2f}"
+            ),
+        )
+
+        return True
+
+    if not looks_like_image_generation_request(
+        text
+    ):
+
+        return False
+
+    try:
+
+        result = generate_and_deliver(
+            core,
+            chat_id,
+            user_id,
+            text,
+            source_channel="telegram_text",
+        )
+
+        if result.get(
+            "errors"
+        ):
+
+            print(
+                "⚠️ XPAND VISUAL PIPELINE INFO:",
+                result.get(
+                    "errors"
+                ),
+            )
+
+    except MasterpieceGuardError as error:
+
+        message = clean_text(
+            error,
+            1800,
+        )
+
+        print(
+            "🛑 XPAND MASTERPIECE GUARD:",
+            message,
+        )
+
+        try:
+
+            core.send_message(
+                chat_id,
+                message,
+            )
+
+        except Exception:
+
+            pass
+
+    except Exception as error:
+
+        message = clean_text(
+            error,
+            2000,
+        )
+
+        print(
+            "❌ XPAND VISUAL TEXT:",
+            message,
+        )
+
+        try:
+
+            core.send_message(
+                chat_id,
+                (
+                    "صار خلل بالإنتاج البصري.\n"
+                    "الخطأ: "
+                    +
+                    message
+                ),
+            )
+
+        except Exception:
+
+            pass
+
+    return True
+
+
+# =========================================================
+# STATUS
+# =========================================================
+
+def provider_ready(
+    status: Dict[str, Any],
+    provider_name: str,
+) -> bool:
+
+    providers = safe_dict(
+        status.get(
+            "providers"
+        )
+    )
+
+    provider = safe_dict(
+        providers.get(
+            provider_name
+        )
+    )
+
+    return bool(
+        provider.get(
+            "configured"
+        )
+    )
+
+
+# =========================================================
+# INSTALL
+# =========================================================
+
+def install(
+    core,
+) -> Dict[str, Any]:
+
+    if getattr(
+        core,
+        "_XPAND_IMAGE_TELEGRAM_INSTALLED",
+        False,
+    ):
+
+        return {
+            "ok":
+                True,
+
+            "already_installed":
+                True,
+
+            "runtime_version":
+                VERSION,
+        }
+
+    # =====================================================
+    # COMMAND ROUTER
+    # =====================================================
+
+    original_handle_command = getattr(
+        core,
+        "handle_command",
+        None,
+    )
+
+    if callable(
+        original_handle_command
+    ):
+
+        def xpand_visual_handle_command(
+            chat_id,
+            user_id,
+            text,
+        ):
+
+            if handle_text_image_request(
+                core,
+                chat_id,
+                user_id,
+                text,
+            ):
+
+                return True
+
+            return original_handle_command(
+                chat_id,
+                user_id,
+                text,
+            )
+
+        core.handle_command = (
+            xpand_visual_handle_command
+        )
+
+    # =====================================================
+    # VOICE / NORMAL ASK ROUTER
+    # =====================================================
+
+    original_ask = getattr(
+        core,
+        "ask_kemo",
+        None,
+    )
+
+    if callable(
+        original_ask
+    ):
+
+        def xpand_visual_ask(
+            chat_id,
+            user_id,
+            user_message,
+        ):
+
+            if not looks_like_image_generation_request(
+                user_message
+            ):
+
+                return original_ask(
+                    chat_id,
+                    user_id,
+                    user_message,
+                )
+
+            try:
+
+                result = generate_and_deliver(
+                    core,
+                    chat_id,
+                    user_id,
+                    user_message,
+                    source_channel="telegram_voice",
+                )
+
+                if result.get(
+                    "guard_route"
+                ) == "smart_fallback":
+
+                    return (
+                        "تم. Creative Brain تعرّض لمشكلة، "
+                        "فكملت الطلب تلقائيًا عبر Smart Engine "
+                        "وبعثتلك الصورة."
+                    )
+
+                return (
+                    "تم، ولّدتلك الصورة وبعثتلك "
+                    "المعاينة والنسخة الأصلية."
+                )
+
+            except Exception as error:
+
+                message = clean_text(
+                    error,
+                    1500,
+                )
+
+                print(
+                    "❌ XPAND IMAGE VOICE:",
+                    message,
+                )
+
+                return (
+                    "صار خلل بالإنتاج البصري: "
+                    +
+                    message
+                )
+
+        core.ask_kemo = (
+            xpand_visual_ask
+        )
+
+    # =====================================================
+    # INSTALL COMPLETE
+    # =====================================================
+
+    core._XPAND_IMAGE_TELEGRAM_INSTALLED = (
+        True
+    )
+
+    try:
+
+        status = get_image_engine_status()
+
+    except Exception as error:
+
+        status = {
+            "ok":
+                False,
+
+            "error":
+                clean_text(
+                    error,
+                    1000,
+                ),
+        }
+
+    print("")
+    print(
+        "=================================================="
+    )
+    print(
+        " XPAND UNIFIED VISUAL RUNTIME V3.3"
+    )
+    print(
+        "=================================================="
+    )
+    print(
+        "✅ install(core): READY"
+    )
+    print(
+        "✅ Telegram Text Image Routing"
+    )
+    print(
+        "✅ Voice Image Routing"
+    )
+    print(
+        "✅ STC Bank Masterpiece Mode"
+    )
+    print(
+        "✅ Merchant Payments Semantic Priority"
+    )
+    print(
+        "✅ Creative Brain Runtime State Classifier"
+    )
+    print(
+        "✅ Technical Failure != Quality Failure"
+    )
+    print(
+        "✅ Masterpiece Production"
+    )
+    print(
+        "✅ Smart Engine Automatic Fallback"
+    )
+    print(
+        "✅ 4:5 / explicit ratio support"
+    )
+    print(
+        "✅ 1K / 2K / 4K resolution intent support"
+    )
+    print(
+        "✅ Telegram Preview + Original"
+    )
+    print(
+        "✅ Smart Engine version:",
+        SMART_ENGINE_VERSION,
+    )
+    print(
+        "✅ Image Engine status:",
+        status.get(
+            "ok"
+        ),
+    )
+    print("")
+
+    return {
+        "ok":
+            True,
+
+        "already_installed":
+            False,
+
+        "runtime_version":
+            VERSION,
+
+        "status":
+            status,
+
+        "creative_brain":
+            True,
+
+        "masterpiece":
+            True,
+
+        "smart_fallback":
+            True,
+
+        "merchant_payments":
+            True,
+    }
+
+
+# =========================================================
+# ZERO-API SELF TEST
 # =========================================================
 
 if __name__ == "__main__":
+
     print("")
     print(
         "=========================================="
     )
     print(
-        " XPAND CREATIVE BRAIN V2.0"
+        " XPAND IMAGE TELEGRAM SELF TEST"
     )
     print(
-        " QUALITY-FIRST ADAPTIVE"
+        " VERSION",
+        VERSION,
     )
     print(
         "=========================================="
     )
-    print("")
 
-    print(
-        "Masterpiece initial concepts:",
-        sum(
-            MASTERPIECE_DISTRIBUTION.values()
-        ),
-    )
+    failures = []
 
-    print(
-        "Paid shortlist:",
-        MASTERPIECE_SHORTLIST_SIZE,
-    )
-
-    print(
-        "Recovery concepts:",
-        sum(
-            RECOVERY_DISTRIBUTION.values()
-        ),
-    )
-
-    print(
-        "Masterpiece target:",
-        MASTERPIECE_MIN_SCORE,
-    )
-
-    print(
-        "Adaptive release floor:",
-        MASTERPIECE_RELEASE_FLOOR,
-    )
-
-    print(
-        "Target Director calls:",
-        MASTERPIECE_TARGET_DIRECTOR_CALLS,
-    )
-
-    print(
-        "Evaluation retries:",
-        EVALUATION_RETRIES,
-    )
-
-    print(
-        "Score weights:",
-        sum(
-            SCORE_WEIGHTS.values()
-        ),
-        "%",
-    )
-
-    print("")
-
-    # =====================================================
-    # WEIGHT TEST
-    # =====================================================
-
-    strong_scores = {
-        "message_clarity": 90,
-        "originality": 90,
-        "brand_fit": 95,
-        "visual_power": 92,
-        "feasibility": 85,
-        "perspective_integrity": 90,
-        "campaign_potential": 88,
-    }
-
-    weighted = (
-        calculate_weighted_score(
-            strong_scores
-        )
-    )
-
-    weight_ok = (
-        sum(
-            SCORE_WEIGHTS.values()
-        )
-        ==
-        100
-        and
-        weighted
-        >=
-        80
-    )
-
-    print(
-        (
-            "✅"
-            if weight_ok
-            else
-            "❌"
-        ),
-        "Weighted scoring",
-        weighted,
-    )
-
-    # =====================================================
-    # ANTI CLICHE TEST
-    # =====================================================
-
-    cliche_text = (
-        "A smiling businessman with a floating bank card, "
-        "flying coins and a generic globe."
-    )
-
-    cliche_hits = (
-        detect_cliches(
-            cliche_text
-        )
-    )
-
-    cliche_ok = (
-        len(
-            cliche_hits
-        )
-        >=
-        3
-    )
-
-    print(
-        (
-            "✅"
-            if cliche_ok
-            else
-            "❌"
-        ),
-        "Anti-Cliche hard detection",
-        len(
-            cliche_hits
-        ),
-        "hits",
-    )
-
-    # =====================================================
-    # METAPHOR TEST
-    # =====================================================
-
-    metaphor = get_metaphor_seed(
-        "اعلان عن تحويل مالي دولي سريع"
-    )
-
-    metaphor_ok = (
-        metaphor[
-            "family"
-        ]
-        ==
-        "international_transfer"
-    )
-
-    print(
-        (
-            "✅"
-            if metaphor_ok
-            else
-            "❌"
-        ),
-        "Semantic benefit routing:",
-        metaphor[
-            "family"
-        ],
-    )
-
-    # =====================================================
-    # LOCAL SHORTLIST TEST
-    # =====================================================
-
-    local_test_concepts = []
-
-    categories = list(
-        MASTERPIECE_DISTRIBUTION.keys()
-    )
-
-    for index in range(
-        20
+    if not callable(
+        install
     ):
-        local_test_concepts.append(
-            CreativeConcept(
-                concept_id=(
-                    "T"
-                    +
-                    str(
-                        index + 1
-                    ).zfill(2)
-                ),
-                category=(
-                    categories[
-                        index
-                        %
-                        len(categories)
-                    ]
-                ),
-                title=(
-                    "Premium Concept "
-                    +
-                    str(index + 1)
-                ),
-                core_idea=(
-                    "One clear physical visual metaphor "
-                    "communicating the benefit."
-                ),
-                marketing_message=(
-                    "Clear user benefit."
-                ),
-                visual_metaphor=(
-                    "Physical transformation of distance."
-                ),
-                environment=(
-                    "Premium real environment."
-                ),
-                hero_element=(
-                    "Primary real subject."
-                ),
-                supporting_elements=[
-                    "Controlled architecture"
-                ],
-                camera_angle=(
-                    "Wide Environmental Shot"
-                ),
-                lens="35mm",
-                perspective=(
-                    "Physically correct perspective"
-                ),
-                lighting=(
-                    "Soft commercial directional light"
-                ),
-                negative_space=(
-                    "Intentional upper-left copy area"
-                ),
-                brand_logic=(
-                    "Brand color integrated through materials"
-                ),
-                production_method=(
-                    "single_generation"
-                ),
-                campaign_extension=(
-                    "Can extend into multiple related scenes"
-                ),
-                risks=[],
-            )
+
+        failures.append(
+            "install"
         )
 
-    shortlist = shortlist_concepts(
-        local_test_concepts,
-        limit=8,
+    merchant = detect_runtime_benefit_family(
+        "خدمات التجارة الإلكترونية ونقاط البيع"
     )
 
-    shortlist_ok = (
-        len(
-            shortlist
+    if merchant != "merchant_payments":
+
+        failures.append(
+            "merchant_payments"
         )
-        ==
-        8
+
+    ratio = detect_aspect_ratio(
+        "اعلان 2k 4:5"
     )
 
-    print(
-        (
-            "✅"
-            if shortlist_ok
-            else
-            "❌"
-        ),
-        "20 → FREE local shortlist →",
-        len(
-            shortlist
-        ),
-    )
+    if ratio != "4:5":
 
-    # =====================================================
-    # STRICT TARGET TEST
-    # =====================================================
+        failures.append(
+            "aspect_ratio"
+        )
 
-    strict_concept = CreativeConcept(
-        concept_id="STRICT",
-        category="conceptual_photorealism",
-        title="Strict",
-        core_idea="Strong",
-        marketing_message="Strong",
-        visual_metaphor="Strong",
-        environment="Strong",
-        hero_element="Strong",
-        supporting_elements=[],
-        camera_angle="35mm environmental",
-        lens="35mm",
-        perspective="correct",
-        lighting="premium",
-        negative_space="clean",
-        brand_logic="strong",
-        production_method="single_generation",
-        campaign_extension="strong",
-        risks=[],
-        scores=strong_scores,
-        weighted_score=(
-            weighted
-        ),
-        evaluation_valid=True,
-        debate={
-            "creative_director": {
-                "approved": True
-            },
-            "brand_guardian": {
-                "approved": True
-            },
-            "production_expert": {
-                "approved": True
-            },
-            "harsh_critic": {
-                "approved": True
-            },
-        },
-    )
-
-    strict_passed, _ = (
-        evaluate_quality_gate(
-            strict_concept,
-            mode=MODE_MASTERPIECE,
+    image_request = (
+        looks_like_image_generation_request(
+            "أنشئ صورة إعلانية لبنك STC Bank"
         )
     )
 
-    print(
-        (
-            "✅"
-            if strict_passed
-            else
-            "❌"
-        ),
-        "82+ Masterpiece Target Gate",
-    )
+    if not image_request:
 
-    # =====================================================
-    # ADAPTIVE RELEASE TEST
-    # =====================================================
-
-    adaptive_scores = {
-        "message_clarity": 80,
-        "originality": 80,
-        "brand_fit": 82,
-        "visual_power": 80,
-        "feasibility": 75,
-        "perspective_integrity": 75,
-        "campaign_potential": 75,
-    }
-
-    adaptive_weighted = (
-        calculate_weighted_score(
-            adaptive_scores
+        failures.append(
+            "image_request"
         )
-    )
 
-    adaptive_concept = (
-        CreativeConcept(
-            concept_id="ADAPTIVE",
-            category="realistic_cinematic",
-            title="Adaptive",
-            core_idea="Strong professional direction",
-            marketing_message="Clear benefit",
-            visual_metaphor="Original physical metaphor",
-            environment="Premium environment",
-            hero_element="Clear hero",
-            supporting_elements=[],
-            camera_angle="Wide Environmental",
-            lens="35mm",
-            perspective="correct",
-            lighting="premium",
-            negative_space="controlled",
-            brand_logic="brand-native",
-            production_method="single_generation",
-            campaign_extension="strong",
-            risks=[],
-            scores=adaptive_scores,
-            weighted_score=adaptive_weighted,
-            evaluation_valid=True,
-            debate={
-                "creative_director": {
-                    "approved": True
-                },
-                "brand_guardian": {
-                    "approved": True
-                },
-                "production_expert": {
-                    "approved": True
-                },
-                "harsh_critic": {
-                    "approved": True
-                },
-            },
+    if failures:
+
+        print(
+            "❌ SELF TEST FAILED:",
+            failures,
         )
-    )
 
-    adaptive_passed, _ = (
-        evaluate_quality_gate(
-            adaptive_concept,
-            mode=MODE_MASTERPIECE,
+        raise RuntimeError(
+            "XPAND image telegram self-test failed."
         )
-    )
-
-    adaptive_level = (
-        adaptive_concept.debate.get(
-            "quality_release_level"
-        )
-    )
-
-    adaptive_ok = (
-        adaptive_passed
-        and
-        adaptive_level
-        ==
-        "adaptive_release"
-    )
 
     print(
-        (
-            "✅"
-            if adaptive_ok
-            else
-            "❌"
-        ),
-        "Adaptive release without fake score",
-        adaptive_weighted,
+        "✅ install(): PASS"
     )
-
-    # =====================================================
-    # BEST AVAILABLE TEST
-    # =====================================================
-
-    best_available = (
-        CreativeConcept(
-            concept_id="BEST",
-            category="simple_intelligent",
-            title="Best Available",
-            core_idea="Real evaluated concept",
-            marketing_message="Benefit",
-            visual_metaphor="Metaphor",
-            environment="Environment",
-            hero_element="Hero",
-            supporting_elements=[],
-            camera_angle="Eye Level",
-            lens="35mm",
-            perspective="correct",
-            lighting="premium",
-            negative_space="clean",
-            brand_logic="brand",
-            production_method="single_generation",
-            campaign_extension="campaign",
-            risks=[],
-            scores={
-                key: 70
-                for key in SCORE_WEIGHTS
-            },
-            weighted_score=70.0,
-            evaluation_valid=True,
-            debate={
-                "creative_director": {
-                    "approved": True
-                },
-                "brand_guardian": {
-                    "approved": True
-                },
-                "production_expert": {
-                    "approved": True
-                },
-                "harsh_critic": {
-                    "approved": True
-                },
-            },
-        )
-    )
-
-    release_best_available(
-        best_available
-    )
-
-    best_available_ok = (
-        best_available.quality_gate_passed
-        and
-        best_available.debate.get(
-            "quality_release_level"
-        )
-        ==
-        "best_available_release"
-        and
-        best_available.weighted_score
-        ==
-        70.0
-    )
-
     print(
-        (
-            "✅"
-            if best_available_ok
-            else
-            "❌"
-        ),
-        "Best real-evaluated concept can continue production",
+        "✅ merchant_payments: PASS"
     )
-
-    # =====================================================
-    # COST ARCHITECTURE
-    # =====================================================
-
-    cost_ok = (
-        MASTERPIECE_TARGET_DIRECTOR_CALLS
-        ==
-        3
-        and
-        MASTERPIECE_SHORTLIST_SIZE
-        <
-        sum(
-            MASTERPIECE_DISTRIBUTION.values()
-        )
-    )
-
     print(
-        (
-            "✅"
-            if cost_ok
-            else
-            "❌"
-        ),
-        "Quality-First call architecture",
+        "✅ 4:5 detection: PASS"
     )
-
-    print("")
-
     print(
-        "✅ 20-direction Masterpiece ideation preserved"
+        "✅ image request detection: PASS"
     )
-
     print(
-        "✅ FREE local shortlist before expensive review"
+        "✅ SELF TEST: PASS"
     )
-
-    print(
-        "✅ One consolidated Creative Review Board"
-    )
-
-    print(
-        "✅ Creative Director preserved"
-    )
-
-    print(
-        "✅ Brand Guardian preserved"
-    )
-
-    print(
-        "✅ Production Expert preserved"
-    )
-
-    print(
-        "✅ Harsh Critic preserved"
-    )
-
-    print(
-        "✅ Anti-Cliche hard gate preserved"
-    )
-
-    print(
-        "✅ Visual Metaphor preserved"
-    )
-
-    print(
-        "✅ Camera Director preserved"
-    )
-
-    print(
-        "✅ Scene Feasibility preserved"
-    )
-
-    print(
-        "✅ One intelligent Recovery Board maximum"
-    )
-
-    print(
-        "✅ 82 remains Masterpiece TARGET"
-    )
-
-    print(
-        "✅ Quality target no longer blocks production"
-    )
-
-    print(
-        "✅ No fake fallback evaluation"
-    )
-
-    print(
-        "✅ Real model evaluation required"
-    )
-
-    print(
-        "✅ Best real concept preserved"
-    )
-
-    print(
-        "✅ Runtime V3.1 compatibility preserved"
-    )
-
-    print("")
-
-    all_ok = (
-        weight_ok
-        and
-        cliche_ok
-        and
-        metaphor_ok
-        and
-        shortlist_ok
-        and
-        strict_passed
-        and
-        adaptive_ok
-        and
-        best_available_ok
-        and
-        cost_ok
-    )
-
-    print(
-        (
-            "XPAND Creative Brain V2.0 self-test: "
-            +
-            (
-                "PASS ✅"
-                if all_ok
-                else
-                "FAIL ❌"
-            )
-        )
-    )
-
     print(
         "🚫 No API calls were made"
     )
-
     print("")
