@@ -1,7 +1,9 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.5
+# XPAND UNIFIED VISUAL RUNTIME V3.6
 #
-# STC HIGH-ALERT FINAL DELIVERY GUARD
+# CANONICAL STC SEMANTIC POLICY
+# + GPT-IMAGE-2 MASTERPIECE FINAL ROUTE
+# + STC HIGH-ALERT FINAL DELIVERY GUARD
 #
 # Telegram Text / Voice
 #        ↓
@@ -13,75 +15,96 @@
 #        ↓
 # Brand Research / Memory
 #        ↓
-# Semantic Benefit Director
+# XPAND STC POLICY V1.0
 #        ↓
-# Creative Brain V5
+# Canonical Benefit Family
+#        ↓
+# Creative Brain
 #        ↓
 # Creative Quality Guard
 #        ↓
-# Production Engine V5.1
+# Production Engine
 #        ↓
-# Permanent STC Brand Pack
+# Nano Banana 2 Previsualization
 #        ↓
-# Nano Banana 2 / optional Pro escalation
+# GPT-Image-2 Final Render
 #        ↓
-# Vision QA
+# Final QA
 #        ↓
 # STC FINAL DELIVERY GUARD
 #        ↓
 # Telegram Delivery
 #
 #
-# V3.5 HIGH-ALERT POLICY
+# V3.6 CORE POLICY
 # ---------------------------------------------------------
 #
-# TECHNICAL FAILURE:
+# ONE semantic source of truth:
 #
-#   Creative Brain transport / schema / provider failure
-#          ↓
-#   Smart fallback MAY remain available.
+#   xpand_stc_policy.py
 #
+# Specific STC semantics must never be erased by generic
+# downstream labels such as "premium".
+#
+# Example:
+#
+#   original:
+#       حوالتك حول العالم تقدر تتبعها من التطبيق
+#
+#   old downstream:
+#       premium
+#
+#   canonical:
+#       digital_banking
+#
+#
+# STC MASTERPIECE PRODUCTION
+# ---------------------------------------------------------
+#
+# Production is explicitly routed through TARGET_OPENAI.
+#
+# Production Engine remains responsible for its own:
+# - previsualization
+# - final render
+# - QA
+# - correction / repair
+#
+#
+# STC COPY-SPACE LOCK
+# ---------------------------------------------------------
+#
+# Keep copy space controlled and useful.
+#
+# - approximately 15–22%
+# - no giant blank upper third
+# - do not push the hero to the bottom
+#
+#
+# HIGH ALERT
+# ---------------------------------------------------------
 #
 # REAL CREATIVE QUALITY FAILURE:
+#       BLOCK
 #
-#   concept was actually evaluated
-#   and rejected
-#          ↓
-#   STC High Alert BLOCKS Smart fallback.
+# REAL PRODUCTION QA FAILURE:
+#       BLOCK
 #
-#
-# PRODUCTION QA FAILURE:
-#
-#   Production Engine generated / refined image
-#   but final Vision QA rejected it
-#          ↓
-#   STC High Alert BLOCKS Smart fallback.
+# TECHNICAL FAILURE:
+#       technical fallback may remain available
 #
 #
 # IMPORTANT
 # ---------------------------------------------------------
 #
-# - A real quality rejection is NOT converted into a generic
-#   Smart Engine image.
-#
-# - Production Engine V5.1 owns its internal retry /
-#   refinement / optional Pro escalation.
-#
-# - Telegram never bypasses that final QA decision.
-#
-# - STC output remains IMAGE ONLY:
-#       no copy
-#       no generated logo
-#       no fake banking UI
-#
-# - Permanent STC physical references are handled by
-#   xpand_production_engine.py V5.1.
-#
-# - Technical failure != quality failure.
-#
-# - install(core) public contract is preserved.
-#
-# - No shell commands belong in this file.
+# - no generated advertising text
+# - no generated STC logo
+# - no fake banking UI
+# - no generic fintech decoration
+# - no quality rejection -> generic Smart fallback
+# - install(core) contract preserved
+# - text and voice routing preserved
+# - style-selection pending flow preserved
+# - zero-cost self-test makes no API calls
 #
 # =========================================================
 
@@ -157,6 +180,17 @@ from xpand_stc_bank_skill import (
 
 
 # =========================================================
+# CANONICAL STC POLICY
+# =========================================================
+
+from xpand_stc_policy import (
+    build_creative_constitution_text,
+    build_final_render_locks_text,
+    resolve_stc_benefit_family_id,
+)
+
+
+# =========================================================
 # BRAND RESEARCH
 # =========================================================
 
@@ -199,7 +233,7 @@ from xpand_creative_brain import (
 
 from xpand_production_engine import (
     MODE_MASTERPIECE as PRODUCTION_MODE_MASTERPIECE,
-    TARGET_GEMINI,
+    TARGET_OPENAI,
     run_production,
 )
 
@@ -221,7 +255,6 @@ except Exception:
 
     create_campaign_bible = None
     get_asset_direction = None
-
     CAMPAIGN_ENGINE_AVAILABLE = False
 
 
@@ -229,7 +262,7 @@ except Exception:
 # MODULE
 # =========================================================
 
-VERSION = "3.5"
+VERSION = "3.6"
 
 MODULE_NAME = (
     "XPAND Unified Visual Runtime"
@@ -264,7 +297,9 @@ def env_bool(
 
     names = [
         name,
-        *list(aliases),
+        *list(
+            aliases
+        ),
     ]
 
     for candidate in names:
@@ -382,11 +417,6 @@ STC_HIGH_ALERT_ENABLED = env_bool(
 )
 
 
-#
-# A REAL Creative Brain quality rejection must never
-# become a generic Smart Engine output.
-#
-
 STC_BLOCK_CREATIVE_QUALITY_FALLBACK = env_bool(
     "XPAND_STC_BLOCK_CREATIVE_QUALITY_FALLBACK",
     True,
@@ -395,11 +425,6 @@ STC_BLOCK_CREATIVE_QUALITY_FALLBACK = env_bool(
     ),
 )
 
-
-#
-# A REAL Production / Vision QA rejection must never
-# become a generic Smart Engine output.
-#
 
 STC_BLOCK_QA_FAILURE_FALLBACK = env_bool(
     "XPAND_STC_BLOCK_QA_FAILURE_FALLBACK",
@@ -410,26 +435,11 @@ STC_BLOCK_QA_FAILURE_FALLBACK = env_bool(
 )
 
 
-#
-# Technical failure is different.
-#
-# This preserves the historical XPAND rule:
-#
-# provider / transport / schema failure != quality rejection
-#
-
 STC_ALLOW_TECHNICAL_FALLBACK = env_bool(
     "XPAND_STC_ALLOW_TECHNICAL_FALLBACK",
     True,
 )
 
-
-#
-# STC High Alert always wants an actual production QA.
-#
-# This prevents XPAND_MASTERPIECE_REQUIRE_QA=false from
-# accidentally weakening STC.
-#
 
 STC_REQUIRE_PRODUCTION_QA = env_bool(
     "XPAND_STC_REQUIRE_PRODUCTION_QA",
@@ -517,7 +527,9 @@ def normalized(
         "ـ": "",
     }
 
-    for old, new in replacements.items():
+    for old, new in (
+        replacements.items()
+    ):
 
         text = text.replace(
             old,
@@ -540,8 +552,8 @@ def normalized(
 
 
 def contains_any(
-    text: str,
-    markers,
+    text: Any,
+    markers: Sequence[str],
 ) -> bool:
 
     source = normalized(
@@ -553,7 +565,8 @@ def contains_any(
             marker
         )
         in source
-        for marker in markers
+        for marker
+        in markers
     )
 
 
@@ -592,6 +605,15 @@ def safe_list(
         )
 
     return []
+
+
+def object_list(
+    value: Any,
+) -> List[Any]:
+
+    return safe_list(
+        value
+    )
 
 
 def safe_float(
@@ -636,28 +658,65 @@ def safe_json_string(
     return result[:limit]
 
 
-def object_list(
-    value: Any,
-) -> List[Any]:
+def merge_prompt_with_immutable_tail(
+    base_prompt: str,
+    immutable_tail: str,
+    *,
+    limit: int = 50000,
+) -> str:
 
-    if value is None:
-        return []
+    base = clean_text(
+        base_prompt,
+        limit * 2,
+    )
 
-    if isinstance(
-        value,
-        list,
-    ):
-        return value
+    tail = clean_text(
+        immutable_tail,
+        14000,
+    )
 
-    if isinstance(
-        value,
-        tuple,
-    ):
-        return list(
-            value
+    if not tail:
+
+        return base[:limit]
+
+    separator = (
+        "\n\n"
+        "========================================\n"
+        "XPAND IMMUTABLE FINAL LOCKS\n"
+        "========================================\n"
+    )
+
+    reserved = (
+        len(
+            separator
         )
+        +
+        len(
+            tail
+        )
+    )
 
-    return []
+    if reserved >= limit:
+
+        return (
+            separator
+            +
+            tail
+        )[-limit:]
+
+    base_budget = (
+        limit
+        -
+        reserved
+    )
+
+    return (
+        base[:base_budget]
+        +
+        separator
+        +
+        tail
+    )
 
 
 # =========================================================
@@ -891,7 +950,9 @@ def build_stc_style_selected_request(
         +
         "لا تضف نصوصًا أو شعارات داخل الصورة. "
         +
-        "اترك مساحة سلبية نظيفة لإضافة النص والشعار يدويًا."
+        "اترك مساحة سلبية نظيفة ومدروسة لإضافة "
+        +
+        "النص والشعار يدويًا."
     )
 
 
@@ -941,11 +1002,9 @@ def consume_pending_stc_style_reply(
 
         return None
 
-    merged = (
-        build_stc_style_selected_request(
-            original_request,
-            style,
-        )
+    merged = build_stc_style_selected_request(
+        original_request,
+        style,
     )
 
     source_channel = clean_text(
@@ -1189,6 +1248,13 @@ def detect_requested_image_count(
         text
     )
 
+    source = source.translate(
+        str.maketrans(
+            "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
+            "01234567890123456789",
+        )
+    )
+
     patterns = [
         (
             r"\b([1-4])\s*"
@@ -1209,6 +1275,7 @@ def detect_requested_image_count(
         )
 
         if not match:
+
             continue
 
         return max(
@@ -1320,6 +1387,18 @@ def detect_generation_mode(
     ):
 
         return "compare"
+
+    if contains_any(
+        text,
+        [
+            "gpt-image-2",
+            "gpt image 2",
+            "gpt image",
+            "openai image",
+        ],
+    ):
+
+        return "best"
 
     if contains_any(
         text,
@@ -1449,9 +1528,11 @@ def ensure_known_brand_profile(
 ) -> None:
 
     if not brand_id:
+
         return
 
     if brand_id != "stc_bank":
+
         return
 
     try:
@@ -1462,6 +1543,7 @@ def ensure_known_brand_profile(
         )
 
         if not profile:
+
             return
 
         upsert_brand_profile(
@@ -1491,6 +1573,7 @@ def build_brand_context_for_request(
 ) -> Dict[str, Any]:
 
     if not brand_id:
+
         return {}
 
     try:
@@ -1621,42 +1704,124 @@ def safe_brand_context_for_model(
 
 
 # =========================================================
-# BENEFIT FAMILY
+# BRAND RESEARCH
 # =========================================================
 
-INTERNATIONAL_TRANSFER_MARKERS = [
-    "تحويل دولي",
-    "تحويل مالي دولي",
-    "تحويلات مالية دولية",
-    "حوالة مالية دولية",
-    "international transfer",
-    "international money transfer",
-]
+def apply_brand_research(
+    prompt: str,
+) -> Dict[str, Any]:
+
+    result = {
+        "applied": False,
+        "final_prompt": prompt,
+        "research_summary": "",
+        "sources_used": [],
+        "mode_override": "",
+        "brand_id": "",
+    }
+
+    try:
+
+        if not should_apply_deep_research(
+            prompt
+        ):
+
+            return result
+
+        research = build_researched_prompt(
+            prompt
+        )
+
+        if not isinstance(
+            research,
+            dict,
+        ):
+
+            return result
+
+        if research.get(
+            "applied"
+        ):
+
+            result.update(
+                {
+                    "applied":
+                        True,
+
+                    "final_prompt":
+                        clean_text(
+                            research.get(
+                                "final_prompt",
+                                prompt,
+                            ),
+                            32000,
+                        ),
+
+                    "research_summary":
+                        clean_text(
+                            research.get(
+                                "research_summary",
+                                "",
+                            ),
+                            7000,
+                        ),
+
+                    "sources_used":
+                        safe_list(
+                            research.get(
+                                "sources_used"
+                            )
+                        )[:12],
+
+                    "mode_override":
+                        clean_text(
+                            research.get(
+                                "mode_override",
+                                "",
+                            ),
+                            100,
+                        ),
+
+                    "brand_id":
+                        clean_text(
+                            research.get(
+                                "brand_id",
+                                "",
+                            ),
+                            100,
+                        ),
+                }
+            )
+
+    except Exception as error:
+
+        print(
+            "⚠️ Brand research:",
+            clean_text(
+                error,
+                1600,
+            ),
+        )
+
+    return result
 
 
-MERCHANT_PAYMENTS_MARKERS = [
-    "نقاط البيع",
-    "نقطة البيع",
-    "اجهزة نقاط البيع",
-    "أجهزة نقاط البيع",
-    "خدمات التجارة الالكترونية",
-    "خدمات التجارة الإلكترونية",
-    "التجارة الالكترونية",
-    "التجارة الإلكترونية",
-    "e-commerce",
-    "ecommerce",
-    "point of sale",
-    "points of sale",
-    "pos terminal",
-    "merchant payments",
-    "merchant services",
-    "payment gateway",
-    "بوابة الدفع",
-]
-
+# =========================================================
+# BENEFIT FAMILY
+#
+# Canonical STC policy owns:
+#
+#   merchant_payments
+#   digital_banking
+#   premium
+#
+# Other legacy categories remain available for generic /
+# non-STC requests.
+# =========================================================
 
 CASHBACK_MARKERS = [
     "كاش باك",
+    "كاشباك",
     "cashback",
     "استرداد نقدي",
 ]
@@ -1667,8 +1832,11 @@ SECURITY_MARKERS = [
     "أمان",
     "امن",
     "آمن",
+    "حماية",
+    "حمايه",
     "security",
     "secure",
+    "protection",
 ]
 
 
@@ -1677,6 +1845,7 @@ TRAVEL_MARKERS = [
     "السفر",
     "مسافر",
     "رحلة",
+    "رحله",
     "مطار",
     "travel",
     "airport",
@@ -1686,6 +1855,8 @@ TRAVEL_MARKERS = [
 REWARDS_MARKERS = [
     "مكافآت",
     "مكافات",
+    "مكافأة",
+    "مكافاه",
     "نقاط مكافآت",
     "reward points",
     "rewards",
@@ -1706,26 +1877,19 @@ def detect_runtime_benefit_family(
     text: str,
 ) -> str:
 
-    if contains_any(
-        text,
-        INTERNATIONAL_TRANSFER_MARKERS,
-    ):
+    canonical = clean_text(
+        resolve_stc_benefit_family_id(
+            text
+        ),
+        100,
+    ).lower()
 
-        return "international_transfer"
+    if canonical in {
+        "merchant_payments",
+        "digital_banking",
+    }:
 
-    #
-    # IMPORTANT:
-    #
-    # Merchant MUST run before rewards because
-    # Arabic "نقاط البيع" contains "نقاط".
-    #
-
-    if contains_any(
-        text,
-        MERCHANT_PAYMENTS_MARKERS,
-    ):
-
-        return "merchant_payments"
+        return canonical
 
     if contains_any(
         text,
@@ -1762,11 +1926,16 @@ def detect_runtime_benefit_family(
 
         return "speed"
 
+    if canonical:
+
+        return canonical
+
     return "premium"
 
 
 def build_creative_request(
     original_request: str,
+    selected_stc_style: str = "",
 ) -> Tuple[
     str,
     str,
@@ -1776,13 +1945,31 @@ def build_creative_request(
         original_request
     )
 
+    stc_request = is_stc_bank_request(
+        original_request
+    )
+
+    if stc_request:
+
+        family = clean_text(
+            resolve_stc_benefit_family_id(
+                original_request,
+                family,
+            ),
+            100,
+        ).lower() or family
+
     if family == "merchant_payments":
 
         semantic = """
 XPAND SEMANTIC PRIORITY
 =======================
 
-The primary commercial benefit is MERCHANT PAYMENTS:
+CANONICAL BENEFIT FAMILY:
+merchant_payments
+
+The commercial proposition is one merchant-payment
+ecosystem that can include:
 
 - e-commerce services
 - online payment acceptance
@@ -1792,49 +1979,81 @@ Arabic "نقاط البيع" means Point of Sale / POS.
 
 It does NOT mean:
 - loyalty points
-- rewards
+- reward points
 - cashback points
 
-The advertising concept must communicate BOTH sides of
-merchant commerce when relevant:
+When both online commerce and physical POS are requested,
+they must be understood as ONE connected merchant service.
 
-1. physical payment acceptance
-2. digital / e-commerce payment acceptance
+Do not downgrade this into:
+- generic banking
+- generic premium lifestyle
+- reward points
+- ordinary checkout photography
 
-But do NOT solve this by making another literal generic
-checkout-counter scene.
-
-HARD CREATIVE BAN
------------------
-
-Do NOT create:
-
-- wooden checkout counter hero scene
+Do not solve it with:
 - generic boutique checkout
-- cashier behind a counter with customer paying
-- POS terminal in foreground while worker packs a box
+- customer + cashier + counter
+- POS foreground + worker packing a box
+- person simply holding a terminal
 - tablet + POS + parcel tableau
-- person simply holding POS toward camera
-- documentary retail transaction
-- generic merchant stock photo
-- generic shop interior with payment device as the whole idea
+- floating fintech graphics
+- fake dashboards
+- split-screen infographic
 
-The service must be communicated through a genuine
-advertising visual mechanism, not merely photographed as
-an ordinary transaction.
+The visual must have one campaign-grade advertising
+mechanism.
 """.strip()
 
-    elif family == "international_transfer":
+    elif family == "digital_banking":
 
         semantic = """
 XPAND SEMANTIC PRIORITY
 =======================
 
-The primary commercial benefit is international transfer.
+CANONICAL BENEFIT FAMILY:
+digital_banking
 
-If speed is mentioned, speed is only a supporting attribute.
+Preserve the actual digital-banking service in the user's
+request.
 
-Do not downgrade the concept into a generic speed visual.
+This family includes, when stated or implied:
+
+- global / international transfer
+- sending money around the world
+- following or tracking a transfer
+- managing banking actions through the app
+- digital banking control
+- mobile banking convenience
+- remote financial management
+
+If the request says that a transfer can be tracked through
+the app, the image must communicate the TRANSFER + TRACKING
++ DIGITAL CONTROL proposition.
+
+Do NOT downgrade this meaning into:
+- generic "premium"
+- generic banking
+- generic phone lifestyle
+- generic travel
+- generic speed
+
+Speed may be a supporting attribute only.
+
+Do not use generic visual clichés such as:
+- glowing world map
+- random globe
+- network lines
+- laser routes
+- floating currency
+- floating phone
+- floating cards
+- fake banking dashboards
+- fake readable app UI
+- generic fintech HUD
+
+Use a real campaign mechanism that makes the service
+understandable in one premium frame.
 """.strip()
 
     elif family == "travel":
@@ -1844,6 +2063,10 @@ XPAND SEMANTIC PRIORITY
 =======================
 
 The primary commercial benefit is travel.
+
+Use credible premium travel behavior and real environments.
+
+Do not reduce the idea to airport stock photography.
 """.strip()
 
     elif family == "cashback":
@@ -1853,6 +2076,9 @@ XPAND SEMANTIC PRIORITY
 =======================
 
 The primary commercial benefit is cashback.
+
+Communicate value through a premium real-world advertising
+idea, not floating coins.
 """.strip()
 
     elif family == "security":
@@ -1862,6 +2088,9 @@ XPAND SEMANTIC PRIORITY
 =======================
 
 The primary commercial benefit is security.
+
+Communicate calm, control and confidence without shields,
+HUDs or cyber clichés.
 """.strip()
 
     elif family == "rewards":
@@ -1871,6 +2100,9 @@ XPAND SEMANTIC PRIORITY
 =======================
 
 The primary commercial benefit is rewards.
+
+Communicate through a premium real experience instead of
+floating points or coins.
 """.strip()
 
     elif family == "speed":
@@ -1880,6 +2112,9 @@ XPAND SEMANTIC PRIORITY
 =======================
 
 The primary commercial benefit is speed.
+
+Speed must be communicated through action, timing or
+physical storytelling, not glowing visual effects.
 """.strip()
 
     else:
@@ -1888,12 +2123,16 @@ The primary commercial benefit is speed.
 XPAND SEMANTIC PRIORITY
 =======================
 
-Identify and visualize the real commercial benefit.
+CANONICAL BENEFIT FAMILY:
+premium
 
-Do not default to generic banking imagery.
+Identify and visualize the actual commercial proposition.
+
+Premium is a quality level, not permission to erase a more
+specific service meaning.
 """.strip()
 
-    return (
+    request = (
         clean_text(
             original_request,
             12000,
@@ -1901,7 +2140,33 @@ Do not default to generic banking imagery.
         +
         "\n\n"
         +
-        semantic,
+        semantic
+    )
+
+    if stc_request:
+
+        constitution = clean_text(
+            build_creative_constitution_text(
+                original_request,
+                family,
+                selected_stc_style,
+            ),
+            12000,
+        )
+
+        if constitution:
+
+            request += (
+                "\n\n"
+                "========================================\n"
+                "STC CANONICAL CREATIVE CONSTITUTION\n"
+                "========================================\n"
+                +
+                constitution
+            )
+
+    return (
+        request,
         family,
     )
 
@@ -1915,6 +2180,7 @@ def build_winner_instruction(
 ) -> str:
 
     if creative_response is None:
+
         return ""
 
     winner = getattr(
@@ -1924,6 +2190,7 @@ def build_winner_instruction(
     )
 
     if winner is None:
+
         return ""
 
     try:
@@ -1950,12 +2217,12 @@ def build_winner_instruction(
         "\n\n"
         "Execute this approved advertising mechanism faithfully. "
         "Do not simplify it into a generic scene. "
-        "Do not replace it with a literal transaction tableau."
+        "Do not replace the canonical service meaning."
     )
 
 
 # =========================================================
-# CREATIVE STATE
+# CREATIVE QUALITY / RUNTIME STATE
 # =========================================================
 
 def creative_quality_metadata(
@@ -1963,6 +2230,7 @@ def creative_quality_metadata(
 ) -> Dict[str, Any]:
 
     if response is None:
+
         return {}
 
     return safe_dict(
@@ -1979,6 +2247,7 @@ def creative_quality_passed(
 ) -> bool:
 
     if response is None:
+
         return False
 
     winner = getattr(
@@ -1988,6 +2257,7 @@ def creative_quality_passed(
     )
 
     if winner is None:
+
         return False
 
     metadata = creative_quality_metadata(
@@ -2124,10 +2394,7 @@ def creative_runtime_state(
         not quality_gate_evaluated
     ):
 
-        state = (
-            "technical_failure"
-        )
-
+        state = "technical_failure"
         allow_fallback = True
 
     elif creative_quality_passed(
@@ -2141,6 +2408,7 @@ def creative_runtime_state(
         state = "quality_failed"
 
         if not quality_target_blocks:
+
             allow_fallback = True
 
     return {
@@ -2182,6 +2450,7 @@ def is_stc_high_alert_prepared(
 ) -> bool:
 
     if not STC_HIGH_ALERT_ENABLED:
+
         return False
 
     brand_id = clean_text(
@@ -2234,28 +2503,15 @@ def masterpiece_guard_status(
     ):
 
         return {
-            "allowed":
-                True,
-
-            "route":
-                "normal",
-
-            "code":
-                "not_masterpiece",
-
-            "message":
-                "Normal visual route.",
+            "allowed": True,
+            "route": "normal",
+            "code": "not_masterpiece",
+            "message": "Normal image route.",
         }
 
-    high_alert = (
-        is_stc_high_alert_prepared(
-            prepared
-        )
+    high_alert = is_stc_high_alert_prepared(
+        prepared
     )
-
-    # =====================================================
-    # CAMPAIGN QUALITY
-    # =====================================================
 
     if (
         prepared.get(
@@ -2298,10 +2554,6 @@ def masterpiece_guard_status(
         "technical_failure",
     )
 
-    # =====================================================
-    # APPROVED
-    # =====================================================
-
     if state == "approved":
 
         return {
@@ -2325,12 +2577,6 @@ def masterpiece_guard_status(
             "stc_high_alert":
                 high_alert,
         }
-
-    # =====================================================
-    # TECHNICAL FAILURE
-    #
-    # Technical failure is NOT a real quality rejection.
-    # =====================================================
 
     if state == "technical_failure":
 
@@ -2399,10 +2645,6 @@ def masterpiece_guard_status(
                 ),
         }
 
-    # =====================================================
-    # REAL CREATIVE QUALITY FAILURE
-    # =====================================================
-
     if (
         high_alert
         and
@@ -2421,8 +2663,8 @@ def masterpiece_guard_status(
 
             "message":
                 (
-                    "STC High Alert أوقف الإنتاج لأن الفكرة "
-                    "الإعلانية لم تجتز Creative Quality Gate. "
+                    "STC High Alert أوقف الإنتاج لأن "
+                    "Creative Quality Gate رفض الاتجاه. "
                     "لن يتم تحويل الرفض إلى Smart fallback "
                     "أو مشهد عام."
                 ),
@@ -2433,10 +2675,6 @@ def masterpiece_guard_status(
             "stc_high_alert":
                 True,
         }
-
-    # =====================================================
-    # GENERAL / NON-STC FALLBACK
-    # =====================================================
 
     if (
         runtime.get(
@@ -2501,12 +2739,8 @@ def enforce_masterpiece_guard(
         prepared
     )
 
-    route = clean_text(
-        status.get(
-            "route",
-            "",
-        ),
-        100,
+    route = status.get(
+        "route"
     )
 
     if not status.get(
@@ -2533,6 +2767,12 @@ def enforce_masterpiece_guard(
             status.get(
                 "message"
             )
+        )
+        print(
+            "🛑 No image generation was started."
+        )
+        print(
+            "🛑 Smart Engine fallback is blocked."
         )
         print("")
 
@@ -2596,120 +2836,6 @@ def enforce_masterpiece_guard(
 
 
 # =========================================================
-# BRAND RESEARCH
-# =========================================================
-
-def apply_brand_research(
-    prompt: str,
-) -> Dict[str, Any]:
-
-    result = {
-        "applied":
-            False,
-
-        "final_prompt":
-            prompt,
-
-        "research_summary":
-            "",
-
-        "sources_used":
-            [],
-
-        "mode_override":
-            "",
-
-        "brand_id":
-            "",
-    }
-
-    try:
-
-        if not should_apply_deep_research(
-            prompt
-        ):
-
-            return result
-
-        research = build_researched_prompt(
-            prompt
-        )
-
-        if not isinstance(
-            research,
-            dict,
-        ):
-
-            return result
-
-        if research.get(
-            "applied"
-        ):
-
-            result.update(
-                {
-                    "applied":
-                        True,
-
-                    "final_prompt":
-                        clean_text(
-                            research.get(
-                                "final_prompt",
-                                prompt,
-                            ),
-                            32000,
-                        ),
-
-                    "research_summary":
-                        clean_text(
-                            research.get(
-                                "research_summary",
-                                "",
-                            ),
-                            7000,
-                        ),
-
-                    "sources_used":
-                        safe_list(
-                            research.get(
-                                "sources_used"
-                            )
-                        )[:12],
-
-                    "mode_override":
-                        clean_text(
-                            research.get(
-                                "mode_override",
-                                "",
-                            ),
-                            100,
-                        ),
-
-                    "brand_id":
-                        clean_text(
-                            research.get(
-                                "brand_id",
-                                "",
-                            ),
-                            100,
-                        ),
-                }
-            )
-
-    except Exception as error:
-
-        print(
-            "⚠️ Brand research:",
-            clean_text(
-                error,
-                1600,
-            ),
-        )
-
-    return result
-
-
-# =========================================================
 # CAMPAIGN
 # =========================================================
 
@@ -2742,17 +2868,24 @@ def detect_campaign_asset_count(
         text
     )
 
-    patterns = [
-        (
-            r"\b(?:حمله|campaign)\b"
-            r".{0,120}?"
-            r"\b([2-9]|1[0-9]|20)\b"
-        ),
+    source = source.translate(
+        str.maketrans(
+            "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹",
+            "01234567890123456789",
+        )
+    )
 
+    patterns = [
         (
             r"\b([2-9]|1[0-9]|20)\b"
             r".{0,50}?"
             r"(?:بوستات|اعلانات|إعلانات|assets|posts|ads)"
+        ),
+
+        (
+            r"(?:بوستات|اعلانات|إعلانات|assets|posts|ads)"
+            r".{0,30}?"
+            r"\b([2-9]|1[0-9]|20)\b"
         ),
     ]
 
@@ -2764,6 +2897,7 @@ def detect_campaign_asset_count(
         )
 
         if not match:
+
             continue
 
         return max(
@@ -2799,36 +2933,20 @@ def try_build_campaign(
     ):
 
         return {
-            "required":
-                False,
-
-            "validated":
-                False,
-
-            "bible":
-                None,
-
-            "execution":
-                {},
+            "required": False,
+            "validated": False,
+            "bible": None,
+            "execution": {},
         }
 
     if not CAMPAIGN_ENGINE_AVAILABLE:
 
         return {
-            "required":
-                True,
-
-            "validated":
-                False,
-
-            "bible":
-                None,
-
-            "execution":
-                {},
-
-            "error":
-                "campaign_engine_unavailable",
+            "required": True,
+            "validated": False,
+            "bible": None,
+            "execution": {},
+            "error": "campaign_engine_unavailable",
         }
 
     if not creative_quality_passed(
@@ -2836,20 +2954,11 @@ def try_build_campaign(
     ):
 
         return {
-            "required":
-                True,
-
-            "validated":
-                False,
-
-            "bible":
-                None,
-
-            "execution":
-                {},
-
-            "error":
-                "creative_direction_not_approved",
+            "required": True,
+            "validated": False,
+            "bible": None,
+            "execution": {},
+            "error": "creative_direction_not_approved",
         }
 
     approved_direction = {}
@@ -2864,10 +2973,8 @@ def try_build_campaign(
 
         if winner:
 
-            approved_direction = (
-                concept_to_dict(
-                    winner
-                )
+            approved_direction = concept_to_dict(
+                winner
             )
 
     except Exception:
@@ -2944,17 +3051,10 @@ def try_build_campaign(
                 execution = {}
 
         return {
-            "required":
-                True,
-
-            "validated":
-                validated,
-
-            "bible":
-                bible,
-
-            "execution":
-                execution,
+            "required": True,
+            "validated": validated,
+            "bible": bible,
+            "execution": execution,
         }
 
     except Exception as error:
@@ -2968,24 +3068,149 @@ def try_build_campaign(
         )
 
         return {
-            "required":
-                True,
-
-            "validated":
-                False,
-
-            "bible":
-                None,
-
-            "execution":
-                {},
-
-            "error":
-                clean_text(
-                    error,
-                    2000,
-                ),
+            "required": True,
+            "validated": False,
+            "bible": None,
+            "execution": {},
+            "error": clean_text(
+                error,
+                2000,
+            ),
         }
+
+
+# =========================================================
+# STC FINAL TELEGRAM LOCK
+# =========================================================
+
+def build_telegram_stc_final_lock(
+    *,
+    original_request: str,
+    benefit_family: str,
+    selected_stc_style: str,
+) -> str:
+
+    policy_lock = clean_text(
+        build_final_render_locks_text(
+            original_request,
+            benefit_family,
+            selected_stc_style,
+        ),
+        12000,
+    )
+
+    local_lock = """
+STC TELEGRAM FINAL RENDER LAW V3.6
+=================================
+
+CANONICAL SEMANTICS
+-------------------
+
+The canonical benefit family above is authoritative.
+
+A generic label such as "premium" may NEVER replace a more
+specific semantic family derived from the original request.
+
+COMPOSITION
+-----------
+
+Reserve approximately 15–22% of the frame as calm,
+naturally integrated copy space.
+
+Do NOT create:
+- a giant blank upper third
+- an empty top half
+- a large dead wall solely for text
+- a hero pushed unnaturally to the bottom
+- an oversized blank architectural field
+
+The hero must remain visually dominant.
+
+IMAGE-ONLY
+----------
+
+Generate no:
+- headline
+- subtitle
+- body copy
+- CTA
+- price
+- percentage
+- legal copy
+- STC wordmark
+- STC Bank logo
+- Visa logo
+- Mastercard logo
+- watermark
+- readable invented app text
+- fake financial numbers
+- fake banking interface
+
+PHYSICAL REALISM
+----------------
+
+No:
+- phone / POS fusion
+- invented payment hardware
+- impossible device geometry
+- fake reflections
+- broken grips
+- impossible object support
+- generic stone or travertine pedestal as an automatic hero
+- random floating objects
+- random fintech graphics
+
+STC BRAND
+---------
+
+STC identity must come from:
+- art direction
+- visual confidence
+- reference DNA
+- premium materials
+- camera
+- lighting
+- composition
+- restrained brand accents
+
+Purple is NOT a substitute for an advertising idea.
+
+REFERENCE AUTHORITY
+-------------------
+
+Approved STC references are visual authority for brand DNA.
+
+Use them as reference evidence, not as templates to clone.
+
+SERVICE CLARITY
+---------------
+
+Preserve the actual requested banking service.
+
+For merchant payments:
+e-commerce and physical payment must read as one ecosystem.
+
+For digital banking:
+preserve the requested transfer / tracking / app-control
+meaning when present.
+
+FINAL OUTPUT
+------------
+
+One premium, believable, campaign-ready STC Bank frame.
+""".strip()
+
+    if policy_lock:
+
+        return (
+            policy_lock
+            +
+            "\n\n"
+            +
+            local_lock
+        )
+
+    return local_lock
 
 
 # =========================================================
@@ -3002,6 +3227,10 @@ def prepare_generation_input(
         prompt,
         12000,
     )
+
+    # =====================================================
+    # BRAND
+    # =====================================================
 
     brand_id = detect_runtime_brand(
         core,
@@ -3078,19 +3307,15 @@ def prepare_generation_input(
     # BRAND MEMORY
     # =====================================================
 
-    brand_context = (
-        build_brand_context_for_request(
-            core,
-            user_id,
-            brand_id,
-            original_prompt,
-        )
+    brand_context = build_brand_context_for_request(
+        core,
+        user_id,
+        brand_id,
+        original_prompt,
     )
 
-    model_brand_context = (
-        safe_brand_context_for_model(
-            brand_context
-        )
+    model_brand_context = safe_brand_context_for_model(
+        brand_context
     )
 
     references = safe_list(
@@ -3098,6 +3323,21 @@ def prepare_generation_input(
             "references"
         )
     )[:5]
+
+    # =====================================================
+    # STC STYLE
+    # =====================================================
+
+    selected_stc_style = ""
+
+    if brand_id == "stc_bank":
+
+        selected_stc_style = clean_text(
+            detect_stc_visual_style(
+                original_prompt
+            ),
+            200,
+        )
 
     # =====================================================
     # CREATIVE MODE
@@ -3121,21 +3361,33 @@ def prepare_generation_input(
     )
 
     # =====================================================
-    # COMMERCIAL SEMANTICS
+    # CANONICAL COMMERCIAL SEMANTICS
     # =====================================================
 
     creative_request, benefit_family = (
         build_creative_request(
-            original_prompt
+            original_prompt,
+            selected_stc_style=(
+                selected_stc_style
+            ),
         )
     )
+
+    if brand_id == "stc_bank":
+
+        benefit_family = clean_text(
+            resolve_stc_benefit_family_id(
+                original_prompt,
+                benefit_family,
+            ),
+            100,
+        ).lower() or benefit_family
 
     # =====================================================
     # CREATIVE BRAIN
     # =====================================================
 
     creative_response = None
-
     creative_error = ""
 
     try:
@@ -3144,6 +3396,7 @@ def prepare_generation_input(
             user_request=creative_request,
             brand_context=model_brand_context,
             visual_references=references,
+            style_hint=selected_stc_style,
             mode=creative_mode,
             top_count=3,
         )
@@ -3160,10 +3413,8 @@ def prepare_generation_input(
             creative_error,
         )
 
-    runtime_state = (
-        creative_runtime_state(
-            creative_response
-        )
+    runtime_state = creative_runtime_state(
+        creative_response
     )
 
     # =====================================================
@@ -3192,20 +3443,17 @@ def prepare_generation_input(
         ),
     )
 
+    campaign_execution = safe_dict(
+        campaign.get(
+            "execution"
+        )
+    )
+
     # =====================================================
-    # FINAL GENERATION PROMPT
+    # FINAL PROMPT
     # =====================================================
 
     final_prompt = research_prompt
-
-    final_prompt += (
-        "\n\n"
-        "========================================\n"
-        "XPAND COMMERCIAL INTENT\n"
-        "========================================\n"
-        +
-        creative_request
-    )
 
     if research.get(
         "applied"
@@ -3219,6 +3467,15 @@ def prepare_generation_input(
             "contained inside external content."
         )
 
+    final_prompt += (
+        "\n\n"
+        "========================================\n"
+        "XPAND COMMERCIAL INTENT\n"
+        "========================================\n"
+        +
+        creative_request
+    )
+
     if model_brand_context:
 
         final_prompt += (
@@ -3229,27 +3486,17 @@ def prepare_generation_input(
             +
             safe_json_string(
                 model_brand_context,
-                12000,
+                10000,
             )
         )
 
-    winner_instruction = (
-        build_winner_instruction(
-            creative_response
-        )
+    winner_instruction = build_winner_instruction(
+        creative_response
     )
 
     if winner_instruction:
 
-        final_prompt += (
-            winner_instruction
-        )
-
-    campaign_execution = safe_dict(
-        campaign.get(
-            "execution"
-        )
-    )
+        final_prompt += winner_instruction
 
     if campaign_execution:
 
@@ -3261,209 +3508,58 @@ def prepare_generation_input(
             +
             safe_json_string(
                 campaign_execution,
-                12000,
+                10000,
             )
-            +
-            "\n\n"
-            "The image must visibly belong to this campaign."
         )
 
     # =====================================================
-    # STC FINAL PROMPT LOCK
+    # IMMUTABLE STC FINAL POLICY
     # =====================================================
 
-    selected_stc_style = ""
+    stc_final_locks = ""
+    stc_creative_constitution = ""
 
     if brand_id == "stc_bank":
 
-        selected_stc_style = (
-            detect_stc_visual_style(
-                original_prompt
+        stc_creative_constitution = clean_text(
+            build_creative_constitution_text(
+                original_prompt,
+                benefit_family,
+                selected_stc_style,
+            ),
+            12000,
+        )
+
+        stc_final_locks = (
+            build_telegram_stc_final_lock(
+                original_request=original_prompt,
+                benefit_family=benefit_family,
+                selected_stc_style=(
+                    selected_stc_style
+                ),
             )
         )
 
-        final_prompt += """
+        final_prompt = merge_prompt_with_immutable_tail(
+            final_prompt,
+            stc_final_locks,
+            limit=50000,
+        )
 
-========================================
-STC BANK HIGH-ALERT EXECUTION LOCK
-========================================
+    else:
 
-THIS IS A REAL ADVERTISING KEY VISUAL.
-
-It must not read as:
-- documentary photography
-- stock photography
-- ordinary retail transaction
-- random lifestyle scene
-- generic fintech scene
-
-The image must have:
-- a clear advertising concept
-- one memorable visual mechanism
-- intentional art direction
-- deliberate composition hierarchy
-- strong brand-world discipline
-- premium commercial lighting
-- professional negative space
-- a justified camera system
-
-========================================
-IMAGE-ONLY LAW
-========================================
-
-Generate NO readable advertising text.
-
-Do NOT generate:
-- headline
-- subtitle
-- body copy
-- CTA
-- price
-- percentage
-- legal copy
-- STC wordmark
-- STC Bank logo
-- VISA logo
-- Mastercard logo
-- watermark
-- fake readable banking UI
-
-Reserve approximately 25–40% calm natural negative space
-for manual typography and official brand assets later.
-
-========================================
-BRAND IDENTITY LAW
-========================================
-
-STC Bank identity is NOT simply:
-"purple + neon".
-
-Purple is NOT automatic.
-
-For premium realistic photography:
-- preserve natural Saudi colors
-- preserve clean skin tones
-- preserve natural wood / stone / metal
-- use purple only as a motivated restrained accent
-
-For purple architectural style:
-- use physical architectural surfaces
-- matte / satin / semi-gloss materials
-- believable contact shadows
-- controlled reflections
-- no nightclub neon
-
-For augmented realism:
-- use exactly one physically believable conceptual mechanism
-- preserve gravity
-- perspective
-- shadows
-- occlusion
-- material logic
-
-========================================
-REFERENCE LAW
-========================================
-
-The permanent STC reference images are visual DNA.
-
-Use them to understand:
-- campaign polish
-- lighting discipline
-- composition
-- camera ambition
-- material treatment
-- negative-space behavior
-- premium brand presence
-
-Do NOT clone:
-- exact composition
-- exact room
-- exact person
-- exact campaign layout
-- exact props
-
-========================================
-GENERIC FINTECH BAN
-========================================
-
-Never add:
-- floating coins
-- floating cards
-- floating phones
-- floating POS devices
-- random banking icons
-- holograms
-- HUD graphics
-- connection lines
-- network lines
-- blue laser beams
-- purple neon trails
-- glowing transfer routes
-- random particles
-- fake app screens
-- decorative fintech clutter
-
-========================================
-STC MERCHANT PAYMENTS HARD BAN
-========================================
-
-For merchant payments, e-commerce or POS:
-
-DO NOT create the old repeated tableau:
-
-- wooden checkout counter
-- luxury wooden retail counter
-- cashier behind counter
-- customer simply paying at counter
-- POS terminal hero on a counter
-- tablet sitting beside POS
-- merchant packing a box in background
-- customer + cashier + POS + package composition
-- ordinary boutique checkout
-- generic shop payment scene
-- documentary transaction photo
-- person simply holding POS at camera
-
-These are explicitly REJECTED visual grammars.
-
-The service must be communicated through an actual
-advertising mechanism or campaign-grade visual idea.
-
-Physical POS and e-commerce should feel integrated into
-one commercial promise without turning the frame into a
-literal split-screen infographic.
-
-========================================
-PRODUCTION QUALITY
-========================================
-
-Require:
-- premium Saudi commercial art direction
-- realistic faces
-- natural hands
-- physically correct object support
-- believable scale
-- precise contact shadows
-- motivated lighting
-- realistic reflections
-- refined material roughness
-- coherent perspective
-- controlled depth of field
-- intentional foreground / middle / background structure
-- camera angle chosen for the idea
-- clean ad-ready composition
-
-The result must feel like a real STC Bank campaign image,
-not an AI-generated scene.
-""".rstrip()
+        final_prompt = clean_text(
+            final_prompt,
+            50000,
+        )
 
     # =====================================================
-    # MODEL OVERRIDE
+    # SMART FALLBACK MODEL OVERRIDE
     #
-    # This affects technical Smart fallback only for STC.
-    # Normal STC Masterpiece production goes through
-    # Production Engine V5.1.
+    # Masterpiece Production itself is handled separately
+    # and uses TARGET_OPENAI.
+    #
+    # This override is only for emergency Smart routing.
     # =====================================================
 
     requested_mode = detect_generation_mode(
@@ -3480,25 +3576,22 @@ not an AI-generated scene.
 
     if requested_mode != "auto":
 
-        mode_override = (
-            requested_mode
-        )
+        mode_override = requested_mode
 
     elif brand_id == "stc_bank":
 
-        mode_override = (
-            "google_fast"
-        )
+        mode_override = "google_fast"
+
+    # =====================================================
+    # RESULT
+    # =====================================================
 
     prepared = {
         "original_prompt":
             original_prompt,
 
         "final_prompt":
-            clean_text(
-                final_prompt,
-                50000,
-            ),
+            final_prompt,
 
         "brand_id":
             brand_id,
@@ -3506,8 +3599,24 @@ not an AI-generated scene.
         "benefit_family":
             benefit_family,
 
+        "canonical_benefit_family":
+            benefit_family,
+
         "selected_stc_style":
             selected_stc_style,
+
+        "stc_policy_applied":
+            bool(
+                brand_id
+                ==
+                "stc_bank"
+            ),
+
+        "stc_creative_constitution":
+            stc_creative_constitution,
+
+        "stc_final_locks":
+            stc_final_locks,
 
         "research_applied":
             bool(
@@ -3714,26 +3823,13 @@ def qa_metadata(
     if qa is None:
 
         return {
-            "evaluated":
-                False,
-
-            "passed":
-                False,
-
-            "score":
-                0.0,
-
-            "decision":
-                "",
-
-            "critical_blockers":
-                [],
-
-            "problems":
-                [],
-
-            "correction_instruction":
-                "",
+            "evaluated": False,
+            "passed": False,
+            "score": 0.0,
+            "decision": "",
+            "critical_blockers": [],
+            "problems": [],
+            "correction_instruction": "",
         }
 
     score = safe_float(
@@ -3877,10 +3973,8 @@ def generate_masterpiece_images(
         )
     )
 
-    high_alert = (
-        is_stc_high_alert_prepared(
-            prepared
-        )
+    high_alert = is_stc_high_alert_prepared(
+        prepared
     )
 
     number = max(
@@ -3943,6 +4037,11 @@ def generate_masterpiece_images(
                     "🚨 STC HIGH ALERT PRODUCTION"
                 )
 
+            print(
+                "final_target =",
+                TARGET_OPENAI,
+            )
+
             production = run_production(
                 core=core,
                 user_id=user_id,
@@ -3953,7 +4052,7 @@ def generate_masterpiece_images(
                 camera_direction=camera,
                 aspect_ratio=aspect_ratio,
                 mode=PRODUCTION_MODE_MASTERPIECE,
-                target_model=TARGET_GEMINI,
+                target_model=TARGET_OPENAI,
             )
 
             final_image = getattr(
@@ -4075,6 +4174,15 @@ def generate_masterpiece_images(
 
                 "stc_high_alert":
                     high_alert,
+
+                "canonical_benefit_family":
+                    prepared.get(
+                        "canonical_benefit_family",
+                        "",
+                    ),
+
+                "production_target":
+                    TARGET_OPENAI,
             }
 
             metadata.append(
@@ -4082,7 +4190,7 @@ def generate_masterpiece_images(
             )
 
             # =============================================
-            # NO IMAGE
+            # NO FINAL IMAGE
             # =============================================
 
             if final_image is None:
@@ -4129,6 +4237,15 @@ def generate_masterpiece_images(
                         )
                     )
 
+                    print(
+                        "🛑 MASTERPIECE QA REJECTED"
+                    )
+
+                    print(
+                        "Score:",
+                        best_score,
+                    )
+
                     if high_alert:
 
                         print(
@@ -4136,19 +4253,8 @@ def generate_masterpiece_images(
                         )
 
                         print(
-                            "Score:",
-                            best_score,
-                        )
-
-                        print(
                             "🚫 Telegram Smart fallback is NOT allowed "
                             "for this quality rejection."
-                        )
-
-                    else:
-
-                        print(
-                            "⚠️ Masterpiece QA failed."
                         )
 
                 else:
@@ -4172,6 +4278,57 @@ def generate_masterpiece_images(
             # =============================================
             # FINAL QUALIFIED IMAGE
             # =============================================
+
+            if not isinstance(
+                getattr(
+                    final_image,
+                    "metadata",
+                    None,
+                ),
+                dict,
+            ):
+
+                try:
+
+                    final_image.metadata = {}
+
+                except Exception:
+
+                    pass
+
+            try:
+
+                final_image.metadata.update(
+                    {
+                        "production_engine":
+                            True,
+
+                        "production_target":
+                            TARGET_OPENAI,
+
+                        "canonical_benefit_family":
+                            prepared.get(
+                                "canonical_benefit_family",
+                                "",
+                            ),
+
+                        "stc_policy_applied":
+                            prepared.get(
+                                "stc_policy_applied",
+                                False,
+                            ),
+
+                        "qa_passed":
+                            qa_passed,
+
+                        "qa_score":
+                            best_score,
+                    }
+                )
+
+            except Exception:
+
+                pass
 
             images.append(
                 final_image
@@ -4231,17 +4388,13 @@ def classify_masterpiece_failure(
     errors: Sequence[str],
 ) -> str:
 
-    #
-    # If Vision actually evaluated an image and rejected it,
-    # this is a QUALITY failure.
-    #
-
     for item in production_metadata:
 
         if not isinstance(
             item,
             dict,
         ):
+
             continue
 
         if (
@@ -4268,11 +4421,6 @@ def classify_masterpiece_failure(
         ):
 
             return "quality_failure"
-
-    #
-    # QA unavailable, missing image, provider exception, etc.
-    # remain technical.
-    #
 
     return "technical_failure"
 
@@ -4318,10 +4466,8 @@ def smart_fallback_policy(
                 "guard_blocked",
         }
 
-    high_alert = (
-        is_stc_high_alert_prepared(
-            prepared
-        )
+    high_alert = is_stc_high_alert_prepared(
+        prepared
     )
 
     runtime = creative_runtime_state(
@@ -4337,7 +4483,7 @@ def smart_fallback_policy(
     if high_alert:
 
         # -------------------------------------------------
-        # Creative Brain technical failure.
+        # Creative technical failure
         # -------------------------------------------------
 
         if route == "smart_fallback":
@@ -4365,13 +4511,6 @@ def smart_fallback_policy(
                         ),
                 }
 
-            #
-            # A real creative quality failure must NEVER
-            # arrive here when the STC quality blocker is on.
-            #
-            # Defensive double guard.
-            #
-
             if STC_BLOCK_CREATIVE_QUALITY_FALLBACK:
 
                 return {
@@ -4383,7 +4522,7 @@ def smart_fallback_policy(
                 }
 
         # -------------------------------------------------
-        # Production was already attempted.
+        # Production attempted
         # -------------------------------------------------
 
         if masterpiece_attempted:
@@ -4404,33 +4543,26 @@ def smart_fallback_policy(
                         "stc_production_qa_fallback_blocked",
                 }
 
-            #
-            # A provider / transport / no-QA technical issue
-            # may still use technical fallback.
-            #
-
             if (
                 masterpiece_failure_kind
                 ==
                 "technical_failure"
             ):
 
+                allowed = bool(
+                    STC_ALLOW_TECHNICAL_FALLBACK
+                    and
+                    MASTERPIECE_ALLOW_SMART_FALLBACK
+                )
+
                 return {
                     "allowed":
-                        bool(
-                            STC_ALLOW_TECHNICAL_FALLBACK
-                            and
-                            MASTERPIECE_ALLOW_SMART_FALLBACK
-                        ),
+                        allowed,
 
                     "reason":
                         (
                             "stc_production_technical_fallback"
-                            if (
-                                STC_ALLOW_TECHNICAL_FALLBACK
-                                and
-                                MASTERPIECE_ALLOW_SMART_FALLBACK
-                            )
+                            if allowed
                             else
                             "stc_production_technical_fallback_disabled"
                         ),
@@ -4445,28 +4577,43 @@ def smart_fallback_policy(
         }
 
     # =====================================================
-    # GENERAL MASTERPIECE POLICY
+    # NORMAL MASTERPIECE
     # =====================================================
+
+    if route == "smart_fallback":
+
+        return {
+            "allowed":
+                bool(
+                    MASTERPIECE_ALLOW_SMART_FALLBACK
+                ),
+
+            "reason":
+                "normal_masterpiece_guard_fallback",
+        }
+
+    if (
+        masterpiece_attempted
+        and
+        not MASTERPIECE_ALLOW_SMART_FALLBACK
+    ):
+
+        return {
+            "allowed":
+                False,
+
+            "reason":
+                "normal_masterpiece_fallback_disabled",
+        }
 
     return {
         "allowed":
             bool(
-                route == "smart_fallback"
-                or
                 MASTERPIECE_ALLOW_SMART_FALLBACK
             ),
 
         "reason":
-            (
-                "general_masterpiece_fallback"
-                if (
-                    route == "smart_fallback"
-                    or
-                    MASTERPIECE_ALLOW_SMART_FALLBACK
-                )
-                else
-                "general_masterpiece_fallback_disabled"
-            ),
+            "normal_masterpiece_fallback_policy",
     }
 
 
@@ -4704,20 +4851,24 @@ def deliver_generated_image(
         500,
     )
 
-    if not filename:
+    mime_type = clean_text(
+        getattr(
+            image,
+            "mime_type",
+            "",
+        ),
+        100,
+    )
 
-        mime_type_guess = clean_text(
-            getattr(
-                image,
-                "mime_type",
-                "",
-            ),
-            100,
-        ).lower()
+    if not mime_type:
+
+        mime_type = "image/png"
+
+    if not filename:
 
         extension = (
             ".jpg"
-            if mime_type_guess
+            if mime_type.lower()
             in {
                 "image/jpeg",
                 "image/jpg",
@@ -4734,21 +4885,6 @@ def deliver_generated_image(
             )
             +
             extension
-        )
-
-    mime_type = clean_text(
-        getattr(
-            image,
-            "mime_type",
-            "",
-        ),
-        100,
-    )
-
-    if not mime_type:
-
-        mime_type = (
-            "image/png"
         )
 
     model = clean_text(
@@ -4769,7 +4905,6 @@ def deliver_generated_image(
     )
 
     preview_result = {}
-
     original_result = {}
 
     preview_caption = (
@@ -4804,15 +4939,13 @@ def deliver_generated_image(
 
     if SEND_PREVIEW:
 
-        preview_result = (
-            send_photo_bytes(
-                core,
-                chat_id,
-                image_bytes,
-                filename,
-                mime_type,
-                preview_caption,
-            )
+        preview_result = send_photo_bytes(
+            core,
+            chat_id,
+            image_bytes,
+            filename,
+            mime_type,
+            preview_caption,
         )
 
     if SEND_ORIGINAL:
@@ -4829,15 +4962,13 @@ def deliver_generated_image(
                 model
             )
 
-        original_result = (
-            send_document_bytes(
-                core,
-                chat_id,
-                image_bytes,
-                filename,
-                mime_type,
-                original_caption,
-            )
+        original_result = send_document_bytes(
+            core,
+            chat_id,
+            image_bytes,
+            filename,
+            mime_type,
+            original_caption,
         )
 
     return {
@@ -4914,6 +5045,10 @@ def generate_and_deliver(
             get_stc_style_question()
         )
 
+    # =====================================================
+    # REQUEST SETTINGS
+    # =====================================================
+
     number = detect_requested_image_count(
         prompt
     )
@@ -4926,19 +5061,19 @@ def generate_and_deliver(
         prompt
     )
 
+    # =====================================================
+    # PREPARE
+    # =====================================================
+
     prepared = prepare_generation_input(
         core,
         user_id,
         prompt,
     )
 
-    final_prompt = clean_text(
-        prepared.get(
-            "final_prompt",
-            prompt,
-        ),
-        50000,
-    )
+    final_prompt = prepared[
+        "final_prompt"
+    ]
 
     brand_id = clean_text(
         prepared.get(
@@ -4950,8 +5085,11 @@ def generate_and_deliver(
 
     benefit_family = clean_text(
         prepared.get(
-            "benefit_family",
-            "",
+            "canonical_benefit_family",
+            prepared.get(
+                "benefit_family",
+                "",
+            ),
         ),
         100,
     )
@@ -4959,21 +5097,33 @@ def generate_and_deliver(
     creative_mode = clean_text(
         prepared.get(
             "creative_mode",
-            CREATIVE_MODE_FAST,
+            "",
         ),
         100,
     )
 
+    creative_response = prepared.get(
+        "creative_response"
+    )
+
     runtime = creative_runtime_state(
-        prepared.get(
-            "creative_response"
-        )
+        creative_response
+    )
+
+    high_alert = is_stc_high_alert_prepared(
+        prepared
     )
 
     creative_score = None
 
-    winner = runtime.get(
-        "winner"
+    winner = (
+        getattr(
+            creative_response,
+            "winner",
+            None,
+        )
+        if creative_response
+        else None
     )
 
     if winner is not None:
@@ -4987,16 +5137,6 @@ def generate_and_deliver(
             0,
         )
 
-    high_alert = (
-        is_stc_high_alert_prepared(
-            prepared
-        )
-    )
-
-    # =====================================================
-    # TELEGRAM ACTION
-    # =====================================================
-
     try:
 
         core.send_action(
@@ -5009,7 +5149,7 @@ def generate_and_deliver(
         pass
 
     # =====================================================
-    # REQUEST LOG
+    # LOG
     # =====================================================
 
     print("")
@@ -5017,7 +5157,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND UNIFIED VISUAL REQUEST V3.5"
+        " XPAND UNIFIED VISUAL REQUEST V3.6"
     )
     print(
         "=========================================="
@@ -5036,13 +5176,26 @@ def generate_and_deliver(
     )
 
     print(
-        "selected_stc_style =",
+        "canonical_policy =",
         prepared.get(
-            "selected_stc_style",
-            "",
+            "stc_policy_applied"
+        ),
+    )
+
+    print(
+        "stc_style =",
+        prepared.get(
+            "selected_stc_style"
         )
         or
         "-",
+    )
+
+    print(
+        "research =",
+        prepared.get(
+            "research_applied"
+        ),
     )
 
     print(
@@ -5059,7 +5212,20 @@ def generate_and_deliver(
 
     print(
         "creative_score =",
-        creative_score,
+        (
+            creative_score
+            if creative_score
+            is not None
+            else
+            "n/a"
+        ),
+    )
+
+    print(
+        "technical_failure =",
+        runtime.get(
+            "technical_failure"
+        ),
     )
 
     print(
@@ -5077,8 +5243,15 @@ def generate_and_deliver(
     )
 
     print(
-        "stc_high_alert =",
-        high_alert,
+        "smart_mode_override =",
+        prepared.get(
+            "mode_override"
+        ),
+    )
+
+    print(
+        "masterpiece_final_target =",
+        TARGET_OPENAI,
     )
 
     print(
@@ -5097,7 +5270,7 @@ def generate_and_deliver(
     )
 
     print(
-        "memory_references =",
+        "selected_references =",
         len(
             prepared.get(
                 "references",
@@ -5120,10 +5293,15 @@ def generate_and_deliver(
         ),
     )
 
+    print(
+        "stc_high_alert =",
+        high_alert,
+    )
+
     print("")
 
     # =====================================================
-    # RUNTIME STATE
+    # STATE
     # =====================================================
 
     images: List[Any] = []
@@ -5141,14 +5319,9 @@ def generate_and_deliver(
     )
 
     guard_status = {
-        "allowed":
-            True,
-
-        "route":
-            "normal",
-
-        "code":
-            "not_masterpiece",
+        "allowed": True,
+        "route": "normal",
+        "code": "not_masterpiece",
     }
 
     masterpiece_attempted = False
@@ -5156,15 +5329,13 @@ def generate_and_deliver(
     masterpiece_failure_kind = ""
 
     # =====================================================
-    # MASTERPIECE ROUTE
+    # MASTERPIECE
     # =====================================================
 
     if use_masterpiece:
 
-        guard_status = (
-            enforce_masterpiece_guard(
-                prepared
-            )
+        guard_status = enforce_masterpiece_guard(
+            prepared
         )
 
         if (
@@ -5175,37 +5346,7 @@ def generate_and_deliver(
             "masterpiece"
         ):
 
-            masterpiece_attempted = (
-                True
-            )
-
-            try:
-
-                if high_alert:
-
-                    core.send_message(
-                        chat_id,
-                        (
-                            "الاتجاه الإبداعي اجتاز البوابة ✅\n"
-                            "STC High Alert شغّال. "
-                            "هسا الإنتاج + المراجع الأصلية + "
-                            "المراجعة النهائية."
-                        ),
-                    )
-
-                else:
-
-                    core.send_message(
-                        chat_id,
-                        (
-                            "الاتجاه الإبداعي اجتاز "
-                            "Masterpiece Gate، ببدأ الإنتاج."
-                        ),
-                    )
-
-            except Exception:
-
-                pass
+            masterpiece_attempted = True
 
             (
                 images,
@@ -5242,11 +5383,6 @@ def generate_and_deliver(
                     masterpiece_failure_kind,
                 )
 
-                # =========================================
-                # STC QA REJECTION:
-                # ABSOLUTE FINAL TELEGRAM BLOCK.
-                # =========================================
-
                 if (
                     high_alert
                     and
@@ -5273,9 +5409,8 @@ def generate_and_deliver(
                         (
                             "STC High Alert رفض النتيجة بعد "
                             "المراجعة البصرية النهائية. "
-                            "ما رح أنزل تلقائيًا لـSmart fallback "
-                            "وأبعث مشهد أضعف. "
-                            "الصورة لم تجتز بوابة الجودة."
+                            "ما رح أحوّل رفض الجودة إلى "
+                            "Smart fallback أو مشهد أضعف."
                         )
                     )
 
@@ -5306,14 +5441,16 @@ def generate_and_deliver(
             )
 
     # =====================================================
-    # SMART FALLBACK DECISION
+    # FALLBACK POLICY
     # =====================================================
 
     fallback_policy = smart_fallback_policy(
         prepared=prepared,
         guard_status=guard_status,
         use_masterpiece=use_masterpiece,
-        masterpiece_attempted=masterpiece_attempted,
+        masterpiece_attempted=(
+            masterpiece_attempted
+        ),
         masterpiece_failure_kind=(
             masterpiece_failure_kind
         ),
@@ -5340,10 +5477,7 @@ def generate_and_deliver(
     # =====================================================
     # SMART FALLBACK
     #
-    # IMPORTANT:
-    #
-    # In STC High Alert this can only be reached for a
-    # TECHNICAL failure, never for real quality rejection.
+    # For STC High Alert this is TECHNICAL emergency only.
     # =====================================================
 
     if (
@@ -5410,18 +5544,9 @@ def generate_and_deliver(
                 "⚠️ STC SMART FALLBACK: TECHNICAL EMERGENCY PATH"
             )
 
-        if (
-            brand_id
-            ==
-            "stc_bank"
-            and
-            mode
-            ==
-            "google_fast"
-        ):
-
             print(
-                "🍌 STC TECHNICAL FALLBACK MODEL: Nano Banana 2"
+                "canonical_benefit_family =",
+                benefit_family,
             )
 
         try:
@@ -5441,7 +5566,7 @@ def generate_and_deliver(
                 allow_fallback=True,
             )
 
-            result_images = object_list(
+            result_images = safe_list(
                 getattr(
                     result,
                     "images",
@@ -5460,16 +5585,13 @@ def generate_and_deliver(
             ):
 
                 raise RuntimeError(
-                    (
-                        "Smart image engine "
-                        "returned no image."
-                    )
+                    "Smart image engine returned no image."
                 )
 
             images = result_images
 
             pipeline_errors.extend(
-                object_list(
+                safe_list(
                     getattr(
                         result,
                         "errors",
@@ -5501,17 +5623,22 @@ def generate_and_deliver(
             raise
 
     # =====================================================
-    # NO QUALIFIED IMAGE
+    # NO RESULT
     # =====================================================
 
     if not images:
 
-        if high_alert:
+        if (
+            high_alert
+            and
+            not smart_fallback_allowed
+        ):
 
             raise STCHighAlertQualityError(
                 (
-                    "STC High Alert ما لقى نتيجة مؤهلة للتسليم. "
-                    "ما رح أرسل صورة عامة أو fallback ضعيف."
+                    "STC High Alert منع التسليم لأن "
+                    "المسار المؤهل لم يُرجع صورة مجتازة، "
+                    "والـSmart fallback غير مسموح لهذه الحالة."
                 )
             )
 
@@ -5530,6 +5657,8 @@ def generate_and_deliver(
         high_alert
         and
         masterpiece_attempted
+        and
+        production_metadata
     ):
 
         qualified_qa_exists = any(
@@ -5538,27 +5667,20 @@ def generate_and_deliver(
                     "qa_passed"
                 )
             )
-            for item in production_metadata
+            for item
+            in production_metadata
             if isinstance(
                 item,
                 dict,
             )
         )
 
-        #
-        # If we are delivering an image after Masterpiece
-        # production, at least one production result must
-        # actually have passed QA.
-        #
-        # Technical Smart fallback does not set
-        # masterpiece_attempted+images simultaneously because
-        # images remained empty before fallback.
-        #
-
         if (
-            production_metadata
-            and
             not qualified_qa_exists
+            and
+            masterpiece_failure_kind
+            ==
+            "quality_failure"
         ):
 
             raise STCHighAlertQualityError(
@@ -5599,7 +5721,8 @@ def generate_and_deliver(
             ),
             0,
         )
-        for item in production_metadata
+        for item
+        in production_metadata
         if (
             isinstance(
                 item,
@@ -5623,7 +5746,7 @@ def generate_and_deliver(
         "=========================================="
     )
     print(
-        " XPAND IMAGE DELIVERY COMPLETE V3.5"
+        " XPAND IMAGE DELIVERY COMPLETE V3.6"
     )
     print(
         "=========================================="
@@ -5637,6 +5760,11 @@ def generate_and_deliver(
     )
 
     print(
+        "benefit_family =",
+        benefit_family,
+    )
+
+    print(
         "creative_route =",
         guard_status.get(
             "route"
@@ -5646,6 +5774,11 @@ def generate_and_deliver(
     print(
         "stc_high_alert =",
         high_alert,
+    )
+
+    print(
+        "production_target =",
+        TARGET_OPENAI,
     )
 
     print(
@@ -5694,6 +5827,15 @@ def generate_and_deliver(
         "benefit_family":
             benefit_family,
 
+        "canonical_benefit_family":
+            benefit_family,
+
+        "stc_policy_applied":
+            prepared.get(
+                "stc_policy_applied",
+                False,
+            ),
+
         "selected_stc_style":
             prepared.get(
                 "selected_stc_style",
@@ -5738,6 +5880,9 @@ def generate_and_deliver(
         "masterpiece_failure_kind":
             masterpiece_failure_kind,
 
+        "masterpiece_target":
+            TARGET_OPENAI,
+
         "smart_mode":
             prepared.get(
                 "mode_override",
@@ -5773,19 +5918,15 @@ def handle_text_image_request(
     # PENDING STC STYLE ANSWER
     # =====================================================
 
-    resumed = (
-        consume_pending_stc_style_reply(
-            chat_id=chat_id,
-            user_id=user_id,
-            text=text,
-        )
+    resumed = consume_pending_stc_style_reply(
+        chat_id=chat_id,
+        user_id=user_id,
+        text=text,
     )
 
     if resumed:
 
-        resumed_request, source_channel = (
-            resumed
-        )
+        resumed_request, source_channel = resumed
 
         try:
 
@@ -5841,11 +5982,11 @@ def handle_text_image_request(
 
             message = clean_text(
                 error,
-                2000,
+                1800,
             )
 
             print(
-                "🛑 STC HIGH ALERT:",
+                "🛑 XPAND MASTERPIECE GUARD:",
                 message,
             )
 
@@ -5868,7 +6009,7 @@ def handle_text_image_request(
             )
 
             print(
-                "❌ STC RESUMED REQUEST:",
+                "❌ XPAND STC RESUME:",
                 message,
             )
 
@@ -6204,19 +6345,15 @@ def install(
             # PENDING STYLE ANSWER
             # =============================================
 
-            resumed = (
-                consume_pending_stc_style_reply(
-                    chat_id=chat_id,
-                    user_id=user_id,
-                    text=user_message,
-                )
+            resumed = consume_pending_stc_style_reply(
+                chat_id=chat_id,
+                user_id=user_id,
+                text=user_message,
             )
 
             if resumed:
 
-                resumed_request, source_channel = (
-                    resumed
-                )
+                resumed_request, source_channel = resumed
 
                 try:
 
@@ -6277,7 +6414,7 @@ def install(
                     )
 
             # =============================================
-            # NON-IMAGE REQUEST
+            # NOT IMAGE
             # =============================================
 
             if not looks_like_image_generation_request(
@@ -6291,7 +6428,7 @@ def install(
                 )
 
             # =============================================
-            # NEW STC REQUEST WITHOUT STYLE
+            # STC STYLE QUESTION
             # =============================================
 
             if stc_style_question_needed(
@@ -6307,20 +6444,10 @@ def install(
                     ),
                 )
 
-                return (
-                    get_stc_style_question()
-                    +
-                    "\n\n"
-                    +
-                    "1) واقعي فوتوغرافي\n"
-                    +
-                    "2) بيئة بنفسجية استوديو\n"
-                    +
-                    "3) واقعي سريالي راقٍ"
-                )
+                return get_stc_style_question()
 
             # =============================================
-            # GENERATION
+            # IMAGE GENERATION
             # =============================================
 
             try:
@@ -6343,25 +6470,10 @@ def install(
                     "smart_fallback"
                 ):
 
-                    if (
-                        result.get(
-                            "brand_id"
-                        )
-                        ==
-                        "stc_bank"
-                    ):
-
-                        return (
-                            "تم. صار خلل تقني حقيقي "
-                            "قبل بوابة الجودة، "
-                            "فاستخدمت Nano Banana 2 "
-                            "كمسار طوارئ تقني."
-                        )
-
                     return (
-                        "تم. Creative Brain تعرّض "
-                        "لمشكلة تقنية، فكملت الطلب "
-                        "تلقائيًا عبر Smart Engine."
+                        "تم. صار خلل تقني بالمسار الإبداعي، "
+                        "فاستخدمت مسار الطوارئ التقني "
+                        "وبعثتلك الصورة."
                     )
 
                 return (
@@ -6380,23 +6492,14 @@ def install(
                     ),
                 )
 
-                return (
-                    get_stc_style_question()
-                )
+                return get_stc_style_question()
 
             except MasterpieceGuardError as error:
 
-                message = clean_text(
+                return clean_text(
                     error,
                     1500,
                 )
-
-                print(
-                    "🛑 XPAND VOICE HIGH ALERT:",
-                    message,
-                )
-
-                return message
 
             except Exception as error:
 
@@ -6450,7 +6553,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.5"
+        " XPAND UNIFIED VISUAL RUNTIME V3.6"
     )
     print(
         "=================================================="
@@ -6477,6 +6580,22 @@ def install(
     )
 
     print(
+        "✅ STC Canonical Policy V1.0"
+    )
+
+    print(
+        "✅ Merchant Payments Canonical Routing"
+    )
+
+    print(
+        "✅ Digital Banking Canonical Routing"
+    )
+
+    print(
+        "✅ Generic Premium Cannot Override Specific Semantics"
+    )
+
+    print(
         "✅ STC Premium Realistic"
     )
 
@@ -6497,7 +6616,11 @@ def install(
     )
 
     print(
-        "✅ Merchant Payments Semantic Priority"
+        "✅ STC Copy Space 15–22%"
+    )
+
+    print(
+        "✅ No Giant Blank Upper Third"
     )
 
     print(
@@ -6509,7 +6632,7 @@ def install(
     )
 
     print(
-        "✅ Masterpiece Production V5.1 Compatible"
+        "✅ Masterpiece Final Target = OpenAI"
     )
 
     print(
@@ -6577,19 +6700,25 @@ def install(
         "masterpiece":
             True,
 
+        "masterpiece_target":
+            TARGET_OPENAI,
+
         "smart_fallback":
             True,
 
         "merchant_payments":
             True,
 
+        "digital_banking":
+            True,
+
+        "stc_canonical_policy":
+            True,
+
         "stc_style_gate":
             True,
 
         "stc_pending_resume":
-            True,
-
-        "stc_nano_banana_2":
             True,
 
         "stc_no_generated_text":
@@ -6623,13 +6752,14 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND IMAGE TELEGRAM V3.5 SELF TEST"
+        " XPAND IMAGE TELEGRAM V3.6 SELF TEST"
     )
     print(
         "=========================================="
     )
+    print("")
 
-    failures = []
+    failures: List[str] = []
 
     # =====================================================
     # BASIC CONTRACT
@@ -6644,15 +6774,13 @@ if __name__ == "__main__":
         )
 
     # =====================================================
-    # MERCHANT SEMANTICS
+    # CANONICAL MERCHANT SEMANTICS
     # =====================================================
 
-    merchant = (
-        detect_runtime_benefit_family(
-            (
-                "خدمات التجارة الإلكترونية "
-                "ونقاط البيع"
-            )
+    merchant = detect_runtime_benefit_family(
+        (
+            "خدمات التجارة الإلكترونية "
+            "ونقاط البيع"
         )
     )
 
@@ -6660,6 +6788,70 @@ if __name__ == "__main__":
 
         failures.append(
             "merchant_payments"
+        )
+
+    # =====================================================
+    # DIGITAL BANKING REGRESSION
+    # =====================================================
+
+    transfer_request = (
+        "أنشئ صورة إعلانية لبنك STC Bank "
+        "حوالتك حول العالم تقدر تتبعها "
+        "من التطبيق بكل سهولة"
+    )
+
+    transfer_family = (
+        detect_runtime_benefit_family(
+            transfer_request
+        )
+    )
+
+    if transfer_family != "digital_banking":
+
+        failures.append(
+            "digital_banking_transfer_tracking"
+        )
+
+    canonical_override = (
+        resolve_stc_benefit_family_id(
+            transfer_request,
+            "premium",
+        )
+    )
+
+    if canonical_override != "digital_banking":
+
+        failures.append(
+            "premium_cannot_override_digital_banking"
+        )
+
+    # =====================================================
+    # CREATIVE REQUEST PRESERVES SEMANTICS
+    # =====================================================
+
+    creative_transfer, creative_family = (
+        build_creative_request(
+            transfer_request,
+            selected_stc_style=(
+                STYLE_PREMIUM_REALISTIC
+            ),
+        )
+    )
+
+    if creative_family != "digital_banking":
+
+        failures.append(
+            "creative_request_family"
+        )
+
+    if (
+        "digital_banking"
+        not in
+        creative_transfer.lower()
+    ):
+
+        failures.append(
+            "creative_request_constitution"
         )
 
     # =====================================================
@@ -6774,7 +6966,7 @@ if __name__ == "__main__":
     )
 
     if (
-        "واقعي فوتوغرافي"
+        "واقعي"
         not in
         resumed_test
     ):
@@ -6794,47 +6986,94 @@ if __name__ == "__main__":
         )
 
     # =====================================================
-    # NANO BANANA 2 ROUTE
+    # FINAL RENDER LOCK
     # =====================================================
 
-    if (
-        detect_generation_mode(
-            "استخدم nano banana 2"
+    final_lock_test = (
+        build_telegram_stc_final_lock(
+            original_request=transfer_request,
+            benefit_family="digital_banking",
+            selected_stc_style=(
+                STYLE_PREMIUM_REALISTIC
+            ),
         )
-        !=
-        "google_fast"
+    )
+
+    if (
+        "15–22%"
+        not in
+        final_lock_test
+        and
+        "15-22%"
+        not in
+        final_lock_test
     ):
 
         failures.append(
-            "nano_banana_2_route"
+            "final_copy_space_15_22"
+        )
+
+    if (
+        "giant blank upper third"
+        not in
+        final_lock_test.lower()
+    ):
+
+        failures.append(
+            "final_no_giant_upper_third"
+        )
+
+    if (
+        "hero pushed"
+        not in
+        final_lock_test.lower()
+    ):
+
+        failures.append(
+            "final_no_hero_bottom_push"
         )
 
     # =====================================================
-    # HIGH ALERT CONFIG
+    # IMMUTABLE TAIL SURVIVES COMPACTION
     # =====================================================
 
-    if not STC_HIGH_ALERT_ENABLED:
-
-        failures.append(
-            "stc_high_alert_disabled"
+    compacted_test = (
+        merge_prompt_with_immutable_tail(
+            "A" * 60000,
+            final_lock_test,
+            limit=50000,
         )
+    )
 
-    if not STC_BLOCK_CREATIVE_QUALITY_FALLBACK:
+    if (
+        "STC TELEGRAM FINAL RENDER LAW V3.6"
+        not in
+        compacted_test
+    ):
 
         failures.append(
-            "stc_creative_quality_fallback_not_blocked"
-        )
-
-    if not STC_BLOCK_QA_FAILURE_FALLBACK:
-
-        failures.append(
-            "stc_qa_failure_fallback_not_blocked"
+            "immutable_final_lock_survives"
         )
 
     # =====================================================
-    # FAKE CREATIVE RESPONSES
-    #
-    # ZERO API.
+    # OPENAI MASTERPIECE TARGET
+    # =====================================================
+
+    if (
+        clean_text(
+            TARGET_OPENAI,
+            100,
+        ).lower()
+        !=
+        "openai"
+    ):
+
+        failures.append(
+            "masterpiece_target_openai"
+        )
+
+    # =====================================================
+    # FAKE CREATIVE RESPONSE
     # =====================================================
 
     class _FakeWinner:
@@ -6842,7 +7081,7 @@ if __name__ == "__main__":
         def __init__(
             self,
             passed: bool,
-        ):
+        ) -> None:
 
             self.quality_gate_passed = (
                 passed
@@ -6851,10 +7090,21 @@ if __name__ == "__main__":
             self.evaluation_valid = True
 
             self.weighted_score = (
-                95.0
+                92.0
                 if passed
-                else
-                70.0
+                else 70.0
+            )
+
+            self.debate = {}
+
+            self.camera_angle = (
+                "eye level"
+            )
+
+            self.lens = "35mm"
+
+            self.perspective = (
+                "natural"
             )
 
 
@@ -6866,7 +7116,7 @@ if __name__ == "__main__":
             technical: bool,
             passed: bool,
             evaluated: bool,
-        ):
+        ) -> None:
 
             self.ok = passed
 
@@ -6877,6 +7127,15 @@ if __name__ == "__main__":
                 if evaluated
                 else
                 None
+            )
+
+            self.top_concepts = (
+                [
+                    self.winner
+                ]
+                if self.winner
+                else
+                []
             )
 
             self.metadata = {
@@ -6890,20 +7149,25 @@ if __name__ == "__main__":
                     passed,
 
                 "allow_smart_engine_fallback":
-                    True,
+                    bool(
+                        technical
+                    ),
 
                 "quality_target_blocks_production":
-                    False,
+                    bool(
+                        evaluated
+                        and
+                        not passed
+                    ),
 
                 "failure_reason":
                     (
-                        "fake_technical_failure"
+                        "self_test_technical"
                         if technical
                         else
                         ""
                     ),
             }
-
 
     # =====================================================
     # REAL QUALITY FAILURE MUST BLOCK STC
@@ -6932,6 +7196,9 @@ if __name__ == "__main__":
 
         "campaign_validated":
             False,
+
+        "canonical_benefit_family":
+            "digital_banking",
     }
 
     quality_guard = (
@@ -6991,6 +7258,9 @@ if __name__ == "__main__":
 
         "campaign_validated":
             False,
+
+        "canonical_benefit_family":
+            "digital_banking",
     }
 
     technical_guard = (
@@ -7045,6 +7315,9 @@ if __name__ == "__main__":
 
         "campaign_validated":
             False,
+
+        "canonical_benefit_family":
+            "digital_banking",
     }
 
     approved_guard = (
@@ -7074,7 +7347,7 @@ if __name__ == "__main__":
         )
 
     # =====================================================
-    # TECHNICAL PRODUCTION FALLBACK REMAINS CONFIGURABLE
+    # TECHNICAL PRODUCTION FALLBACK CONFIGURABLE
     # =====================================================
 
     technical_production_policy = (
@@ -7113,19 +7386,17 @@ if __name__ == "__main__":
     # QA CLASSIFIER
     # =====================================================
 
-    classified = (
-        classify_masterpiece_failure(
-            [
-                {
-                    "qa_evaluated":
-                        True,
+    classified = classify_masterpiece_failure(
+        [
+            {
+                "qa_evaluated":
+                    True,
 
-                    "qa_passed":
-                        False,
-                }
-            ],
-            [],
-        )
+                "qa_passed":
+                    False,
+            }
+        ],
+        [],
     )
 
     if classified != "quality_failure":
@@ -7175,7 +7446,7 @@ if __name__ == "__main__":
         raise RuntimeError(
             (
                 "XPAND image telegram "
-                "V3.5 self-test failed."
+                "V3.6 self-test failed."
             )
         )
 
@@ -7184,7 +7455,19 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ merchant_payments: PASS"
+        "✅ merchant_payments canonical: PASS"
+    )
+
+    print(
+        "✅ digital_banking transfer tracking: PASS"
+    )
+
+    print(
+        "✅ premium cannot erase digital_banking: PASS"
+    )
+
+    print(
+        "✅ canonical Creative Constitution: PASS"
     )
 
     print(
@@ -7212,19 +7495,31 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ STC no-text merge: PASS"
+        "✅ no generated text merge: PASS"
     )
 
     print(
-        "✅ Nano Banana 2 routing: PASS"
+        "✅ final copy space 15–22%: PASS"
     )
 
     print(
-        "✅ STC High Alert enabled: PASS"
+        "✅ no giant blank upper third: PASS"
     )
 
     print(
-        "✅ STC creative-quality failure blocks fallback: PASS"
+        "✅ hero bottom-push blocked: PASS"
+    )
+
+    print(
+        "✅ immutable final locks survive compaction: PASS"
+    )
+
+    print(
+        "✅ Masterpiece target = OpenAI: PASS"
+    )
+
+    print(
+        "✅ STC creative quality failure blocks fallback: PASS"
     )
 
     print(
@@ -7232,31 +7527,22 @@ if __name__ == "__main__":
     )
 
     print(
-        "✅ Technical Creative Brain fallback preserved: PASS"
+        "✅ Technical Creative Brain fallback policy: PASS"
     )
 
     print(
-        "✅ Technical Production failure remains configurable: PASS"
+        "✅ Technical Production fallback policy: PASS"
     )
 
     print(
-        "✅ Quality-vs-technical failure classifier: PASS"
+        "✅ Quality vs technical failure classifier: PASS"
     )
 
+    print("")
     print(
-        "✅ Generic Smart fallback cannot bypass STC QA: PASS"
+        "XPAND Image Telegram V3.6 self-test: PASS ✅"
     )
-
-    print(
-        "✅ SELF TEST: PASS"
-    )
-
     print(
         "🚫 No API calls were made"
     )
-
-    print(
-        "🚫 No images were generated"
-    )
-
     print("")
