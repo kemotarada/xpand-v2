@@ -1,14 +1,38 @@
 # =========================================================
-# XPAND VISUAL STACK INTEGRATION AUDIT V1.0
+# XPAND VISUAL STACK INTEGRATION AUDIT V1.1
 #
-# ZERO API / ZERO DATABASE / ZERO IMAGE TEST
+# ZERO API
+# ZERO DATABASE
+# ZERO IMAGE
 #
 # =========================================================
 #
-# This file does NOT modify XPAND.
+# V1.1 FIX
+# ---------------------------------------------------------
 #
-# It verifies the deployed modules can work together before
-# spending money on the first real STC Bank generation.
+# V1.0 checked only the literal source text of:
+#
+#     call_openai_director()
+#
+# for:
+#
+#     _call_openai_response_once
+#     OPENAI_RESPONSES_URL
+#
+# That can produce a FALSE NEGATIVE when the director routes
+# through another internal helper.
+#
+# V1.1 follows the actual reachable Python function graph:
+#
+# call_openai_director
+#        ↓
+# internal helper
+#        ↓
+# OpenAI Responses request
+#        ↓
+# strict JSON schema
+#
+# WITHOUT calling any provider.
 #
 # =========================================================
 
@@ -16,18 +40,19 @@ from __future__ import annotations
 
 import inspect
 import sys
-import traceback
 
 from typing import (
     Any,
     Dict,
     List,
+    Optional,
+    Set,
     Tuple,
 )
 
 
 # =========================================================
-# RESULT HELPERS
+# RESULTS
 # =========================================================
 
 RESULTS: List[
@@ -47,7 +72,9 @@ def record(
 
     RESULTS.append(
         (
-            name,
+            str(
+                name
+            ),
             bool(
                 passed
             ),
@@ -59,6 +86,10 @@ def record(
     )
 
 
+# =========================================================
+# VERSION
+# =========================================================
+
 def version_tuple(
     value: Any,
 ) -> Tuple[int, ...]:
@@ -68,7 +99,7 @@ def version_tuple(
         or ""
     ).strip()
 
-    parts = []
+    output = []
 
     for token in text.split(
         "."
@@ -86,22 +117,15 @@ def version_tuple(
 
                 break
 
-        if digits:
-
-            parts.append(
-                int(
-                    digits
-                )
+        output.append(
+            int(
+                digits
+                or 0
             )
-
-        else:
-
-            parts.append(
-                0
-            )
+        )
 
     return tuple(
-        parts
+        output
     )
 
 
@@ -110,59 +134,53 @@ def version_at_least(
     minimum: str,
 ) -> bool:
 
-    actual_tuple = version_tuple(
+    left = version_tuple(
         actual
     )
 
-    minimum_tuple = version_tuple(
+    right = version_tuple(
         minimum
     )
 
     length = max(
         len(
-            actual_tuple
+            left
         ),
         len(
-            minimum_tuple
+            right
         ),
     )
 
-    actual_tuple += (
+    left += (
         0,
     ) * (
         length
         -
         len(
-            actual_tuple
+            left
         )
     )
 
-    minimum_tuple += (
+    right += (
         0,
     ) * (
         length
         -
         len(
-            minimum_tuple
+            right
         )
     )
 
     return (
-        actual_tuple
+        left
         >=
-        minimum_tuple
+        right
     )
 
 
 # =========================================================
-# IMPORT MODULES
+# IMPORT
 # =========================================================
-
-IMPORT_ERRORS: Dict[
-    str,
-    str,
-] = {}
-
 
 def safe_import(
     module_name: str,
@@ -175,11 +193,9 @@ def safe_import(
         )
 
         record(
-            (
-                "import_"
-                +
-                module_name
-            ),
+            "import_"
+            +
+            module_name,
             True,
         )
 
@@ -187,20 +203,10 @@ def safe_import(
 
     except Exception as error:
 
-        IMPORT_ERRORS[
-            module_name
-        ] = (
-            str(
-                error
-            )
-        )
-
         record(
-            (
-                "import_"
-                +
-                module_name
-            ),
+            "import_"
+            +
+            module_name,
             False,
             str(
                 error
@@ -240,12 +246,563 @@ telegram_runtime = safe_import(
 
 
 # =========================================================
-# VERSION AUDIT
+# SAFE SOURCE
+# =========================================================
+
+def safe_source(
+    value: Any,
+) -> str:
+
+    try:
+
+        return inspect.getsource(
+            value
+        )
+
+    except Exception:
+
+        return ""
+
+
+# =========================================================
+# FUNCTION GRAPH
+# =========================================================
+
+def same_module_function(
+    module,
+    value: Any,
+) -> bool:
+
+    if not inspect.isfunction(
+        value
+    ):
+
+        return False
+
+    return (
+        getattr(
+            value,
+            "__module__",
+            ""
+        )
+        ==
+        getattr(
+            module,
+            "__name__",
+            ""
+        )
+    )
+
+
+def reachable_functions(
+    module,
+    root_function,
+    *,
+    max_depth: int = 8,
+) -> Dict[
+    str,
+    Any,
+]:
+
+    found: Dict[
+        str,
+        Any,
+    ] = {}
+
+    visited: Set[int] = set()
+
+    def walk(
+        function,
+        depth: int,
+    ) -> None:
+
+        if function is None:
+
+            return
+
+        if not inspect.isfunction(
+            function
+        ):
+
+            return
+
+        identity = id(
+            function
+        )
+
+        if identity in visited:
+
+            return
+
+        visited.add(
+            identity
+        )
+
+        name = getattr(
+            function,
+            "__name__",
+            "",
+        )
+
+        if name:
+
+            found[
+                name
+            ] = function
+
+        if depth >= max_depth:
+
+            return
+
+        code = getattr(
+            function,
+            "__code__",
+            None,
+        )
+
+        if code is None:
+
+            return
+
+        for referenced_name in (
+            code.co_names
+        ):
+
+            candidate = getattr(
+                module,
+                referenced_name,
+                None,
+            )
+
+            if not same_module_function(
+                module,
+                candidate,
+            ):
+
+                continue
+
+            walk(
+                candidate,
+                depth + 1,
+            )
+
+    walk(
+        root_function,
+        0,
+    )
+
+    return found
+
+
+# =========================================================
+# OPENAI STRICT PATH DISCOVERY
+# =========================================================
+
+def function_uses_openai_responses(
+    function: Any,
+) -> bool:
+
+    source = safe_source(
+        function
+    )
+
+    code = getattr(
+        function,
+        "__code__",
+        None,
+    )
+
+    names = set(
+        getattr(
+            code,
+            "co_names",
+            (),
+        )
+    )
+
+    signals = [
+        (
+            "OPENAI_RESPONSES_URL"
+            in source
+        ),
+
+        (
+            "OPENAI_RESPONSES_URL"
+            in names
+        ),
+
+        (
+            "/v1/responses"
+            in source
+        ),
+
+        (
+            "api.openai.com/v1/responses"
+            in source
+        ),
+    ]
+
+    return any(
+        signals
+    )
+
+
+def function_has_strict_schema(
+    function: Any,
+) -> bool:
+
+    source = safe_source(
+        function
+    )
+
+    compact = (
+        source
+        .replace(
+            " ",
+            ""
+        )
+        .replace(
+            "\n",
+            ""
+        )
+        .replace(
+            "'",
+            '"'
+        )
+        .lower()
+    )
+
+    schema_signal = bool(
+        (
+            "json_schema"
+            in compact
+        )
+        or
+        (
+            '"type":"json_schema"'
+            in compact
+        )
+    )
+
+    strict_signal = bool(
+        (
+            '"strict":true'
+            in compact
+        )
+        or
+        (
+            "strict=true"
+            in compact
+        )
+    )
+
+    response_format_signal = bool(
+        (
+            '"format"'
+            in compact
+        )
+        or
+        (
+            "response_format"
+            in compact
+        )
+        or
+        (
+            '"text"'
+            in compact
+        )
+    )
+
+    return bool(
+        schema_signal
+        and
+        strict_signal
+        and
+        response_format_signal
+    )
+
+
+def discover_strict_openai_path(
+    module,
+) -> Dict[str, Any]:
+
+    director = getattr(
+        module,
+        "call_openai_director",
+        None,
+    )
+
+    if not callable(
+        director
+    ):
+
+        return {
+            "found":
+                False,
+
+            "reason":
+                "call_openai_director_missing",
+
+            "reachable":
+                [],
+
+            "strict_helpers":
+                [],
+
+            "openai_helpers":
+                [],
+        }
+
+    reachable = (
+        reachable_functions(
+            module,
+            director,
+        )
+    )
+
+    openai_helpers = []
+
+    strict_helpers = []
+
+    for name, function in (
+        reachable.items()
+    ):
+
+        if function_uses_openai_responses(
+            function
+        ):
+
+            openai_helpers.append(
+                name
+            )
+
+        if (
+            function_uses_openai_responses(
+                function
+            )
+            and
+            function_has_strict_schema(
+                function
+            )
+        ):
+
+            strict_helpers.append(
+                name
+            )
+
+    #
+    # Some implementations keep schema construction in one
+    # helper and HTTP POST in another helper.
+    #
+    # Therefore also accept a REACHABLE chain where:
+    #
+    # - one reachable function uses OpenAI Responses
+    # - another reachable function contains strict schema
+    #
+
+    schema_helpers = []
+
+    for name, function in (
+        reachable.items()
+    ):
+
+        if function_has_strict_schema(
+            function
+        ):
+
+            schema_helpers.append(
+                name
+            )
+
+    split_chain = bool(
+        openai_helpers
+        and
+        schema_helpers
+    )
+
+    direct_chain = bool(
+        strict_helpers
+    )
+
+    return {
+        "found":
+            bool(
+                direct_chain
+                or
+                split_chain
+            ),
+
+        "reason":
+            (
+                "strict_openai_path_found"
+                if
+                (
+                    direct_chain
+                    or
+                    split_chain
+                )
+                else
+                "strict_openai_path_not_found"
+            ),
+
+        "reachable":
+            sorted(
+                reachable.keys()
+            ),
+
+        "strict_helpers":
+            sorted(
+                strict_helpers
+            ),
+
+        "openai_helpers":
+            sorted(
+                openai_helpers
+            ),
+
+        "schema_helpers":
+            sorted(
+                schema_helpers
+            ),
+    }
+
+
+# =========================================================
+# DIRECTOR ROUTING
+# =========================================================
+
+def director_is_not_blind_gemini(
+    module,
+) -> Dict[str, Any]:
+
+    director = getattr(
+        module,
+        "call_openai_director",
+        None,
+    )
+
+    if not callable(
+        director
+    ):
+
+        return {
+            "passed":
+                False,
+
+            "detail":
+                "call_openai_director missing",
+        }
+
+    source = safe_source(
+        director
+    )
+
+    compact = (
+        source
+        .replace(
+            " ",
+            ""
+        )
+        .replace(
+            "\n",
+            ""
+        )
+        .lower()
+    )
+
+    #
+    # Historical broken behavior:
+    #
+    # if GEMINI_API_KEY:
+    #     return call_gemini_director(...)
+    #
+    # before structured/json classification.
+    #
+
+    gemini_if = (
+        compact.find(
+            "ifgemini_api_key:"
+        )
+    )
+
+    gemini_return = (
+        compact.find(
+            "returncall_gemini_director("
+        )
+    )
+
+    routing_markers = [
+        compact.find(
+            "structured="
+        ),
+
+        compact.find(
+            "json_schema"
+        ),
+
+        compact.find(
+            "json_mode"
+        ),
+
+        compact.find(
+            "structured"
+        ),
+    ]
+
+    routing_markers = [
+        position
+        for position
+        in routing_markers
+        if position >= 0
+    ]
+
+    first_routing = (
+        min(
+            routing_markers
+        )
+        if routing_markers
+        else
+        -1
+    )
+
+    blind = bool(
+        gemini_if >= 0
+        and
+        gemini_return
+        >
+        gemini_if
+        and
+        (
+            first_routing < 0
+            or
+            gemini_return
+            <
+            first_routing
+        )
+    )
+
+    return {
+        "passed":
+            not blind,
+
+        "detail":
+            (
+                "structured routing is evaluated before "
+                "blind Gemini fallback"
+                if not blind
+                else
+                "historical blind Gemini-first route detected"
+            ),
+    }
+
+
+# =========================================================
+# VERSION TESTS
 # =========================================================
 
 if image_engine:
 
-    engine_version = getattr(
+    value = getattr(
         image_engine,
         "ENGINE_VERSION",
         getattr(
@@ -258,22 +815,20 @@ if image_engine:
     record(
         "image_engine_version",
         version_at_least(
-            engine_version,
+            value,
             "2.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                engine_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if creative_brain:
 
-    creative_version = getattr(
+    value = getattr(
         creative_brain,
         "VERSION",
         "",
@@ -282,22 +837,20 @@ if creative_brain:
     record(
         "creative_brain_v5",
         version_at_least(
-            creative_version,
+            value,
             "5.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                creative_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if stc_skill:
 
-    skill_version = getattr(
+    value = getattr(
         stc_skill,
         "VERSION",
         "",
@@ -306,22 +859,20 @@ if stc_skill:
     record(
         "stc_skill_v3",
         version_at_least(
-            skill_version,
+            value,
             "3.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                skill_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if brand_research:
 
-    research_version = getattr(
+    value = getattr(
         brand_research,
         "VERSION",
         "",
@@ -330,22 +881,20 @@ if brand_research:
     record(
         "brand_research_v2",
         version_at_least(
-            research_version,
+            value,
             "2.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                research_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if brand_memory:
 
-    memory_version = getattr(
+    value = getattr(
         brand_memory,
         "VERSION",
         "",
@@ -354,22 +903,20 @@ if brand_memory:
     record(
         "brand_memory_v3",
         version_at_least(
-            memory_version,
+            value,
             "3.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                memory_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if production:
 
-    production_version = getattr(
+    value = getattr(
         production,
         "ENGINE_VERSION",
         getattr(
@@ -382,22 +929,20 @@ if production:
     record(
         "production_v5",
         version_at_least(
-            production_version,
+            value,
             "5.0",
         ),
-        (
-            "actual="
-            +
-            str(
-                production_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 if telegram_runtime:
 
-    telegram_version = getattr(
+    value = getattr(
         telegram_runtime,
         "VERSION",
         "",
@@ -406,21 +951,19 @@ if telegram_runtime:
     record(
         "telegram_v3_4",
         version_at_least(
-            telegram_version,
+            value,
             "3.4",
         ),
-        (
-            "actual="
-            +
-            str(
-                telegram_version
-            )
+        "actual="
+        +
+        str(
+            value
         ),
     )
 
 
 # =========================================================
-# TELEGRAM INSTALL CONTRACT
+# TELEGRAM CONTRACT
 # =========================================================
 
 if telegram_runtime:
@@ -460,18 +1003,18 @@ if telegram_runtime:
 
 
 # =========================================================
-# STC STYLE GATE
+# STC CONTRACT
 # =========================================================
 
 if stc_skill:
 
-    request_without_style = (
+    base_request = (
         "أنشئ صورة إعلانية لبنك STC Bank "
         "عن خدمات التجارة الإلكترونية ونقاط البيع"
     )
 
-    request_realistic = (
-        request_without_style
+    realistic_request = (
+        base_request
         +
         " واقعي فوتوغرافي"
     )
@@ -481,7 +1024,7 @@ if stc_skill:
         bool(
             stc_skill
             .stc_style_question_needed(
-                request_without_style
+                base_request
             )
         ),
     )
@@ -491,7 +1034,7 @@ if stc_skill:
         not bool(
             stc_skill
             .stc_style_question_needed(
-                request_realistic
+                realistic_request
             )
         ),
     )
@@ -501,7 +1044,7 @@ if stc_skill:
         (
             stc_skill
             .detect_stc_benefit_family(
-                request_without_style
+                base_request
             )
             ==
             "merchant_payments"
@@ -510,18 +1053,21 @@ if stc_skill:
 
 
 # =========================================================
-# RESEARCH COST CONTRACT
+# RESEARCH CONTRACT
 # =========================================================
 
 if brand_research:
 
-    profile = getattr(
-        brand_research,
-        "BRAND_PROFILES",
-        {},
-    ).get(
-        "stc_bank",
-        {},
+    profile = (
+        getattr(
+            brand_research,
+            "BRAND_PROFILES",
+            {},
+        )
+        .get(
+            "stc_bank",
+            {},
+        )
     )
 
     record(
@@ -533,72 +1079,58 @@ if brand_research:
             ==
             "google_fast"
         ),
-        (
-            "actual="
-            +
-            str(
-                profile.get(
-                    "default_mode"
-                )
+        "actual="
+        +
+        str(
+            profile.get(
+                "default_mode"
             )
         ),
+    )
+
+    research_calls = int(
+        getattr(
+            brand_research,
+            "RESEARCH_MAX_CALLS",
+            999,
+        )
     )
 
     record(
         "research_max_three_calls",
-        (
-            int(
-                getattr(
-                    brand_research,
-                    "RESEARCH_MAX_CALLS",
-                    999,
-                )
-            )
-            <=
-            3
+        research_calls
+        <=
+        3,
+        "actual="
+        +
+        str(
+            research_calls
         ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    brand_research,
-                    "RESEARCH_MAX_CALLS",
-                    "?",
-                )
-            )
-        ),
+    )
+
+    cache_ttl = int(
+        getattr(
+            brand_research,
+            "RESEARCH_CACHE_TTL_SECONDS",
+            0,
+        )
     )
 
     record(
         "research_cache_24h_or_more",
-        (
-            int(
-                getattr(
-                    brand_research,
-                    "RESEARCH_CACHE_TTL_SECONDS",
-                    0,
-                )
-            )
-            >=
-            86400
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    brand_research,
-                    "RESEARCH_CACHE_TTL_SECONDS",
-                    "?",
-                )
-            )
+        cache_ttl
+        >=
+        86400,
+        "actual="
+        +
+        str(
+            cache_ttl
         ),
     )
 
 
 # =========================================================
-# BRAND MEMORY COST CONTRACT
+# MEMORY CONTRACT
 # =========================================================
 
 if brand_memory:
@@ -614,29 +1146,23 @@ if brand_memory:
         ),
     )
 
+    reference_limit = int(
+        getattr(
+            brand_memory,
+            "STC_REFERENCE_LIMIT",
+            999,
+        )
+    )
+
     record(
         "memory_stc_max_three_refs",
-        (
-            int(
-                getattr(
-                    brand_memory,
-                    "STC_REFERENCE_LIMIT",
-                    999,
-                )
-            )
-            <=
-            3
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    brand_memory,
-                    "STC_REFERENCE_LIMIT",
-                    "?",
-                )
-            )
+        reference_limit
+        <=
+        3,
+        "actual="
+        +
+        str(
+            reference_limit
         ),
     )
 
@@ -664,112 +1190,88 @@ if brand_memory:
 
 
 # =========================================================
-# PRODUCTION COST CONTRACT
+# PRODUCTION CONTRACT
 # =========================================================
 
 if production:
 
+    max_images = int(
+        getattr(
+            production,
+            "MASTERPIECE_MAX_IMAGE_CALLS",
+            999,
+        )
+    )
+
+    max_vision = int(
+        getattr(
+            production,
+            "MASTERPIECE_MAX_VISION_CALLS",
+            999,
+        )
+    )
+
+    dna_refs = int(
+        getattr(
+            production,
+            "SMART_REFERENCE_SELECTION_LIMIT",
+            999,
+        )
+    )
+
+    physical_refs = int(
+        getattr(
+            production,
+            "MAX_PHYSICAL_REFERENCE_IMAGES",
+            999,
+        )
+    )
+
     record(
         "production_max_two_images",
-        (
-            int(
-                getattr(
-                    production,
-                    "MASTERPIECE_MAX_IMAGE_CALLS",
-                    999,
-                )
-            )
-            <=
-            2
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    production,
-                    "MASTERPIECE_MAX_IMAGE_CALLS",
-                    "?",
-                )
-            )
+        max_images
+        <=
+        2,
+        "actual="
+        +
+        str(
+            max_images
         ),
     )
 
     record(
         "production_max_two_vision",
-        (
-            int(
-                getattr(
-                    production,
-                    "MASTERPIECE_MAX_VISION_CALLS",
-                    999,
-                )
-            )
-            <=
-            2
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    production,
-                    "MASTERPIECE_MAX_VISION_CALLS",
-                    "?",
-                )
-            )
+        max_vision
+        <=
+        2,
+        "actual="
+        +
+        str(
+            max_vision
         ),
     )
 
     record(
         "production_max_three_dna_refs",
-        (
-            int(
-                getattr(
-                    production,
-                    "SMART_REFERENCE_SELECTION_LIMIT",
-                    999,
-                )
-            )
-            <=
-            3
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    production,
-                    "SMART_REFERENCE_SELECTION_LIMIT",
-                    "?",
-                )
-            )
+        dna_refs
+        <=
+        3,
+        "actual="
+        +
+        str(
+            dna_refs
         ),
     )
 
     record(
         "production_max_two_physical_refs",
-        (
-            int(
-                getattr(
-                    production,
-                    "MAX_PHYSICAL_REFERENCE_IMAGES",
-                    999,
-                )
-            )
-            <=
-            2
-        ),
-        (
-            "actual="
-            +
-            str(
-                getattr(
-                    production,
-                    "MAX_PHYSICAL_REFERENCE_IMAGES",
-                    "?",
-                )
-            )
+        physical_refs
+        <=
+        2,
+        "actual="
+        +
+        str(
+            physical_refs
         ),
     )
 
@@ -788,11 +1290,9 @@ if production:
             in
             model
         ),
-        (
-            "actual="
-            +
-            model
-        ),
+        "actual="
+        +
+        model,
     )
 
     status = (
@@ -808,20 +1308,18 @@ if production:
             )
             is False
         ),
-        (
-            "actual="
-            +
-            str(
-                status.get(
-                    "nano_banana_pro_required"
-                )
+        "actual="
+        +
+        str(
+            status.get(
+                "nano_banana_pro_required"
             )
         ),
     )
 
 
 # =========================================================
-# IMAGE ENGINE ROUTING
+# IMAGE ENGINE ROUTE
 # =========================================================
 
 if image_engine:
@@ -841,11 +1339,9 @@ if image_engine:
             in
             fast_model
         ),
-        (
-            "actual="
-            +
-            fast_model
-        ),
+        "actual="
+        +
+        fast_model,
     )
 
     best_use_pro = bool(
@@ -862,170 +1358,144 @@ if image_engine:
             best_use_pro
             is False
         ),
-        (
-            "actual="
-            +
-            str(
-                best_use_pro
-            )
+        "actual="
+        +
+        str(
+            best_use_pro
         ),
     )
 
 
 # =========================================================
-# CRITICAL DIRECTOR ROUTING AUDIT
+# DIRECTOR AUDIT V1.1
 # =========================================================
 
 if image_engine:
 
-    director = getattr(
-        image_engine,
-        "call_openai_director",
-        None,
+    routing = (
+        director_is_not_blind_gemini(
+            image_engine
+        )
     )
 
-    if callable(
-        director
+    record(
+        "director_not_unconditional_gemini_first",
+        bool(
+            routing.get(
+                "passed"
+            )
+        ),
+        routing.get(
+            "detail",
+            "",
+        ),
+    )
+
+    strict_path = (
+        discover_strict_openai_path(
+            image_engine
+        )
+    )
+
+    detail_parts = []
+
+    if strict_path.get(
+        "strict_helpers"
     ):
 
-        try:
-
-            source = inspect.getsource(
-                director
-            )
-
-        except Exception:
-
-            source = ""
-
-        normalized_source = (
-            source
-            .replace(
-                " ",
-                ""
-            )
-            .replace(
-                "\n",
-                ""
-            )
-            .lower()
-        )
-
-        #
-        # BAD HISTORICAL PATTERN:
-        #
-        # if GEMINI_API_KEY:
-        #     return call_gemini_director(...)
-        #
-        # appearing before structured/json routing.
-        #
-
-        gemini_guard_position = (
-            normalized_source.find(
-                "ifgemini_api_key:"
-            )
-        )
-
-        gemini_return_position = (
-            normalized_source.find(
-                "returncall_gemini_director("
-            )
-        )
-
-        structured_position = min(
-            [
-                position
-                for position
-                in [
-                    normalized_source.find(
-                        "structured="
-                    ),
-
-                    normalized_source.find(
-                        "json_schema"
-                    ),
-
-                    normalized_source.find(
-                        "json_mode"
-                    ),
-                ]
-                if position
-                >=
-                0
-            ]
-            or
-            [
-                -1
-            ]
-        )
-
-        unconditional_gemini_first = bool(
-            gemini_guard_position
-            >=
-            0
-            and
-            gemini_return_position
-            >
-            gemini_guard_position
-            and
+        detail_parts.append(
             (
-                structured_position
-                < 0
-                or
-                gemini_return_position
-                <
-                structured_position
+                "strict="
+                +
+                ",".join(
+                    strict_path[
+                        "strict_helpers"
+                    ]
+                )
             )
         )
 
-        record(
-            "director_not_unconditional_gemini_first",
-            not unconditional_gemini_first,
-            (
-                "critical: structured Creative Brain "
-                "must not be blindly routed to Gemini"
-            ),
-        )
+    if strict_path.get(
+        "openai_helpers"
+    ):
 
-        #
-        # We want evidence that strict schemas have a path
-        # to OpenAI structured output.
-        #
-
-        has_openai_response_path = bool(
+        detail_parts.append(
             (
-                "_call_openai_response_once"
-                in source
-            )
-            or
-            (
-                "OPENAI_RESPONSES_URL"
-                in source
+                "openai="
+                +
+                ",".join(
+                    strict_path[
+                        "openai_helpers"
+                    ]
+                )
             )
         )
 
-        record(
-            "director_has_strict_openai_path",
-            has_openai_response_path,
+    if strict_path.get(
+        "schema_helpers"
+    ):
+
+        detail_parts.append(
+            (
+                "schema="
+                +
+                ",".join(
+                    strict_path[
+                        "schema_helpers"
+                    ]
+                )
+            )
         )
 
-    else:
+    if not detail_parts:
 
-        record(
-            "director_not_unconditional_gemini_first",
-            False,
-            "call_openai_director missing",
+        detail_parts.append(
+            strict_path.get(
+                "reason",
+                "",
+            )
         )
 
-        record(
-            "director_has_strict_openai_path",
-            False,
-            "call_openai_director missing",
+    record(
+        "director_has_strict_openai_path",
+        bool(
+            strict_path.get(
+                "found"
+            )
+        ),
+        " | ".join(
+            detail_parts
+        ),
+    )
+
+    #
+    # Extra evidence:
+    # model must be Sol for structured Director.
+    #
+
+    openai_director_model = str(
+        getattr(
+            image_engine,
+            "OPENAI_DIRECTOR_MODEL",
+            "",
         )
+    ).lower()
+
+    record(
+        "director_openai_model_sol",
+        (
+            "gpt-5.6-sol"
+            in
+            openai_director_model
+        ),
+        "actual="
+        +
+        openai_director_model,
+    )
 
 
 # =========================================================
-# CREATIVE BRAIN CONTRACT
+# CREATIVE CONTRACT
 # =========================================================
 
 if creative_brain:
@@ -1041,37 +1511,22 @@ if creative_brain:
         ),
     )
 
-    source = ""
-
-    try:
-
-        source = inspect.getsource(
-            creative_brain
-            .run_creative_brain
-        )
-
-    except Exception:
-
-        pass
+    module_source = safe_source(
+        creative_brain
+    )
 
     record(
         "creative_technical_failure_contract",
         (
-            (
-                "technical_failure"
-                in source
-            )
-            or
-            hasattr(
-                creative_brain,
-                "IdeationParseError",
-            )
+            "technical_failure"
+            in
+            module_source
         ),
     )
 
 
 # =========================================================
-# CROSS-MODULE IMPORT CONTRACT
+# CROSS MODULE
 # =========================================================
 
 if (
@@ -1082,19 +1537,21 @@ if (
 
     record(
         "production_memory_loader_contract",
-        callable(
-            getattr(
-                brand_memory,
-                "load_relevant_visual_references",
-                None,
+        (
+            callable(
+                getattr(
+                    brand_memory,
+                    "load_relevant_visual_references",
+                    None,
+                )
             )
-        )
-        and
-        callable(
-            getattr(
-                production,
-                "load_runtime_references",
-                None,
+            and
+            callable(
+                getattr(
+                    production,
+                    "load_runtime_references",
+                    None,
+                )
             )
         ),
     )
@@ -1108,19 +1565,21 @@ if (
 
     record(
         "telegram_production_contract",
-        callable(
-            getattr(
-                production,
-                "run_production",
-                None,
+        (
+            callable(
+                getattr(
+                    production,
+                    "run_production",
+                    None,
+                )
             )
-        )
-        and
-        callable(
-            getattr(
-                telegram_runtime,
-                "generate_masterpiece_images",
-                None,
+            and
+            callable(
+                getattr(
+                    telegram_runtime,
+                    "generate_masterpiece_images",
+                    None,
+                )
             )
         ),
     )
@@ -1134,26 +1593,28 @@ if (
 
     record(
         "telegram_creative_contract",
-        callable(
-            getattr(
-                creative_brain,
-                "run_creative_brain",
-                None,
+        (
+            callable(
+                getattr(
+                    creative_brain,
+                    "run_creative_brain",
+                    None,
+                )
             )
-        )
-        and
-        callable(
-            getattr(
-                telegram_runtime,
-                "creative_runtime_state",
-                None,
+            and
+            callable(
+                getattr(
+                    telegram_runtime,
+                    "creative_runtime_state",
+                    None,
+                )
             )
         ),
     )
 
 
 # =========================================================
-# NO-TEXT / NO-LOGO CONTRACT
+# STC GUARD
 # =========================================================
 
 if stc_skill:
@@ -1173,6 +1634,9 @@ if stc_skill:
             in guard
             or
             "no headline"
+            in guard
+            or
+            "no text"
             in guard
         ),
     )
@@ -1198,7 +1662,7 @@ if stc_skill:
 
 
 # =========================================================
-# FINAL REPORT
+# REPORT
 # =========================================================
 
 print("")
@@ -1206,7 +1670,7 @@ print(
     "=============================================="
 )
 print(
-    " XPAND VISUAL STACK INTEGRATION AUDIT V1.0"
+    " XPAND VISUAL STACK INTEGRATION AUDIT V1.1"
 )
 print(
     " ZERO-COST / ZERO-API"
@@ -1222,9 +1686,11 @@ passed_count = 0
 failed_count = 0
 
 
-for name, passed, detail in (
-    RESULTS
-):
+for (
+    name,
+    passed,
+    detail,
+) in RESULTS:
 
     if passed:
 
@@ -1277,6 +1743,10 @@ print(
 print("")
 
 
+# =========================================================
+# CRITICAL
+# =========================================================
+
 CRITICAL_TESTS = {
     "import_xpand_image_engine",
     "import_xpand_creative_brain",
@@ -1285,23 +1755,31 @@ CRITICAL_TESTS = {
     "import_xpand_brand_memory",
     "import_xpand_production_engine",
     "import_xpand_image_telegram",
+
     "creative_brain_v5",
     "stc_skill_v3",
     "brand_research_v2",
     "brand_memory_v3",
     "production_v5",
     "telegram_v3_4",
+
     "telegram_install_exists",
+
     "stc_style_question_required",
     "stc_merchant_semantics",
+
     "production_max_two_images",
     "production_max_two_vision",
     "production_nano_banana_2",
     "production_no_mandatory_pro",
+
     "image_engine_nano_banana_2",
     "image_engine_best_not_pro",
+
     "director_not_unconditional_gemini_first",
     "director_has_strict_openai_path",
+    "director_openai_model_sol",
+
     "telegram_production_contract",
     "telegram_creative_contract",
 }
@@ -1309,7 +1787,11 @@ CRITICAL_TESTS = {
 
 critical_failures = [
     name
-    for name, passed, _
+    for (
+        name,
+        passed,
+        _
+    )
     in RESULTS
     if (
         name
@@ -1332,7 +1814,9 @@ if critical_failures:
         "Critical failures:"
     )
 
-    for item in critical_failures:
+    for item in (
+        critical_failures
+    ):
 
         print(
             " -",
@@ -1348,18 +1832,31 @@ if critical_failures:
         "🚫 No API calls were made by this audit."
     )
 
+    print(
+        "🚫 No Vision calls were made by this audit."
+    )
+
+    print(
+        "🚫 No images were generated by this audit."
+    )
+
     sys.exit(
         1
     )
 
+
+# =========================================================
+# READY
+# =========================================================
 
 print(
     "✅ XPAND VISUAL STACK: READY FOR CONTROLLED LIVE TEST"
 )
 
 print("")
+
 print(
-    "Expected STC live path:"
+    "Expected STC path:"
 )
 
 print(
@@ -1367,11 +1864,11 @@ print(
 )
 
 print(
-    "→ style question"
+    "→ style selection"
 )
 
 print(
-    "→ cached/local brand intelligence"
+    "→ cached/local Brand Research"
 )
 
 print(
@@ -1379,11 +1876,15 @@ print(
 )
 
 print(
-    "→ max 3 curated DNA refs"
+    "→ strict structured OpenAI Director"
 )
 
 print(
-    "→ max 2 physical refs"
+    "→ max 3 curated reference DNA"
+)
+
+print(
+    "→ max 2 physical references"
 )
 
 print(
@@ -1391,11 +1892,11 @@ print(
 )
 
 print(
-    "→ 1 Vision QA"
+    "→ one Vision QA"
 )
 
 print(
-    "→ second Nano Banana 2 only if QA finds a real defect"
+    "→ second Nano Banana 2 only if a real defect exists"
 )
 
 print(
@@ -1403,6 +1904,7 @@ print(
 )
 
 print("")
+
 print(
     "💰 Normal production target:"
 )
@@ -1412,6 +1914,7 @@ print(
 )
 
 print("")
+
 print(
     "💰 Maximum production target:"
 )
@@ -1421,6 +1924,7 @@ print(
 )
 
 print("")
+
 print(
     "🚫 Nano Banana Pro is not mandatory"
 )
