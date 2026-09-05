@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND VISUAL STACK INTEGRATION AUDIT V1.1
+# XPAND VISUAL STACK INTEGRATION AUDIT V2.0
 #
 # ZERO API
 # ZERO DATABASE
@@ -7,32 +7,56 @@
 #
 # =========================================================
 #
-# V1.1 FIX
+# CURRENT MASTERPIECE ARCHITECTURE
 # ---------------------------------------------------------
 #
-# V1.0 checked only the literal source text of:
+# STC request
+#      ↓
+# Canonical STC Policy
+#      ↓
+# Telegram V3.6
+#      ↓
+# Creative Brain V5.6
+#      ↓
+# GPT-5.6 Sol Creative Director
+#      ↓
+# Permanent STC Brand Kit
+#      ↓
+# Nano Banana 2 PREVISUALIZATION ONLY
+#      ↓
+# Gemini Preview Audit
+#      ↓
+# GPT-Image-2 FINAL
+#      ↓
+# GPT-5.6 Sol Final QA
+#      ↓
+# GPT-Image-2 repair only if required
+#      ↓
+# Telegram delivery
 #
-#     call_openai_director()
 #
-# for:
+# HARD REGRESSION CHECKS
+# ---------------------------------------------------------
 #
-#     _call_openai_response_once
-#     OPENAI_RESPONSES_URL
+# - premium cannot erase digital_banking
+# - premium cannot erase merchant_payments
+# - GPT-Image-2 is mandatory Masterpiece final
+# - Gemini cannot become Masterpiece final
+# - Nano Banana 2 is preview only
+# - immutable final locks enabled
+# - 15–22% copy space preserved
+# - giant blank upper third blocked
+# - phone/POS fusion blocked
+# - invented payment hardware blocked
+# - random stone/travertine pedestal blocked
+# - STC references remain visual authority
+# - quality rejection cannot fall to Smart
 #
-# That can produce a FALSE NEGATIVE when the director routes
-# through another internal helper.
 #
-# V1.1 follows the actual reachable Python function graph:
+# RUN
+# ---------------------------------------------------------
 #
-# call_openai_director
-#        ↓
-# internal helper
-#        ↓
-# OpenAI Responses request
-#        ↓
-# strict JSON schema
-#
-# WITHOUT calling any provider.
+# python xpand_visual_stack_test.py
 #
 # =========================================================
 
@@ -45,7 +69,6 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Set,
     Tuple,
 )
@@ -72,22 +95,15 @@ def record(
 
     RESULTS.append(
         (
-            str(
-                name
-            ),
-            bool(
-                passed
-            ),
-            str(
-                detail
-                or ""
-            ),
+            str(name),
+            bool(passed),
+            str(detail or ""),
         )
     )
 
 
 # =========================================================
-# VERSION
+# VERSION HELPERS
 # =========================================================
 
 def version_tuple(
@@ -99,22 +115,18 @@ def version_tuple(
         or ""
     ).strip()
 
-    output = []
+    output: List[int] = []
 
-    for token in text.split(
-        "."
-    ):
+    for token in text.split("."):
 
         digits = ""
 
         for char in token:
 
             if char.isdigit():
-
                 digits += char
 
             else:
-
                 break
 
         output.append(
@@ -124,9 +136,7 @@ def version_tuple(
             )
         )
 
-    return tuple(
-        output
-    )
+    return tuple(output)
 
 
 def version_at_least(
@@ -134,21 +144,12 @@ def version_at_least(
     minimum: str,
 ) -> bool:
 
-    left = version_tuple(
-        actual
-    )
-
-    right = version_tuple(
-        minimum
-    )
+    left = version_tuple(actual)
+    right = version_tuple(minimum)
 
     length = max(
-        len(
-            left
-        ),
-        len(
-            right
-        ),
+        len(left),
+        len(right),
     )
 
     left += (
@@ -156,9 +157,7 @@ def version_at_least(
     ) * (
         length
         -
-        len(
-            left
-        )
+        len(left)
     )
 
     right += (
@@ -166,20 +165,14 @@ def version_at_least(
     ) * (
         length
         -
-        len(
-            right
-        )
+        len(right)
     )
 
-    return (
-        left
-        >=
-        right
-    )
+    return left >= right
 
 
 # =========================================================
-# IMPORT
+# SAFE IMPORT
 # =========================================================
 
 def safe_import(
@@ -208,9 +201,7 @@ def safe_import(
             +
             module_name,
             False,
-            str(
-                error
-            ),
+            str(error),
         )
 
         return None
@@ -226,6 +217,10 @@ creative_brain = safe_import(
 
 stc_skill = safe_import(
     "xpand_stc_bank_skill"
+)
+
+stc_policy = safe_import(
+    "xpand_stc_policy"
 )
 
 brand_research = safe_import(
@@ -264,6 +259,24 @@ def safe_source(
         return ""
 
 
+def module_source(
+    module: Any,
+) -> str:
+
+    if module is None:
+        return ""
+
+    try:
+
+        return inspect.getsource(
+            module
+        )
+
+    except Exception:
+
+        return ""
+
+
 # =========================================================
 # FUNCTION GRAPH
 # =========================================================
@@ -276,20 +289,19 @@ def same_module_function(
     if not inspect.isfunction(
         value
     ):
-
         return False
 
     return (
         getattr(
             value,
             "__module__",
-            ""
+            "",
         )
         ==
         getattr(
             module,
             "__name__",
-            ""
+            "",
         )
     )
 
@@ -317,13 +329,11 @@ def reachable_functions(
     ) -> None:
 
         if function is None:
-
             return
 
         if not inspect.isfunction(
             function
         ):
-
             return
 
         identity = id(
@@ -331,7 +341,6 @@ def reachable_functions(
         )
 
         if identity in visited:
-
             return
 
         visited.add(
@@ -345,13 +354,9 @@ def reachable_functions(
         )
 
         if name:
-
-            found[
-                name
-            ] = function
+            found[name] = function
 
         if depth >= max_depth:
-
             return
 
         code = getattr(
@@ -361,7 +366,6 @@ def reachable_functions(
         )
 
         if code is None:
-
             return
 
         for referenced_name in (
@@ -378,7 +382,6 @@ def reachable_functions(
                 module,
                 candidate,
             ):
-
                 continue
 
             walk(
@@ -395,7 +398,7 @@ def reachable_functions(
 
 
 # =========================================================
-# OPENAI STRICT PATH DISCOVERY
+# OPENAI STRICT PATH
 # =========================================================
 
 def function_uses_openai_responses(
@@ -420,30 +423,26 @@ def function_uses_openai_responses(
         )
     )
 
-    signals = [
+    return bool(
         (
             "OPENAI_RESPONSES_URL"
             in source
-        ),
-
+        )
+        or
         (
             "OPENAI_RESPONSES_URL"
             in names
-        ),
-
+        )
+        or
         (
             "/v1/responses"
             in source
-        ),
-
+        )
+        or
         (
             "api.openai.com/v1/responses"
             in source
-        ),
-    ]
-
-    return any(
-        signals
+        )
     )
 
 
@@ -539,17 +538,15 @@ def discover_strict_openai_path(
         return {
             "found":
                 False,
-
             "reason":
                 "call_openai_director_missing",
-
             "reachable":
                 [],
-
             "strict_helpers":
                 [],
-
             "openai_helpers":
+                [],
+            "schema_helpers":
                 [],
         }
 
@@ -560,68 +557,56 @@ def discover_strict_openai_path(
         )
     )
 
-    openai_helpers = []
-
-    strict_helpers = []
+    openai_helpers: List[str] = []
+    strict_helpers: List[str] = []
+    schema_helpers: List[str] = []
 
     for name, function in (
         reachable.items()
     ):
 
-        if function_uses_openai_responses(
-            function
-        ):
+        uses_openai = (
+            function_uses_openai_responses(
+                function
+            )
+        )
+
+        has_schema = (
+            function_has_strict_schema(
+                function
+            )
+        )
+
+        if uses_openai:
 
             openai_helpers.append(
                 name
             )
 
+        if has_schema:
+
+            schema_helpers.append(
+                name
+            )
+
         if (
-            function_uses_openai_responses(
-                function
-            )
+            uses_openai
             and
-            function_has_strict_schema(
-                function
-            )
+            has_schema
         ):
 
             strict_helpers.append(
                 name
             )
 
-    #
-    # Some implementations keep schema construction in one
-    # helper and HTTP POST in another helper.
-    #
-    # Therefore also accept a REACHABLE chain where:
-    #
-    # - one reachable function uses OpenAI Responses
-    # - another reachable function contains strict schema
-    #
-
-    schema_helpers = []
-
-    for name, function in (
-        reachable.items()
-    ):
-
-        if function_has_strict_schema(
-            function
-        ):
-
-            schema_helpers.append(
-                name
-            )
+    direct_chain = bool(
+        strict_helpers
+    )
 
     split_chain = bool(
         openai_helpers
         and
         schema_helpers
-    )
-
-    direct_chain = bool(
-        strict_helpers
     )
 
     return {
@@ -688,7 +673,6 @@ def director_is_not_blind_gemini(
         return {
             "passed":
                 False,
-
             "detail":
                 "call_openai_director missing",
         }
@@ -710,40 +694,24 @@ def director_is_not_blind_gemini(
         .lower()
     )
 
-    #
-    # Historical broken behavior:
-    #
-    # if GEMINI_API_KEY:
-    #     return call_gemini_director(...)
-    #
-    # before structured/json classification.
-    #
-
-    gemini_if = (
-        compact.find(
-            "ifgemini_api_key:"
-        )
+    gemini_if = compact.find(
+        "ifgemini_api_key:"
     )
 
-    gemini_return = (
-        compact.find(
-            "returncall_gemini_director("
-        )
+    gemini_return = compact.find(
+        "returncall_gemini_director("
     )
 
     routing_markers = [
         compact.find(
             "structured="
         ),
-
         compact.find(
             "json_schema"
         ),
-
         compact.find(
             "json_mode"
         ),
-
         compact.find(
             "structured"
         ),
@@ -787,8 +755,7 @@ def director_is_not_blind_gemini(
 
         "detail":
             (
-                "structured routing is evaluated before "
-                "blind Gemini fallback"
+                "structured routing evaluated before blind Gemini fallback"
                 if not blind
                 else
                 "historical blind Gemini-first route detected"
@@ -797,7 +764,7 @@ def director_is_not_blind_gemini(
 
 
 # =========================================================
-# VERSION TESTS
+# MODULE VERSIONS
 # =========================================================
 
 if image_engine:
@@ -813,16 +780,14 @@ if image_engine:
     )
 
     record(
-        "image_engine_version",
+        "image_engine_v3",
         version_at_least(
             value,
-            "2.0",
+            "3.0",
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -835,16 +800,14 @@ if creative_brain:
     )
 
     record(
-        "creative_brain_v5",
+        "creative_brain_v5_6",
         version_at_least(
             value,
-            "5.0",
+            "5.6",
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -864,9 +827,27 @@ if stc_skill:
         ),
         "actual="
         +
-        str(
-            value
+        str(value),
+    )
+
+
+if stc_policy:
+
+    value = getattr(
+        stc_policy,
+        "VERSION",
+        "",
+    )
+
+    record(
+        "stc_policy_v1",
+        version_at_least(
+            value,
+            "1.0",
         ),
+        "actual="
+        +
+        str(value),
     )
 
 
@@ -886,9 +867,7 @@ if brand_research:
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -908,9 +887,7 @@ if brand_memory:
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -927,16 +904,14 @@ if production:
     )
 
     record(
-        "production_v5",
+        "production_v6",
         version_at_least(
             value,
-            "5.0",
+            "6.0.1",
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -949,16 +924,14 @@ if telegram_runtime:
     )
 
     record(
-        "telegram_v3_4",
+        "telegram_v3_6",
         version_at_least(
             value,
-            "3.4",
+            "3.6",
         ),
         "actual="
         +
-        str(
-            value
-        ),
+        str(value),
     )
 
 
@@ -991,6 +964,17 @@ if telegram_runtime:
     )
 
     record(
+        "telegram_masterpiece_exists",
+        callable(
+            getattr(
+                telegram_runtime,
+                "generate_masterpiece_images",
+                None,
+            )
+        ),
+    )
+
+    record(
         "telegram_style_gate_exists",
         callable(
             getattr(
@@ -1001,9 +985,197 @@ if telegram_runtime:
         ),
     )
 
+    source = module_source(
+        telegram_runtime
+    )
+
+    record(
+        "telegram_uses_canonical_stc_policy",
+        (
+            "resolve_stc_benefit_family"
+            in source
+            or
+            "resolve_stc_benefit_family_id"
+            in source
+        ),
+    )
+
+    record(
+        "telegram_quality_failure_blocks_smart",
+        (
+            "quality_failure"
+            in source
+            and
+            "Smart fallback"
+            in source
+        ),
+    )
+
 
 # =========================================================
-# STC CONTRACT
+# STC CANONICAL POLICY
+# =========================================================
+
+if stc_policy:
+
+    resolver = getattr(
+        stc_policy,
+        "resolve_stc_benefit_family_id",
+        None,
+    )
+
+    if callable(
+        resolver
+    ):
+
+        merchant_request = (
+            "أنشئ إعلان STC Bank عن خدمات "
+            "التجارة الإلكترونية ونقاط البيع"
+        )
+
+        transfer_request = (
+            "STC Bank حوالتك حول العالم "
+            "وتقدر تتبعها من التطبيق"
+        )
+
+        record(
+            "policy_merchant_payments",
+            (
+                resolver(
+                    merchant_request
+                )
+                ==
+                "merchant_payments"
+            ),
+        )
+
+        record(
+            "policy_digital_banking",
+            (
+                resolver(
+                    transfer_request
+                )
+                ==
+                "digital_banking"
+            ),
+        )
+
+        record(
+            "policy_premium_cannot_erase_merchant",
+            (
+                resolver(
+                    merchant_request,
+                    "premium",
+                )
+                ==
+                "merchant_payments"
+            ),
+        )
+
+        record(
+            "policy_premium_cannot_erase_digital",
+            (
+                resolver(
+                    transfer_request,
+                    "premium",
+                )
+                ==
+                "digital_banking"
+            ),
+        )
+
+    else:
+
+        record(
+            "policy_merchant_payments",
+            False,
+            "resolver missing",
+        )
+
+        record(
+            "policy_digital_banking",
+            False,
+            "resolver missing",
+        )
+
+        record(
+            "policy_premium_cannot_erase_merchant",
+            False,
+            "resolver missing",
+        )
+
+        record(
+            "policy_premium_cannot_erase_digital",
+            False,
+            "resolver missing",
+        )
+
+    creative_builder = getattr(
+        stc_policy,
+        "build_creative_constitution_text",
+        None,
+    )
+
+    final_builder = getattr(
+        stc_policy,
+        "build_final_render_locks_text",
+        None,
+    )
+
+    record(
+        "policy_creative_constitution_exists",
+        callable(
+            creative_builder
+        ),
+    )
+
+    record(
+        "policy_final_render_locks_exists",
+        callable(
+            final_builder
+        ),
+    )
+
+    if callable(
+        final_builder
+    ):
+
+        final_lock_text = final_builder(
+            (
+                "خدمات التجارة الإلكترونية "
+                "ونقاط البيع"
+            ),
+            "premium",
+            "premium_realistic",
+        )
+
+        record(
+            "policy_copy_space_15_22",
+            (
+                "15–22%"
+                in final_lock_text
+            ),
+        )
+
+        record(
+            "policy_no_giant_upper_third",
+            (
+                "giant blank upper third"
+                in final_lock_text
+            ),
+        )
+
+        record(
+            "policy_reference_authority",
+            (
+                "reference images have authority"
+                in final_lock_text.lower()
+            ),
+        )
+
+
+# =========================================================
+# STC SKILL CONTRACT
 # =========================================================
 
 if stc_skill:
@@ -1040,7 +1212,7 @@ if stc_skill:
     )
 
     record(
-        "stc_merchant_semantics",
+        "stc_skill_merchant_semantics",
         (
             stc_skill
             .detect_stc_benefit_family(
@@ -1053,7 +1225,7 @@ if stc_skill:
 
 
 # =========================================================
-# RESEARCH CONTRACT
+# BRAND RESEARCH
 # =========================================================
 
 if brand_research:
@@ -1130,7 +1302,7 @@ if brand_research:
 
 
 # =========================================================
-# MEMORY CONTRACT
+# BRAND MEMORY
 # =========================================================
 
 if brand_memory:
@@ -1190,110 +1362,10 @@ if brand_memory:
 
 
 # =========================================================
-# PRODUCTION CONTRACT
+# PRODUCTION V6 CONTRACT
 # =========================================================
 
 if production:
-
-    max_images = int(
-        getattr(
-            production,
-            "MASTERPIECE_MAX_IMAGE_CALLS",
-            999,
-        )
-    )
-
-    max_vision = int(
-        getattr(
-            production,
-            "MASTERPIECE_MAX_VISION_CALLS",
-            999,
-        )
-    )
-
-    dna_refs = int(
-        getattr(
-            production,
-            "SMART_REFERENCE_SELECTION_LIMIT",
-            999,
-        )
-    )
-
-    physical_refs = int(
-        getattr(
-            production,
-            "MAX_PHYSICAL_REFERENCE_IMAGES",
-            999,
-        )
-    )
-
-    record(
-        "production_max_two_images",
-        max_images
-        <=
-        2,
-        "actual="
-        +
-        str(
-            max_images
-        ),
-    )
-
-    record(
-        "production_max_two_vision",
-        max_vision
-        <=
-        2,
-        "actual="
-        +
-        str(
-            max_vision
-        ),
-    )
-
-    record(
-        "production_max_three_dna_refs",
-        dna_refs
-        <=
-        3,
-        "actual="
-        +
-        str(
-            dna_refs
-        ),
-    )
-
-    record(
-        "production_max_two_physical_refs",
-        physical_refs
-        <=
-        2,
-        "actual="
-        +
-        str(
-            physical_refs
-        ),
-    )
-
-    model = str(
-        getattr(
-            production,
-            "NANO_BANANA_2_MODEL",
-            "",
-        )
-    )
-
-    record(
-        "production_nano_banana_2",
-        (
-            "gemini-3.1-flash-image"
-            in
-            model
-        ),
-        "actual="
-        +
-        model,
-    )
 
     status = (
         production
@@ -1301,10 +1373,100 @@ if production:
     )
 
     record(
-        "production_no_mandatory_pro",
+        "production_previs_nano_banana_2",
+        (
+            "gemini-3.1-flash-image"
+            in str(
+                status.get(
+                    "nano_banana_2_model",
+                    "",
+                )
+            )
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "nano_banana_2_model"
+            )
+        ),
+    )
+
+    record(
+        "production_nano_banana_preview_only",
         (
             status.get(
-                "nano_banana_pro_required"
+                "nano_banana_role"
+            )
+            ==
+            "previsualization_only"
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "nano_banana_role"
+            )
+        ),
+    )
+
+    record(
+        "production_final_gpt_image_2",
+        (
+            status.get(
+                "final_image_model"
+            )
+            ==
+            "gpt-image-2"
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "final_image_model"
+            )
+        ),
+    )
+
+    record(
+        "production_final_renderer_openai",
+        (
+            status.get(
+                "final_renderer"
+            )
+            ==
+            "openai"
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "final_renderer"
+            )
+        ),
+    )
+
+    record(
+        "production_openai_final_mandatory",
+        bool(
+            status.get(
+                "mandatory_openai_final"
+            )
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "mandatory_openai_final"
+            )
+        ),
+    )
+
+    record(
+        "production_gemini_final_forbidden",
+        (
+            status.get(
+                "gemini_final_allowed"
             )
             is False
         ),
@@ -1312,17 +1474,462 @@ if production:
         +
         str(
             status.get(
-                "nano_banana_pro_required"
+                "gemini_final_allowed"
+            )
+        ),
+    )
+
+    record(
+        "production_gemini_pro_final_forbidden",
+        (
+            status.get(
+                "gemini_pro_final"
+            )
+            is False
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "gemini_pro_final"
+            )
+        ),
+    )
+
+    record(
+        "production_one_previsualization",
+        int(
+            status.get(
+                "previsualization_calls",
+                999,
+            )
+        )
+        ==
+        1,
+        "actual="
+        +
+        str(
+            status.get(
+                "previsualization_calls"
+            )
+        ),
+    )
+
+    record(
+        "production_max_two_final_images",
+        int(
+            status.get(
+                "max_image_calls",
+                999,
+            )
+        )
+        <=
+        2,
+        "actual="
+        +
+        str(
+            status.get(
+                "max_image_calls"
+            )
+        ),
+    )
+
+    record(
+        "production_max_two_final_vision",
+        int(
+            status.get(
+                "max_vision_calls",
+                999,
+            )
+        )
+        <=
+        2,
+        "actual="
+        +
+        str(
+            status.get(
+                "max_vision_calls"
+            )
+        ),
+    )
+
+    record(
+        "production_one_preview_audit",
+        int(
+            status.get(
+                "preview_audit_calls",
+                999,
+            )
+        )
+        ==
+        1,
+        "actual="
+        +
+        str(
+            status.get(
+                "preview_audit_calls"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_five_pack_refs",
+        int(
+            status.get(
+                "stc_physical_reference_limit",
+                0,
+            )
+        )
+        >=
+        5,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_physical_reference_limit"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_three_render_refs",
+        int(
+            status.get(
+                "stc_render_reference_limit",
+                999,
+            )
+        )
+        <=
+        3,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_render_reference_limit"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_three_final_refs",
+        int(
+            status.get(
+                "stc_final_reference_limit",
+                999,
+            )
+        )
+        <=
+        3,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_final_reference_limit"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_two_repair_refs",
+        int(
+            status.get(
+                "stc_edit_reference_limit",
+                999,
+            )
+        )
+        <=
+        2,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_edit_reference_limit"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_brand_kit_available",
+        bool(
+            status.get(
+                "stc_brand_kit_available"
+            )
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_brand_kit_available"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_brand_pack_required",
+        bool(
+            status.get(
+                "stc_brand_pack_required"
+            )
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_brand_pack_required"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_high_alert",
+        bool(
+            status.get(
+                "stc_high_alert_enabled"
+            )
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_high_alert_enabled"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_qa_target_92",
+        float(
+            status.get(
+                "stc_qa_target",
+                0,
+            )
+        )
+        >=
+        92.0,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_qa_target"
+            )
+        ),
+    )
+
+    record(
+        "production_stc_release_floor_88",
+        float(
+            status.get(
+                "stc_qa_release_floor",
+                0,
+            )
+        )
+        >=
+        88.0,
+        "actual="
+        +
+        str(
+            status.get(
+                "stc_qa_release_floor"
+            )
+        ),
+    )
+
+    record(
+        "production_copy_space_15_22",
+        (
+            status.get(
+                "copy_space_policy"
+            )
+            ==
+            "15-22_percent_integrated"
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "copy_space_policy"
+            )
+        ),
+    )
+
+    record(
+        "production_reality_firewall",
+        bool(
+            status.get(
+                "physical_reality_firewall"
+            )
+        ),
+    )
+
+    record(
+        "production_invented_hardware_ban",
+        bool(
+            status.get(
+                "invented_payment_hardware_ban"
+            )
+        ),
+    )
+
+    record(
+        "production_phone_pos_fusion_ban",
+        bool(
+            status.get(
+                "phone_pos_fusion_ban"
+            )
+        ),
+    )
+
+    record(
+        "production_stone_pedestal_ban",
+        bool(
+            status.get(
+                "stone_pedestal_ban"
+            )
+        ),
+    )
+
+    record(
+        "production_generic_camera_guard",
+        bool(
+            status.get(
+                "generic_camera_guard"
+            )
+        ),
+    )
+
+    record(
+        "production_reference_authority",
+        bool(
+            status.get(
+                "reference_authority"
+            )
+        ),
+    )
+
+    record(
+        "production_merchant_message_lock",
+        bool(
+            status.get(
+                "merchant_message_lock"
+            )
+        ),
+    )
+
+    record(
+        "production_immutable_final_locks",
+        bool(
+            status.get(
+                "immutable_final_locks"
+            )
+        ),
+    )
+
+    record(
+        "production_immutable_sentinel",
+        bool(
+            str(
+                status.get(
+                    "immutable_lock_sentinel",
+                    "",
+                )
+            ).strip()
+        ),
+        "actual="
+        +
+        str(
+            status.get(
+                "immutable_lock_sentinel"
             )
         ),
     )
 
 
 # =========================================================
-# IMAGE ENGINE ROUTE
+# PRODUCTION SOURCE REGRESSIONS
+# =========================================================
+
+if production:
+
+    source = module_source(
+        production
+    )
+
+    record(
+        "production_final_prompt_blocks_giant_upper_space",
+        (
+            "NO giant blank upper third"
+            in source
+        ),
+    )
+
+    record(
+        "production_final_prompt_blocks_phone_pos",
+        (
+            "NO phone/POS fusion"
+            in source
+        ),
+    )
+
+    record(
+        "production_final_prompt_blocks_invented_hardware",
+        (
+            "NO invented payment hardware"
+            in source
+        ),
+    )
+
+    record(
+        "production_final_prompt_blocks_stone",
+        (
+            "NO random travertine pedestal"
+            in source
+            or
+            "random stone pedestal"
+            in source
+        ),
+    )
+
+    record(
+        "production_final_prompt_has_reference_authority",
+        (
+            "VISUAL AUTHORITY"
+            in source
+            or
+            "REFERENCE AUTHORITY"
+            in source
+        ),
+    )
+
+    record(
+        "production_immutable_compiler_exists",
+        callable(
+            getattr(
+                production,
+                "fit_prompt_with_immutable_locks",
+                None,
+            )
+        ),
+    )
+
+
+# =========================================================
+# IMAGE ENGINE V3
 # =========================================================
 
 if image_engine:
+
+    status = {}
+
+    try:
+
+        status = (
+            image_engine
+            .get_image_engine_status()
+        )
+
+    except Exception:
+
+        status = {}
 
     fast_model = str(
         getattr(
@@ -1332,42 +1939,71 @@ if image_engine:
         )
     )
 
+    final_model = str(
+        getattr(
+            image_engine,
+            "OPENAI_IMAGE_MODEL",
+            "",
+        )
+    )
+
     record(
         "image_engine_nano_banana_2",
         (
             "gemini-3.1-flash-image"
-            in
-            fast_model
+            in fast_model
         ),
         "actual="
         +
         fast_model,
     )
 
-    best_use_pro = bool(
-        getattr(
-            image_engine,
-            "BEST_USE_PRO",
-            False,
+    record(
+        "image_engine_openai_final_model",
+        (
+            final_model
+            ==
+            "gpt-image-2"
+        ),
+        "actual="
+        +
+        final_model,
+    )
+
+    best_final = str(
+        status.get(
+            "best_final_model",
+            "",
         )
     )
 
     record(
-        "image_engine_best_not_pro",
+        "image_engine_best_final_gpt_image_2",
         (
-            best_use_pro
-            is False
+            best_final
+            ==
+            "gpt-image-2"
         ),
         "actual="
         +
-        str(
-            best_use_pro
+        best_final,
+    )
+
+    source = module_source(
+        image_engine
+    )
+
+    record(
+        "image_engine_openai_multi_reference",
+        (
+            "edit_with_openai_multi"
+            in source
         ),
     )
 
 
 # =========================================================
-# DIRECTOR AUDIT V1.1
+# STRICT OPENAI DIRECTOR
 # =========================================================
 
 if image_engine:
@@ -1397,7 +2033,7 @@ if image_engine:
         )
     )
 
-    detail_parts = []
+    detail_parts: List[str] = []
 
     if strict_path.get(
         "strict_helpers"
@@ -1468,11 +2104,6 @@ if image_engine:
         ),
     )
 
-    #
-    # Extra evidence:
-    # model must be Sol for structured Director.
-    #
-
     openai_director_model = str(
         getattr(
             image_engine,
@@ -1495,7 +2126,7 @@ if image_engine:
 
 
 # =========================================================
-# CREATIVE CONTRACT
+# CREATIVE BRAIN
 # =========================================================
 
 if creative_brain:
@@ -1511,7 +2142,7 @@ if creative_brain:
         ),
     )
 
-    module_source = safe_source(
+    source = module_source(
         creative_brain
     )
 
@@ -1519,14 +2150,35 @@ if creative_brain:
         "creative_technical_failure_contract",
         (
             "technical_failure"
-            in
-            module_source
+            in source
+        ),
+    )
+
+    record(
+        "creative_targeted_repair_present",
+        (
+            "targeted"
+            in source.lower()
+            and
+            "repair"
+            in source.lower()
+        ),
+    )
+
+    record(
+        "creative_strict_release_present",
+        (
+            "strict"
+            in source.lower()
+            and
+            "qualified"
+            in source.lower()
         ),
     )
 
 
 # =========================================================
-# CROSS MODULE
+# CROSS-MODULE CONTRACTS
 # =========================================================
 
 if (
@@ -1613,8 +2265,32 @@ if (
     )
 
 
+if (
+    telegram_runtime
+    and
+    stc_policy
+):
+
+    telegram_source = (
+        module_source(
+            telegram_runtime
+        )
+    )
+
+    record(
+        "telegram_policy_integration_contract",
+        (
+            "xpand_stc_policy"
+            in telegram_source
+            or
+            "resolve_stc_benefit_family"
+            in telegram_source
+        ),
+    )
+
+
 # =========================================================
-# STC GUARD
+# STC IMAGE GUARD
 # =========================================================
 
 if stc_skill:
@@ -1670,10 +2346,10 @@ print(
     "=============================================="
 )
 print(
-    " XPAND VISUAL STACK INTEGRATION AUDIT V1.1"
+    " XPAND VISUAL STACK INTEGRATION AUDIT V2.0"
 )
 print(
-    " ZERO-COST / ZERO-API"
+    " ZERO-COST / ZERO-API / ZERO-IMAGE"
 )
 print(
     "=============================================="
@@ -1682,7 +2358,6 @@ print("")
 
 
 passed_count = 0
-
 failed_count = 0
 
 
@@ -1744,42 +2419,84 @@ print("")
 
 
 # =========================================================
-# CRITICAL
+# CRITICAL TESTS
 # =========================================================
 
 CRITICAL_TESTS = {
+
+    # imports
     "import_xpand_image_engine",
     "import_xpand_creative_brain",
     "import_xpand_stc_bank_skill",
+    "import_xpand_stc_policy",
     "import_xpand_brand_research",
     "import_xpand_brand_memory",
     "import_xpand_production_engine",
     "import_xpand_image_telegram",
 
-    "creative_brain_v5",
+    # versions
+    "image_engine_v3",
+    "creative_brain_v5_6",
     "stc_skill_v3",
+    "stc_policy_v1",
     "brand_research_v2",
     "brand_memory_v3",
-    "production_v5",
-    "telegram_v3_4",
+    "production_v6",
+    "telegram_v3_6",
 
-    "telegram_install_exists",
+    # canonical service identity
+    "policy_merchant_payments",
+    "policy_digital_banking",
+    "policy_premium_cannot_erase_merchant",
+    "policy_premium_cannot_erase_digital",
+    "telegram_uses_canonical_stc_policy",
+    "telegram_policy_integration_contract",
 
-    "stc_style_question_required",
-    "stc_merchant_semantics",
+    # production architecture
+    "production_previs_nano_banana_2",
+    "production_nano_banana_preview_only",
+    "production_final_gpt_image_2",
+    "production_final_renderer_openai",
+    "production_openai_final_mandatory",
+    "production_gemini_final_forbidden",
+    "production_gemini_pro_final_forbidden",
 
-    "production_max_two_images",
-    "production_max_two_vision",
-    "production_nano_banana_2",
-    "production_no_mandatory_pro",
+    # STC reference architecture
+    "production_stc_five_pack_refs",
+    "production_stc_three_render_refs",
+    "production_stc_three_final_refs",
+    "production_stc_brand_kit_available",
+    "production_stc_brand_pack_required",
 
-    "image_engine_nano_banana_2",
-    "image_engine_best_not_pro",
+    # quality architecture
+    "production_stc_high_alert",
+    "production_stc_qa_target_92",
+    "production_stc_release_floor_88",
+    "production_immutable_final_locks",
+    "production_immutable_sentinel",
 
+    # physical regressions
+    "production_invented_hardware_ban",
+    "production_phone_pos_fusion_ban",
+    "production_stone_pedestal_ban",
+    "production_reference_authority",
+    "production_copy_space_15_22",
+    "production_final_prompt_blocks_giant_upper_space",
+    "production_immutable_compiler_exists",
+
+    # engine final
+    "image_engine_openai_final_model",
+    "image_engine_best_final_gpt_image_2",
+    "image_engine_openai_multi_reference",
+
+    # director
     "director_not_unconditional_gemini_first",
     "director_has_strict_openai_path",
     "director_openai_model_sol",
 
+    # contracts
+    "telegram_install_exists",
+    "telegram_masterpiece_exists",
     "telegram_production_contract",
     "telegram_creative_contract",
 }
@@ -1806,7 +2523,7 @@ critical_failures = [
 if critical_failures:
 
     print(
-        "❌ XPAND VISUAL STACK: NOT READY"
+        "❌ XPAND VISUAL STACK V2: NOT READY"
     )
 
     print("")
@@ -1850,13 +2567,13 @@ if critical_failures:
 # =========================================================
 
 print(
-    "✅ XPAND VISUAL STACK: READY FOR CONTROLLED LIVE TEST"
+    "✅ XPAND VISUAL STACK V2: READY FOR CONTROLLED LIVE TEST"
 )
 
 print("")
 
 print(
-    "Expected STC path:"
+    "Current STC Masterpiece path:"
 )
 
 print(
@@ -1864,39 +2581,51 @@ print(
 )
 
 print(
-    "→ style selection"
+    "→ Canonical STC Policy"
 )
 
 print(
-    "→ cached/local Brand Research"
+    "→ Telegram V3.6"
 )
 
 print(
-    "→ Creative Brain V5"
+    "→ Creative Brain V5.6"
 )
 
 print(
-    "→ strict structured OpenAI Director"
+    "→ GPT-5.6 Sol Creative Director"
 )
 
 print(
-    "→ max 3 curated reference DNA"
+    "→ Permanent STC Brand Pack"
 )
 
 print(
-    "→ max 2 physical references"
+    "→ 3 selected physical STC references"
 )
 
 print(
-    "→ Nano Banana 2"
+    "→ Nano Banana 2 1K PREVISUALIZATION ONLY"
 )
 
 print(
-    "→ one Vision QA"
+    "→ Gemini Preview Audit"
 )
 
 print(
-    "→ second Nano Banana 2 only if a real defect exists"
+    "→ GPT-Image-2 FINAL"
+)
+
+print(
+    "→ Immutable Final Locks"
+)
+
+print(
+    "→ GPT-5.6 Sol Final QA"
+)
+
+print(
+    "→ GPT-Image-2 repair only when required"
 )
 
 print(
@@ -1906,28 +2635,108 @@ print(
 print("")
 
 print(
-    "💰 Normal production target:"
+    "Final-provider policy:"
 )
 
 print(
-    "1 image call + 1 Vision QA"
+    "✅ GPT-Image-2 is mandatory Masterpiece final"
+)
+
+print(
+    "🚫 Gemini cannot be Masterpiece final"
+)
+
+print(
+    "🚫 Gemini Pro final escalation is disabled"
 )
 
 print("")
 
 print(
-    "💰 Maximum production target:"
+    "STC quality locks:"
 )
 
 print(
-    "2 image calls + 2 Vision QA"
+    "✅ STC QA target >= 92"
+)
+
+print(
+    "✅ STC release floor >= 88"
+)
+
+print(
+    "✅ 15–22% integrated copy space"
+)
+
+print(
+    "✅ Giant blank upper third blocked"
+)
+
+print(
+    "✅ Invented payment hardware blocked"
+)
+
+print(
+    "✅ Phone/POS fusion blocked"
+)
+
+print(
+    "✅ Random stone/travertine pedestal blocked"
+)
+
+print(
+    "✅ STC reference authority preserved"
+)
+
+print(
+    "✅ Canonical benefit family preserved"
 )
 
 print("")
 
 print(
-    "🚫 Nano Banana Pro is not mandatory"
+    "💰 Normal Masterpiece production:"
 )
+
+print(
+    "1 Nano Banana 2 previs"
+)
+
+print(
+    "+ 1 Gemini preview audit"
+)
+
+print(
+    "+ 1 GPT-Image-2 final"
+)
+
+print(
+    "+ 1 GPT-5.6 Sol final QA"
+)
+
+print("")
+
+print(
+    "💰 Maximum Masterpiece production:"
+)
+
+print(
+    "1 Nano Banana 2 previs"
+)
+
+print(
+    "+ 1 Gemini preview audit"
+)
+
+print(
+    "+ 2 GPT-Image-2 final/repair calls"
+)
+
+print(
+    "+ 2 GPT-5.6 Sol final QA calls"
+)
+
+print("")
 
 print(
     "🚫 No API calls were made by this audit"
