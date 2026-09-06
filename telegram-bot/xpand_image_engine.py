@@ -291,10 +291,10 @@ OPENAI_ENABLED = env_bool(
 # MODELS
 # =========================================================
 
-OPENAI_IMAGE_MODEL = str(
+OPENAI_EDIT_MODEL = str(
     os.environ.get(
-        "XPAND_OPENAI_IMAGE_MODEL",
-        "gpt-image-2",
+        "XPAND_OPENAI_EDIT_MODEL",
+        "dall-e-3",
     )
 ).strip()
 
@@ -5452,7 +5452,7 @@ def _build_openai_generation_payload(
 
     return {
         "model":
-            OPENAI_IMAGE_MODEL,
+            OPENAI_EDIT_MODEL,
 
         "prompt":
             clean_text(
@@ -5670,7 +5670,7 @@ def generate_with_openai(
                 ),
 
                 model=(
-                    OPENAI_IMAGE_MODEL
+                    OPENAI_EDIT_MODEL
                 ),
 
                 prompt=(
@@ -5845,7 +5845,7 @@ def _build_openai_edit_files(
     return files
 
 
-def _build_openai_edit_form(
+def _build_openai_IMAGE_form(
     *,
     prompt: str,
     size: str,
