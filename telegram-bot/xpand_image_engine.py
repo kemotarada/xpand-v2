@@ -5890,7 +5890,53 @@ def _build_openai_IMAGE_form(
 
 # =========================================================
 # OPENAI MULTI-REFERENCE EDIT
-# =========================================================
+# =========================================================def _build_openai_edit_form(
+    *,
+    prompt: str,
+    size: str,
+    quality: str,
+) -> Dict[str, str]:
+
+    #
+    # IMPORTANT:
+    #
+    # GPT-Image-2 processes image inputs at high
+    # fidelity automatically.
+    #
+    # input_fidelity MUST NOT be sent.
+    #
+    # Uses OPENAI_EDIT_MODEL (dall-e-3) because
+    # gpt-image-2 does NOT support the edits API.
+    #
+
+    return {
+        "model":
+            OPENAI_EDIT_MODEL,
+
+        "prompt":
+            clean_text(
+                prompt,
+                32000,
+            ),
+
+        "size":
+            size,
+
+        "quality":
+            (
+                quality
+                if quality
+                in SUPPORTED_OPENAI_QUALITIES
+                else
+                "high"
+            ),
+
+        "n":
+            "1",
+    }
+
+
+
 
 def edit_with_openai_multi(
     input_images: Sequence[
@@ -5909,7 +5955,7 @@ def edit_with_openai_multi(
         PROVIDER_OPENAI
     ),
     final_model_label: str = (
-        OPENAI_IMAGE_MODEL
+        OPENAI_EDIT_MODEL
     ),
     metadata: Optional[
         Dict[str, Any]
@@ -6196,7 +6242,7 @@ def edit_with_openai(
         PROVIDER_OPENAI
     ),
     final_model_label: str = (
-        OPENAI_IMAGE_MODEL
+        OPENAI_EDIT_MODEL
     ),
     metadata: Optional[
         Dict[str, Any]
@@ -6348,7 +6394,7 @@ def render_final_with_openai(
                 draft_image.request_id,
 
             "final_renderer":
-                OPENAI_IMAGE_MODEL,
+                OPENAI_EDIT_MODEL,
         },
     )
 
