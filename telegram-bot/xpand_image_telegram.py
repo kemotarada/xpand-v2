@@ -1,5 +1,5 @@
 # =========================================================
-# XPAND UNIFIED VISUAL RUNTIME V3.6
+# XPAND UNIFIED VISUAL RUNTIME V4.2
 #
 # CANONICAL STC SEMANTIC POLICY
 # + GPT-IMAGE-2 MASTERPIECE FINAL ROUTE
@@ -262,7 +262,7 @@ except Exception:
 # MODULE
 # =========================================================
 
-VERSION = "3.6"
+VERSION = "4.2"
 
 MODULE_NAME = (
     "XPAND Unified Visual Runtime"
@@ -5060,40 +5060,16 @@ def generate_and_deliver(
             get_stc_style_question()
         )
 
-    if is_stc_prompt_only_request(text):
-        from xpand_stc_skill_runtime import prompt_direction, clean_public_prompt
-        prompt_writer = getattr(core, "_xpand_prompt_only_ask", None)
-        if not callable(prompt_writer):
-            raise RuntimeError("مسار كتابة البرومت غير متصل؛ أعد تشغيل الوكيل بعد تثبيت التحديث.")
-        selected_style = detect_stc_visual_style(prompt)
-        direction = prompt_direction(selected_style)
-        creative_request, benefit_family = build_creative_request(prompt, selected_style)
-        # Prompt requests use the same bounded, text-only concept/review process
-        # as image requests. Do not invoke production, preview or image APIs here.
-        creative_response = run_creative_brain(
-            user_request=creative_request,
-            brand_context={"brand_id": "stc_bank", "benefit_family": benefit_family},
-            visual_references=[],
-            style_hint=selected_style,
-            mode=CREATIVE_MODE_MASTERPIECE,
-            top_count=1,
-        )
-        if not creative_quality_passed(creative_response):
-            raise RuntimeError("الفكرة لم تجتز المراجعة الإبداعية؛ لم يتم توليد صورة أو تسليم برومت غير معتمد.")
-        winner_instruction = build_winner_instruction(creative_response)
-        if not winner_instruction:
-            raise RuntimeError("تعذر تحميل تفاصيل الفكرة المختارة؛ لم يتم توليد صورة.")
-        answer = prompt_writer(chat_id, user_id,
-            "STC PROMPT-ONLY TASK. Compile the reviewed winner into one standalone English image prompt. "
-            "Preserve its visible benefit proof, action and spatial mechanism; do not invent a new idea. "
-            "Do not call image tools. Do not output scores, reference IDs, file paths, or references to "
-            "images that are not attached. Describe the visual qualities directly.\n"
-            + direction + "\nUSER BRIEF:\n" + text + winner_instruction)
-        answer = clean_public_prompt(answer)
-        if not answer:
-            raise RuntimeError("لم يرجع كاتب البرومت نصًا؛ لم يتم توليد أي صورة.")
-        core.send_message(chat_id, str(answer))
-        return {"output_kind": "prompt", "errors": [], "images": []}
+    from xpand_stc_design_session import wants_ideas, route_turn, run_turn
+    if is_stc_prompt_only_request(text) or (is_stc_bank_request(text) and wants_ideas(text)):
+        import sys
+        runtime = sys.modules[__name__]
+        task = route_turn(runtime, chat_id, user_id, text)
+        if task is None:
+            raise RuntimeError("تعذر تحديد طلب التصميم؛ اذكر البنك والأسلوب والمطلوب.")
+        answer = run_turn(runtime, core, chat_id, user_id, task)
+        core.send_message(chat_id, answer)
+        return {"output_kind": "ideas" if task.get("mode") == "ideas" else "prompt", "errors": [], "images": []}
 
     # =====================================================
     # REQUEST SETTINGS
@@ -5957,6 +5933,20 @@ def generate_and_deliver(
 # TEXT HANDLER
 # =========================================================
 
+def stc_design_reply(core, chat_id, user_id, text):
+    """Return text for a design turn, or None for the existing other routes."""
+    import sys
+    from xpand_stc_design_session import route_turn, run_turn
+    task = route_turn(sys.modules[__name__], chat_id, user_id, text)
+    if task is None:
+        return None
+    try:
+        return run_turn(sys.modules[__name__], core, chat_id, user_id, task)
+    except Exception as error:
+        print("❌ STC DESIGN SESSION:", clean_text(error, 1500), flush=True)
+        return "تعذر إكمال مراجعة التصميم: " + clean_text(error, 1500)
+
+
 def handle_text_image_request(
     core,
     chat_id,
@@ -6128,6 +6118,11 @@ def handle_text_image_request(
             ),
         )
 
+        return True
+
+    design_reply = stc_design_reply(core, chat_id, user_id, text)
+    if design_reply is not None:
+        core.send_message(chat_id, design_reply)
         return True
 
     # =====================================================
@@ -6421,8 +6416,8 @@ def install(
                         ),
                     )
 
-                    if result.get("output_kind") == "prompt":
-                        return "كتبتلك البرومت وبعثته."
+                    if result.get("output_kind") in {"prompt", "ideas"}:
+                        return "جهزتلك النص وبعثته."
 
                     if (
                         result.get(
@@ -6467,6 +6462,10 @@ def install(
                         +
                         message
                     )
+
+            design_reply = stc_design_reply(core, chat_id, user_id, user_message)
+            if design_reply is not None:
+                return design_reply
 
             # =============================================
             # NOT IMAGE
@@ -6517,8 +6516,8 @@ def install(
                     ),
                 )
 
-                if result.get("output_kind") == "prompt":
-                    return "كتبتلك البرومت وبعثته."
+                if result.get("output_kind") in {"prompt", "ideas"}:
+                    return "جهزتلك النص وبعثته."
 
                 if (
                     result.get(
@@ -6611,7 +6610,7 @@ def install(
         "=================================================="
     )
     print(
-        " XPAND UNIFIED VISUAL RUNTIME V3.6"
+        " XPAND UNIFIED VISUAL RUNTIME V4.2"
     )
     print(
         "=================================================="
@@ -6620,6 +6619,7 @@ def install(
     print(
         "✅ install(core): READY"
     )
+    print("✅ stc-design-session-v4.2: text + voice follow-ups", flush=True)
 
     print(
         "✅ Telegram Text Image Routing"
@@ -6810,7 +6810,7 @@ if __name__ == "__main__":
         "=========================================="
     )
     print(
-        " XPAND IMAGE TELEGRAM V3.6 SELF TEST"
+        " XPAND IMAGE TELEGRAM V4.2 SELF TEST"
     )
     print(
         "=========================================="
@@ -7598,7 +7598,7 @@ if __name__ == "__main__":
 
     print("")
     print(
-        "XPAND Image Telegram V3.6 self-test: PASS ✅"
+        "XPAND Image Telegram V4.2 self-test: PASS ✅"
     )
     print(
         "🚫 No API calls were made"
