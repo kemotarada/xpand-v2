@@ -2755,6 +2755,10 @@ def is_openai_quota_error(
         "billing_hard_limit",
         "add credits",
         "credit balance",
+        "does not exist",
+        "model_not_found",
+        "unsupported model",
+        "invalid model",
     )
 
     if any(marker in message for marker in billing_markers):
