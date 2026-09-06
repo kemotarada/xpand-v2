@@ -5890,7 +5890,8 @@ def _build_openai_IMAGE_form(
 
 # =========================================================
 # OPENAI MULTI-REFERENCE EDIT
-# =========================================================def _build_openai_edit_form(
+# =========================================================
+def _build_openai_edit_form(
     *,
     prompt: str,
     size: str,
