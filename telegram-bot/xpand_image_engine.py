@@ -291,6 +291,16 @@ OPENAI_ENABLED = env_bool(
 # MODELS
 # =========================================================
 
+OPENAI_IMAGE_MODEL = str(
+    os.environ.get(
+        "XPAND_OPENAI_IMAGE_MODEL",
+        "gpt-image-2",
+    )
+).strip()
+
+
+# Model for /images/edits endpoint.
+# gpt-image-2 does NOT support image editing.
 OPENAI_EDIT_MODEL = str(
     os.environ.get(
         "XPAND_OPENAI_EDIT_MODEL",
