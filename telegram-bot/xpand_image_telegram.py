@@ -5061,14 +5061,35 @@ def generate_and_deliver(
         )
 
     if is_stc_prompt_only_request(text):
-        from xpand_stc_skill_runtime import prompt_direction
+        from xpand_stc_skill_runtime import prompt_direction, clean_public_prompt
         prompt_writer = getattr(core, "_xpand_prompt_only_ask", None)
         if not callable(prompt_writer):
             raise RuntimeError("مسار كتابة البرومت غير متصل؛ أعد تشغيل الوكيل بعد تثبيت التحديث.")
-        direction = prompt_direction(detect_stc_visual_style(prompt))
+        selected_style = detect_stc_visual_style(prompt)
+        direction = prompt_direction(selected_style)
+        creative_request, benefit_family = build_creative_request(prompt, selected_style)
+        # Prompt requests use the same bounded, text-only concept/review process
+        # as image requests. Do not invoke production, preview or image APIs here.
+        creative_response = run_creative_brain(
+            user_request=creative_request,
+            brand_context={"brand_id": "stc_bank", "benefit_family": benefit_family},
+            visual_references=[],
+            style_hint=selected_style,
+            mode=CREATIVE_MODE_MASTERPIECE,
+            top_count=1,
+        )
+        if not creative_quality_passed(creative_response):
+            raise RuntimeError("الفكرة لم تجتز المراجعة الإبداعية؛ لم يتم توليد صورة أو تسليم برومت غير معتمد.")
+        winner_instruction = build_winner_instruction(creative_response)
+        if not winner_instruction:
+            raise RuntimeError("تعذر تحميل تفاصيل الفكرة المختارة؛ لم يتم توليد صورة.")
         answer = prompt_writer(chat_id, user_id,
-            "STC PROMPT-ONLY TASK. Return the requested English image prompt; do not call image tools.\n"
-            + direction + "\nUSER BRIEF:\n" + text)
+            "STC PROMPT-ONLY TASK. Compile the reviewed winner into one standalone English image prompt. "
+            "Preserve its visible benefit proof, action and spatial mechanism; do not invent a new idea. "
+            "Do not call image tools. Do not output scores, reference IDs, file paths, or references to "
+            "images that are not attached. Describe the visual qualities directly.\n"
+            + direction + "\nUSER BRIEF:\n" + text + winner_instruction)
+        answer = clean_public_prompt(answer)
         if not answer:
             raise RuntimeError("لم يرجع كاتب البرومت نصًا؛ لم يتم توليد أي صورة.")
         core.send_message(chat_id, str(answer))

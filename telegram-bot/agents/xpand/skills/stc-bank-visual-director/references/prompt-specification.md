@@ -7,3 +7,5 @@ Realistic structure: an observable action in a clean real location, palette draw
 Surreal structure: a real scene with one clearly named scale/spatial intervention, one shared camera and motivated light; avoid supernatural effects.
 Negative tail: no text, letters, numbers, logos, watermark, readable UI, graphic overlays, decorative lines, particles, holograms or unsupported floating elements. Natural structural edges/reflections are permitted.
 Do not promise exact offer comprehension without typography. Do not claim a generated blank/unreadable screen shows a verified banking app. User-supplied branded content requires an explicit exception to this project's no-text/no-logo rule.
+
+A standalone prompt must describe hue/value, surface, reflection and camera behavior directly. Never write “inspired by stc_curated_02” or “see reference image 2” without actual attached images in the target request. Reference products do not determine the requested service's product category. Preserve the reviewed winner's benefit proof and main action before adding finish language.

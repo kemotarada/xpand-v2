@@ -1,5 +1,6 @@
 """Canonical on-disk STC direction loaded by the running workers. No API calls."""
 import json
+import re
 from pathlib import Path
 from functools import lru_cache
 
@@ -31,12 +32,25 @@ def reference_observations(style):
                  "augmented_realism": "premium_augmented_realism"}.get(style, style)
     rows = json.loads(read_skill_file("references/reference-atlas.json"))
     matches = [row for row in rows if row["family"] == canonical]
-    return "Curated visual observations (not a claim of live vision):\n" + "\n".join(
-        row["asset_id"] + ": " + row["observed_camera"] + ". " + row["observations"]
-        for row in matches[:4])
+    # Avoid teaching a new service through four near-identical card ads.
+    selected = [matches[i] for i in sorted({0, len(matches)//2, len(matches)-1})] if matches else []
+    return "Visual-language observations only; do not inherit the reference's product or service. " \
+        "No reference image is attached to the returned standalone prompt.\n" + "\n".join(
+        row["observed_camera"] + ": " + row["observations"] for row in selected)
+
+def clean_public_prompt(value):
+    """Remove repository reference identifiers from a portable user prompt."""
+    text = str(value or "").strip()
+    ref = r"(?:local_stc:)?stc_(?:curated|purple|realistic|augmented|merchant|dna)_\d+(?:\.jpe?g)?"
+    text = re.sub(r"(?:inspired by|based on|referencing|matching|as in)\s+" + ref, "", text, flags=re.I)
+    text = re.sub(ref, "", text, flags=re.I)
+    text = re.sub(r"[ \t]+([,.;])", r"\1", text)
+    text = re.sub(r"[,;]\s*[,;]", ",", text)
+    return re.sub(r"[ \t]{2,}", " ", text).strip()
 
 def prompt_direction(style):
     return "\n\n".join(filter(None, [core_direction(), style_direction(style), reference_observations(style),
+        read_skill_file("references/concept-workflow.md"),
         read_skill_file("references/prompt-specification.md"),
         read_skill_file("references/visual-language.md"),
         read_skill_file("references/effects-and-finish.md")]))

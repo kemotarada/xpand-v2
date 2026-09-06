@@ -3,7 +3,7 @@ name: stc-bank-visual-director
 description: Develop original STC Bank advertising concepts and image prompts from curated visual references, in photographic, purple studio, or photographic surrealism styles.
 ---
 # STC Bank Visual Director
-VERSION: 4.0
+VERSION: 4.1
 
 ## Interaction and runtime contract
 At the user-facing entry point ask, if the request does not explicitly select a style:
@@ -24,7 +24,7 @@ PURPLE STUDIO (`purple_architectural`): a coherent purple set of connected plane
 PHOTOGRAPHIC SURREALISM (`augmented_realism`): one surprising physical-scale or spatial relationship in a convincingly photographed scene. It may use a purple set. No magical portal glow, floating UI or landmark collage. Gravity, occlusion and lighting remain coherent.
 
 ## Build and review
-Translate one benefit into an observable situation, not a list of symbols. Produce genuinely different mechanisms (action, reveal, spatial pairing, material behavior, scale), not one scene with different colors. Review message clarity, reference fidelity, camera intent, material separation and renderability. Choose the route with the strongest visual proof; luxury adjectives do not compensate for weak structure.
+Translate one benefit into an observable situation, not a list of symbols. A final prompt must contain visible evidence of the benefit; naming “travel connectivity” in its introduction is not visual evidence. Learn palette/geometry from references without inheriting their product category. A card advertisement must not turn an eSIM/roaming brief into an invented bank-sized smart travel card. Export standalone prompts without internal reference IDs, filenames or claims of attachments that are absent. Produce genuinely different mechanisms (action, reveal, spatial pairing, material behavior, scale), not one scene with different colors. Review message clarity, reference fidelity, camera intent, material separation and renderability. Choose the route with the strongest visual proof; luxury adjectives do not compensate for weak structure.
 Choose exactly one camera setup: elevation/tilt + azimuth + distance/framing + lens character. Angle names are standard photographic terms, not measurements recovered from a JPEG. Avoid incompatible “top-down worm's-eye” combinations.
 Describe a key light, fill/negative fill, background illumination, shadow direction and each important material's reflection behavior. Attractive gloss must come from reflected sources; do not draw luminous outlines. Preserve clean tonal transitions and fine real texture without noise or oversharpening.
 
