@@ -426,6 +426,14 @@ BEST_REQUIRE_OPENAI_FINAL = env_bool(
 )
 
 
+# If OpenAI is temporarily unavailable because of quota/billing, allow
+# BEST to finish with a single Gemini final instead of returning no image.
+BEST_ALLOW_QUOTA_FALLBACK = env_bool(
+    "XPAND_BEST_ALLOW_QUOTA_FALLBACK",
+    True,
+)
+
+
 OPENAI_MAX_REFERENCE_IMAGES = max(
     1,
     min(
@@ -2726,6 +2734,43 @@ def response_status_error(
     return clean_text(
         value,
         3000,
+    )
+
+
+def is_openai_quota_error(
+    error: Any,
+) -> bool:
+    """Return True for billing/quota failures where retrying OpenAI is wasteful."""
+    message = clean_text(
+        error,
+        8000,
+    ).lower()
+
+    billing_markers = (
+        "no credits",
+        "insufficient_quota",
+        "quota exceeded",
+        "exceeded your current quota",
+        "billing hard limit",
+        "billing_hard_limit",
+        "add credits",
+        "credit balance",
+    )
+
+    if any(marker in message for marker in billing_markers):
+        return True
+
+    return (
+        "429" in message
+        and any(
+            marker in message
+            for marker in (
+                "quota",
+                "billing",
+                "rate limit",
+                "too many requests",
+            )
+        )
     )
 
 
@@ -6991,6 +7036,10 @@ def run_hybrid_best(
 
     errors: List[str] = []
 
+    openai_quota_unavailable = False
+    quota_fallback_used = False
+
+
     preview_prompt = (
         build_previsualization_prompt(
             original_prompt,
@@ -7008,6 +7057,9 @@ def run_hybrid_best(
     for index in range(
         number
     ):
+
+        if openai_quota_unavailable:
+            break
 
         draft: Optional[
             GeneratedImage
@@ -7194,6 +7246,14 @@ def run_hybrid_best(
                     "⚠️ GPT-Image-2 MULTI FINAL:",
                     message,
                 )
+
+                if is_openai_quota_error(error):
+                    openai_quota_unavailable = True
+                    print(
+                        "🔁 OpenAI quota/billing unavailable; "
+                        "skipping repeated OpenAI retries."
+                    )
+                    continue
 
                 #
                 # Technical recovery:
@@ -7442,6 +7502,74 @@ def run_hybrid_best(
                 )
             )
 
+    if (
+        not results
+        and openai_quota_unavailable
+        and BEST_ALLOW_QUOTA_FALLBACK
+        and GEMINI_API_KEY
+    ):
+        print(
+            "🔁 XPAND QUOTA FALLBACK → Gemini final"
+        )
+
+        try:
+            google_fallback = run_google_direct(
+                original_prompt,
+                pro=False,
+                aspect_ratio=aspect_ratio,
+                image_size=image_size,
+                quality=final_quality,
+                number=number,
+                allow_fallback=False,
+                reference_images=references,
+            )
+
+            if not google_fallback.images:
+                raise XPANDImageProviderError(
+                    "Gemini quota fallback returned no image."
+                )
+
+            for fallback_image in google_fallback.images:
+                fallback_image.metadata.update(
+                    {
+                        "best_pipeline": [
+                            GOOGLE_IMAGE_FAST_MODEL,
+                        ],
+                        "previsualization": False,
+                        "nano_banana_final": True,
+                        "mandatory_openai_final": False,
+                        "provider_fallback": "openai_quota_to_google",
+                    }
+                )
+
+            results.extend(
+                google_fallback.images[:number]
+            )
+
+            if google_fallback.routes:
+                final_route = google_fallback.routes[0]
+
+            quota_fallback_used = True
+            errors.append(
+                "openai_quota_fallback: Gemini final used because OpenAI quota/billing was unavailable."
+            )
+
+        except Exception as fallback_error:
+            errors.append(
+                "google_quota_fallback: "
+                + clean_text(
+                    fallback_error,
+                    3500,
+                )
+            )
+            print(
+                "⚠️ GEMINI QUOTA FALLBACK:",
+                clean_text(
+                    fallback_error,
+                    3500,
+                ),
+            )
+
     if not results:
 
         raise XPANDImageProviderError(
@@ -7459,7 +7587,10 @@ def run_hybrid_best(
     # Absolute final-provider safety.
     #
 
-    if BEST_REQUIRE_OPENAI_FINAL:
+    if (
+        BEST_REQUIRE_OPENAI_FINAL
+        and not quota_fallback_used
+    ):
 
         invalid = [
             image
