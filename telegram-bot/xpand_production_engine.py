@@ -324,6 +324,14 @@ MASTERPIECE_REQUIRE_OPENAI_FINAL = env_bool(
 )
 
 
+# Allow a provider fallback only when the mandatory OpenAI final cannot run.
+# The fallback still goes through the normal final QA and delivery frame.
+MASTERPIECE_ALLOW_PROVIDER_FALLBACK = env_bool(
+    "XPAND_MASTERPIECE_ALLOW_PROVIDER_FALLBACK",
+    True,
+)
+
+
 STC_REQUIRE_OPENAI_FINAL = env_bool(
     "XPAND_STC_REQUIRE_OPENAI_FINAL",
     True,
@@ -4695,28 +4703,90 @@ def openai_multi_reference_edit(
 
     else:
 
-        result = edit_with_openai_multi(
-            inputs,
-            prompt,
-            aspect_ratio=(
-                aspect_ratio
-            ),
-            image_size=(
-                output_image_size
-            ),
-            quality="high",
-            original_prompt=(
-                prompt
-            ),
-            metadata={
-                "production_engine":
-                    ENGINE_VERSION,
-                "pass_name":
-                    pass_name,
-                "immutable_final_locks":
-                    True,
-            },
-        )
+        try:
+            result = edit_with_openai_multi(
+                inputs,
+                prompt,
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                image_size=(
+                    output_image_size
+                ),
+                quality="high",
+                original_prompt=(
+                    prompt
+                ),
+                metadata={
+                    "production_engine":
+                        ENGINE_VERSION,
+                    "pass_name":
+                        pass_name,
+                    "immutable_final_locks":
+                        True,
+                },
+            )
+
+        except Exception as openai_error:
+            if not MASTERPIECE_ALLOW_PROVIDER_FALLBACK:
+                raise
+
+            message = clean_text(
+                openai_error,
+                3500,
+            )
+
+            print(
+                "🔁 OpenAI final unavailable; "
+                "using Gemini provider fallback:",
+                message,
+            )
+
+            result = gemini_multi_reference_edit(
+                working_image=(
+                    working_image
+                ),
+                references=(
+                    refs
+                ),
+                prompt=(
+                    prompt
+                ),
+                aspect_ratio=(
+                    aspect_ratio
+                ),
+                pass_name=(
+                    "gemini_provider_fallback_v601"
+                ),
+                output_image_size=(
+                    output_image_size
+                ),
+                model_override=(
+                    NANO_BANANA_2_MODEL
+                ),
+                max_reference_images=(
+                    limit
+                ),
+            )
+
+            if not isinstance(
+                result.metadata,
+                dict,
+            ):
+                result.metadata = {}
+
+            result.metadata.update(
+                {
+                    "provider_fallback":
+                        "openai_to_gemini",
+                    "openai_failure":
+                        message,
+                    "mandatory_openai_final_failed":
+                        True,
+                    "gemini_final_allowed":
+                        True,
+                }
+            )
 
     if not isinstance(
         result.metadata,
@@ -7480,7 +7550,20 @@ def run_production(
                 "stage":
                     "final",
                 "final_provider":
-                    "openai",
+                    (
+                        "google"
+                        if bool(
+                            getattr(
+                                first_final,
+                                "metadata",
+                                {},
+                            ).get(
+                                "provider_fallback"
+                            )
+                        )
+                        else
+                        "openai"
+                    ),
                 "immutable_final_locks":
                     True,
                 "references":
@@ -7503,6 +7586,15 @@ def run_production(
         first_final.model
         !=
         FINAL_IMAGE_MODEL
+        and not bool(
+            getattr(
+                first_final,
+                "metadata",
+                {},
+            ).get(
+                "provider_fallback"
+            )
+        )
     ):
 
         failure_qa = (
@@ -7679,6 +7771,15 @@ def run_production(
         ]
         <
         MASTERPIECE_MAX_IMAGE_CALLS
+        and not bool(
+            getattr(
+                first_final,
+                "metadata",
+                {},
+            ).get(
+                "provider_fallback"
+            )
+        )
     ):
 
         repair_refs = (
@@ -7982,6 +8083,15 @@ def run_production(
         best_image.model
         ==
         FINAL_IMAGE_MODEL
+        or bool(
+            getattr(
+                best_image,
+                "metadata",
+                {},
+            ).get(
+                "provider_fallback"
+            )
+        )
     )
 
     telemetry[
@@ -8052,7 +8162,15 @@ def run_production(
             "previsualization_only_gemini":
                 True,
             "gemini_final_allowed":
-                False,
+                bool(
+                    getattr(
+                        final_image,
+                        "metadata",
+                        {},
+                    ).get(
+                        "provider_fallback"
+                    )
+                ),
             "copy_space_policy":
                 "25-40_percent_integrated",
             "immutable_final_locks":
