@@ -5653,6 +5653,14 @@ def generate_and_deliver(
 
     if not images:
 
+        if masterpiece_failure_kind == "quality_failure":
+            raise RuntimeError(
+                "تم توليد صورة، لكنها لم تجتز مراجعة الجودة بعد "
+                "محاولات الإصلاح المحدودة. لم يتم تسليمها حفاظًا على "
+                "المعايير المطلوبة. هذه ليست مشكلة رصيد أو تعطل توليد؛ "
+                "لا تكرر الطلب نفسه قبل مراجعة أسباب الرفض في السجل."
+            )
+
         if (
             high_alert
             and
