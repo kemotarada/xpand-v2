@@ -5173,6 +5173,14 @@ QA_SCORE_PROPERTIES = {
     key: {
         "type":
             "number",
+        "minimum":
+            0,
+        "maximum":
+            100,
+        "description": (
+            "Score on the 0-100 scale: 0 = complete failure, "
+            "50 = materially flawed/average, 100 = fully excellent."
+        ),
     }
     for key
     in QA_WEIGHTS
@@ -5784,6 +5792,13 @@ Do not require readable text or UI as proof.
 XPAND VISUAL QA V6.0.1
 ======================
 
+SCORING SCALE — APPLY BEFORE ALL OTHER INSTRUCTIONS
+---------------------------------------------------
+
+Every dimension MUST be scored directly on a 0–100 scale.
+0 = complete failure, 50 = materially flawed/average,
+100 = fully excellent. Never return a 0–10 scale.
+
 {stage_instruction}
 
 ORIGINAL REQUEST
@@ -5809,8 +5824,8 @@ EXPECTED ASPECT
 ---------------
 {aspect_ratio}
 
-SCORE 0–100
------------
+SCORE EACH DIMENSION 0–100
+--------------------------
 
 concept_execution:
 Did the approved advertising idea survive?
@@ -5900,13 +5915,48 @@ def build_qa_evaluation(
     stage: str,
 ) -> QAEvaluation:
 
+    raw_scores = safe_dict(
+        data.get(
+            "scores"
+        )
+    )
+
+    numeric_raw_scores = [
+        float(value)
+        for value
+        in raw_scores.values()
+        if isinstance(
+            value,
+            (int, float),
+        )
+        and not isinstance(
+            value,
+            bool,
+        )
+    ]
+
+    if (
+        numeric_raw_scores
+        and
+        len(numeric_raw_scores)
+        ==
+        len(raw_scores)
+        and
+        max(numeric_raw_scores)
+        <=
+        10
+    ):
+
+        print(
+            (
+                "⚠️ QA scores occupy the ambiguous 0-10 low band; "
+                "preserving values as legitimate 0-100 scores."
+            )
+        )
+
     score, normalized_scores = (
         calculate_qa_score(
-            safe_dict(
-                data.get(
-                    "scores"
-                )
-            )
+            raw_scores
         )
     )
 
@@ -6662,6 +6712,79 @@ Use Image 1 alone and do not reconstruct prior branded lettering.
         )
     )
 
+    repair_scope_lock = (
+        f"""
+REPAIR MODE — IMMUTABLE
+-----------------------
+SURGICAL REMOVAL. Image 1 is the PRIMARY AND ONLY visual source.
+Preserve the already-good advertising message, service depiction,
+camera, perspective, subjects, geometry, lighting, materials and all
+successful regions. Remove only diagnosed text, logos, wordmarks,
+symbols, watermarks, readable numbers and fake banking UI; rebuild
+those local pixels plausibly.
+{(
+    "A narrowly bounded composition correction may minimally crop, "
+    "reframe, scale or shift existing elements only for the diagnosed "
+    "copy-space failure. Do not create or expand empty space, add a "
+    "blank panel or replace the scene."
+    if copy_space_surgical
+    else
+    "Do not recompose, reframe, crop, add objects or redesign."
+)}
+""".strip()
+        if text_logo_surgical
+        else
+        """
+REPAIR MODE — IMMUTABLE
+-----------------------
+STRUCTURAL REPAIR of the same approved idea is allowed. Preserve the
+commercial proposition, brand world and service message while replacing
+structurally impossible or generic execution with believable photography.
+""".strip()
+        if structural
+        else
+        """
+REPAIR MODE — IMMUTABLE
+-----------------------
+TARGETED REPAIR. Preserve successful regions and the approved campaign.
+Fix only the defects diagnosed by final QA; do not redesign.
+""".strip()
+    )
+
+    actionable_qa_lock = f"""
+FINAL QA CORRECTION — IMMUTABLE
+-------------------------------
+Instruction:
+{clean_text(
+    qa.correction_instruction,
+    900,
+) or "Correct only the diagnosed final-QA defects."}
+
+Critical blockers:
+{compact_json(
+    qa.critical_blockers[:8],
+    1200,
+)}
+""".strip()
+
+    immutable_repair_section = f"""
+XPAND_REPAIR_SCOPE_V601
+=======================
+
+{repair_scope_lock}
+
+REFERENCE ROLES — IMMUTABLE
+---------------------------
+{clean_text(
+    reference_role_text,
+    800,
+)}
+
+{actionable_qa_lock}
+
+END_XPAND_REPAIR_SCOPE_V601
+""".strip()
+
     repair_priorities = (
         f"""
 - remove every diagnosed letter, logo, wordmark and readable UI artifact
@@ -6722,7 +6845,7 @@ APPROVED CONTRACT
 -----------------
 {clean_text(
     compiled.prompt,
-    3400,
+    1800,
 )}
 
 FINAL QA FAILURE
@@ -6761,6 +6884,10 @@ Create one improved final campaign image.
                 not text_logo_surgical
             ),
         )
+        +
+        "\n\n"
+        +
+        immutable_repair_section
     )
 
     return fit_prompt_with_immutable_locks(
@@ -8139,67 +8266,75 @@ def run_production(
             ]
         )
 
-        repair_prompt = (
-            build_final_repair_prompt(
-                qa=(
-                    first_qa
-                ),
-                compiled=(
-                    compiled
-                ),
-                original_request=(
-                    original_request
-                ),
-                references=(
-                    repair_refs
-                ),
-                aspect_ratio=(
-                    aspect_ratio
-                ),
-                requested_size=(
-                    requested_size
-                ),
-                action=(
-                    action
-                ),
-            )
-        )
-
-        print(
-            "Repair prompt chars:",
-            len(
-                repair_prompt
-            ),
-            "/",
-            CORRECTION_PROMPT_BUDGET,
-        )
-
-        print(
-            "Repair immutable sentinel:",
-            (
-                IMMUTABLE_LOCK_SENTINEL
-                in repair_prompt
-            ),
-        )
-
-        print("")
-        print(
-            "🎯 FINAL IMAGE 2/"
-            +
-            str(
-                MASTERPIECE_MAX_IMAGE_CALLS
-            )
-            +
-            " | "
-            +
-            FINAL_IMAGE_MODEL
-            +
-            " | "
-            +
-            action
+        repair_phase = (
+            "repair_prompt_build"
         )
 
         try:
+
+            repair_prompt = (
+                build_final_repair_prompt(
+                    qa=(
+                        first_qa
+                    ),
+                    compiled=(
+                        compiled
+                    ),
+                    original_request=(
+                        original_request
+                    ),
+                    references=(
+                        repair_refs
+                    ),
+                    aspect_ratio=(
+                        aspect_ratio
+                    ),
+                    requested_size=(
+                        requested_size
+                    ),
+                    action=(
+                        action
+                    ),
+                )
+            )
+
+            print(
+                "Repair prompt chars:",
+                len(
+                    repair_prompt
+                ),
+                "/",
+                CORRECTION_PROMPT_BUDGET,
+            )
+
+            print(
+                "Repair immutable sentinel:",
+                (
+                    IMMUTABLE_LOCK_SENTINEL
+                    in repair_prompt
+                ),
+            )
+
+            print("")
+            print(
+                "🎯 FINAL IMAGE 2/"
+                +
+                str(
+                    MASTERPIECE_MAX_IMAGE_CALLS
+                )
+                +
+                " | "
+                +
+                FINAL_IMAGE_MODEL
+                +
+                " | "
+                +
+                action
+            )
+
+            repair_phase = (
+                "repair_provider_call"
+            )
 
             second_final = (
                 openai_multi_reference_edit(
@@ -8290,6 +8425,10 @@ def run_production(
                 <
                 MASTERPIECE_MAX_VISION_CALLS
             ):
+
+                repair_phase = (
+                    "repair_final_qa"
+                )
 
                 print("")
                 print(
@@ -8402,17 +8541,59 @@ def run_production(
                 3200,
             )
 
+            final_qa_log = (
+                first_qa.score
+                if first_qa is not None
+                else
+                None
+            )
+
+            repair_error = {
+                "phase":
+                    repair_phase,
+                "provider":
+                    FINAL_IMAGE_MODEL,
+                "final_qa":
+                    final_qa_log,
+                "message":
+                    message,
+            }
+
+            telemetry[
+                "final_repair_error"
+            ] = repair_error
+
             errors.append(
                 (
-                    "final_repair: "
+                    "final_repair"
+                    +
+                    " | phase="
+                    +
+                    repair_phase
+                    +
+                    " | provider="
+                    +
+                    FINAL_IMAGE_MODEL
+                    +
+                    " | final_qa="
+                    +
+                    str(
+                        final_qa_log
+                    )
+                    +
+                    ": "
                     +
                     message
                 )
             )
 
             print(
-                "⚠️ GPT-Image-2 final repair failed:",
-                message,
+                "FINAL_REPAIR_FAILURE"
+                + " | phase=" + repair_phase
+                + " | provider=" + FINAL_IMAGE_MODEL
+                + " | first_qa=" + str(final_qa_log)
+                + " | error_type=" + type(error).__name__,
+                flush=True,
             )
 
             print(

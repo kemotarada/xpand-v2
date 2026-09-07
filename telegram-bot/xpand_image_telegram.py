@@ -4395,6 +4395,34 @@ def generate_masterpiece_images(
 # MASTERPIECE FAILURE CLASSIFIER
 # =========================================================
 
+def production_failure_message(failure_kind, production_metadata):
+    """Explain rejection without exposing provider responses or credentials."""
+    if failure_kind != "quality_failure":
+        return (
+            "تعذر إكمال الإنتاج بسبب خطأ تقني. راجع مرحلة الفشل في السجل "
+            "قبل إعادة الطلب؛ لا يمكن استنتاج أن السبب هو الرصيد."
+        )
+
+    repair_failed = any(
+        str(error).startswith("final_repair")
+        for item in production_metadata
+        if isinstance(item, dict)
+        for error in (item.get("errors") or [])
+    )
+    if repair_failed:
+        return (
+            "تولدت صورة أولية لكنها لم تجتز الجودة، ثم تعثرت محاولة "
+            "تصحيحها تقنيًا. لم يتم تسليم إعلان معتمد. "
+            "راجع سجل FINAL_REPAIR_FAILURE قبل إعادة الطلب."
+        )
+    return (
+        "تم توليد صورة، لكنها لم تجتز مراجعة الجودة بعد محاولات "
+        "الإصلاح المحدودة. لم يتم تسليمها حفاظًا على المعايير المطلوبة. "
+        "هذا رفض جودة، وليس دليلًا على نفاد الرصيد. "
+        "لا تكرر الطلب نفسه قبل مراجعة أسباب الرفض."
+    )
+
+
 def classify_masterpiece_failure(
     production_metadata: Sequence[
         Dict[str, Any]
@@ -5655,10 +5683,10 @@ def generate_and_deliver(
 
         if masterpiece_failure_kind == "quality_failure":
             raise RuntimeError(
-                "تم توليد صورة، لكنها لم تجتز مراجعة الجودة بعد "
-                "محاولات الإصلاح المحدودة. لم يتم تسليمها حفاظًا على "
-                "المعايير المطلوبة. هذه ليست مشكلة رصيد أو تعطل توليد؛ "
-                "لا تكرر الطلب نفسه قبل مراجعة أسباب الرفض في السجل."
+                production_failure_message(
+                    masterpiece_failure_kind,
+                    production_metadata,
+                )
             )
 
         if (
@@ -5676,9 +5704,9 @@ def generate_and_deliver(
             )
 
         raise RuntimeError(
-            (
-                "لم يتم تسليم صورة لأن جميع مسارات "
-                "التوليد المتاحة لم تُرجع نتيجة صالحة."
+            production_failure_message(
+                masterpiece_failure_kind,
+                production_metadata,
             )
         )
 
