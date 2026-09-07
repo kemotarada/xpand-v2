@@ -3480,6 +3480,7 @@ def build_immutable_final_locks(
     original_request: str,
     aspect_ratio: str,
     requested_size: str,
+    reference_authority: bool = True,
 ) -> str:
 
     stc_request = (
@@ -3527,7 +3528,11 @@ Do not replace the message with generic checkout activity.
 
     brand_lock = ""
 
-    if stc_request:
+    if (
+        stc_request
+        and
+        reference_authority
+    ):
 
         brand_lock = """
 STC REFERENCE AUTHORITY — IMMUTABLE
@@ -4332,6 +4337,158 @@ def qa_feedback_summary(
     )
 
 
+def qa_flags_text_logo_failure(
+    qa: Optional[
+        QAEvaluation
+    ],
+) -> bool:
+
+    if qa is None:
+        return False
+
+    flags = safe_dict(
+        qa.raw.get(
+            "_xpand_flags"
+        )
+    )
+
+    if (
+        flags.get(
+            "unwanted_text_or_logo"
+        )
+        or
+        flags.get(
+            "fake_banking_ui"
+        )
+    ):
+        return True
+
+    if (
+        clamp_score(
+            qa.scores.get(
+                "text_logo_compliance",
+                100,
+            )
+        )
+        <
+        95
+    ):
+        return True
+
+    evidence = " ".join(
+        [
+            clean_text(
+                item,
+                500,
+            ).lower()
+            for item in (
+                list(
+                    qa.critical_blockers
+                )
+                +
+                list(
+                    qa.problems
+                )
+            )
+        ]
+    )
+
+    return any(
+        marker in evidence
+        for marker in (
+            "text",
+            "logo",
+            "lettering",
+            "wordmark",
+            "watermark",
+            "readable",
+            "fake ui",
+        )
+    )
+
+
+def qa_flags_copy_space_failure(
+    qa: Optional[
+        QAEvaluation
+    ],
+) -> bool:
+
+    if qa is None:
+        return False
+
+    flags = safe_dict(
+        qa.raw.get(
+            "_xpand_flags"
+        )
+    )
+
+    if flags.get(
+        "excessive_empty_copy_space"
+    ):
+        return True
+
+    evidence = " ".join(
+        clean_text(
+            item,
+            500,
+        ).lower()
+        for item in qa.critical_blockers
+    )
+
+    return any(
+        marker in evidence
+        for marker in (
+            "copy_space",
+            "copy space",
+            "empty upper space",
+            "empty copy space",
+        )
+    )
+
+
+def preview_blocker_corrections(
+    qa: Optional[
+        QAEvaluation
+    ],
+) -> str:
+
+    if (
+        qa is None
+        or
+        not qa.critical_blockers
+    ):
+        return ""
+
+    blockers = "\n".join(
+        (
+            "- "
+            +
+            clean_text(
+                item,
+                500,
+            )
+        )
+        for item in qa.critical_blockers[:6]
+        if clean_text(
+            item,
+            500,
+        )
+    )
+
+    if not blockers:
+        return ""
+
+    return f"""
+PREVIEW BLOCKER CORRECTIONS — REQUIRED
+---------------------------------------
+
+The preview may still be marked preview_ready, but every blocker
+below must be corrected in the final render:
+
+{blockers}
+""".strip()
+
+
 # =========================================================
 # FINAL GPT-IMAGE-2 PROMPT V6.0.1
 # =========================================================
@@ -4492,8 +4649,17 @@ Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
 
-    immutable_locks = (
-        build_immutable_final_locks(
+    preview_corrections = (
+        preview_blocker_corrections(
+            preview_qa
+        )
+    )
+
+    immutable_locks = "\n\n".join(
+        item
+        for item in (
+            preview_corrections,
+            build_immutable_final_locks(
             original_request=(
                 original_request
             ),
@@ -4503,7 +4669,9 @@ Resolution intent: {requested_size}
             requested_size=(
                 requested_size
             ),
+            ),
         )
+        if item
     )
 
     return fit_prompt_with_immutable_locks(
@@ -6391,6 +6559,43 @@ def build_final_repair_prompt(
         "structural_repair"
     )
 
+    text_logo_surgical = bool(
+        action
+        ==
+        "targeted_repair"
+        and
+        qa_flags_text_logo_failure(
+            qa
+        )
+    )
+
+    copy_space_surgical = bool(
+        text_logo_surgical
+        and
+        qa_flags_copy_space_failure(
+            qa
+        )
+    )
+
+    surgical_composition_instruction = (
+        """
+QA also explicitly flags copy-space composition. A narrowly bounded
+composition correction is permitted: minimally crop, reframe, scale
+or shift existing scene elements only as needed to restore integrated
+copy-space balance and advertising readiness. Preserve the established
+camera intent, service relationship and message. Do not create or
+expand empty space, add a blank panel, push the hero downward, replace
+the scene or introduce new objects.
+""".strip()
+        if copy_space_surgical
+        else
+        """
+Preserve the existing composition. Do not recompose, reframe, crop,
+move the hero, expand copy space, add objects or reinterpret the
+campaign.
+""".strip()
+    )
+
     repair_mode = (
         """
 STRUCTURAL REPAIR IS ALLOWED.
@@ -6410,6 +6615,29 @@ photographic execution of the SAME idea.
 """.strip()
         if structural
         else
+        f"""
+SURGICAL TEXT / LOGO / UI REMOVAL.
+
+Image 1, the failed final candidate, is the PRIMARY AND ONLY
+visual source for this repair.
+
+Preserve the already-good advertising message, service depiction,
+camera, perspective, subjects, geometry, lighting, materials,
+and photographic character.
+
+Edit only the local pixels containing lettering, logos, wordmarks,
+symbols, watermarks, fake banking UI, readable numbers or readable
+screen/card/terminal content. Replace those pixels with physically
+plausible unbranded surface material, blank screen treatment or
+natural scene detail matching the immediate surroundings.
+
+{surgical_composition_instruction}
+
+Do not restyle or change the service story.
+Do not reproduce marks visible in any prior brand reference.
+""".strip()
+        if text_logo_surgical
+        else
         """
 TARGETED REPAIR.
 
@@ -6421,20 +6649,67 @@ Fix only diagnosed defects.
 """.strip()
     )
 
+    reference_role_text = (
+        """
+No style, campaign, environment or product reference is attached.
+Use Image 1 alone and do not reconstruct prior branded lettering.
+""".strip()
+        if text_logo_surgical
+        else
+        reference_role_manifest(
+            references,
+            draft_first=True,
+        )
+    )
+
+    repair_priorities = (
+        f"""
+- remove every diagnosed letter, logo, wordmark and readable UI artifact
+- preserve the existing message, camera and service depiction exactly
+- preserve all already-successful regions outside the local artifacts
+- leave repaired surfaces clean, unbranded and physically plausible
+{(
+    "- minimally correct the explicitly failed copy-space composition"
+    if copy_space_surgical
+    else
+    ""
+)}
+""".strip()
+        if text_logo_surgical
+        else
+        """
+- weak service communication
+- weak brand identity
+- unrealistic hardware
+- bad anatomy
+- bad object contact
+- weak camera
+- reference drift
+- generic scene logic
+- weak composition
+- synthetic materials
+- fake UI
+- accidental text/logo
+- excessive empty upper space
+""".strip()
+    )
+
     core_prompt = f"""
 XPAND GPT-IMAGE-2 FINAL REPAIR V6.0.1
 =====================================
 
 Image 1 is the existing GPT-Image-2 final candidate.
 
-Images 2+ are STC visual authority.
+{(
+    "No Images 2+ are attached for this surgical repair."
+    if text_logo_surgical
+    else
+    "Images 2+ are supporting visual references."
+)}
 
 REFERENCE ROLES
 ---------------
-{reference_role_manifest(
-    references,
-    draft_first=True,
-)}
+{reference_role_text}
 
 ORIGINAL REQUEST
 ----------------
@@ -6463,20 +6738,8 @@ REPAIR MODE
 REPAIR PRIORITIES
 -----------------
 
-Repair:
-- weak service communication
-- weak brand identity
-- unrealistic hardware
-- bad anatomy
-- bad object contact
-- weak camera
-- reference drift
-- generic scene logic
-- weak composition
-- synthetic materials
-- fake UI
-- accidental text/logo
-- excessive empty upper space
+Repair only the applicable items:
+{repair_priorities}
 
 Keep the commercial proposition intact.
 
@@ -6493,6 +6756,9 @@ Create one improved final campaign image.
             ),
             requested_size=(
                 requested_size
+            ),
+            reference_authority=(
+                not text_logo_surgical
             ),
         )
     )
@@ -7841,7 +8107,20 @@ def run_production(
         )
     ):
 
+        text_logo_surgical = bool(
+            action
+            ==
+            "targeted_repair"
+            and
+            qa_flags_text_logo_failure(
+                first_qa
+            )
+        )
+
         repair_refs = (
+            []
+            if text_logo_surgical
+            else
             correction_reference_set(
                 product_refs=(
                     product_refs
@@ -7950,10 +8229,9 @@ def run_production(
                         FINAL_IMAGE_MODEL
                     ),
                     max_reference_images=(
-                        STC_EDIT_REFERENCE_LIMIT
-                        if stc_request
-                        else
-                        MAX_PHYSICAL_REFERENCE_IMAGES
+                        len(
+                            repair_refs
+                        )
                     ),
                 )
             )
@@ -7985,6 +8263,16 @@ def run_production(
                             "final_repair",
                         "working_image_used":
                             True,
+                        "working_image_primary":
+                            True,
+                        "text_logo_surgical":
+                            text_logo_surgical,
+                        "references":
+                            [
+                                item.source_id
+                                for item
+                                in repair_refs
+                            ],
                         "immutable_final_locks":
                             True,
                     },
