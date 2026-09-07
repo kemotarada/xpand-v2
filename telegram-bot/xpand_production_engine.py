@@ -2971,6 +2971,22 @@ def build_render_brief(
                 ),
                 400,
             ),
+        "visible_message_proof":
+            clean_text(
+                creative.get(
+                    "core_idea",
+                    "",
+                ),
+                1200,
+            ),
+        "mechanism_lock":
+            clean_text(
+                creative.get(
+                    "visual_mechanism_type",
+                    "",
+                ),
+                400,
+            ),
         "why_not_generic":
             clean_text(
                 creative.get(
@@ -3898,6 +3914,47 @@ Never use invented hybrid hardware as a metaphor.
         ""
     )
 
+    merchant_proof_section = ""
+    if (
+        stc_request
+        and
+        detect_stc_benefit_family(request)
+        ==
+        "merchant_payments"
+    ):
+        merchant_proof_section = """
+MERCHANT PAYMENT VISIBLE-PROOF GATE
+-----------------------------------
+The frame must show one connected merchant mechanism, not a product display.
+The viewer must understand both an online/e-commerce action and physical
+point-of-sale acceptance from the same causal or spatial relationship.
+Reject phone + POS as unrelated objects, phone + POS on stone/travertine/
+marble, a generic checkout, tablet + terminal + parcel tableau, split-screen,
+fake UI or invented hardware. The online cue must show its role in commerce;
+the POS cue must show credible acceptance. If the proof is missing, rebuild.
+""".strip()
+
+
+    merchant_proof_section = ""
+    if (
+        stc_request
+        and
+        detect_stc_benefit_family(request)
+        ==
+        "merchant_payments"
+    ):
+        merchant_proof_section = """
+MERCHANT PAYMENT VISIBLE-PROOF GATE
+-----------------------------------
+The frame must show one connected merchant mechanism, not a product display.
+The viewer must understand both an online/e-commerce action and physical
+point-of-sale acceptance from the same causal or spatial relationship.
+Reject phone + POS as unrelated objects, phone + POS on stone/travertine/
+marble, a generic checkout, tablet + terminal + parcel tableau, split-screen,
+fake UI or invented hardware. The online cue must show its role in commerce;
+the POS cue must show credible acceptance. If the proof is missing, rebuild.
+""".strip()
+
     prompt = f"""
 XPAND MASTERPIECE STRATEGY-TO-IMAGE CONTRACT V6.0.1
 ===================================================
@@ -3975,6 +4032,8 @@ Correct:
 - material response
 
 {stc_section}
+
+{merchant_proof_section}
 
 {safe_frame_instruction(
     aspect_ratio

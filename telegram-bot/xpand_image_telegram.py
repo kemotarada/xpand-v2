@@ -3731,6 +3731,12 @@ def creative_direction_for_index(
             {},
         )
 
+    winner = getattr(
+        creative_response,
+        "winner",
+        None,
+    )
+
     concepts = object_list(
         getattr(
             creative_response,
@@ -3739,28 +3745,21 @@ def creative_direction_for_index(
         )
     )
 
-    concept = None
+    # The jury winner is the authority for the first production frame.
+    # top_concepts may contain advisory finalists in a different order.
+    concept = winner if index == 0 and winner is not None else None
 
-    if concepts:
-
+    if concept is None and concepts:
+        concept_index = index - 1 if winner is not None else index
         concept = concepts[
             min(
-                index,
-                len(
-                    concepts
-                )
-                -
-                1,
+                max(concept_index, 0),
+                len(concepts) - 1,
             )
         ]
 
     if concept is None:
-
-        concept = getattr(
-            creative_response,
-            "winner",
-            None,
-        )
+        concept = winner
 
     if concept is None:
 

@@ -2566,6 +2566,11 @@ STC_REPEATED_SCENE_MARKERS = [
     "merchant behind counter",
     "worker packing box",
     "packing parcel",
+    "stone pedestal",
+    "travertine pedestal",
+    "marble pedestal",
+    "generic pedestal",
+    "plinth",
 
     "كاونتر خشبي",
     "متجر فاخر",
@@ -4039,6 +4044,39 @@ def canonical_service_constitution(
     )
 
 
+
+
+def stc_runtime_director_context(
+    stc_style: str,
+) -> str:
+    """Load the actual on-disk STC director rules used by the runtime."""
+    try:
+        runtime = __import__("xpand_stc_skill_runtime")
+        names = [
+            "SKILL.md",
+            "references/concept-workflow.md",
+            "references/visual-language.md",
+            "references/effects-and-finish.md",
+        ]
+        style = clean_text(stc_style, 100)
+        if style:
+            names.append(
+                "references/" + runtime.STYLE_FILES.get(
+                    style,
+                    "premium-realistic.md",
+                )
+            )
+        parts = []
+        for name in names:
+            try:
+                parts.append(runtime.read_skill_file(name))
+            except Exception:
+                continue
+        return "\n\n".join(parts)[:18000]
+    except Exception:
+        return clean_text(STC_BANK_VISUAL_SKILL, 12000)
+
+
 # =========================================================
 # IDEATION PROMPT
 # =========================================================
@@ -4237,10 +4275,7 @@ The intended image contains NO generated:
 STC SKILL
 ==================================================
 
-{clean_text(
-    STC_BANK_VISUAL_SKILL + "\n" + __import__("xpand_stc_skill_runtime").read_skill_file("references/concept-workflow.md"),
-    6500,
-)}
+{stc_runtime_director_context(stc_style)}
 
 {high_alert_block}
 """.strip()
@@ -4308,6 +4343,25 @@ IDEATION
 Generate exactly {concept_count} fundamentally different
 advertising concepts.
 
+CONCEPT STRATEGY GATE — REQUIRED BEFORE EACH OBJECT
+1. Lock one commercial proposition and one audience moment.
+2. State the visible proof that survives without typography.
+3. Name one physical advertising mechanism that carries the proof.
+4. Choose only the scene objects needed for that mechanism.
+5. Choose one camera because it improves the proof.
+
+Map the result into the schema:
+- marketing_message = one specific service benefit;
+- campaign_hook = one memorable advertising thought;
+- core_idea = the observable action and relationship in the frame;
+- visual_metaphor = literal physical relationship, not an abstract adjective;
+- visual_mechanism_type = a concrete mechanism name;
+- why_not_generic = why this frame belongs to this service and STC;
+- environment_novelty = what is structurally new, not merely luxurious.
+
+VISIBLE-PROOF GATE
+A phone, POS terminal, card, purple set, customer, parcel or pedestal alone is not proof. Reject any candidate whose message depends on an invisible caption. For merchant_payments, reject phone + POS as unrelated display objects, stone/travertine pedestal still lifes, tablet + terminal + parcel tableaux, generic checkout scenes and split-screen logic. Both online commerce and physical acceptance must be readable as one connected merchant mechanism.
+
 Each direction must materially differ in:
 - visual mechanism
 - hero relationship
@@ -4315,7 +4369,7 @@ Each direction must materially differ in:
 - spatial structure
 - camera grammar
 
-Do not create cosmetic variants.
+Do not create cosmetic variants or reward a pretty but semantically empty composition.
 
 {stc_block}
 

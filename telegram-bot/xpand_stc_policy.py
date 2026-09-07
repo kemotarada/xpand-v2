@@ -399,6 +399,21 @@ STC_BENEFIT_POLICIES: Dict[
                 ),
 
                 (
+                    "Reject a still life that merely displays a phone and POS "
+                    "terminal as unrelated trophies."
+                ),
+
+                (
+                    "A blank phone beside a terminal is not visible proof of "
+                    "e-commerce; show its role in a real merchant workflow."
+                ),
+
+                (
+                    "Do not use stone, travertine or marble architecture as a "
+                    "generic premium pedestal for payment devices."
+                ),
+
+                (
                     "The scene must feel like a premium real "
                     "Saudi bank campaign rather than generic "
                     "fintech or ordinary checkout photography."
@@ -451,6 +466,12 @@ STC_BENEFIT_POLICIES: Dict[
                 (
                     "Do not turn the approved idea into a "
                     "generic checkout scene."
+                ),
+
+                (
+                    "The final frame must show at least one credible online "
+                    "commerce cue and one credible physical acceptance cue "
+                    "inside the same causal mechanism."
                 ),
 
                 (

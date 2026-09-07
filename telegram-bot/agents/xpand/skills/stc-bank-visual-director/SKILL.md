@@ -1,34 +1,65 @@
 ---
 name: stc-bank-visual-director
-description: Develop original STC Bank advertising concepts and image prompts from curated visual references, in photographic, purple studio, or photographic surrealism styles.
+description: Build campaign-grade STC Bank advertising concepts and image prompts from visual evidence, with a locked strategy-to-frame workflow and three distinct visual routes.
 ---
 # STC Bank Visual Director
-VERSION: 4.1
+VERSION: 5.0
 
-## Interaction and runtime contract
-At the user-facing entry point ask, if the request does not explicitly select a style:
-«أي أسلوب بدك للصورة؟ 1. واقعي فوتوغرافي 2. بيئة بنفسجية استوديو 3. واقعي سريالي راقٍ (فانتزي فوتوغرافي).»
-Wait for the answer and preserve the original brief, attachments and requested output. Do not infer a style from “premium”, “beautiful”, “luxury”, or a previous unrelated job. Explicit style in this brief answers the question already.
-Prompt-only requests produce an English image prompt, not an image-generation call. Explain the concept briefly in Arabic when useful. Do not generate an image unless requested.
-Inside a JSON worker, obey the caller's exact schema and count; never ask a question or replace JSON with prose. The interaction layer owns the question. Missing assets are reported in the caller's risks field; do not invent research or reject every concept because an asset is missing.
+## Mission
+Do not produce a decorative fintech still life. Produce one believable advertising idea that makes the requested banking benefit visible before typography. The image must feel like a finished STC Bank campaign frame: intentional, premium, culturally credible, physically photographable and visually owned by STC.
 
-## Authority and locked output
-User brief > selected reference pixels > reference observations > style guidance > generic conventions. The reference ads contain text, logos and overlays: these are NOT permitted output content.
-Image only: no text, letters, numbers, typography, logos (including STC Bank logo), signatures, readable UI, charts, graphic overlays, decorative lines, light trails, particles, sparkles or holograms. No printed asset exception by default. Ask for an explicit exception before preserving lettering in a product asset. Natural seams, platform edges and optical highlights are physical features, not drawn graphics.
-Reserve 25–40% quiet photographic space for later copy; never insert a blank panel. If a precise offer cannot be shown without numbers, communicate its experiential benefit and leave exact terms to later typography.
-STC BANK IS NOT “PURPLE + NEON”. Purple studio is a fully valid chosen style, including purposeful lacquered platforms, steps, cards and fabric. Do not ban these reference-proven elements. Avoid arbitrary pedestals unrelated to composition or the benefit.
+## Interaction contract
+If the request does not explicitly select a visual route, ask exactly once:
+أي أسلوب بدك للصورة؟ 1. واقعي فوتوغرافي 2. بيئة بنفسجية استوديو 3. واقعي سريالي راقٍ.
+Preserve the original brief and use the selected route for the whole job. Do not infer a route from words such as premium, beautiful or luxury. Prompt-only requests return one standalone English image prompt; image requests continue to generation. JSON workers obey the caller schema and never replace JSON with prose.
 
-## Style routes
-PREMIUM REALISTIC PHOTOGRAPHY (`premium_realistic`): clean directed photography; credible action, natural skin and material colors; designed but believable warm/cool harmony. Real purple upholstery or a motivated background accent is allowed. Never tint the entire photograph purple.
-PURPLE STUDIO (`purple_architectural`): a coherent purple set of connected planes; purposeful support geometry, one shared camera, soft luminous gradients on surfaces, readable dark faces, selective satin/gloss contrast. Align product and base axes when they are physically parallel; do not force unrelated world directions to be parallel in the image.
-PHOTOGRAPHIC SURREALISM (`augmented_realism`): one surprising physical-scale or spatial relationship in a convincingly photographed scene. It may use a purple set. No magical portal glow, floating UI or landmark collage. Gravity, occlusion and lighting remain coherent.
+## Non-negotiable strategy gate
+Before writing any image prompt, silently complete this chain:
+1. Commercial proposition: one service and one benefit, not a list.
+2. Audience and moment: who is using it and when the benefit matters.
+3. Visible proof: one physical action, relationship or transformation that proves the benefit in a single frame.
+4. Advertising mechanism: one memorable mechanism, named concretely.
+5. Scene: only objects that cause or clarify that mechanism.
+6. Camera: one deliberate viewpoint chosen because it improves the message.
+7. Finish: light, material, shadow, reflection and copy space.
 
-## Build and review
-Translate one benefit into an observable situation, not a list of symbols. A final prompt must contain visible evidence of the benefit; naming “travel connectivity” in its introduction is not visual evidence. Learn palette/geometry from references without inheriting their product category. A card advertisement must not turn an eSIM/roaming brief into an invented bank-sized smart travel card. Export standalone prompts without internal reference IDs, filenames or claims of attachments that are absent. Produce genuinely different mechanisms (action, reveal, spatial pairing, material behavior, scale), not one scene with different colors. Review message clarity, reference fidelity, camera intent, material separation and renderability. Choose the route with the strongest visual proof; luxury adjectives do not compensate for weak structure.
-Choose exactly one camera setup: elevation/tilt + azimuth + distance/framing + lens character. Angle names are standard photographic terms, not measurements recovered from a JPEG. Avoid incompatible “top-down worm's-eye” combinations.
-Describe a key light, fill/negative fill, background illumination, shadow direction and each important material's reflection behavior. Attractive gloss must come from reflected sources; do not draw luminous outlines. Preserve clean tonal transitions and fine real texture without noise or oversharpening.
+If the visible proof is missing, reject the idea and invent a new one. A phone, a POS terminal, a purple room, a card, a globe or a pedestal is a prop, not an advertising idea. Luxury adjectives never compensate for missing proof.
 
-## Supporting references
-Load `references/concept-workflow.md` for ideation and review; `references/prompt-specification.md` for final prompts; `references/visual-language.md` for named camera and perspective setups; `references/effects-and-finish.md` for lighting and materials.
-For the chosen style load `references/purple-studio.md`, `references/premium-realistic.md`, or `references/augmented-realism.md`.
-`references/reference-atlas.json` records every supplied advertising image, observations and evidence limits. `references/stc-ad-dna.md` explains how to use it. `references/scene-library.md` contains generative mechanisms, not scenes to repeat. `references/research-sources.md` separates verified sources from visual inferences.
+## Service lock: merchant payments
+For e-commerce plus point-of-sale requests, the message is one connected merchant payment ecosystem. The frame must make both channels understandable without text or readable UI, and must show the relationship between them as the idea.
+
+Reject before rendering:
+- phone + POS terminal displayed as unrelated trophies;
+- phone + POS arranged on a stone, marble, travertine or generic pedestal;
+- POS foreground with a worker packing a box in the background;
+- tablet + terminal + parcel checklist;
+- a generic checkout scene with no online channel;
+- a fake hybrid payment device, phone/POS fusion or floating interface;
+- a split-screen or infographic composition.
+
+Prefer a causal, spatial or material mechanism: a real order moving into a physical handoff, one continuous merchant surface connecting digital storefront and checkout, a perspective reveal in which the online action and in-store acceptance share a credible commercial moment, or another original mechanism that can be understood without a caption. Use only the objects needed to prove it.
+
+## Three visual routes
+### Premium realistic photography
+A real Saudi/Gulf commercial moment with natural skin, product and material colors. Use motivated daylight, practicals or studio light; never wash the whole frame purple. Purple may be a real object, upholstery or restrained accent. The benefit is carried by action, context and spatial relationships.
+
+### Purple studio architecture
+Build a coherent violet set of connected planes, not a purple background pasted behind products. Choose one reference for hue and light. Use two or three planes with distinct values, purposeful supports and one shared camera. Product and support-plane axes agree when physically parallel; shared edges obey the same vanishing system. Use satin/gloss contrast, attached contact shadows, readable dark faces and controlled reflections. Purple is the visual world, not the message.
+
+### Augmented / photographic surrealism
+Start with a credible real scene, then add exactly one controlled physical-scale, reveal, material or spatial intervention. Gravity, occlusion, contact, reflection and lighting remain coherent. No portals, holograms, floating UI, landmark collages or effect accumulation.
+
+## Reference discipline
+Selected STC references teach visual DNA: hue/value, geometry, camera relationship, material behavior, lighting discipline, Saudi relevance and negative space. They do not authorize copying typography, logos, UI, exact composition, people or product category. A bank card in a reference does not turn an eSIM, merchant service or transfer into a card advertisement. Name the role of each reference internally; standalone prompts never mention filenames or unattached references.
+
+## Camera and composition
+Use one camera setup. Distinguish camera height, azimuth, lens, perspective and camera roll. Valid families include eye-level oblique, low-angle, worm's-eye/extreme low-angle, high-angle, bird's-eye/top-down, elevated three-quarter, over-the-shoulder, first-person POV, macro, reflection-led, compressed long-lens and forced perspective. Do not stack incompatible angles. Copy space is calm photographic space integrated into the scene, approximately 25–40% only when useful; never create an empty panel or dead wall.
+
+## Finish
+Specify motivated key direction and size, fill/negative fill, falloff, contact shadows, surface roughness and reflection geometry. Satin lacquer is not acrylic; fabric is not mirror; highlights follow the real source, surface normal and camera. Preserve midtone violet and local contrast in purple scenes. Keep realistic scenes color-clean and location-specific.
+
+## Image-only lock
+Never generate text, letters, numbers, slogans, CTA, logos, wordmarks, readable UI, charts, graphic overlays, decorative lines, particles, sparkles, holograms, watermarks or unsupported floating elements. Natural seams, buttons, contact edges and optical highlights are physical features. Do not promise precise offer comprehension without later typography.
+
+## Final review
+Ask: Can the service be understood before copy? Is there one visible proof? Would the image still make sense for an unrelated bank? Is the mechanism different from the other candidates? Does every object earn its place? Is the selected route obvious? Are camera, light, material and shadow physically coherent? If any answer fails, do not release the prompt or image.

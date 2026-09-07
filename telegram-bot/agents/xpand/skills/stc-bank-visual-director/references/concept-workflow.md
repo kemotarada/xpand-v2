@@ -1,16 +1,31 @@
-# Benefit-first creative process
-1. Extract the actual service, audience, desired feeling and visible proof. Separate the proposition from exact numbers that will be added later as typography. Do not confuse POS with reward points.
-2. Lock the user-selected style at the interaction boundary. For each brief identify 1–3 matching reference IDs and specific lessons: hue region, plane structure, camera relationship, material, shadow and negative space. Reference metadata is not evidence that a model saw the image; record when only observations are available.
-3. Develop the caller's requested number of candidates across different mechanisms: decisive human gesture, perspective reveal, organized physical relationship, scale substitution, foreground/background contrast, material behavior. Change the mechanism and camera, not only furniture or color. Keep JSON compact and complete; never alter its schema.
-4. Each candidate needs a one-sentence visible proof, hero, only necessary supporting objects, specific camera, support geometry, lighting/material plan and a clear reason it fits the selected reference. Fit these into existing schema fields; do not invent mandatory JSON keys.
-5. Challenge: would this picture work for any unrelated brand/service? Is the intended meaning dependent on an invisible caption? Are the added elements functional? Can removing one object improve clarity? Could a simpler gesture beat a metaphor? Is it visually different from other candidates?
-6. Compare message clarity (30), style/reference fit (25), composition/camera (20), lighting/material feasibility (15), originality (10). These are editorial priorities, not objective measurements or permission to invent QA scores. Respect host scoring schema.
-7. Fix the weakest dimension, not every dimension at once. Preserve the selected idea while correcting camera or hue. Bound retries by existing runtime budgets; never increase paid calls merely to appear thorough. If no visual evaluation ran, say unverified rather than PASS.
-8. Final prompt expresses the scene in concrete photographic language. Keep positive scene description separate from a short negative tail; do not fill concept fields with long forbidden-word lists that a substring filter mistakes for violations.
-Research: inspect curated pixels first, use official sources for the service and primary photographic references for terminology, record sources and date. Never claim research occurred when unavailable. Competitor references teach mechanisms; they must not replace the user's STC color authority.
+# STC campaign concept workflow
 
-## Observed regression: roaming brief became phone + card + plinth
-A returned draft for “your travel SIM with you at every destination” described a phone and an invented premium travel card on a purple tiered platform. It followed finish vocabulary but had no visible travel behavior, destination context or continuity mechanism. This is a weak concept even when its lighting is correct.
-During review, remove all luxury adjectives and the opening abstract proposition. Does the remaining visible scene still communicate the intended service family? A product still life may be correct for a card-material launch; it is insufficient for this travel brief without additional visible proof. Do not impose an obligatory metaphor on unrelated simple product briefs.
-For roaming/eSIM: distinguish the digital service from a bank card. Unless the user requests a physical SIM, do not invent a bank-sized “smart travel card”. Use a credible travel action/context plus the phone, or an intelligible physical continuity/reveal, within the chosen style. In purple studio, real luggage, a travel interaction or meaningful connected set architecture can carry the situation while purple remains dominant. Reject a checklist of passport/airplane/globe props; choose only elements that do causal work. Do not repeat the tent or giant card-door reference.
-The prompt writer compiles the reviewed winner; it must preserve the mechanism rather than reducing it to a polished still life. An adjective such as “conceptualizing connectivity” does not count as visible proof. Internal reference IDs belong in runtime metadata, never the user's standalone prompt.
+## The strategy-to-frame sequence
+For every STC request, create a compact internal strategy card before any prompt:
+- Service promise: the exact requested service family, never generic premium banking.
+- Audience moment: the person or business in the moment where the benefit matters.
+- Single-frame proof: what the viewer can literally see that proves the promise.
+- One mechanism: action, reveal, continuity, scale substitution, spatial pairing, foreground/background cause-and-effect, or material behavior.
+- Scene logic: the minimum necessary environment and supports.
+- Camera logic: one viewpoint that makes the proof legible.
+- Brand logic: how STC DNA appears through art direction, palette, material, confidence and restraint.
+
+The output fields must map cleanly: marketing_message is the proposition, campaign_hook is the advertising thought, core_idea is the visible frame and action, visual_metaphor is the literal relationship, visual_mechanism_type is the mechanism name, why_not_generic explains the ownership, environment_novelty explains what is new, and camera fields explain why the viewpoint matters. Do not fill them with abstract adjectives.
+
+## Visible-benefit test
+Remove every adjective and imagine the frame without copy. If the requested service is no longer understandable, the concept fails. “Conceptualizing connectivity”, “premium banking”, “seamless experience” and “digital transformation” are not proof. Proof is an observable action or spatial relationship: a merchant order becoming a real handoff, a business serving two channels through one credible workflow, a transfer physically continuing across a real travel context, or another specific relation.
+
+## Merchant-payments guard
+For e-commerce plus POS, both channels must be visible and causally connected. Do not use the following shortcut: phone + terminal + parcel or phone + terminal on a stone pedestal. Do not use a generic boutique counter, a worker packing a box, a blank phone screen, floating interface elements, split-screen or invented hardware. Choose one mechanism and make it do the explanatory work. A phone is evidence only when its role in the merchant workflow is visible; a terminal is evidence only when a real payment interaction or credible acceptance context is visible.
+
+## Candidate diversity
+Candidates must vary by mechanism and camera, not by color or furniture. Use genuinely different families such as decisive gesture, perspective reveal, material continuity, controlled scale substitution, reflection-led pairing, spatial handoff or foreground/background cause-and-effect. Avoid repeating office desk, card pocket, tent, beach chair, card-door, random pedestal or literal counter scenes from references.
+
+## Style separation
+Premium realistic uses credible locations and natural colors. Purple studio uses connected violet architecture, coherent planes and deliberate material contrast. Augmented realism uses one physically coherent intervention in a real scene. Do not mix the rules or make purple neon the universal answer.
+
+## Reference use
+For each selected reference, record only the visual lesson: hue/value, plane geometry, camera relationship, light direction, shadow behavior, surface roughness, material contrast and copy-space logic. Never inherit its text, logo, exact scene or product category. Research evidence informs visual language; it never overrides the user brief or invents facts.
+
+## Prompt review
+The final prompt is one actionable English photographic brief ordered as: visible situation and benefit, selected route, hero and action, supporting set, one camera, composition/copy space, reference-derived palette, light/shadow/material behavior, exclusions. Keep positive scene language separate from a short negative tail. Do not leak internal reference IDs or claims that images are attached when they are not.
