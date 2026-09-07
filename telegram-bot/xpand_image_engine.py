@@ -299,14 +299,22 @@ OPENAI_IMAGE_MODEL = str(
 ).strip()
 
 
-# Model for /images/edits endpoint.
-# gpt-image-2 does NOT support image editing.
-OPENAI_EDIT_MODEL = str(
-    os.environ.get(
-        "XPAND_OPENAI_EDIT_MODEL",
-        "dall-e-3",
+# Keep editing independent of the text-to-image model. DALL-E 3 cannot
+# accept the multi-reference edits request used by this pipeline.
+def _resolve_openai_edit_model(value: str) -> str:
+    model = str(value or "").strip()
+    if not model or model.lower() == "dall-e-3":
+        return "gpt-image-1"
+    return model
+
+
+_configured_edit_model = os.environ.get("XPAND_OPENAI_EDIT_MODEL", "")
+OPENAI_EDIT_MODEL = _resolve_openai_edit_model(_configured_edit_model)
+if str(_configured_edit_model).strip().lower() == "dall-e-3":
+    print(
+        "⚠️ XPAND_OPENAI_EDIT_MODEL=dall-e-3 is incompatible with "
+        "multi-reference editing; using gpt-image-1."
     )
-).strip()
 
 
 OPENAI_DIRECTOR_MODEL = str(
@@ -5965,9 +5973,20 @@ def _build_openai_edit_form(
     #
     # input_fidelity MUST NOT be sent.
     #
-    # Uses OPENAI_EDIT_MODEL (dall-e-3) because
-    # gpt-image-2 does NOT support the edits API.
+    # Use the independently configured edit model, not a generation-only
+    # model. Omit optional fidelity parameters for provider compatibility.
     #
+
+    # GPT Image 1 accepts native portrait/landscape/square sizes only.
+    # Keep requested aspect/2K intent in the existing output pipeline;
+    # do not send GPT Image 2 custom dimensions to this endpoint.
+    if OPENAI_EDIT_MODEL == "gpt-image-1":
+        width, height = (int(part) for part in size.split("x"))
+        size = (
+            "1024x1536" if height > width
+            else "1536x1024" if width > height
+            else "1024x1024"
+        )
 
     return {
         "model":
@@ -6109,6 +6128,13 @@ def edit_with_openai_multi(
 
     started = time.monotonic()
 
+    print(
+        "🎯 OPENAI EDIT REQUEST | model="
+        + OPENAI_EDIT_MODEL
+        + " | size="
+        + form_data["size"]
+    )
+
     response = requests.post(
         OPENAI_IMAGE_EDITS_URL,
 
@@ -6136,7 +6162,7 @@ def edit_with_openai_multi(
 
         raise XPANDImageProviderError(
             _provider_error_message(
-                "GPT-Image-2 Edit",
+                "OpenAI Edit [" + OPENAI_EDIT_MODEL + "]",
                 response,
             )
         )
@@ -6153,7 +6179,7 @@ def edit_with_openai_multi(
 
         raise XPANDImageProviderError(
             (
-                "GPT-Image-2 edit "
+                "OpenAI edit [" + OPENAI_EDIT_MODEL + "] "
                 "returned no image."
             )
         )
