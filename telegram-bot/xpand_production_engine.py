@@ -138,6 +138,7 @@ from typing import (
 
 from xpand_image_engine import (
     OPENAI_IMAGE_MODEL,
+    OPENAI_EDIT_MODEL,
     GOOGLE_IMAGE_FAST_MODEL,
     GeneratedImage,
     call_openai_director,
@@ -301,17 +302,20 @@ if not NANO_BANANA_2_MODEL:
     NANO_BANANA_2_MODEL = "gemini-3.1-flash-image"
 
 
-FINAL_IMAGE_MODEL = str(
-    os.environ.get(
-        "XPAND_MASTERPIECE_FINAL_IMAGE_MODEL",
-        OPENAI_IMAGE_MODEL
-        or
-        "gpt-image-2",
-    )
+# Final production uses edit_with_openai_multi, whose model is resolved by
+# the image engine. Logging and provider locks must use that same identity.
+# A separate legacy generation-model setting must not reject a valid edit.
+FINAL_IMAGE_MODEL = OPENAI_EDIT_MODEL
+_legacy_final_model = os.environ.get(
+    "XPAND_MASTERPIECE_FINAL_IMAGE_MODEL", ""
 ).strip()
-
-if not FINAL_IMAGE_MODEL:
-    FINAL_IMAGE_MODEL = "gpt-image-2"
+if _legacy_final_model and _legacy_final_model != FINAL_IMAGE_MODEL:
+    print(
+        "⚠️ Final edit model uses XPAND_OPENAI_EDIT_MODEL="
+        + FINAL_IMAGE_MODEL
+        + "; ignoring legacy final-model setting "
+        + _legacy_final_model
+    )
 
 
 # =========================================================
