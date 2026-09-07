@@ -128,6 +128,13 @@ from typing import (
 
 import requests
 
+from xpand_review_delivery import (
+    collect_rejected_candidate,
+    deliver_rejected_candidate,
+    handle_review_command,
+    review_enabled,
+)
+
 
 # =========================================================
 # COST GUARD
@@ -3933,6 +3940,7 @@ def generate_masterpiece_images(
     prepared: Dict[str, Any],
     number: int,
     aspect_ratio: str,
+    diagnostic_candidates=None,
 ) -> Tuple[
     List[Any],
     List[Dict[str, Any]],
@@ -4238,6 +4246,9 @@ def generate_masterpiece_images(
                 and
                 not qa_passed
             ):
+
+                if qa_evaluated and diagnostic_candidates is not None:
+                    collect_rejected_candidate(diagnostic_candidates, production)
 
                 if qa_evaluated:
 
@@ -5381,6 +5392,8 @@ def generate_and_deliver(
 
     masterpiece_failure_kind = ""
 
+    diagnostic_candidates = [] if review_enabled(chat_id, user_id) else None
+
     # =====================================================
     # MASTERPIECE
     # =====================================================
@@ -5412,6 +5425,7 @@ def generate_and_deliver(
                 prepared=prepared,
                 number=number,
                 aspect_ratio=aspect_ratio,
+                diagnostic_candidates=diagnostic_candidates,
             )
 
             pipeline_errors.extend(
@@ -5426,6 +5440,26 @@ def generate_and_deliver(
                         masterpiece_errors,
                     )
                 )
+
+                if diagnostic_candidates:
+                    diagnostic = deliver_rejected_candidate(
+                        core,
+                        chat_id=chat_id,
+                        user_id=user_id,
+                        candidates=diagnostic_candidates,
+                        send_document=send_document_bytes,
+                    )
+                    if diagnostic.get("image_sent"):
+                        # A diagnostic is not an approved image or a fallback.
+                        # Do not run approval, learning, or normal delivery code.
+                        return {
+                            "output_kind": "diagnostic_draft",
+                            "approved": False,
+                            "qa_passed": False,
+                            "images": [],
+                            "diagnostic": diagnostic,
+                            "errors": ["quality_rejection_draft_sent"],
+                        }
 
                 print(
                     "⚠️ Masterpiece produced no qualified image."
@@ -5989,6 +6023,9 @@ def handle_text_image_request(
     text,
 ) -> bool:
 
+    if handle_review_command(core, chat_id, user_id, text):
+        return True
+
     # =====================================================
     # PENDING STC STYLE ANSWER
     # =====================================================
@@ -6454,6 +6491,9 @@ def install(
                     if result.get("output_kind") in {"prompt", "ideas"}:
                         return "جهزتلك النص وبعثته."
 
+                    if result.get("output_kind") == "diagnostic_draft":
+                        return "أرسلت مسودة للتشخيص فقط؛ لم تجتز الجودة وليست إعلانًا معتمدًا."
+
                     if (
                         result.get(
                             "guard_route"
@@ -6553,6 +6593,9 @@ def install(
 
                 if result.get("output_kind") in {"prompt", "ideas"}:
                     return "جهزتلك النص وبعثته."
+
+                if result.get("output_kind") == "diagnostic_draft":
+                    return "أرسلت مسودة للتشخيص فقط؛ لم تجتز الجودة وليست إعلانًا معتمدًا."
 
                 if (
                     result.get(
