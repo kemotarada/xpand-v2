@@ -3914,26 +3914,20 @@ Never use invented hybrid hardware as a metaphor.
         ""
     )
 
-    merchant_proof_section = ""
-    if (
-        stc_request
-        and
-        detect_stc_benefit_family(request)
-        ==
-        "merchant_payments"
-    ):
-        merchant_proof_section = """
-MERCHANT PAYMENT VISIBLE-PROOF GATE
------------------------------------
-The frame must show one connected merchant mechanism, not a product display.
-The viewer must understand both an online/e-commerce action and physical
-point-of-sale acceptance from the same causal or spatial relationship.
-Reject phone + POS as unrelated objects, phone + POS on stone/travertine/
-marble, a generic checkout, tablet + terminal + parcel tableau, split-screen,
-fake UI or invented hardware. The online cue must show its role in commerce;
-the POS cue must show credible acceptance. If the proof is missing, rebuild.
+    campaign_read_section = ""
+    if stc_request:
+        campaign_read_section = """
+STC CAMPAIGN READ GATE
+----------------------
+Choose one visual structure only: benefit-in-use realism, decisive product
+action, branded purple studio narrative, product-as-threshold, or premium
+contextual still life. Create one dominant hero and one meaningful action or
+relationship. The environment must prove the benefit category in under two
+seconds. A secondary cue may establish the banking role. Reserve 25–40%
+integrated calm tonal space for later Arabic copy, but do not create a blank
+panel or dead wall. Exact rates, amounts, codes, terms and logos belong to
+later typography; never render them or readable UI in this image.
 """.strip()
-
 
     merchant_proof_section = ""
     if (
@@ -4032,6 +4026,8 @@ Correct:
 - material response
 
 {stc_section}
+
+{campaign_read_section}
 
 {merchant_proof_section}
 

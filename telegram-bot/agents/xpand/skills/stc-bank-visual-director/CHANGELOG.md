@@ -1,3 +1,9 @@
+## 5.1 — 2026-09-07
+- Encoded the supplied STC campaign references as five reusable campaign structures instead of one repeated purple aesthetic.
+- Added the two-second read: dominant hero, benefit-category proof, banking cue and integrated later-copy space.
+- Separated image communication from later typography so exact offers are never forced into generated UI or text.
+- Strengthened executive review and production prompts against polished-but-empty scenes.
+
 ## 5.0 — 2026-09-07
 - Added a strategy-to-frame gate with explicit audience, visible-benefit proof, one advertising mechanism and camera intent.
 - Added merchant-payments rejection rules for phone/POS pedestal still lifes and disconnected device displays.

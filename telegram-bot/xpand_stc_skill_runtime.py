@@ -51,6 +51,7 @@ def clean_public_prompt(value):
 def prompt_direction(style):
     return "\n\n".join(filter(None, [core_direction(), style_direction(style), reference_observations(style),
         read_skill_file("references/concept-workflow.md"),
+        read_skill_file("references/reference-campaign-grammar.md"),
         read_skill_file("references/prompt-specification.md"),
         read_skill_file("references/visual-language.md"),
         read_skill_file("references/effects-and-finish.md")]))

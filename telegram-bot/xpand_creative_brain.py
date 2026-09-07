@@ -4343,6 +4343,12 @@ IDEATION
 Generate exactly {concept_count} fundamentally different
 advertising concepts.
 
+REFERENCE-DERIVED CAMPAIGN GRAMMAR
+Choose exactly one structure for each concept: benefit-in-use realism, decisive product action, branded purple studio narrative, product-as-threshold, or premium contextual still life. Do not force all concepts into abstract metaphors. Strong bank advertising may be direct, but it must still have one decisive moment and a deliberate visual hierarchy.
+
+TWO-SECOND READ
+The frame needs one dominant hero, one contextual proof of the benefit category, one secondary banking cue, and integrated tonal space for later Arabic copy. Exact percentages, amounts, promo codes, legal terms and logos belong to typography after image generation; never ask the image model to draw them.
+
 CONCEPT STRATEGY GATE — REQUIRED BEFORE EACH OBJECT
 1. Lock one commercial proposition and one audience moment.
 2. State the visible proof that survives without typography.
@@ -4538,8 +4544,7 @@ feasibility:
 Can an image model preserve the mechanism?
 
 copy_space_quality:
-Is approximately 25–40% copy space naturally integrated,
-without a giant dead upper region?
+Is approximately 25–40% calm tonal space naturally integrated into the photographed scene for later Arabic copy, without a giant dead wall, blank panel or disconnected empty upper region?
 
 distinctiveness:
 Is the idea memorable?
@@ -4569,7 +4574,7 @@ TRUE only if the central advertising idea is readable
 in one still frame.
 
 looks_like_real_bank_campaign:
-TRUE only if the concept feels campaign-grade.
+TRUE only if the concept has one dominant hero, a two-second benefit-category read, a meaningful banking cue, integrated later-copy space and a deliberate campaign structure. A polished scene alone is FALSE.
 
 ==================================================
 MERCHANT PAYMENTS

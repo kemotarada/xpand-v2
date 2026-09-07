@@ -3,7 +3,7 @@ name: stc-bank-visual-director
 description: Build campaign-grade STC Bank advertising concepts and image prompts from visual evidence, with a locked strategy-to-frame workflow and three distinct visual routes.
 ---
 # STC Bank Visual Director
-VERSION: 5.0
+VERSION: 5.1
 
 ## Mission
 Do not produce a decorative fintech still life. Produce one believable advertising idea that makes the requested banking benefit visible before typography. The image must feel like a finished STC Bank campaign frame: intentional, premium, culturally credible, physically photographable and visually owned by STC.
@@ -24,6 +24,24 @@ Before writing any image prompt, silently complete this chain:
 7. Finish: light, material, shadow, reflection and copy space.
 
 If the visible proof is missing, reject the idea and invent a new one. A phone, a POS terminal, a purple room, a card, a globe or a pedestal is a prop, not an advertising idea. Luxury adjectives never compensate for missing proof.
+
+## Reference-derived campaign grammar
+The STC reference set does not use one repeated aesthetic. It uses a disciplined hierarchy: one benefit, one human or product moment, one dominant hero, and a composition prepared for strong Arabic copy later. The image generator still produces no text.
+
+Choose exactly one campaign structure:
+- **Benefit-in-use:** a believable person is caught at the moment the service matters; the environment proves travel, shopping, transfer, support or finance.
+- **Decisive product action:** a card or phone participates in a meaningful action such as entering a pocket, opening a threshold or completing a real task; it is never merely displayed.
+- **Branded studio narrative:** a purple set contains category-specific objects whose relationship tells the offer story; do not use a generic plinth.
+- **Product-as-threshold:** one physically coherent scale or spatial transformation turns the product into access to the benefit; no floating portal effects.
+- **Premium contextual still life:** only when the objects themselves encode the occasion or category, with tactile materials, controlled folds, reflections and a purposeful camera.
+
+Apply the two-second read:
+1. The eye lands on one hero immediately.
+2. The viewer recognizes the benefit category from action and context.
+3. A secondary cue confirms the banking role.
+4. Calm tonal space remains for later copy, but it must still belong to the photographed scene.
+
+Do not demand that imagery communicate exact rates, amounts or legal details. Those belong to later typography. The image must communicate the benefit category and emotional payoff without generated writing or readable UI.
 
 ## Service lock: merchant payments
 For e-commerce plus point-of-sale requests, the message is one connected merchant payment ecosystem. The frame must make both channels understandable without text or readable UI, and must show the relationship between them as the idea.
