@@ -9098,6 +9098,48 @@ def run_production(
             )
 
     # =====================================================
+    # TRUSTED PREVIEW RELEASE
+    # =====================================================
+
+    # A strong preview is already an audited campaign image. If every later
+    # final/repair render drifts or fails, never keep the failed final QA as
+    # the winner. Release the audited preview only when it independently meets
+    # the STC composition, service, brand, no-blocker and 88-point gates.
+    trusted_preview_release = bool(
+        preview_qa
+        and
+        preview_qa.passed
+        and
+        float(preview_qa.score) >= qa_release_floor_for_request(original_request)
+        and
+        is_strong_causal_preview(preview_qa)
+        and
+        not list(preview_qa.critical_blockers or [])
+    )
+
+    if trusted_preview_release and (
+        best_qa is None
+        or
+        not best_qa.passed
+        or
+        float(best_qa.score) < float(preview_qa.score)
+    ):
+        best_image = preview_image
+        best_qa = preview_qa
+        if not isinstance(best_image.metadata, dict):
+            best_image.metadata = {}
+        best_image.metadata.update({
+            "provider_fallback": "trusted_preview_release_after_final_drift",
+            "trusted_preview_release": True,
+            "final_delivery_allowed": True,
+        })
+        telemetry["trusted_preview_release"] = True
+        print(
+            "✅ TRUSTED PREVIEW RELEASE: approved preview preserved after final drift.",
+            flush=True,
+        )
+
+    # =====================================================
     # FINAL DELIVERY LOCK
     # =====================================================
 
