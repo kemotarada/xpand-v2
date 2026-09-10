@@ -282,16 +282,15 @@ GEMINI_API_KEY = str(
 ).strip()
 
 
-OPENAI_ENABLED = env_bool(
-    "XPAND_OPENAI_ENABLED",
-    bool(
-        OPENAI_API_KEY
-    ),
-)
+# Gemini-only deployment: OpenAI is intentionally disabled.
+OPENAI_ENABLED = False
 
 # A provider credit/quota outage is sticky for the lifetime of this process.
 # Avoid retrying the unavailable structured director on every QA/concept pass.
 OPENAI_STRUCTURED_UNAVAILABLE = False
+
+# Gemini-only production mode: OpenAI is intentionally never called.
+GEMINI_ONLY_MODE = True
 
 
 # =========================================================
@@ -435,10 +434,8 @@ BEST_USE_PRO = env_bool(
 )
 
 
-BEST_REQUIRE_OPENAI_FINAL = env_bool(
-    "XPAND_BEST_REQUIRE_OPENAI_FINAL",
-    True,
-)
+# Compatibility flag retained; Gemini Pro is the only final renderer.
+BEST_REQUIRE_OPENAI_FINAL = False
 
 
 # If OpenAI is temporarily unavailable because of quota/billing, allow
@@ -4009,6 +4006,16 @@ def call_openai_director(
         or
         json_schema
     )
+
+    if GEMINI_ONLY_MODE:
+        return call_gemini_director(
+            prompt,
+            image_bytes=(image_bytes),
+            image_mime_type=(image_mime_type),
+            json_mode=(structured),
+            json_schema=(json_schema),
+            json_schema_name=(json_schema_name),
+        )
 
     #
     # STRUCTURED:
@@ -8352,7 +8359,7 @@ def generate_image(
     return run_google_direct(
         original_prompt,
 
-        pro=False,
+        pro=True,
 
         aspect_ratio=(
             final_aspect_ratio
@@ -8472,9 +8479,7 @@ def get_image_engine_status() -> Dict[
             ENGINE_VERSION,
 
         "openai_configured":
-            bool(
-                OPENAI_API_KEY
-            ),
+            False,
 
         "openai_enabled":
             bool(
@@ -8487,10 +8492,10 @@ def get_image_engine_status() -> Dict[
             ),
 
         "openai_image":
-            OPENAI_IMAGE_MODEL,
+            "disabled",
 
         "openai_director":
-            OPENAI_DIRECTOR_MODEL,
+            "disabled",
 
         "google_fast":
             GOOGLE_IMAGE_FAST_MODEL,
@@ -8520,24 +8525,23 @@ def get_image_engine_status() -> Dict[
             BEST_REQUIRE_OPENAI_FINAL,
 
         "best_pipeline": [
-            GOOGLE_IMAGE_FAST_MODEL,
-            OPENAI_IMAGE_MODEL,
+            GOOGLE_IMAGE_PRO_MODEL,
         ],
 
         "best_final_model":
-            OPENAI_IMAGE_MODEL,
+            GOOGLE_IMAGE_PRO_MODEL,
 
         "stc_masterpiece_final_model":
-            OPENAI_IMAGE_MODEL,
+            GOOGLE_IMAGE_PRO_MODEL,
 
         "nano_banana_role":
-            "draft/previsualization",
+            "Gemini Pro image renderer",
 
         "gpt_image_2_role":
-            "final renderer / final edit",
+            "disabled",
 
         "openai_multi_reference":
-            True,
+            False,
 
         "openai_max_input_images":
             OPENAI_MAX_REFERENCE_IMAGES,
@@ -8558,10 +8562,10 @@ def get_image_engine_status() -> Dict[
             OPENAI_STRUCTURED_REASONING,
 
         "structured_routing":
-            "OpenAI first",
+            "Gemini only",
 
         "free_text_routing":
-            "Gemini first",
+            "Gemini only",
 
         "gemini_image_thinking_normalized":
             GEMINI_IMAGE_THINKING,
