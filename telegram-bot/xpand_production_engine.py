@@ -4620,10 +4620,41 @@ def build_final_renderer_prompt(
         ""
     )
 
+    preview_requires_clean_recomposition = bool(
+        preview_qa
+        is not None
+        and (
+            preview_qa.decision
+            ==
+            "preview_repair_required"
+            or
+            bool(
+                preview_qa.critical_blockers
+            )
+        )
+    )
+
+    image_role_instruction = (
+        "NO PREVISUALIZATION INPUT IS PROVIDED.\n\n"
+        "Build the final image from the approved production contract and\n"
+        "attached STC references only. Do not infer, preserve or repair\n"
+        "geometry from a draft image."
+        if preview_requires_clean_recomposition
+        else
+        "Image 1 is a PREVISUALIZATION.\n\n"
+        "It is NOT a sacred pixel-perfect base.\n\n"
+        "Preserve what works:\n"
+        "- advertising proposition\n"
+        "- useful composition\n"
+        "- hero relationship\n"
+        "- camera intent\n\n"
+        "Correct what looks synthetic, generic or physically wrong."
+    )
+
     manifest = (
         reference_role_manifest(
             references,
-            draft_first=True,
+            draft_first=not preview_requires_clean_recomposition,
         )
     )
 
@@ -4640,17 +4671,7 @@ XPAND GPT-IMAGE-2 FINAL RENDER V6.0.1
 
 CREATE THE CLIENT-READY FINAL IMAGE.
 
-Image 1 is a PREVISUALIZATION.
-
-It is NOT a sacred pixel-perfect base.
-
-Preserve what works:
-- advertising proposition
-- useful composition
-- hero relationship
-- camera intent
-
-Correct what looks synthetic, generic or physically wrong.
+{image_role_instruction}
 
 INPUT IMAGE ROLES
 -----------------
@@ -6137,6 +6158,8 @@ def build_qa_evaluation(
             model_decision
             !=
             "rebuild"
+            and
+            not blockers
         )
 
         return QAEvaluation(
@@ -8016,6 +8039,26 @@ def run_production(
     )
 
     print("")
+    preview_requires_clean_recomposition = bool(
+        preview_qa
+        is not None
+        and (
+            preview_qa.decision
+            ==
+            "preview_repair_required"
+            or
+            bool(
+                preview_qa.critical_blockers
+            )
+        )
+    )
+
+    if preview_requires_clean_recomposition:
+        print(
+            "🧱 CLEAN FINAL RECOMPOSITION: preview blocker present; "
+            "final starts from contract + STC references only"
+        )
+
     print(
         "🎯 FINAL IMAGE 1/"
         +
@@ -8033,6 +8076,9 @@ def run_production(
         first_final = (
             openai_multi_reference_edit(
                 working_image=(
+                    None
+                    if preview_requires_clean_recomposition
+                    else
                     preview_image
                 ),
                 references=(
@@ -8180,6 +8226,15 @@ def run_production(
                     ),
                 "immutable_final_locks":
                     True,
+                "working_image_used":
+                    not preview_requires_clean_recomposition,
+                "working_image_source":
+                    (
+                        "previsualization"
+                        if not preview_requires_clean_recomposition
+                        else
+                        "clean_contract_recomposition"
+                    ),
                 "references":
                     [
                         item.source_id
@@ -8504,9 +8559,18 @@ def run_production(
                     # Reusing the failed final candidate would preserve its
                     # broken camera, geometry or generic scene logic.
                     working_image=(
-                        preview_image
-                        if action == "structural_repair"
-                        else first_final
+                        None
+                        if (
+                            action == "structural_repair"
+                            and
+                            preview_requires_clean_recomposition
+                        )
+                        else
+                        (
+                            preview_image
+                            if action == "structural_repair"
+                            else first_final
+                        )
                     ),
                     references=(
                         repair_refs
@@ -8569,7 +8633,12 @@ def run_production(
                             True,
                         "working_image_source":
                             (
-                                "previsualization_recomposition"
+                                (
+                                    "clean_contract_recomposition"
+                                    if preview_requires_clean_recomposition
+                                    else
+                                    "previsualization_recomposition"
+                                )
                                 if action == "structural_repair"
                                 else "failed_final_candidate"
                             ),
