@@ -5708,6 +5708,8 @@ def detect_critical_blockers(
 
     non_blocking_advisories = {
         "stc_scene_originality_below_80",
+        "stc_literal_counter_tableau",
+        "literal_counter_tableau_detected",
     }
 
     for value in safe_list(
