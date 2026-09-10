@@ -5853,8 +5853,8 @@ def detect_critical_blockers(
         hard_flags = {
             "generic_scene_detected":
                 "stc_generic_scene",
-            "literal_counter_tableau_detected":
-                "stc_literal_counter_tableau",
+            # A literal counter/tableau observation is advisory only.
+            # It must not reject an otherwise compliant STC campaign image.
             "brand_identity_weak":
                 "stc_brand_identity_weak",
             "reference_drift":
