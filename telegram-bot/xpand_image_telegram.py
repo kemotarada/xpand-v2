@@ -5002,35 +5002,9 @@ def deliver_generated_image(
     preview_result = {}
     original_result = {}
 
-    preview_caption = (
-        "XPAND "
-        +
-        str(
-            index
-        )
-        +
-        "/"
-        +
-        str(
-            total
-        )
-    )
-
-    if model:
-
-        preview_caption += (
-            "\n"
-            +
-            model
-        )
-
-    if metadata.get(
-        "production_engine"
-    ):
-
-        preview_caption += (
-            "\nMasterpiece QA approved"
-        )
+    # Keep diagnostics in server logs only; never burn them into the
+    # user-facing Telegram image/caption.
+    preview_caption = ""
 
     if SEND_PREVIEW:
 
@@ -5048,14 +5022,6 @@ def deliver_generated_image(
         original_caption = (
             "النسخة الأصلية"
         )
-
-        if model:
-
-            original_caption += (
-                " | "
-                +
-                model
-            )
 
         original_result = send_document_bytes(
             core,
