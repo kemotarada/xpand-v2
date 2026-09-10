@@ -3255,7 +3255,9 @@ split-screen or unrelated product tableau.
 
 The POS screen and parcel label are blank, abstract and unreadable:
 no letters, digits, logos, card-network marks, QR codes, barcodes,
-balances or interface elements. The terminal remains a normal,
+balances or interface elements. Do not show a payment card at all: show a
+believable empty-hand contactless tap gesture on the terminal, with no card
+face, chip, number or network mark anywhere. The terminal remains a normal,
 commercially plausible, unbranded device with a clean neutral display.
 
 Keep the merchant and the active hand interaction as the hero.
@@ -4873,10 +4875,11 @@ physical payment plus online fulfillment from the action itself.
 
 HARD EXCLUSIONS:
 No laptop, tablet, smartphone, extra display, app screen, UI, keypad digits,
-card lettering, logo, QR code, barcode, parcel label, generated text,
-floating object, split screen, unrelated props, product catalogue, generic
-checkout or isolated terminal beauty shot. The POS display and parcel are
-blank, neutral and unreadable. Do not invent hardware.
+payment card of any kind, card face, chip, logo, QR code, barcode, parcel
+label, generated text, floating object, split screen, unrelated props,
+product catalogue, generic checkout or isolated terminal beauty shot. Show
+payment only as a believable empty-hand contactless tap gesture on the blank
+POS terminal. The POS display and parcel are neutral and unreadable. Do not invent hardware.
 
 Use premium purple architectural styling only through real surfaces or
 motivated light; keep skin, merchandise, parcel and hardware natural. Make
