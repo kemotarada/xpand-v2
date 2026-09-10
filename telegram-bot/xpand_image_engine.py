@@ -89,6 +89,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -1080,6 +1081,37 @@ def infer_mime_type(
     return fallback
 
 
+def _read_image_dimensions(raw: bytes) -> Optional[Tuple[int, int]]:
+    if raw.startswith(b"\x89PNG\r\n\x1a\n") and len(raw) >= 24:
+        return int.from_bytes(raw[16:20], "big"), int.from_bytes(raw[20:24], "big")
+    if raw.startswith(b"\xff\xd8\xff"):
+        index = 2
+        sof_markers = set(range(0xC0, 0xC4)) | set(range(0xC5, 0xC8)) | set(range(0xC9, 0xCC)) | set(range(0xCD, 0xD0))
+        while index + 9 < len(raw):
+            if raw[index] != 0xFF:
+                index += 1
+                continue
+            while index < len(raw) and raw[index] == 0xFF:
+                index += 1
+            if index >= len(raw):
+                break
+            marker = raw[index]
+            index += 1
+            if marker in (0xD8, 0xD9):
+                continue
+            if index + 2 > len(raw):
+                break
+            segment_length = int.from_bytes(raw[index:index + 2], "big")
+            if marker in sof_markers and index + 7 <= len(raw):
+                height = int.from_bytes(raw[index + 3:index + 5], "big")
+                width = int.from_bytes(raw[index + 5:index + 7], "big")
+                return width, height
+            if segment_length < 2:
+                break
+            index += segment_length
+    return None
+
+
 def normalize_image_bytes_to_aspect(
     image_bytes: bytes,
     mime_type: str,
@@ -1087,30 +1119,36 @@ def normalize_image_bytes_to_aspect(
 ) -> Tuple[bytes, str]:
     """Crop provider-native output to the requested delivery ratio before QA."""
     raw = image_bytes or b""
-    ratio_text = clean_text(aspect_ratio, 40)
     try:
-        rw, rh = (float(part.strip()) for part in ratio_text.split(":", 1))
-        if rw <= 0 or rh <= 0 or not raw:
+        rw, rh = (float(part.strip()) for part in clean_text(aspect_ratio, 40).split(":", 1))
+        dimensions = _read_image_dimensions(raw)
+        if rw <= 0 or rh <= 0 or not dimensions:
+            return raw, mime_type or infer_mime_type(raw)
+        sw, sh = dimensions
+        target = rw / rh
+        current = sw / sh
+        if abs(current - target) < 0.005:
+            return raw, mime_type or infer_mime_type(raw)
+        if current > target:
+            th, tw = sh, max(1, int(round(sh * target)))
+        else:
+            tw, th = sw, max(1, int(round(sw / target)))
+        tw, th = min(tw, sw), min(th, sh)
+        x, y = max(0, (sw - tw) // 2), max(0, (sh - th) // 2)
+        ffmpeg_bin = shutil.which("ffmpeg")
+        if not ffmpeg_bin:
+            try:
+                import imageio_ffmpeg
+                ffmpeg_bin = imageio_ffmpeg.get_ffmpeg_exe()
+            except Exception:
+                ffmpeg_bin = None
+        if not ffmpeg_bin:
+            print("⚠️ Aspect normalization skipped: ffmpeg executable unavailable", flush=True)
             return raw, mime_type or infer_mime_type(raw)
         with tempfile.NamedTemporaryFile(suffix=".input", delete=True) as source:
             source.write(raw)
             source.flush()
-            probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", source.name], capture_output=True, text=True, timeout=20, check=False)
-            dimensions = clean_text(probe.stdout, 80).split("x")
-            if len(dimensions) != 2:
-                return raw, mime_type or infer_mime_type(raw)
-            sw, sh = int(dimensions[0]), int(dimensions[1])
-            target = rw / rh
-            current = sw / sh
-            if abs(current - target) < 0.005:
-                return raw, mime_type or infer_mime_type(raw)
-            if current > target:
-                th, tw = sh, max(1, int(round(sh * target)))
-            else:
-                tw, th = sw, max(1, int(round(sw / target)))
-            tw, th = min(tw, sw), min(th, sh)
-            x, y = max(0, (sw - tw) // 2), max(0, (sh - th) // 2)
-            rendered = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", source.name, "-vf", f"crop={tw}:{th}:{x}:{y}", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True, timeout=45, check=False)
+            rendered = subprocess.run([ffmpeg_bin, "-v", "error", "-y", "-i", source.name, "-vf", f"crop={tw}:{th}:{x}:{y}", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True, timeout=45, check=False)
             if rendered.returncode == 0 and rendered.stdout:
                 return rendered.stdout, "image/png"
     except Exception as error:
