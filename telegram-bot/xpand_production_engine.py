@@ -3226,6 +3226,47 @@ def requires_reality_reinterpretation(
 
 
 # =========================================================
+# MERCHANT PAYMENTS EXECUTION LOCK
+# =========================================================
+
+def merchant_payment_execution_lock() -> str:
+    """Give the renderer one legible, photographic merchant workflow."""
+    return """
+MERCHANT PAYMENTS — EXECUTION LOCK
+----------------------------------
+
+Use one continuous photographic merchant workflow, not a collection
+of fintech props:
+
+- a real merchant works at one premium retail/service counter;
+- one hand is completing a real customer checkout on a believable,
+  unbranded physical POS terminal;
+- on the same counter, a sealed, unbranded customer parcel is being
+  prepared for pickup or dispatch, making the online order/fulfillment
+  channel physically evident;
+- the parcel, merchant action and checkout counter must share one
+  coherent perspective, lighting system and depth relationship.
+
+The viewer must understand: this one merchant can receive physical
+payments and fulfill online orders through one connected business
+workflow.
+
+The online cue is the real parcel and fulfillment action, not a
+smartphone screen. Do not add a laptop, tablet, floating phone,
+split-screen or unrelated product tableau.
+
+The POS screen and parcel label are blank, abstract and unreadable:
+no letters, digits, logos, card-network marks, QR codes, barcodes,
+balances or interface elements. The terminal remains a normal,
+commercially plausible, unbranded device with a clean neutral display.
+
+Keep the merchant and the active hand interaction as the hero.
+Do not turn the scene into a product catalog, generic checkout,
+or isolated terminal beauty shot.
+""".strip()
+
+
+# =========================================================
 # STC VISUAL CONSTITUTION
 # =========================================================
 
@@ -3314,9 +3355,9 @@ Both channels must be understandable without generated text.
 
 Do not simply place unrelated service props together.
 
-Do not use:
-customer + POS + merchant + counter + packing activity
-as the entire advertising mechanism.
+Do not use a static tableau of customer + POS + merchant +
+counter + packing activity as the entire advertising mechanism.
+The merchant action and the connected workflow must carry the idea.
 
 Do not use a smartphone screen as the only evidence
 of e-commerce.
@@ -3324,6 +3365,14 @@ of e-commerce.
 Use believable commercial evidence and one clear
 advertising relationship.
 """.strip()
+
+        merchant = (
+            merchant
+            +
+            "\n\n"
+            +
+            merchant_payment_execution_lock()
+        )
 
     return f"""
 STC BANK VISUAL CONSTITUTION
@@ -3525,6 +3574,14 @@ of the complete service.
 
 Do not replace the message with generic checkout activity.
 """.strip()
+
+        merchant_lock = (
+            merchant_lock
+            +
+            "\n\n"
+            +
+            merchant_payment_execution_lock()
+        )
 
     brand_lock = ""
 
@@ -3957,6 +4014,14 @@ marble, a generic checkout, tablet + terminal + parcel tableau, split-screen,
 fake UI or invented hardware. The online cue must show its role in commerce;
 the POS cue must show credible acceptance. If the proof is missing, rebuild.
 """.strip()
+
+        merchant_proof_section = (
+            merchant_proof_section
+            +
+            "\n\n"
+            +
+            merchant_payment_execution_lock()
+        )
 
     prompt = f"""
 XPAND MASTERPIECE STRATEGY-TO-IMAGE CONTRACT V6.0.1
