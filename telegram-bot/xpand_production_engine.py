@@ -3605,6 +3605,19 @@ of e-commerce.
 A POS terminal alone is NOT sufficient proof
 of the complete service.
 
+FINAL MERCHANT SHOT CONTRACT:
+Create one vertical 4:5 premium STC merchant photograph, not a collage:
+one real merchant at one counter, one hand actively completing payment on
+one believable unbranded POS terminal, and the same counter holding one
+plain sealed parcel being prepared for dispatch. The POS, hand, merchant and
+parcel must share one camera perspective, light and causal workflow.
+
+No laptop, tablet, smartphone, extra screen, interface, keypad digits, QR
+code, barcode, label text, logo, floating object or unrelated checkout prop.
+The terminal display and parcel surface are blank and unreadable. The image
+must prove physical acceptance plus online fulfillment through action, not
+through words or UI.
+
 Do not replace the message with generic checkout activity.
 """.strip()
 
@@ -8510,6 +8523,19 @@ def run_production(
                 :MAX_PHYSICAL_REFERENCE_IMAGES
             ]
         )
+
+        # Never let a structural merchant repair run without the STC visual
+        # authority set. If the specialized correction selector is empty,
+        # retain the final reference set rather than silently sending zero
+        # references to the image provider.
+        if (
+            not repair_refs
+            and
+            not text_logo_surgical
+        ):
+            repair_refs = list(
+                final_refs
+            )
 
         repair_phase = (
             "repair_prompt_build"
