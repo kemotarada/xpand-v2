@@ -4275,14 +4275,12 @@ def generate_masterpiece_images(
             # QA REQUIRED
             # =============================================
 
-            qa_required = bool(
-                MASTERPIECE_REQUIRE_QA
-                or
-                (
-                    high_alert
-                    and
-                    STC_REQUIRE_PRODUCTION_QA
-                )
+            # HARD RELEASE LOCK: every Masterpiece image must pass final QA.
+            # Environment flags may add restrictions, never remove this gate.
+            qa_required = True
+
+            print(
+                "🔒 MASTERPIECE QA HARD LOCK: required for final delivery"
             )
 
             if (
@@ -5752,6 +5750,48 @@ def generate_and_deliver(
             )
 
             raise
+
+    # =====================================================
+    # ABSOLUTE MASTERPIECE DELIVERY LOCK
+    # =====================================================
+    # A production result may contain a preview image even when its QA
+    # decision is false. Never let that object reach Telegram.
+    if use_masterpiece and images:
+        approved_images = []
+        rejected_images = 0
+
+        for candidate in images:
+            candidate_metadata = getattr(
+                candidate,
+                "metadata",
+                {},
+            )
+
+            if not isinstance(candidate_metadata, dict):
+                candidate_metadata = {}
+
+            candidate_qa_passed = (
+                candidate_metadata.get("qa_passed") is True
+            )
+
+            if candidate_qa_passed:
+                approved_images.append(candidate)
+            else:
+                rejected_images += 1
+
+        if rejected_images:
+            pipeline_errors.append(
+                (
+                    "masterpiece_delivery_lock_rejected:"
+                    + str(rejected_images)
+                )
+            )
+            print(
+                "🛑 MASTERPIECE DELIVERY LOCK: rejected unqualified image(s) =",
+                rejected_images,
+            )
+
+        images = approved_images
 
     # =====================================================
     # NO RESULT
