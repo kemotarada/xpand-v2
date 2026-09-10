@@ -328,12 +328,10 @@ MASTERPIECE_REQUIRE_OPENAI_FINAL = env_bool(
 )
 
 
-# Allow a provider fallback only when the mandatory OpenAI final cannot run.
-# The fallback still goes through the normal final QA and delivery frame.
-MASTERPIECE_ALLOW_PROVIDER_FALLBACK = env_bool(
-    "XPAND_MASTERPIECE_ALLOW_PROVIDER_FALLBACK",
-    True,
-)
+# A provider fallback is forbidden for Masterpiece.
+# A preview provider can never become the mandatory final renderer.
+# Keep this hard-disabled in code; environment flags cannot weaken QA.
+MASTERPIECE_ALLOW_PROVIDER_FALLBACK = False
 
 
 STC_REQUIRE_OPENAI_FINAL = env_bool(
@@ -5020,65 +5018,93 @@ def openai_multi_reference_edit(
             )
 
         except Exception as openai_error:
-            if not MASTERPIECE_ALLOW_PROVIDER_FALLBACK:
-                raise
-
             message = clean_text(
                 openai_error,
                 3500,
             )
 
+            # One safety-only retry: remove external brand/reference inputs
+            # that can trigger provider moderation, while keeping the
+            # approved idea and no-text/no-logo contract in the prompt.
+            safety_markers = (
+                "safety",
+                "content policy",
+                "content_policy",
+                "moderation",
+            )
+            safety_rejection = any(
+                marker in message.lower()
+                for marker in safety_markers
+            )
+
+            if not safety_rejection:
+                raise
+
+            safety_inputs = (
+                inputs[:1]
+                if working_image is not None
+                else []
+            )
+
+            safety_prompt = (
+                prompt
+                + "\n\nSAFETY RETRY — IMMUTABLE: "
+                "Create an original unbranded advertising image. "
+                "Do not reproduce, identify, or render any logo, "
+                "wordmark, trademark, readable text, bank-card mark, "
+                "app UI, or branded asset from the input image. "
+                "Use only abstract purple architectural materials, "
+                "lighting and composition cues. Keep the service message "
+                "visual and text-free."
+            )
+
             print(
-                "🔁 OpenAI final unavailable; "
-                "using Gemini provider fallback:",
-                message,
+                "🔒 OpenAI safety retry: removed external reference inputs"
             )
 
-            result = gemini_multi_reference_edit(
-                working_image=(
-                    working_image
-                ),
-                references=(
-                    refs
-                ),
-                prompt=(
-                    prompt
-                ),
-                aspect_ratio=(
-                    aspect_ratio
-                ),
-                pass_name=(
-                    "gemini_provider_fallback_v601"
-                ),
-                output_image_size=(
-                    output_image_size
-                ),
-                model_override=(
-                    NANO_BANANA_2_MODEL
-                ),
-                max_reference_images=(
-                    limit
-                ),
-            )
+            try:
+                result = edit_with_openai_multi(
+                    safety_inputs,
+                    safety_prompt,
+                    aspect_ratio=(
+                        aspect_ratio
+                    ),
+                    image_size=(
+                        output_image_size
+                    ),
+                    quality="high",
+                    original_prompt=(
+                        safety_prompt
+                    ),
+                    metadata={
+                        "production_engine":
+                            ENGINE_VERSION,
+                        "pass_name":
+                            pass_name,
+                        "immutable_final_locks":
+                            True,
+                        "openai_safety_retry":
+                            True,
+                    },
+                )
 
-            if not isinstance(
-                result.metadata,
-                dict,
-            ):
-                result.metadata = {}
+                if not isinstance(
+                    result.metadata,
+                    dict,
+                ):
+                    result.metadata = {}
 
-            result.metadata.update(
-                {
-                    "provider_fallback":
-                        "openai_to_gemini",
-                    "openai_failure":
-                        message,
-                    "mandatory_openai_final_failed":
-                        True,
-                    "gemini_final_allowed":
-                        True,
-                }
-            )
+                result.metadata.update(
+                    {
+                        "openai_safety_retry":
+                            True,
+                        "external_references_removed":
+                            True,
+                    }
+                )
+
+            except Exception as safety_retry_error:
+                raise openai_error from safety_retry_error
 
     if not isinstance(
         result.metadata,
