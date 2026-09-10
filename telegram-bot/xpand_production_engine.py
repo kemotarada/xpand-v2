@@ -3330,6 +3330,39 @@ gravity, reflection and lighting.
 """.strip()
 
     merchant = ""
+    digital_transfer = ""
+
+    if (
+        benefit
+        ==
+        "digital_banking"
+    ):
+
+        digital_transfer = """
+DIGITAL BANKING / GLOBAL TRANSFER VISUAL MECHANISM
+=================================================
+
+For a request about sending money worldwide and tracking it in the app,
+create one concrete premium photographic relationship: a real sender in
+the foreground and a real recipient or secure handoff visible in the same
+continuous architectural depth, connected by believable human action and
+spatial continuity. The viewer must read send -> in progress -> safe arrival
+without generated words.
+
+Use one ordinary physically correct smartphone only as a supporting cue.
+Keep its screen turned away, softly out of focus or abstract and blank. The
+phone must never carry the whole message, never warp around architecture, and
+never intersect a column, pillar, hand or reflective edge.
+
+Do not use a floating globe, map, route line, dotted path, particles, HUD,
+hologram, split-screen, duplicated phone, invented banking hardware, or
+generic person simply holding a phone. Do not create a collage of unrelated
+objects. Use real people, real depth, natural hand contact, believable
+architecture, and one decisive moment of secure delivery.
+
+The final frame must feel like a real STC Bank campaign photograph, not an
+app mockup or a generic fintech render.
+""".strip()
 
     if (
         benefit
@@ -3513,6 +3546,8 @@ If a screen exists:
 no readable banking UI,
 no readable numbers,
 no fake financial interface.
+
+{digital_transfer}
 
 {merchant}
 """.strip()
@@ -6571,15 +6606,20 @@ def qa_candidate_is_better(
     ],
 ) -> bool:
 
-    return (
-        qa_quality_rank(
-            candidate
-        )
-        >
-        qa_quality_rank(
-            existing
-        )
-    )
+    if candidate is None:
+        return False
+
+    if existing is None:
+        return True
+
+    # A passed candidate always wins over a rejected candidate.
+    if candidate.passed != existing.passed:
+        return bool(candidate.passed)
+
+    # Among candidates with the same pass state, preserve the strongest
+    # measured result. Fewer blockers must not select a materially weaker
+    # image such as 72.49 over 74.79.
+    return float(candidate.score) > float(existing.score)
 
 
 # =========================================================
