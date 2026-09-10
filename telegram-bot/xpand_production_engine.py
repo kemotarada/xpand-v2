@@ -3373,30 +3373,27 @@ app mockup or a generic fintech render.
     ):
 
         merchant = """
-MERCHANT-PAYMENTS CONSTITUTION
-==============================
+MERCHANT-PAYMENTS CAMPAIGN MECHANISM
+====================================
 
-The visual proposition is:
+Build one decisive, photographic advertising moment — not a catalogue
+of banking props and not a multi-panel explanation.
 
-ONLINE / E-COMMERCE ACCEPTANCE
-+
-PHYSICAL POINT-OF-SALE ACCEPTANCE
-=
-ONE CONNECTED MERCHANT ECOSYSTEM.
+DOMINANT ACTION:
+A visible customer hand performs a believable contactless tap on one blank,
+unbranded physical POS terminal in the foreground.
 
-Both channels must be understandable without generated text.
+SUPPORTING PROOF:
+The same merchant uses the other hand to actively close one plain parcel
+for an online order on the same counter. The POS, hands, merchant and parcel
+must share one camera, one perspective, one light system and real contact.
 
-Do not simply place unrelated service props together.
-
-Do not use a static tableau of customer + POS + merchant +
-counter + packing activity as the entire advertising mechanism.
-The merchant action and the connected workflow must carry the idea.
-
-Do not use a smartphone screen as the only evidence
-of e-commerce.
-
-Use believable commercial evidence and one clear
-advertising relationship.
+The viewer must understand physical payment plus online fulfilment from the
+gesture and spatial relationship alone. Do not add a courier, second location,
+smartphone, tablet, app screen or split scene unless the user explicitly asks.
+Use one premium Saudi retail/service environment with restrained STC purple
+architecture or motivated purple light. Keep the action human, legible and
+commercially plausible; never turn it into a static counter tableau.
 """.strip()
 
         merchant = (
@@ -3439,6 +3436,30 @@ Do NOT clone:
 REFERENCE EVIDENCE OUTRANKS GENERIC LUXURY DEFAULTS.
 
 {style_text}
+
+STC CAMPAIGN ART-DIRECTION STANDARD
+====================================
+
+The attached STC examples are finished campaign layouts, not instructions
+to copy their text or logos into the generated pixels.
+
+Every scene must have:
+- one dominant hero object or human action
+- one supporting proof of the requested benefit
+- one coherent physical environment
+- one mature camera decision
+- integrated negative space for later typography
+- restrained purple / green brand accents rather than a purple filter.
+
+Do not combine several benefits, locations, devices or service explanations
+in one frame. Prefer a simple visual metaphor that can be understood before
+any headline is read. Generate the clean photographic hero first; official
+logos, Arabic copy, offer numbers, CTA and legal text belong to a separate
+layout/compositing layer and must not be invented by the image model.
+
+Use the reference set for tonal balance, lighting, material quality, Saudi
+commercial realism, subject scale and copy-space placement — never for an
+exact composition or a collage of unrelated references.
 
 PHYSICAL REALITY FIREWALL
 -------------------------
