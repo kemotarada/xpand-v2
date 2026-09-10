@@ -89,6 +89,8 @@ import base64
 import json
 import os
 import re
+import subprocess
+import tempfile
 import time
 import uuid
 
@@ -1076,6 +1078,44 @@ def infer_mime_type(
         return "image/webp"
 
     return fallback
+
+
+def normalize_image_bytes_to_aspect(
+    image_bytes: bytes,
+    mime_type: str,
+    aspect_ratio: str,
+) -> Tuple[bytes, str]:
+    """Crop provider-native output to the requested delivery ratio before QA."""
+    raw = image_bytes or b""
+    ratio_text = clean_text(aspect_ratio, 40)
+    try:
+        rw, rh = (float(part.strip()) for part in ratio_text.split(":", 1))
+        if rw <= 0 or rh <= 0 or not raw:
+            return raw, mime_type or infer_mime_type(raw)
+        with tempfile.NamedTemporaryFile(suffix=".input", delete=True) as source:
+            source.write(raw)
+            source.flush()
+            probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0:s=x", source.name], capture_output=True, text=True, timeout=20, check=False)
+            dimensions = clean_text(probe.stdout, 80).split("x")
+            if len(dimensions) != 2:
+                return raw, mime_type or infer_mime_type(raw)
+            sw, sh = int(dimensions[0]), int(dimensions[1])
+            target = rw / rh
+            current = sw / sh
+            if abs(current - target) < 0.005:
+                return raw, mime_type or infer_mime_type(raw)
+            if current > target:
+                th, tw = sh, max(1, int(round(sh * target)))
+            else:
+                tw, th = sw, max(1, int(round(sw / target)))
+            tw, th = min(tw, sw), min(th, sh)
+            x, y = max(0, (sw - tw) // 2), max(0, (sh - th) // 2)
+            rendered = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", source.name, "-vf", f"crop={tw}:{th}:{x}:{y}", "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True, timeout=45, check=False)
+            if rendered.returncode == 0 and rendered.stdout:
+                return rendered.stdout, "image/png"
+    except Exception as error:
+        print("⚠️ Aspect normalization skipped:", clean_text(error, 500), flush=True)
+    return raw, mime_type or infer_mime_type(raw)
 
 
 def image_data_uri(
@@ -4982,6 +5022,8 @@ def _generate_one_with_gemini(
         ]
     )
 
+    image_bytes, mime_type = normalize_image_bytes_to_aspect(image_bytes, mime_type or "image/jpeg", route.aspect_ratio)
+
     request_id = clean_text(
         data.get(
             "id",
@@ -5372,6 +5414,8 @@ response.
             0
         ]
     )
+
+    output, output_mime = normalize_image_bytes_to_aspect(output, output_mime or "image/jpeg", final_ratio)
 
     return GeneratedImage(
         image_bytes=(
@@ -6189,6 +6233,8 @@ def edit_with_openai_multi(
             0
         ]
     )
+
+    image_bytes, mime_type = normalize_image_bytes_to_aspect(image_bytes, mime_type or "image/png", ratio)
 
     request_id = clean_text(
         getattr(
