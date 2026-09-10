@@ -1009,6 +1009,61 @@ def db_connect():
     )
 
 
+TELEGRAM_POLL_LOCK_NAME = (
+    "xpand.telegram.get_updates.single_owner.v1"
+)
+
+
+def acquire_telegram_poll_lock():
+    """
+    Permit exactly one process to call Telegram getUpdates.
+
+    Railway can briefly leave an old process alive during a redeploy, and
+    changing the bot token does not prevent two new replicas from both
+    polling with that token. A PostgreSQL session advisory lock gives the
+    poller one owner and is released automatically when its DB session dies.
+    """
+    try:
+        conn = db_connect()
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT pg_try_advisory_lock(hashtext(%s))",
+                (TELEGRAM_POLL_LOCK_NAME,),
+            )
+            row = cur.fetchone()
+
+        locked = bool(
+            row
+            and
+            row[0]
+        )
+
+        if not locked:
+            conn.close()
+            print(
+                "🟡 Telegram polling already owned; "
+                "this process will not call getUpdates."
+            )
+            return None
+
+        print(
+            "✅ Telegram polling ownership lock acquired"
+        )
+        return conn
+
+    except Exception as error:
+        print(
+            "❌ Telegram polling ownership lock unavailable: "
+            +
+            type(error).__name__
+        )
+        raise RuntimeError(
+            "Telegram polling lock unavailable; refusing to start "
+            "a second getUpdates loop."
+        ) from error
+
+
 def init_database():
     print(
         "🗄️ Preparing database..."
@@ -9009,6 +9064,13 @@ def main():
         print(
             f"❌ DB: {error}"
         )
+        return
+
+    telegram_poll_lock = (
+        acquire_telegram_poll_lock()
+    )
+
+    if telegram_poll_lock is None:
         return
 
     try:
