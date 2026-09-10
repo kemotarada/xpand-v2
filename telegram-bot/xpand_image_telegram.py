@@ -240,7 +240,7 @@ from xpand_creative_brain import (
 
 from xpand_production_engine import (
     MODE_MASTERPIECE as PRODUCTION_MODE_MASTERPIECE,
-    TARGET_OPENAI,
+    TARGET_GEMINI,
     run_production,
 )
 
@@ -4105,7 +4105,7 @@ def generate_masterpiece_images(
 
             print(
                 "final_target =",
-                TARGET_OPENAI,
+                TARGET_GEMINI,
             )
 
             production = run_production(
@@ -4118,7 +4118,7 @@ def generate_masterpiece_images(
                 camera_direction=camera,
                 aspect_ratio=aspect_ratio,
                 mode=PRODUCTION_MODE_MASTERPIECE,
-                target_model=TARGET_OPENAI,
+                target_model=TARGET_GEMINI,
             )
 
             final_image = getattr(
@@ -4248,7 +4248,7 @@ def generate_masterpiece_images(
                     ),
 
                 "production_target":
-                    TARGET_OPENAI,
+                    TARGET_GEMINI,
             }
 
             metadata.append(
@@ -4371,7 +4371,7 @@ def generate_masterpiece_images(
                             True,
 
                         "production_target":
-                            TARGET_OPENAI,
+                            TARGET_GEMINI,
 
                         "canonical_benefit_family":
                             prepared.get(
@@ -5323,7 +5323,7 @@ def generate_and_deliver(
 
     print(
         "masterpiece_final_target =",
-        TARGET_OPENAI,
+        TARGET_GEMINI,
     )
 
     print(
@@ -5923,7 +5923,7 @@ def generate_and_deliver(
 
     print(
         "production_target =",
-        TARGET_OPENAI,
+        TARGET_GEMINI,
     )
 
     print(
@@ -6026,7 +6026,7 @@ def generate_and_deliver(
             masterpiece_failure_kind,
 
         "masterpiece_target":
-            TARGET_OPENAI,
+            TARGET_GEMINI,
 
         "smart_mode":
             prepared.get(
@@ -6818,7 +6818,7 @@ def install(
     )
 
     print(
-        "✅ Masterpiece Final Target = OpenAI"
+        "✅ Masterpiece Final Target = Gemini Pro"
     )
 
     print(
@@ -6887,7 +6887,7 @@ def install(
             True,
 
         "masterpiece_target":
-            TARGET_OPENAI,
+            TARGET_GEMINI,
 
         "smart_fallback":
             True,
@@ -7247,7 +7247,7 @@ if __name__ == "__main__":
 
     if (
         clean_text(
-            TARGET_OPENAI,
+            TARGET_GEMINI,
             100,
         ).lower()
         !=
