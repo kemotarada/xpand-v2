@@ -4666,6 +4666,15 @@ def build_final_renderer_prompt(
         )
     )
 
+    benefit = (
+        detect_stc_benefit_family(
+            original_request
+        )
+        if stc_request
+        else
+        ""
+    )
+
     constitution = (
         build_stc_visual_constitution(
             original_request
@@ -4840,6 +4849,43 @@ Resolution intent: {requested_size}
         )
         if item
     )
+
+    if benefit == "merchant_payments":
+        # Keep this renderer contract short and causal. The generic final
+        # prompt is intentionally not used here because compaction can remove
+        # the exact merchant-to-parcel relationship the image must preserve.
+        core_prompt = f"""
+CLEAN MERCHANT PAYMENTS FINAL — CLIENT-READY 4:5 PHOTOGRAPH
+===============================================================
+
+There is no draft image input. Generate directly from this contract and the
+attached STC references. Use the references only for STC palette, premium
+architectural restraint and photographic finish.
+
+ONE CAUSAL SCENE, NOT A COLLAGE:
+A real merchant works at one premium Saudi retail/service counter. One hand
+is actively completing a physical customer payment on one believable
+unbranded POS terminal. The same merchant, in the same continuous action,
+is preparing one plain sealed parcel for online-order dispatch on the same
+counter. The merchant, hand, POS and parcel must share one camera, one light
+system, one perspective and believable contact shadows. The viewer must read
+physical payment plus online fulfillment from the action itself.
+
+HARD EXCLUSIONS:
+No laptop, tablet, smartphone, extra display, app screen, UI, keypad digits,
+card lettering, logo, QR code, barcode, parcel label, generated text,
+floating object, split screen, unrelated props, product catalogue, generic
+checkout or isolated terminal beauty shot. The POS display and parcel are
+blank, neutral and unreadable. Do not invent hardware.
+
+Use premium purple architectural styling only through real surfaces or
+motivated light; keep skin, merchandise, parcel and hardware natural. Make
+the merchant action the hero and reserve calm integrated copy space without
+creating a dead panel.
+
+Aspect ratio: {aspect_ratio}
+Resolution intent: {requested_size}
+""".strip()
 
     return fit_prompt_with_immutable_locks(
         core_prompt,
