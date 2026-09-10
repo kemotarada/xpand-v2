@@ -4587,6 +4587,48 @@ below must be corrected in the final render:
 """.strip()
 
 
+def requires_clean_contract_render(
+    *,
+    original_request: str,
+    preview_qa: Optional[
+        QAEvaluation
+    ],
+) -> bool:
+    """Keep fragile previews out of final rendering when they can mislead."""
+
+    preview_is_unsafe = bool(
+        preview_qa
+        is not None
+        and (
+            preview_qa.decision
+            ==
+            "preview_repair_required"
+            or
+            bool(
+                preview_qa.critical_blockers
+            )
+        )
+    )
+
+    # Merchant Payments has a strict causal composition. In practice the
+    # image editor tends to add tablets, UI and unrelated checkout props when
+    # given a previs, even when the previs audit is strong. Render this family
+    # from the contract and STC references instead.
+    merchant_contract = bool(
+        is_stc_bank_request(
+            original_request
+        )
+        and
+        detect_stc_benefit_family(
+            original_request
+        )
+        ==
+        "merchant_payments"
+    )
+
+    return preview_is_unsafe or merchant_contract
+
+
 # =========================================================
 # FINAL GPT-IMAGE-2 PROMPT V6.0.1
 # =========================================================
@@ -4620,17 +4662,10 @@ def build_final_renderer_prompt(
         ""
     )
 
-    preview_requires_clean_recomposition = bool(
-        preview_qa
-        is not None
-        and (
-            preview_qa.decision
-            ==
-            "preview_repair_required"
-            or
-            bool(
-                preview_qa.critical_blockers
-            )
+    preview_requires_clean_recomposition = (
+        requires_clean_contract_render(
+            original_request=original_request,
+            preview_qa=preview_qa,
         )
     )
 
@@ -8039,23 +8074,16 @@ def run_production(
     )
 
     print("")
-    preview_requires_clean_recomposition = bool(
-        preview_qa
-        is not None
-        and (
-            preview_qa.decision
-            ==
-            "preview_repair_required"
-            or
-            bool(
-                preview_qa.critical_blockers
-            )
+    preview_requires_clean_recomposition = (
+        requires_clean_contract_render(
+            original_request=original_request,
+            preview_qa=preview_qa,
         )
     )
 
     if preview_requires_clean_recomposition:
         print(
-            "🧱 CLEAN FINAL RECOMPOSITION: preview blocker present; "
+            "🧱 CLEAN FINAL RECOMPOSITION: merchant contract or preview blocker; "
             "final starts from contract + STC references only"
         )
 
