@@ -4865,13 +4865,14 @@ attached STC references. Use the references only for STC palette, premium
 architectural restraint and photographic finish.
 
 ONE CAUSAL SCENE, NOT A COLLAGE:
-A real merchant works at one premium Saudi retail/service counter. One hand
-is actively completing a physical customer payment on one believable
-unbranded POS terminal. The same merchant, in the same continuous action,
-is preparing one plain sealed parcel for online-order dispatch on the same
-counter. The merchant, hand, POS and parcel must share one camera, one light
-system, one perspective and believable contact shadows. The viewer must read
-physical payment plus online fulfillment from the action itself.
+A real merchant works at one premium Saudi retail/service counter in a
+medium-wide eye-level three-quarter camera where the counter, merchant, POS and
+parcel are all clearly visible. One visible customer hand performs a physical
+contactless tap on one believable unbranded POS terminal while the merchant's
+other hand actively closes one plain parcel for online-order dispatch on the
+same counter. The merchant, both hands, POS and parcel must share one camera,
+one light system, one perspective and believable contact shadows. The viewer
+must read physical payment plus active online fulfillment from one causal action.
 
 HARD EXCLUSIONS:
 No laptop, tablet, smartphone, extra display, app screen, UI, keypad digits,
@@ -6891,6 +6892,15 @@ def build_final_repair_prompt(
         "structural_repair"
     )
 
+    merchant_structural_repair = bool(
+        structural
+        and
+        detect_stc_benefit_family(
+            original_request
+        )
+        ==
+        "merchant_payments"
+    )
     text_logo_surgical = bool(
         action
         ==
@@ -6981,6 +6991,13 @@ Fix only diagnosed defects.
 """.strip()
     )
 
+    if merchant_structural_repair:
+        repair_mode = """
+LIMITED STRUCTURAL REPAIR — SAME MERCHANT SCENE
+Use Image 1 as the primary composition. Keep the same merchant, counter, POS
+and parcel. Improve only the legibility of one continuous checkout-plus-fulfillment
+workflow; do not rebuild from scratch or introduce new objects.
+""".strip()
     reference_role_text = (
         """
 No style, campaign, environment or product reference is attached.
@@ -7033,6 +7050,16 @@ Fix only the defects diagnosed by final QA; do not redesign.
 """.strip()
     )
 
+    if merchant_structural_repair:
+        repair_scope_lock = """
+REPAIR MODE — IMMUTABLE
+-----------------------
+LIMITED MERCHANT STRUCTURAL REPAIR. Image 1 is the primary visual source.
+Preserve its camera, merchant, counter, POS, parcel, lighting and materials.
+Only strengthen the visible causal relationship between physical POS payment
+and active parcel preparation. Do not replace the scene, change the setting,
+add screens, add cards, add text or logos, or redesign the campaign.
+""".strip()
     actionable_qa_lock = f"""
 FINAL QA CORRECTION — IMMUTABLE
 -------------------------------
@@ -7099,6 +7126,13 @@ END_XPAND_REPAIR_SCOPE_V601
 """.strip()
     )
 
+    if merchant_structural_repair:
+        repair_priorities = """
+- keep the original 4:5 camera and merchant-centered framing
+- make one visible contactless POS payment and active parcel preparation read together
+- preserve the purple architectural STC world and natural materials
+- remove any text, logo, card, UI, QR code or barcode without changing the scene
+""".strip()
     core_prompt = f"""
 XPAND GPT-IMAGE-2 FINAL REPAIR V6.0.1
 =====================================
@@ -7151,6 +7185,18 @@ Keep the commercial proposition intact.
 Create one improved final campaign image.
 """.strip()
 
+    if merchant_structural_repair:
+        core_prompt = f"""
+MERCHANT STRUCTURAL REPAIR — SAME SCENE
+Image 1 is primary. Preserve the same merchant, counter, 4:5 camera, purple
+architectural setting, blank unbranded POS and plain parcel. Make the workflow
+read clearly in one frame: a visible customer hand performs a contactless tap
+on the POS while the merchant's other hand actively closes the parcel. Keep
+realistic contact, perspective and lighting. Do not rebuild, collage, add cards,
+screens, UI, text, logos, QR codes or barcodes.
+Aspect ratio: {aspect_ratio}
+Resolution intent: {requested_size}
+""".strip()
     immutable_locks = (
         build_immutable_final_locks(
             original_request=(
