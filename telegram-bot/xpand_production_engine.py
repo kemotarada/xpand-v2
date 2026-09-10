@@ -8317,58 +8317,90 @@ def run_production(
             message,
         )
 
-        failure_qa = (
-            provider_failure_qa(
-                message
+        # OpenAI quota/rate-limit outages are technical failures, not quality
+        # failures. Use Gemini only in this narrow case, then run the exact
+        # same final QA and release gate before delivery.
+        limit_error = any(
+            marker in message.lower()
+            for marker in (
+                "daily",
+                "daily limit",
+                "rate limit",
+                "quota",
+                "too many requests",
+                "429",
+                "$15.00",
             )
         )
 
-        preview_image.metadata[
-            "final_delivery_allowed"
-        ] = False
-
-        preview_image.metadata[
-            "mandatory_openai_final_failed"
-        ] = True
-
-        return ProductionResult(
-            ok=False,
-            final_image=(
-                preview_image
-            ),
-            best_score=0.0,
-            qa=(
-                failure_qa
-            ),
-            passes=(
-                passes
-            ),
-            compiled_prompt=(
-                compiled
-            ),
-            references_used=len(
-                all_references
-            ),
-            product_references_used=len(
-                product_refs
-            ),
-            elapsed_seconds=round(
-                time.monotonic()
-                -
-                started,
-                3,
-            ),
-            errors=errors,
-            telemetry={
-                **telemetry,
-                "failure_kind":
-                    "mandatory_final_provider_failure",
-                "block_generic_smart_fallback":
-                    bool(
-                        high_alert
+        if limit_error:
+            try:
+                print(
+                    "🔁 TECHNICAL FALLBACK: Gemini final + same QA gate",
+                    flush=True,
+                )
+                fallback_final = gemini_multi_reference_edit(
+                    working_image=(
+                        None
+                        if preview_requires_clean_recomposition
+                        else preview_image
                     ),
-            },
-        )
+                    references=(final_refs),
+                    prompt=(final_prompt),
+                    aspect_ratio=(aspect_ratio),
+                    pass_name=("gemini_technical_fallback_final_v601"),
+                    output_image_size=(requested_size),
+                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
+                    max_reference_images=(len(final_refs)),
+                )
+                if not isinstance(fallback_final.metadata, dict):
+                    fallback_final.metadata = {}
+                fallback_final.metadata.update({
+                    "provider_fallback": "technical_openai_limit",
+                    "fallback_quality_gate_required": True,
+                    "final_delivery_allowed": False,
+                })
+                first_final = fallback_final
+                print(
+                    "✅ Gemini technical fallback generated; final QA is mandatory.",
+                    flush=True,
+                )
+            except Exception as fallback_error:
+                fallback_message = clean_text(fallback_error, 3500)
+                errors.append("gemini_technical_fallback: " + fallback_message)
+                failure_qa = provider_failure_qa(fallback_message)
+                preview_image.metadata["final_delivery_allowed"] = False
+                preview_image.metadata["mandatory_openai_final_failed"] = True
+                return ProductionResult(
+                    ok=False,
+                    final_image=preview_image,
+                    best_score=0.0,
+                    qa=failure_qa,
+                    passes=passes,
+                    compiled_prompt=compiled,
+                    references_used=len(all_references),
+                    product_references_used=len(product_refs),
+                    elapsed_seconds=round(time.monotonic() - started, 3),
+                    errors=errors,
+                    telemetry={**telemetry, "failure_kind": "technical_provider_failure"},
+                )
+        else:
+            failure_qa = provider_failure_qa(message)
+            preview_image.metadata["final_delivery_allowed"] = False
+            preview_image.metadata["mandatory_openai_final_failed"] = True
+            return ProductionResult(
+                ok=False,
+                final_image=preview_image,
+                best_score=0.0,
+                qa=failure_qa,
+                passes=passes,
+                compiled_prompt=compiled,
+                references_used=len(all_references),
+                product_references_used=len(product_refs),
+                elapsed_seconds=round(time.monotonic() - started, 3),
+                errors=errors,
+                telemetry={**telemetry, "failure_kind": "mandatory_final_provider_failure"},
+            )
 
     telemetry[
         "final_image_calls"
