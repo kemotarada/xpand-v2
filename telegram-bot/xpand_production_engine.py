@@ -3165,10 +3165,16 @@ checklist. The entire message must be legible from one physical relationship:
    unbranded parcel for an online order on the SAME counter.
 
 The POS, both hands, merchant, parcel and counter share one camera, perspective,
-lighting system and depth relationship. This is the only approved execution for
-merchant_payments in this pass. Do not add a courier, second location, phone,
-tablet, laptop, floating UI, split-screen, rotating transformation or abstract
-fintech object.
+lighting system and depth relationship. Keep the POS and the parcel physically
+close together on one ordinary checkout counter, with the merchant visibly
+working behind that counter. The parcel is specifically a small plain brown
+corrugated cardboard shipping box with a lid being closed or sealed by tape.
+It is NOT a shopping bag, gift bag, retail bag, envelope, product carrier,
+display cabinet, shelf, pedestal or decorative prop. Do not make a customer
+hold a bag; show the merchant's second hand on the cardboard box lid.
+This is the only approved execution for merchant_payments in this pass. Do not
+add a courier, second location, phone, tablet, laptop, floating UI, split-screen,
+rotating transformation, display wall, shelving unit or abstract fintech object.
 
 The viewer must understand physical payment plus online fulfilment without text.
 POS display and parcel label are blank and unreadable: no letters, digits, logos,
