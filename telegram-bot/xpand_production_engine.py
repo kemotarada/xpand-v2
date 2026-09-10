@@ -6613,6 +6613,29 @@ def has_structural_failure(
     ):
         return True
 
+    # Allow a broader repair when several visual execution dimensions
+    # are materially weak. This does not lower the final QA threshold.
+    broad_execution_scores = (
+        "realism",
+        "camera_perspective",
+        "advertising_readiness",
+        "copy_space_composition",
+    )
+
+    if any(
+        clamp_score(
+            qa.scores.get(
+                dimension,
+                0,
+            )
+        )
+        <
+        82
+        for dimension
+        in broad_execution_scores
+    ):
+        return True
+
     return bool(
         qa.raw.get(
             "decision"
