@@ -8802,6 +8802,18 @@ def run_production(
             )
 
             second_final = (
+                gemini_multi_reference_edit(
+                    working_image=(preview_image),
+                    references=([]),
+                    prompt=(repair_prompt),
+                    aspect_ratio=(aspect_ratio),
+                    pass_name=("gemini_preview_recovery_v601"),
+                    output_image_size=(requested_size),
+                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
+                    max_reference_images=0,
+                )
+                if strong_preview_recovery
+                else
                 openai_multi_reference_edit(
                     # A structural failure needs a clean recomposition.
                     # Reusing the failed final candidate would preserve its
@@ -8809,8 +8821,6 @@ def run_production(
                     working_image=(
                         preview_image
                         if (
-                            strong_preview_recovery
-                            or
                             (
                                 action == "structural_repair"
                                 and
@@ -8824,36 +8834,23 @@ def run_production(
                             else first_final
                         )
                     ),
-                    references=(
-                        repair_refs
-                    ),
-                    prompt=(
-                        repair_prompt
-                    ),
-                    aspect_ratio=(
-                        aspect_ratio
-                    ),
-                    pass_name=(
-                        "gpt_image_2_"
-                        +
-                        action
-                        +
-                        "_v601"
-                    ),
-                    output_image_size=(
-                        requested_size
-                    ),
-                    model_override=(
-                        FINAL_IMAGE_MODEL
-                    ),
-                    max_reference_images=(
-                        len(
-                            repair_refs
-                        )
-                    ),
+                    references=(repair_refs),
+                    prompt=(repair_prompt),
+                    aspect_ratio=(aspect_ratio),
+                    pass_name=("gpt_image_2_" + action + "_v601"),
+                    output_image_size=(requested_size),
+                    model_override=(FINAL_IMAGE_MODEL),
+                    max_reference_images=(len(repair_refs)),
                 )
             )
 
+            if strong_preview_recovery:
+                if not isinstance(second_final.metadata, dict):
+                    second_final.metadata = {}
+                second_final.metadata.update({
+                    "provider_fallback": "gemini_preview_recovery",
+                    "preview_recovery_only": True,
+                })
             telemetry[
                 "final_image_calls"
             ] += 1
