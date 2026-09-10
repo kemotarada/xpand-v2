@@ -5657,13 +5657,7 @@ def qa_target_for_request(
     original_request: str,
 ) -> float:
 
-    if (
-        STC_HIGH_ALERT_ENABLED
-        and
-        is_stc_bank_request(
-            original_request
-        )
-    ):
+    if is_stc_bank_request(original_request):
         return STC_QA_TARGET_SCORE
 
     return QA_TARGET_SCORE
@@ -5673,13 +5667,7 @@ def qa_release_floor_for_request(
     original_request: str,
 ) -> float:
 
-    if (
-        STC_HIGH_ALERT_ENABLED
-        and
-        is_stc_bank_request(
-            original_request
-        )
-    ):
+    if is_stc_bank_request(original_request):
         return STC_QA_RELEASE_FLOOR
 
     return QA_RELEASE_FLOOR
