@@ -24,7 +24,7 @@
 # FINAL RENDERER
 # requested 1K / 2K / 4K
 #          ↓
-# GPT-5.6 Sol Final Vision QA
+# Gemini Vision Final Vision QA
 #          ↓
 # GPT-Image-2 repair only when required
 #
@@ -4924,7 +4924,7 @@ Resolution intent: {requested_size}
         core_prompt,
         immutable_locks,
         label=(
-            "gpt_image_2_final_v601"
+            "gemini_pro_image_final_v601"
         ),
         budget=(
             FINAL_PROMPT_BUDGET
@@ -7507,7 +7507,7 @@ def run_production(
     camera_direction: Any,
     aspect_ratio: str = "4:5",
     mode: str = MODE_MASTERPIECE,
-    target_model: str = TARGET_OPENAI,
+    target_model: str = TARGET_GEMINI,
 ) -> ProductionResult:
 
     started = (
@@ -7528,6 +7528,12 @@ def run_production(
         "4K",
     }:
         requested_size = "1K"
+
+    final_render_size = (
+        "2K"
+        if requested_size == "1K"
+        else requested_size
+    )
 
     stc_request = (
         is_stc_production_request(
@@ -7807,7 +7813,7 @@ def run_production(
     )
 
     compiled = compile_prompt(
-        TARGET_OPENAI,
+        TARGET_GEMINI,
         request=(
             original_request
         ),
@@ -7968,7 +7974,7 @@ def run_production(
                     "fast_generation_v601"
                 ),
                 output_image_size=(
-                    requested_size
+                    final_render_size
                 ),
                 max_physical_references=(
                     len(
@@ -8298,10 +8304,10 @@ def run_production(
                     aspect_ratio
                 ),
                 pass_name=(
-                    "gpt_image_2_final_v601"
+                    "gemini_pro_image_final_v601"
                 ),
                 output_image_size=(
-                    requested_size
+                    final_render_size
                 ),
                 model_override=(
                     FINAL_IMAGE_MODEL
@@ -8438,7 +8444,7 @@ def run_production(
     passes.append(
         ProductionPassResult(
             pass_name=(
-                "gpt_image_2_final_v601"
+                "gemini_pro_image_final_v601"
             ),
             image=(
                 first_final
@@ -8565,7 +8571,7 @@ def run_production(
             MASTERPIECE_MAX_VISION_CALLS
         )
         +
-        " | GPT-5.6 Sol"
+        " | Gemini Vision"
     )
 
     first_qa: Optional[
@@ -8854,7 +8860,7 @@ def run_production(
                     references=(repair_refs),
                     prompt=(repair_prompt),
                     aspect_ratio=(aspect_ratio),
-                    pass_name=("gpt_image_2_" + action + "_v601"),
+                    pass_name=("gemini_pro_image_" + action + "_v601"),
                     output_image_size=(requested_size),
                     model_override=(FINAL_IMAGE_MODEL),
                     max_reference_images=(len(repair_refs)),
@@ -8946,7 +8952,7 @@ def run_production(
                         MASTERPIECE_MAX_VISION_CALLS
                     )
                     +
-                    " | GPT-5.6 Sol"
+                    " | Gemini Vision"
                 )
 
                 try:
@@ -9037,7 +9043,7 @@ def run_production(
 
                 print(
                     (
-                        "🏆 Original GPT-Image-2 "
+                        "🏆 Original Gemini Pro "
                         "final preserved."
                     )
                 )
@@ -9106,7 +9112,7 @@ def run_production(
 
             print(
                 (
-                    "✅ Original GPT-Image-2 "
+                    "✅ Original Gemini Pro "
                     "final preserved."
                 )
             )
@@ -9305,7 +9311,7 @@ def run_production(
     )
 
     print(
-        "Final GPT-Image-2 calls:",
+        "Final Gemini Pro calls:",
         telemetry[
             "final_image_calls"
         ],
@@ -9971,7 +9977,7 @@ if __name__ == "__main__":
 
     compiled = (
         compile_prompt(
-            TARGET_OPENAI,
+            TARGET_GEMINI,
             request=(
                 "أنشئ صورة إعلانية فاخرة وواقعية "
                 "لبنك STC Bank عن خدمات التجارة "
@@ -10704,7 +10710,7 @@ if __name__ == "__main__":
         "      ↓"
     )
     print(
-        "  GPT-5.6 Sol QA"
+        "  Gemini Vision QA"
     )
     print(
         "      ↓"
