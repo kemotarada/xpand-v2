@@ -2698,6 +2698,50 @@ def masterpiece_guard_status(
                 True,
         }
 
+    # A creative-quality rejection is not a provider failure. For the
+    # normal STC masterpiece route, continue to the controlled production
+    # renderer instead of routing into Smart and then blocking that route.
+    # High-alert requests remain blocked by the guard above.
+    if (
+        state
+        ==
+        "quality_failed"
+        and
+        not high_alert
+        and
+        clean_text(
+            prepared.get(
+                "final_prompt",
+                "",
+            ),
+            200,
+        )
+    ):
+
+        return {
+            "allowed":
+                True,
+
+            "route":
+                "masterpiece",
+
+            "code":
+                "creative_quality_gate_recovered_for_production",
+
+            "message":
+                (
+                    "Creative direction did not pass the pre-generation "
+                    "gate; continue to controlled production and enforce "
+                    "final visual QA."
+                ),
+
+            "creative_state":
+                state,
+
+            "stc_high_alert":
+                False,
+        }
+
     if (
         runtime.get(
             "allow_smart_engine_fallback"
