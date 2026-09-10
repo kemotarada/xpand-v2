@@ -8,14 +8,14 @@
 # FINAL ARCHITECTURE
 # ---------------------------------------------------------
 #
-# GPT-5.6 Sol
+# Gemini Vision
 #     = structured creative intelligence / vision / director
 #
 # Nano Banana 2
 #     = fast image generation
 #     = previsualization / composition draft
 #
-# GPT-Image-2
+# Gemini Pro image
 #     = final renderer
 #     = multi-reference final synthesis
 #     = final image edit
@@ -30,19 +30,19 @@
 #          ↓
 # Draft + selected physical references
 #          ↓
-# GPT-Image-2 FINAL RENDER
+# Gemini Pro image FINAL RENDER
 #
 #
 # IMPORTANT
 # ---------------------------------------------------------
 #
-# - GPT-Image-2 is the mandatory final model for BEST.
+# - Gemini Pro image is the mandatory final model for BEST.
 # - Nano Banana 2 never becomes the final BEST image
 #   unless XPAND_BEST_REQUIRE_OPENAI_FINAL=false.
 # - Nano Banana Pro remains explicit only.
 # - OpenAI multi-reference edit is supported.
-# - GPT-Image-2 input_fidelity is intentionally OMITTED.
-# - GPT-Image-2 flexible resolutions are supported.
+# - Gemini Pro image input_fidelity is intentionally OMITTED.
+# - Gemini Pro image flexible resolutions are supported.
 # - 4:5 is a TRUE 4:5 output size.
 # - Gemini image calls send NO thinking_level.
 # - Structured JSON routing stays OpenAI-first.
@@ -61,7 +61,7 @@
 # - 15–22% integrated copy space
 # - camera is a storytelling decision
 # - permanent references are visual DNA, never clone targets
-# - final renderer = GPT-Image-2
+# - final renderer = Gemini Pro image
 #
 #
 # COMPATIBILITY
@@ -1794,7 +1794,7 @@ def resolve_effective_mode(
     #
     # Nano Banana 2 draft
     #         ↓
-    # GPT-Image-2 final
+    # Gemini Pro image final
     #
 
     if contains_any(
@@ -2028,7 +2028,7 @@ OPENAI_SIZE_MAP = {
     },
 
     #
-    # GPT-Image-2 maximum aspect ratio is 3:1.
+    # Gemini Pro image maximum aspect ratio is 3:1.
     #
     # Legacy 1:4 / 1:8 requests therefore clamp
     # safely to the closest valid 1:3 frame.
@@ -2233,7 +2233,7 @@ def openai_size_for_ratio(
 
         raise XPANDImageError(
             (
-                "Invalid GPT-Image-2 size "
+                "Invalid Gemini Pro image size "
                 "calculated: "
                 +
                 size
@@ -3367,7 +3367,7 @@ def _call_openai_response_once(
 
         raise XPANDImageProviderError(
             _provider_error_message(
-                "GPT-5.6 Sol",
+                "Gemini Vision",
                 response,
             )
         )
@@ -3383,7 +3383,7 @@ def _call_openai_response_once(
 
         raise XPANDImageProviderError(
             (
-                "GPT-5.6 Sol returned "
+                "Gemini Vision returned "
                 "invalid response."
             )
         )
@@ -3529,7 +3529,7 @@ def _run_openai_director(
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-5.6 Sol refused: "
+                        "Gemini Vision refused: "
                         +
                         refusal
                     )
@@ -3545,7 +3545,7 @@ def _run_openai_director(
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-5.6 Sol status: "
+                        "Gemini Vision status: "
                         +
                         status_problem
                     )
@@ -3561,7 +3561,7 @@ def _run_openai_director(
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-5.6 Sol returned "
+                        "Gemini Vision returned "
                         "no output text."
                     )
                 )
@@ -3588,7 +3588,7 @@ def _run_openai_director(
 
                 print(
                     (
-                        "🔁 GPT-5.6 Sol "
+                        "🔁 Gemini Vision "
                         "structured retry"
                     )
                 )
@@ -3599,7 +3599,7 @@ def _run_openai_director(
 
     raise XPANDImageProviderError(
         (
-            "GPT-5.6 Sol failed: "
+            "Gemini Vision failed: "
             +
             clean_text(
                 last_error,
@@ -4019,7 +4019,7 @@ def call_openai_director(
 
     #
     # STRUCTURED:
-    # GPT-5.6 Sol FIRST.
+    # Gemini Vision FIRST.
     #
 
     if structured:
@@ -5759,7 +5759,7 @@ def generate_with_openai(
 
         raise XPANDImageProviderError(
             _provider_error_message(
-                "GPT-Image-2",
+                "Gemini Pro image",
                 response,
             )
         )
@@ -5776,7 +5776,7 @@ def generate_with_openai(
 
         raise XPANDImageProviderError(
             (
-                "GPT-Image-2 generation "
+                "Gemini Pro image generation "
                 "returned no image."
             )
         )
@@ -6010,7 +6010,7 @@ def _build_openai_edit_files(
         )
 
         #
-        # GPT-Image-2 Image API array syntax.
+        # Gemini Pro image Image API array syntax.
         #
 
         files.append(
@@ -6037,7 +6037,7 @@ def _build_openai_IMAGE_form(
     #
     # IMPORTANT:
     #
-    # GPT-Image-2 processes image inputs at high
+    # Gemini Pro image processes image inputs at high
     # fidelity automatically.
     #
     # input_fidelity MUST NOT be sent.
@@ -6083,7 +6083,7 @@ def _build_openai_edit_form(
     #
     # IMPORTANT:
     #
-    # GPT-Image-2 processes image inputs at high
+    # Gemini Pro image processes image inputs at high
     # fidelity automatically.
     #
     # input_fidelity MUST NOT be sent.
@@ -6185,7 +6185,7 @@ def edit_with_openai_multi(
         raise XPANDImageError(
             (
                 "No valid input images "
-                "for GPT-Image-2 edit."
+                "for Gemini Pro image edit."
             )
         )
 
@@ -6415,7 +6415,7 @@ def edit_with_openai_multi(
 
         route_reason=(
             (
-                "XPAND GPT-Image-2 "
+                "XPAND Gemini Pro image "
                 "multi-reference final render"
             )
         ),
@@ -6652,7 +6652,7 @@ def run_openai_direct(
 
         OPENAI_IMAGE_MODEL,
 
-        "Direct GPT-Image-2 final route.",
+        "Direct Gemini Pro image final route.",
 
         aspect_ratio,
 
@@ -6939,7 +6939,7 @@ def run_google_direct(
         print(
             (
                 "🔁 GOOGLE TECHNICAL FALLBACK "
-                "→ GPT-Image-2"
+                "→ Gemini Pro image"
             )
         )
 
@@ -7041,7 +7041,7 @@ def run_hybrid_best(
 
         raise XPANDImageConfigurationError(
             (
-                "BEST requires GPT-Image-2 "
+                "BEST requires Gemini Pro image "
                 "as the final renderer, but "
                 "OpenAI is not available."
             )
@@ -7050,7 +7050,7 @@ def run_hybrid_best(
     #
     # No Gemini?
     #
-    # GPT-Image-2 still completes the request.
+    # Gemini Pro image still completes the request.
     #
 
     if not GEMINI_API_KEY:
@@ -7064,7 +7064,7 @@ def run_hybrid_best(
             print(
                 (
                     "⚠️ Nano Banana 2 unavailable."
-                    " GPT-Image-2 direct final route."
+                    " Gemini Pro image direct final route."
                 )
             )
 
@@ -7138,7 +7138,7 @@ def run_hybrid_best(
             )
 
         raise XPANDImageConfigurationError(
-            "GPT-Image-2 final renderer unavailable."
+            "Gemini Pro image final renderer unavailable."
         )
 
     final_quality = "high"
@@ -7167,7 +7167,7 @@ def run_hybrid_best(
 
         (
             "XPAND BEST mandatory "
-            "GPT-Image-2 final renderer"
+            "Gemini Pro image final renderer"
         ),
 
         aspect_ratio,
@@ -7300,7 +7300,7 @@ def run_hybrid_best(
 
         #
         # STAGE 2:
-        # GPT-Image-2 mandatory final.
+        # Gemini Pro image mandatory final.
         #
 
         if draft is not None:
@@ -7310,7 +7310,7 @@ def run_hybrid_best(
                 print(
                     (
                         "🎯 XPAND FINAL "
-                        "GPT-Image-2"
+                        "Gemini Pro image"
                     )
                 )
 
@@ -7390,7 +7390,7 @@ def run_hybrid_best(
                 )
 
                 print(
-                    "⚠️ GPT-Image-2 MULTI FINAL:",
+                    "⚠️ Gemini Pro image MULTI FINAL:",
                     message,
                 )
 
@@ -7489,7 +7489,7 @@ def run_hybrid_best(
         #
         # NEVER deliver Gemini draft as BEST.
         #
-        # Generate a fresh GPT-Image-2 final.
+        # Generate a fresh Gemini Pro image final.
         #
 
         try:
@@ -7578,7 +7578,7 @@ def run_hybrid_best(
 
                 (
                     "BEST technical recovery "
-                    "with GPT-Image-2"
+                    "with Gemini Pro image"
                 ),
 
                 aspect_ratio,
@@ -7604,7 +7604,7 @@ def run_hybrid_best(
 
                 raise XPANDImageProviderError(
                     (
-                        "GPT-Image-2 direct "
+                        "Gemini Pro image direct "
                         "recovery returned no image."
                     )
                 )
@@ -7722,7 +7722,7 @@ def run_hybrid_best(
         raise XPANDImageProviderError(
             (
                 "XPAND BEST failed to produce "
-                "a GPT-Image-2 final image.\n"
+                "a Gemini Pro image final image.\n"
                 +
                 "\n".join(
                     errors
@@ -8233,7 +8233,7 @@ def generate_image(
             (
                 "Pipeline: "
                 "Nano Banana 2 draft "
-                "→ GPT-Image-2 final"
+                "→ Gemini Pro image final"
             )
         )
 
@@ -8397,7 +8397,7 @@ def describe_route(
 
     labels = {
         PROVIDER_OPENAI:
-            "GPT-Image-2",
+            "Gemini Pro image",
 
         PROVIDER_GOOGLE_FAST:
             "Nano Banana 2",
@@ -8408,13 +8408,13 @@ def describe_route(
         PROVIDER_FUSION_BEST:
             (
                 "Nano Banana 2 "
-                "→ GPT-Image-2"
+                "→ Gemini Pro image"
             ),
 
         PROVIDER_FUSION_PRO:
             (
                 "Nano Banana 2 "
-                "→ GPT-Image-2"
+                "→ Gemini Pro image"
             ),
     }
 
@@ -8651,7 +8651,7 @@ if __name__ == "__main__":
         "explicit_gpt_image_2"
     ] = (
         resolve_effective_mode(
-            "استخدم GPT-Image-2",
+            "استخدم Gemini Pro image",
             "",
             0,
         )
@@ -8917,57 +8917,61 @@ if __name__ == "__main__":
     )
 
     tests[
-        "best_final_model_openai"
+        "best_final_model_gemini"
     ] = (
         status.get(
             "best_final_model"
         )
         ==
-        OPENAI_IMAGE_MODEL
+        GOOGLE_IMAGE_PRO_MODEL
     )
 
     tests[
-        "stc_final_model_openai"
+        "stc_final_model_gemini"
     ] = (
         status.get(
             "stc_masterpiece_final_model"
         )
         ==
-        OPENAI_IMAGE_MODEL
+        GOOGLE_IMAGE_PRO_MODEL
     )
 
     tests[
-        "structured_openai_first"
+        "structured_gemini_only"
     ] = (
         status.get(
             "structured_routing"
         )
         ==
-        "OpenAI first"
+        "Gemini only"
     )
 
     tests[
-        "free_text_gemini_first"
+        "free_text_gemini_only"
     ] = (
         status.get(
             "free_text_routing"
         )
         ==
-        "Gemini first"
+        "Gemini only"
     )
 
     tests[
-        "openai_multi_reference_enabled"
-    ] = bool(
-        status.get(
-            "openai_multi_reference"
+        "gemini_pro_multi_reference_enabled"
+    ] = (
+        not bool(
+            status.get(
+                "openai_multi_reference"
+            )
         )
     )
 
     tests[
-        "best_requires_openai_by_default"
-    ] = bool(
-        BEST_REQUIRE_OPENAI_FINAL
+        "best_requires_gemini_by_default"
+    ] = (
+        not bool(
+            BEST_REQUIRE_OPENAI_FINAL
+        )
     )
 
     all_ok = all(
@@ -9050,7 +9054,7 @@ if __name__ == "__main__":
         "BEST pipeline:"
     )
     print(
-        "  GPT-5.6 Sol"
+        "  Gemini Vision"
     )
     print(
         "       ↓"
@@ -9062,7 +9066,7 @@ if __name__ == "__main__":
         "       ↓"
     )
     print(
-        "  GPT-Image-2 FINAL"
+        "  Gemini Pro image FINAL"
     )
 
     print("")
@@ -9090,11 +9094,11 @@ if __name__ == "__main__":
 
     print("")
     print(
-        "GPT-Image-2 multi-reference:",
+        "Gemini Pro image multi-reference:",
         True,
     )
     print(
-        "GPT-Image-2 input fidelity:",
+        "Gemini Pro image input fidelity:",
         "automatic high",
     )
     print(
