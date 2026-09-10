@@ -1297,15 +1297,20 @@ Do NOT turn travel into a purple neon airport.
 DIGITAL BANKING
 ---------------
 
-The phone is a real functional object.
+The phone is a real functional object, not the entire advertisement.
+
+For global or international transfer requests, prefer one continuous
+photographic relationship showing a sender and a believable secure handoff
+or recipient in real spatial depth. The viewer should understand movement
+and safe arrival without words, maps, route lines or interface graphics.
 
 Prefer:
-- over-the-shoulder interaction
-- POV
-- natural office or lifestyle context
+- over-the-shoulder interaction as a supporting cue
+- real human handoff or recipient relationship
+- natural bank lounge, home or travel context
 - clear hand/device relationship
 - believable screen orientation
-- physical depth
+- physical depth and clean separation from pillars and reflective edges
 
 Do NOT invent:
 - readable fake banking UI
