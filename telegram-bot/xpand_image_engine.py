@@ -289,6 +289,10 @@ OPENAI_ENABLED = env_bool(
     ),
 )
 
+# A provider credit/quota outage is sticky for the lifetime of this process.
+# Avoid retrying the unavailable structured director on every QA/concept pass.
+OPENAI_STRUCTURED_UNAVAILABLE = False
+
 
 # =========================================================
 # MODELS
@@ -3988,6 +3992,8 @@ def call_openai_director(
     ),
 ) -> str:
 
+    global OPENAI_STRUCTURED_UNAVAILABLE
+
     if json_mode is None:
 
         json_mode = bool(
@@ -4015,6 +4021,8 @@ def call_openai_director(
             OPENAI_ENABLED
             and
             OPENAI_API_KEY
+            and
+            not OPENAI_STRUCTURED_UNAVAILABLE
         ):
 
             try:
@@ -4056,6 +4064,24 @@ def call_openai_director(
                         )
                     )
                 )
+
+                error_text = clean_text(error, 2400).lower()
+                if any(
+                    marker in error_text
+                    for marker in (
+                        "no credits",
+                        "insufficient_quota",
+                        "quota",
+                        "billing",
+                        "rate limit",
+                        "429",
+                    )
+                ):
+                    OPENAI_STRUCTURED_UNAVAILABLE = True
+                    print(
+                        "🔒 OpenAI structured director disabled for this process; using Gemini fallback.",
+                        flush=True,
+                    )
 
                 if not GEMINI_API_KEY:
 
