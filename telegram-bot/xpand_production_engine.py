@@ -3165,9 +3165,13 @@ checklist. The entire message must be legible from one physical relationship:
    unbranded parcel for an online order on the SAME counter.
 
 The POS, both hands, merchant, parcel and counter share one camera, perspective,
-lighting system and depth relationship. Keep the POS and the parcel physically
-close together on one ordinary checkout counter, with the merchant visibly
-working behind that counter. The parcel is specifically a small plain brown
+lighting system and depth relationship. Use a decisive medium-close three-quarter
+advertising composition: the merchant is the centered hero, the blank graphite POS
+is clearly readable in the lower-left foreground, and the brown shipping box is
+clearly readable in the lower-right foreground. Keep the POS and the parcel
+physically close together on one ordinary checkout counter, with the merchant
+visibly working behind that counter. Avoid a wide empty lobby, glass wall, display
+cabinet, shelving or decorative architecture competing with the action. The parcel is specifically a small plain brown
 corrugated cardboard shipping box with a lid being closed or sealed by tape.
 It is NOT a shopping bag, gift bag, retail bag, envelope, product carrier,
 display cabinet, shelf, pedestal or decorative prop. Do not make a customer
@@ -3380,6 +3384,18 @@ layout/compositing layer and must not be invented by the image model.
 Use the reference set for tonal balance, lighting, material quality, Saudi
 commercial realism, subject scale and copy-space placement — never for an
 exact composition or a collage of unrelated references.
+
+STC SIGNATURE COLOR AND FINISH — IMMUTABLE
+------------------------------------------
+Use a deep, high-contrast STC Bank palette: near-black blackberry/plum shadows,
+rich saturated architectural purple, graphite/black hardware and a restrained
+vivid green accent. Purple must read as deep and premium, not pale lavender.
+Green is an accent only on a small motivated light, edge, seam or material detail;
+do not flood the frame with green. Keep skin, cardboard, metal and merchandise
+atural. Reject washed-out grey-lilac lighting, pastel purple, white retail interiors,
+flat studio illumination and low-contrast fog. The frame must feel like a finished
+STC Bank campaign: dark tonal base, controlled purple architecture, crisp highlights,
+clean material separation and one deliberate hero light.
 
 PHYSICAL REALITY FIREWALL
 -------------------------
