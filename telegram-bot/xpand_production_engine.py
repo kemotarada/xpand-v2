@@ -1090,113 +1090,33 @@ def fit_prompt_with_immutable_locks(
     label: str,
     budget: int,
 ) -> str:
-
-    core = clean_text(
-        core_prompt,
-        max(
-            budget * 6,
-            budget,
-        ),
-    )
-
-    locks = clean_text(
-        immutable_locks,
-        max(
-            4000,
-            budget,
-        ),
-    )
-
+    """Keep immutable locks intact and expand only when their size requires it."""
+    core = clean_text(core_prompt, max(budget * 6, budget))
+    locks = clean_text(immutable_locks, max(4000, budget))
     separator = (
-        "\n\n"
-        +
-        "=" * 60
-        +
-        "\n"
-        +
-        IMMUTABLE_LOCK_SENTINEL
-        +
-        "\n"
-        +
-        "=" * 60
-        +
-        "\n\n"
+        "\n\n" + "=" * 60 + "\n" + IMMUTABLE_LOCK_SENTINEL
+        + "\n" + "=" * 60 + "\n\n"
     )
-
-    reserved = (
-        len(separator)
-        +
-        len(locks)
-    )
-
-    if reserved >= budget:
-        raise RuntimeError(
-            (
-                "Immutable final locks exceed prompt budget. "
-                "Increase XPAND_FINAL_PROMPT_BUDGET."
-            )
-        )
-
-    core_budget = (
-        budget
-        -
-        reserved
-    )
-
-    if len(core) > core_budget:
-
+    reserved = len(separator) + len(locks)
+    effective_budget = max(int(budget), reserved + 1200)
+    if effective_budget != int(budget):
         print(
-            "✂️ CORE PROMPT COMPACTED"
-            +
-            " | "
-            +
-            label
-            +
-            " | "
-            +
-            str(
-                len(core)
-            )
-            +
-            " → "
-            +
-            str(
-                core_budget
-            )
-            +
-            " | immutable="
-            +
-            str(
-                len(locks)
-            )
+            "⚠️ Immutable locks required repair budget expansion | "
+            + str(budget) + " → " + str(effective_budget),
+            flush=True,
         )
-
-        core = fit_prompt_for_api(
-            core,
-            label=(
-                label
-                +
-                "_core"
-            ),
-            budget=core_budget,
+    core_budget = effective_budget - reserved
+    if len(core) > core_budget:
+        print(
+            "✂️ CORE PROMPT COMPACTED | " + label + " | "
+            + str(len(core)) + " → " + str(core_budget)
+            + " | immutable=" + str(len(locks)),
+            flush=True,
         )
-
-    output = (
-        core
-        +
-        separator
-        +
-        locks
-    )
-
-    if len(output) > budget:
-        raise RuntimeError(
-            (
-                "Immutable prompt compiler exceeded "
-                "final budget unexpectedly."
-            )
-        )
-
+        core = fit_prompt_for_api(core, label=label + "_core", budget=core_budget)
+    output = core + separator + locks
+    if len(output) > effective_budget:
+        raise RuntimeError("Immutable prompt compiler exceeded expanded repair budget.")
     return output
 
 
@@ -3228,43 +3148,37 @@ def requires_reality_reinterpretation(
 # =========================================================
 
 def merchant_payment_execution_lock() -> str:
-    """Give the renderer one legible, photographic merchant workflow."""
+    """Give Merchant Payments one decisive, testable photographic action."""
     return """
-MERCHANT PAYMENTS — EXECUTION LOCK
-----------------------------------
+MERCHANT PAYMENTS — CANONICAL ONE-FRAME CONTRACT
+------------------------------------------------
 
-Use one continuous photographic merchant workflow, not a collection
-of fintech props:
+Create one premium Saudi retail/service environment and one decisive moment.
+Do not make a catalogue of fintech props, a split scene or a static counter
+checklist. The entire message must be legible from one physical relationship:
 
-- a real merchant works at one premium retail/service counter;
-- one hand is completing a real customer checkout on a believable,
-  unbranded physical POS terminal;
-- on the same counter, a sealed, unbranded customer parcel is being
-  prepared for pickup or dispatch, making the online order/fulfillment
-  channel physically evident;
-- the parcel, merchant action and checkout counter must share one
-  coherent perspective, lighting system and depth relationship.
+1. DOMINANT ACTION — a visible CUSTOMER hand performs a believable contactless
+   tap on one normal, unbranded physical POS terminal in the foreground. The
+   hand must visibly touch or hover immediately above the terminal contactless
+   area; do not show a card.
+2. SUPPORTING PROOF — the SAME MERCHANT's other hand actively closes one plain
+   unbranded parcel for an online order on the SAME counter.
 
-The viewer must understand: this one merchant can receive physical
-payments and fulfill online orders through one connected business
-workflow.
+The POS, both hands, merchant, parcel and counter share one camera, perspective,
+lighting system and depth relationship. This is the only approved execution for
+merchant_payments in this pass. Do not add a courier, second location, phone,
+tablet, laptop, floating UI, split-screen, rotating transformation or abstract
+fintech object.
 
-The online cue is the real parcel and fulfillment action, not a
-smartphone screen. Do not add a laptop, tablet, floating phone,
-split-screen or unrelated product tableau.
-
-The POS screen and parcel label are blank, abstract and unreadable:
-no letters, digits, logos, card-network marks, QR codes, barcodes,
-balances or interface elements. Do not show a payment card at all: show a
-believable empty-hand contactless tap gesture on the terminal, with no card
-face, chip, number or network mark anywhere. The terminal remains a normal,
-commercially plausible, unbranded device with a clean neutral display.
-
-Keep the merchant and the active hand interaction as the hero.
-Do not turn the scene into a product catalog, generic checkout,
-or isolated terminal beauty shot.
+The viewer must understand physical payment plus online fulfilment without text.
+POS display and parcel label are blank and unreadable: no letters, digits, logos,
+card-network marks, QR codes, barcodes, balances or interface elements. Keep the
+terminal commercially plausible and the human contact anatomically correct.
 """.strip()
 
+
+# =========================================================
+# STC VISUAL CONSTITUTION
 
 # =========================================================
 # STC VISUAL CONSTITUTION
@@ -6103,17 +6017,15 @@ STC reference DNA.
 MERCHANT MESSAGE
 ----------------
 
-For merchant_payments:
+For merchant_payments, use ONLY this canonical visual contract:
 
-merchant_fusion_failed = TRUE unless the viewer understands
-both:
+- one visible customer hand performs a contactless tap on one believable blank POS;
+- the same merchant's other hand actively closes one plain parcel on the same counter;
+- one camera, one environment and one continuous physical relationship.
 
-- online/e-commerce activity
-- physical/in-store payment acceptance
-
-as one connected ecosystem.
-
-Do not require readable text or UI as proof.
+merchant_fusion_failed = TRUE only when this contract is not visually understandable.
+Do not invent an additional required transformation, rotation, map, courier, phone, UI
+or readable text. Do not require readable text or UI as proof.
 
 {build_stc_visual_constitution(
     original_request
@@ -7266,13 +7178,15 @@ Create one improved final campaign image.
 
     if merchant_structural_repair:
         core_prompt = f"""
-MERCHANT STRUCTURAL REPAIR — SAME SCENE
-Image 1 is primary. Preserve the same merchant, counter, 4:5 camera, purple
-architectural setting, blank unbranded POS and plain parcel. Make the workflow
-read clearly in one frame: a visible customer hand performs a contactless tap
-on the POS while the merchant's other hand actively closes the parcel. Keep
-realistic contact, perspective and lighting. Do not rebuild, collage, add cards,
-screens, UI, text, logos, QR codes or barcodes.
+MERCHANT PAYMENTS — CANONICAL STRUCTURAL REBUILD
+Do not depend on a failed image or on an invented prior transformation. Build one
+clean photographic 4:5 campaign frame from this contract: a visible customer hand
+performs a contactless tap on one believable blank POS while the same merchant's
+other hand actively closes one plain parcel on the same counter. The two actions,
+merchant, POS and parcel must share one camera, perspective, lighting and depth.
+Use one restrained purple STC architectural/service environment. No courier, second
+location, phone, tablet, laptop, floating UI, split scene, rotating transformation,
+card, text, logo, QR code, barcode or readable marking.
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
