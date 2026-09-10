@@ -5121,7 +5121,15 @@ def openai_multi_reference_edit(
             "production_stage":
                 "final",
             "final_delivery_allowed":
-                True,
+                not bool(
+                    getattr(
+                        result,
+                        "metadata",
+                        {},
+                    ).get(
+                        "provider_fallback"
+                    )
+                ),
             "physical_reference_count":
                 len(
                     refs
