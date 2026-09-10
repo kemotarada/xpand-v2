@@ -4537,6 +4537,25 @@ below must be corrected in the final render:
 """.strip()
 
 
+def is_strong_causal_preview(preview_qa: Optional[QAEvaluation]) -> bool:
+    if preview_qa is None:
+        return False
+    scores = getattr(preview_qa, "scores", {})
+    scores = scores if isinstance(scores, dict) else {}
+    try:
+        blockers = list(preview_qa.critical_blockers or [])
+    except Exception:
+        blockers = []
+    return bool(
+        preview_qa.decision == "preview_ready"
+        and not blockers
+        and float(scores.get("concept_execution", 0) or 0) >= 88
+        and float(scores.get("service_integration", 0) or 0) >= 88
+        and float(scores.get("camera_perspective", 0) or 0) >= 85
+        and float(scores.get("brand_identity_strength", 0) or 0) >= 85
+    )
+
+
 def requires_clean_contract_render(
     *,
     original_request: str,
@@ -6730,9 +6749,13 @@ def qa_candidate_is_better(
     if candidate.passed != existing.passed:
         return bool(candidate.passed)
 
-    # Among candidates with the same pass state, preserve the strongest
-    # measured result. Fewer blockers must not select a materially weaker
-    # image such as 72.49 over 74.79.
+    # A failed repair is never allowed to replace the original failed
+    # candidate. It can only replace it after crossing the delivery gate.
+    if not candidate.passed and not existing.passed:
+        return False
+
+    # Among candidates with the same successful pass state, preserve the
+    # strongest measured result.
     return float(candidate.score) > float(existing.score)
 
 
@@ -6884,6 +6907,7 @@ def build_final_repair_prompt(
         ==
         "structural_repair"
     )
+    preview_recovery = action == "preview_recovery"
 
     merchant_structural_repair = bool(
         structural
@@ -6991,6 +7015,15 @@ Use Image 1 as the primary composition. Keep the same merchant, counter, POS
 and parcel. Improve only the legibility of one continuous checkout-plus-fulfillment
 workflow; do not rebuild from scratch or introduce new objects.
 """.strip()
+    if preview_recovery:
+        repair_mode = """
+PREVIEW-PRESERVING RECOVERY — IMMUTABLE
+Image 1 is the approved strong previsualization and is the only visual source.
+Preserve its exact composition, hero relationship, camera, lighting, materials and
+merchant workflow. Make only the smallest local correction needed for the diagnosed
+final-render defect. Do not reinterpret, rebuild, reframe, add references, add props
+or change the advertising idea.
+""".strip()
     reference_role_text = (
         """
 No style, campaign, environment or product reference is attached.
@@ -7052,6 +7085,19 @@ Preserve its camera, merchant, counter, POS, parcel, lighting and materials.
 Only strengthen the visible causal relationship between physical POS payment
 and active parcel preparation. Do not replace the scene, change the setting,
 add screens, add cards, add text or logos, or redesign the campaign.
+""".strip()
+    if preview_recovery:
+        reference_role_text = """
+Image 1 is the approved strong preview. No supporting references are attached.
+Do not reconstruct, restyle or reinterpret the image.
+""".strip()
+        repair_scope_lock = """
+REPAIR MODE — IMMUTABLE
+-----------------------
+PREVIEW-PRESERVING RECOVERY. Image 1 is the only visual source. Preserve its
+exact camera, geometry, merchant, POS, parcel, lighting, materials and copy-space
+composition. Correct only the explicitly diagnosed defect with minimal local edits.
+Never rebuild, recompose, add objects, add text, add logos or change the scene.
 """.strip()
     actionable_qa_lock = f"""
 FINAL QA CORRECTION — IMMUTABLE
@@ -7126,6 +7172,13 @@ END_XPAND_REPAIR_SCOPE_V601
 - preserve the purple architectural STC world and natural materials
 - remove any text, logo, card, UI, QR code or barcode without changing the scene
 """.strip()
+    if preview_recovery:
+        repair_priorities = """
+- preserve the approved preview pixel relationship and camera
+- make no structural or stylistic changes
+- fix only the diagnosed local final-render defect
+- keep all surfaces blank, unbranded and physically plausible
+""".strip()
     core_prompt = f"""
 XPAND GPT-IMAGE-2 FINAL REPAIR V6.0.1
 =====================================
@@ -7189,6 +7242,18 @@ merchant, POS and parcel must share one camera, perspective, lighting and depth.
 Use one restrained purple STC architectural/service environment. No courier, second
 location, phone, tablet, laptop, floating UI, split scene, rotating transformation,
 card, text, logo, QR code, barcode or readable marking.
+Aspect ratio: {aspect_ratio}
+Resolution intent: {requested_size}
+""".strip()
+    if preview_recovery:
+        core_prompt = f"""
+PREVIEW-PRESERVING FINAL RECOVERY
+Image 1 is the approved strong preview. Reproduce it faithfully as the final image.
+Preserve the exact hero, merchant, POS, parcel, camera, perspective, lighting,
+materials, copy-space placement and purple STC environment. Do not redesign or
+rebuild the campaign. Correct only the explicitly diagnosed defect. No new objects,
+no reference collage, no courier, no second location, no phone, no UI, no text, no
+logo, no QR code, no barcode and no readable markings.
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
@@ -8117,14 +8182,20 @@ def run_production(
     # FINAL REFERENCE SET
     # =====================================================
 
-    final_refs = physical_refs[
-        :(
-            STC_FINAL_REFERENCE_LIMIT
-            if stc_request
-            else
-            MAX_PHYSICAL_REFERENCE_IMAGES
-        )
-    ]
+    strong_preview = is_strong_causal_preview(preview_qa)
+    final_refs = (
+        []
+        if strong_preview
+        else
+        physical_refs[
+            :(
+                STC_FINAL_REFERENCE_LIMIT
+                if stc_request
+                else
+                MAX_PHYSICAL_REFERENCE_IMAGES
+            )
+        ]
+    )
 
     telemetry[
         "final_reference_count"
@@ -8544,6 +8615,17 @@ def run_production(
         )
     )
 
+    # A strong preview is the trusted composition. If the provider's first
+    # final render drifts, recover from the preview itself rather than asking
+    # a repair model to reconstruct the campaign from mixed references.
+    strong_preview_recovery = bool(
+        strong_preview
+        and first_qa is not None
+        and not first_qa.passed
+    )
+    if strong_preview_recovery:
+        action = "preview_recovery"
+
     telemetry[
         "adaptive_action"
     ] = action
@@ -8594,7 +8676,7 @@ def run_production(
 
         repair_refs = (
             []
-            if text_logo_surgical
+            if text_logo_surgical or strong_preview_recovery
             else
             correction_reference_set(
                 product_refs=(
@@ -8622,6 +8704,8 @@ def run_production(
             not repair_refs
             and
             not text_logo_surgical
+            and
+            not strong_preview_recovery
         ):
             repair_refs = list(
                 final_refs
@@ -8703,15 +8787,19 @@ def run_production(
                     # Reusing the failed final candidate would preserve its
                     # broken camera, geometry or generic scene logic.
                     working_image=(
-                        None
+                        preview_image
                         if (
-                            action == "structural_repair"
-                            and
-                            preview_requires_clean_recomposition
+                            strong_preview_recovery
+                            or
+                            (
+                                action == "structural_repair"
+                                and
+                                not preview_requires_clean_recomposition
+                            )
                         )
                         else
                         (
-                            preview_image
+                            None
                             if action == "structural_repair"
                             else first_final
                         )
