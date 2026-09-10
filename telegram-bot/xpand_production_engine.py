@@ -8426,8 +8426,13 @@ def run_production(
 
             second_final = (
                 openai_multi_reference_edit(
+                    # A structural failure needs a clean recomposition.
+                    # Reusing the failed final candidate would preserve its
+                    # broken camera, geometry or generic scene logic.
                     working_image=(
-                        first_final
+                        preview_image
+                        if action == "structural_repair"
+                        else first_final
                     ),
                     references=(
                         repair_refs
@@ -8488,6 +8493,12 @@ def run_production(
                             True,
                         "working_image_primary":
                             True,
+                        "working_image_source":
+                            (
+                                "previsualization_recomposition"
+                                if action == "structural_repair"
+                                else "failed_final_candidate"
+                            ),
                         "text_logo_surgical":
                             text_logo_surgical,
                         "references":
