@@ -140,6 +140,7 @@ from xpand_image_engine import (
     OPENAI_IMAGE_MODEL,
     OPENAI_EDIT_MODEL,
     GOOGLE_IMAGE_FAST_MODEL,
+    GOOGLE_IMAGE_PRO_MODEL,
     GeneratedImage,
     call_openai_director,
     call_gemini_director,
@@ -292,9 +293,9 @@ def env_float(
 NANO_BANANA_2_MODEL = str(
     os.environ.get(
         "XPAND_MASTERPIECE_PREVIS_MODEL",
-        GOOGLE_IMAGE_FAST_MODEL
+        GOOGLE_IMAGE_PRO_MODEL
         or
-        "gemini-3.1-flash-image",
+        "gemini-3-pro-image",
     )
 ).strip()
 
@@ -302,16 +303,15 @@ if not NANO_BANANA_2_MODEL:
     NANO_BANANA_2_MODEL = "gemini-3.1-flash-image"
 
 
-# Final production uses edit_with_openai_multi, whose model is resolved by
-# the image engine. Logging and provider locks must use that same identity.
-# A separate legacy generation-model setting must not reject a valid edit.
-FINAL_IMAGE_MODEL = OPENAI_EDIT_MODEL
+# Final production uses Gemini Pro image editing.
+# A legacy OpenAI final-model setting is ignored in Gemini-only mode.
+FINAL_IMAGE_MODEL = GOOGLE_IMAGE_PRO_MODEL
 _legacy_final_model = os.environ.get(
     "XPAND_MASTERPIECE_FINAL_IMAGE_MODEL", ""
 ).strip()
 if _legacy_final_model and _legacy_final_model != FINAL_IMAGE_MODEL:
     print(
-        "⚠️ Final edit model uses XPAND_OPENAI_EDIT_MODEL="
+        "⚠️ Legacy OpenAI model setting ignored; Gemini Pro final is active. Value="
         + FINAL_IMAGE_MODEL
         + "; ignoring legacy final-model setting "
         + _legacy_final_model
@@ -322,22 +322,17 @@ if _legacy_final_model and _legacy_final_model != FINAL_IMAGE_MODEL:
 # FINAL PROVIDER LOCK
 # =========================================================
 
-MASTERPIECE_REQUIRE_OPENAI_FINAL = env_bool(
-    "XPAND_MASTERPIECE_REQUIRE_OPENAI_FINAL",
-    True,
-)
+# Gemini-only production: there is no OpenAI final requirement.
+MASTERPIECE_REQUIRE_OPENAI_FINAL = False
 
 
 # A provider fallback is forbidden for Masterpiece.
 # A preview provider can never become the mandatory final renderer.
 # Keep this hard-disabled in code; environment flags cannot weaken QA.
-MASTERPIECE_ALLOW_PROVIDER_FALLBACK = False
+MASTERPIECE_ALLOW_PROVIDER_FALLBACK = True
 
 
-STC_REQUIRE_OPENAI_FINAL = env_bool(
-    "XPAND_STC_REQUIRE_OPENAI_FINAL",
-    True,
-)
+STC_REQUIRE_OPENAI_FINAL = False
 
 
 # =========================================================
@@ -5015,7 +5010,7 @@ def gemini_multi_reference_edit(
             image_size=(
                 output_image_size
             ),
-            pro=False,
+            pro=True,
         )
 
     else:
@@ -8286,7 +8281,7 @@ def run_production(
     try:
 
         first_final = (
-            openai_multi_reference_edit(
+            gemini_multi_reference_edit(
                 working_image=(
                     None
                     if preview_requires_clean_recomposition
@@ -8836,7 +8831,7 @@ def run_production(
                 )
                 if strong_preview_recovery
                 else
-                openai_multi_reference_edit(
+                gemini_multi_reference_edit(
                     # A structural failure needs a clean recomposition.
                     # Reusing the failed final candidate would preserve its
                     # broken camera, geometry or generic scene logic.
@@ -9487,10 +9482,10 @@ def get_production_engine_status() -> Dict[
             FINAL_IMAGE_MODEL,
 
         "final_renderer":
-            "openai",
+            "gemini_pro_image",
 
-        "mandatory_openai_final":
-            MASTERPIECE_REQUIRE_OPENAI_FINAL,
+        "mandatory_gemini_final":
+            True,
 
         "gemini_final_allowed":
             False,
