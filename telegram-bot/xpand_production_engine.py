@@ -4609,7 +4609,7 @@ def requires_clean_contract_render(
         QAEvaluation
     ],
 ) -> bool:
-    """Keep fragile previews out of final rendering when they can mislead."""
+    """Use the contract for weak previews; preserve strong causal previews."""
 
     preview_is_unsafe = bool(
         preview_qa
@@ -4625,10 +4625,6 @@ def requires_clean_contract_render(
         )
     )
 
-    # Merchant Payments has a strict causal composition. In practice the
-    # image editor tends to add tablets, UI and unrelated checkout props when
-    # given a previs, even when the previs audit is strong. Render this family
-    # from the contract and STC references instead.
     merchant_contract = bool(
         is_stc_bank_request(
             original_request
@@ -4640,6 +4636,59 @@ def requires_clean_contract_render(
         ==
         "merchant_payments"
     )
+
+    if merchant_contract and preview_qa is not None:
+        scores = getattr(preview_qa, "scores", {})
+        scores = scores if isinstance(scores, dict) else {}
+
+        def preview_score(name):
+            try:
+                return float(scores.get(name, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        blocker_text = " ".join(
+            str(item).lower()
+            for item in (preview_qa.critical_blockers or [])
+        )
+        text_only_blocker = bool(
+            blocker_text
+            and
+            any(
+                marker in blocker_text
+                for marker in (
+                    "text", "logo", "branding", "icon", "letter", "number",
+                    "card", "pos screen",
+                )
+            )
+            and
+            not any(
+                marker in blocker_text
+                for marker in (
+                    "concept", "workflow", "service", "camera", "perspective",
+                    "composition", "scene", "payment acceptance", "fulfillment",
+                )
+            )
+        )
+        strong_causal_preview = bool(
+            preview_score("concept_execution") >= 88
+            and
+            preview_score("service_integration") >= 88
+            and
+            preview_score("camera_perspective") >= 85
+            and
+            preview_score("brand_identity_strength") >= 85
+        )
+
+        # A strong merchant preview with only text/card artifacts is a better
+        # structural source than a fresh contract render. Let final editing
+        # remove the local artifacts without destroying the causal scene.
+        if strong_causal_preview and (
+            not preview_is_unsafe
+            or
+            text_only_blocker
+        ):
+            return False
 
     return preview_is_unsafe or merchant_contract
 
@@ -4852,6 +4901,17 @@ Resolution intent: {requested_size}
         if item
     )
 
+    merchant_source_instruction = (
+        "There is no draft image input. Generate directly from this contract and the "
+        "attached STC references. Use the references only for STC palette, premium "
+        "architectural restraint and photographic finish."
+        if preview_requires_clean_recomposition
+        else
+        "Image 1 is a strong approved previsualization. Preserve its merchant, POS, "
+        "parcel, camera and causal geometry; remove only local text, logos or icons. "
+        "Do not introduce new objects or rebuild the scene. References are for STC "
+        "palette and photographic finish only."
+    )
     if benefit == "merchant_payments":
         # Keep this renderer contract short and causal. The generic final
         # prompt is intentionally not used here because compaction can remove
@@ -4860,9 +4920,7 @@ Resolution intent: {requested_size}
 CLEAN MERCHANT PAYMENTS FINAL — CLIENT-READY 4:5 PHOTOGRAPH
 ===============================================================
 
-There is no draft image input. Generate directly from this contract and the
-attached STC references. Use the references only for STC palette, premium
-architectural restraint and photographic finish.
+{merchant_source_instruction}
 
 ONE CAUSAL SCENE, NOT A COLLAGE:
 A real merchant works at one premium Saudi retail/service counter in a
