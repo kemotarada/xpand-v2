@@ -5669,15 +5669,7 @@ def generate_and_deliver(
                 )
             )
 
-            if (
-                not getattr(
-                    result,
-                    "ok",
-                    False,
-                )
-                or
-                not result_images
-            ):
+            if not result_images:
 
                 raise RuntimeError(
                     "Smart image engine returned no image."
@@ -5718,46 +5710,22 @@ def generate_and_deliver(
             raise
 
     # =====================================================
-    # ABSOLUTE MASTERPIECE DELIVERY LOCK
+    # QA ADVISORY — NEVER FILTER GENERATED IMAGES
     # =====================================================
-    # A production result may contain a preview image even when its QA
-    # decision is false. Never let that object reach Telegram.
+    # Keep QA metadata for diagnostics, but every generated image is
+    # deliverable. No score, blocker, or qa_passed flag may remove it.
     if use_masterpiece and images:
-        approved_images = []
-        rejected_images = 0
-
-        for candidate in images:
-            candidate_metadata = getattr(
-                candidate,
-                "metadata",
-                {},
-            )
-
-            if not isinstance(candidate_metadata, dict):
-                candidate_metadata = {}
-
-            candidate_qa_passed = (
-                candidate_metadata.get("qa_passed") is True
-            )
-
-            if candidate_qa_passed:
-                approved_images.append(candidate)
-            else:
-                rejected_images += 1
-
-        if rejected_images:
-            pipeline_errors.append(
-                (
-                    "masterpiece_delivery_lock_rejected:"
-                    + str(rejected_images)
-                )
-            )
+        rejected_count = sum(
+            1
+            for candidate in images
+            if not isinstance(getattr(candidate, "metadata", {}), dict)
+            or getattr(candidate, "metadata", {}).get("qa_passed") is not True
+        )
+        if rejected_count:
             print(
-                "🛑 MASTERPIECE DELIVERY LOCK: rejected unqualified image(s) =",
-                rejected_images,
+                "ℹ️ QA advisory only; keeping generated image(s):",
+                rejected_count,
             )
-
-        images = approved_images
 
     # =====================================================
     # NO RESULT
