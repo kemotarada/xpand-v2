@@ -2540,3 +2540,24 @@ viewer could misunderstand. A travel or SIM brief must not visually read as a
 POS/payment ad. E-commerce and POS must read as connected merchant commerce,
 not as a catalogue of phone, terminal and boxes. The image must communicate
 before the headline explains it.
+
+
+## Claim-Proof Scene Engine
+
+Choose a situation that makes the claim believable, not merely a location
+associated with the category. Distill the claim into functional proof, human
+proof, environmental proof and emotional proof, then use:
+
+
+a location + situation + action + benefit = claim proof
+
+When the location is unspecified, compare at least six proof situations. For
+travel, reach and connectivity, apply the “Even here?” test. An airport may
+show travel context, but a remote destination, moving train, boat or other
+credible place may prove “with you everywhere” more strongly.
+
+The character must be living the benefit through a real event, not presenting
+the product. Define what happened before the frame, what is happening now and
+what happens next. Prefer POV, over-the-shoulder or candid observation when
+the viewer should feel present. If removing the location does not weaken the
+claim, the location is decorative and must change.
