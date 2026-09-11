@@ -185,12 +185,14 @@ try:
 
     from xpand_stc_bank_skill import (
         STC_BANK_VISUAL_SKILL,
+        STC_BANK_CAMPAIGN_DNA,
         is_stc_bank_request,
     )
 
 except Exception:
 
     STC_BANK_VISUAL_SKILL = ""
+    STC_BANK_CAMPAIGN_DNA = ""
 
     def is_stc_bank_request(
         value: Any,
@@ -1556,6 +1558,18 @@ def stc_brand_pack_prompt_fragment(
             pack.get(
                 "brand_name"
             ),
+
+        "campaign_visual_dna":
+            STC_BANK_CAMPAIGN_DNA,
+
+        "campaign_archetypes":
+            [
+                "benefit_as_gateway",
+                "physical_proof_of_value",
+                "premium_product_hero",
+                "human_behavior_proof",
+                "single_cause_effect_moment",
+            ],
 
         "pack_version":
             pack.get(
