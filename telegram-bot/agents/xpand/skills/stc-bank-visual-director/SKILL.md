@@ -118,3 +118,8 @@ Use its concept director, visual translation ladder, 3-reference fusion, 8–12 
 ## Mandatory non-literal concept gate
 
 Load references/non-literal-concept-gate-mandatory.md before approving any STC concept. A literal product demonstration is not an advertising idea. Any concept below 12/20 Conceptual Strength must be rejected, regardless of visual polish.
+
+
+## Creative-first ideation reference
+
+Load references/stc-bank-creative-first-v2.md for diverse concept families, 12-direction exploration and campaign-level variation. Treat its quality checks as advisory guidance; never block the final image render.
