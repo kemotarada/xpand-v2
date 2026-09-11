@@ -2561,3 +2561,18 @@ the product. Define what happened before the frame, what is happening now and
 what happens next. Prefer POV, over-the-shoulder or candid observation when
 the viewer should feel present. If removing the location does not weaken the
 claim, the location is decorative and must change.
+
+
+## Travel claim-proof immersion
+
+For SIM, eSIM, roaming, connectivity or “with you in every destination”
+briefs, airport, train, passport, luggage and skyline are only category
+signals. Choose the destination that creates the strongest “even here?” proof.
+Use one distinctive destination, one natural action and one subtle travel cue.
+Let the environment lead before the phone.
+
+Prioritize first-person POV, environmental POV, over-the-shoulder or candid
+observation. The traveller must be living the journey, not presenting the
+device. Never add floating Wi-Fi or signal icons, connection waves, location
+pins, arrows, network symbols, holograms or explanatory overlays to a
+realistic scene. Connectivity must be diegetic.
