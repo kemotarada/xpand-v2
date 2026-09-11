@@ -69,6 +69,7 @@ def prompt_direction(style):
         read_skill_file("references/reference-campaign-grammar.md"),
         read_skill_file("references/prompt-specification.md"),
         read_skill_file("references/visual-language.md"),
+        read_skill_file("references/creative-concept-execution-intelligence.md"),
         master_system_prompt(),
         creative_first_system_prompt(),
         prompt_engineering_direction(),
