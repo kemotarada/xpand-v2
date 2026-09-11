@@ -114,3 +114,7 @@ Every final prompt must name one scientific camera setup, one perspective system
 The complete user-supplied STC Bank AI Advertising Creative Director master prompt is stored verbatim at references/stc-bank-master-system-prompt-v1.md. Load it for every STC prompt and image-generation request. It is the full creative-director operating model: business benefit, meaning, visual idea, metaphor, hero, scene architecture, camera, lighting, materials, composition and final prompt. Do not summarize it away before the creative decision is made.
 
 Use its concept director, visual translation ladder, 3-reference fusion, 8–12 direction generation, diversity guard, Concept Card, scoring model and failure conditions. Keep the existing STC image-only and user-requested no-graphics lock as the final output constraint when the master prompt contains broader exploratory examples.
+
+## Mandatory non-literal concept gate
+
+Load references/non-literal-concept-gate-mandatory.md before approving any STC concept. A literal product demonstration is not an advertising idea. Any concept below 12/20 Conceptual Strength must be rejected, regardless of visual polish.
