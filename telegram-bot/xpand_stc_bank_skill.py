@@ -1787,6 +1787,60 @@ REFERENCE DISCIPLINE
 - do not copy their exact objects, people, wording, logos or composition
 """.strip()
 
+# =========================================================
+# STC BANK SHOT DESIGN CONTRACT
+# =========================================================
+
+STC_BANK_SHOT_DESIGN_CONTRACT = r"""
+STC BANK DIRECTOR'S SHOT DESIGN CONTRACT
+=========================================
+
+Before generating an image, design the advertisement as a shot. Do not start
+from a generic location and hope the camera makes it premium.
+
+Every STC Bank frame must answer five questions: what is the single idea, what
+is the hero action, where does the eye land first, why does this feel like STC,
+and what can be removed without weakening the message?
+
+DEFAULT CAMERA DISCIPLINE
+- choose a deliberate shot size: tight hero, controlled medium, or environmental
+  wide; never default to a generic eye-level medium-wide scene
+- state camera height, lens family, angle, focus plane and crop before rendering
+- use a 4:5 composition with a clear foreground/midground/background hierarchy
+- keep the product or service action inside the visual center of gravity
+- use negative space as designed copy space, not accidental empty ceiling or wall
+
+MERCHANT PAYMENTS SHOT
+- the service action is the hero; the merchant's face is optional and normally
+  excluded from frame or reduced to a non-dominant partial profile
+- show two readable actions in one causal frame: a real contactless tap at a
+  believable POS and active closure/preparation of one cardboard parcel
+- use a tight 3/4 countertop view or controlled top-down/low-grazing hybrid,
+  generally 45–65mm equivalent, with hands and objects larger than the room
+- place the terminal and parcel on the same graphite counter plane; no display
+  pedestal, no disconnected foreground terminal
+- use deep aubergine/plum architectural planes with graphite and natural cardboard
+  as the STC world; no beige shop interior, bright windows or generic purple trim
+- create a diagonal action relationship between the tapping hand, terminal,
+  parcel seam and the merchant's closing hand
+- the first read is commerce being accepted and fulfilled, not a portrait
+
+ANTI-STOCK TEST
+Reject the concept internally if it could be used unchanged for a restaurant,
+telecom shop or generic ecommerce brand. It needs one bank-specific service proof
+and one intentional campaign composition.
+
+ANTI-CAMERA-FAILURE TEST
+Reject any frame with giant upper emptiness, a tiny terminal, a face dominating
+the crop, a horizon/window pulling the eye away, or a purple accent that is not
+part of a coherent architectural set.
+
+STAGING PRINCIPLE
+When a draft has the wrong camera, wrong color world or wrong visual hierarchy,
+re-stage the shot. Preserve the commercial proposition, not the failed pixels.
+""".strip()
+
+
 
 # =========================================================
 # BENEFIT DIRECTION
@@ -1855,6 +1909,7 @@ def build_stc_bank_skill_context(
     parts = [
         STC_BANK_VISUAL_SKILL,
         STC_BANK_CAMPAIGN_DNA,
+        STC_BANK_SHOT_DESIGN_CONTRACT,
         style_direction(style),
     ]
 
