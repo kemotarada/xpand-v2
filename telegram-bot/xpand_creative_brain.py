@@ -585,19 +585,10 @@ DIMENSION_WEIGHTS: Dict[
 # CALL POLICY
 # =========================================================
 
-NORMAL_CONCEPT_COUNT = 8
+NORMAL_CONCEPT_COUNT = 12
 
 
-STC_HIGH_ALERT_CONCEPT_COUNT = max(
-    6,
-    min(
-        10,
-        env_int(
-            "XPAND_STC_CONCEPTS_REQUIRED",
-            8,
-        ),
-    ),
-)
+STC_HIGH_ALERT_CONCEPT_COUNT = 12
 
 
 STC_RECOVERY_CONCEPT_COUNT = max(
@@ -3289,19 +3280,6 @@ def local_concept_penalties(
 
     failures: List[str] = []
 
-    conceptual_strength = float(
-        scores.get(
-            "conceptual_strength",
-            0,
-        ) or 0
-    )
-
-    if conceptual_strength < STC_MIN_CONCEPTUAL_STRENGTH:
-        failures.append(
-            "conceptual_strength_below_12_of_20"
-        )
-
-
 
     # =====================================================
     # LITERAL TRANSACTION TABLEAU
@@ -3792,15 +3770,7 @@ def strict_qualified_concepts(
 
             continue
 
-        # Conceptual Strength is a universal STC gate, not a mode-specific luxury.
-        if (
-            "conceptual_strength_below_12_of_20"
-            in
-            stc_dimension_gate_failures(concept)
-        ):
-
-            continue
-
+        # Quality review is advisory; never block image rendering on conceptual score.
         if high_alert:
 
             if (
@@ -4138,7 +4108,7 @@ def stc_runtime_director_context(
             # The attached master prompt is the complete creative-director
             # operating model and must be loaded before the compact references.
             "references/stc-bank-master-system-prompt-v1.md",
-            "references/non-literal-concept-gate-mandatory.md",
+            "references/stc-bank-creative-first-v2.md",
             "SKILL.md",
             "references/concept-workflow.md",
             "references/visual-language.md",
@@ -4176,7 +4146,7 @@ def build_ideation_prompt(
     benefit_family: str,
     stc_style: str,
     recovery: bool = False,
-    concept_count: int = 8,
+    concept_count: int = 12,
     high_alert: bool = False,
 ) -> str:
 
@@ -4499,12 +4469,11 @@ Map the result into the schema:
 - why_not_generic = why this frame belongs to this service and STC;
 - environment_novelty = what is structurally new, not merely luxurious.
 
-NON-LITERAL CONCEPT GATE — MANDATORY
-Before any concept can reach evaluation or final prompt construction, answer internally: “What visual event in this image could not exist in an ordinary product demonstration?”
-Reject scenes that can be described only as “a person using the product,” including hand tapping a terminal, phone displaying an app, or a product placed on a pedestal. Require one benefit-carrying mechanism: transformation, spatial compression, visual analogy, object-function change, environment reaction, scale shift, reflection/shadow metaphor, reveal, gateway, physicalized benefit, cause-and-effect visual, or unexpected spatial relationship. The mechanism must survive as a single frame and must not be decorative. If removing the product leaves no recognizable advertising idea, reject and regenerate.
+CREATIVE-FIRST CONCEPT CHECK — ADVISORY, NEVER A RENDER BLOCK
+Ask internally: “What is the visual event or conceptual relationship here that would not exist in an ordinary product demonstration?” Use the answer to improve the concept, but do not stop, reject the request, or show a failure message because the answer is imperfect. Explore multiple creative families, repair weak ideas when possible, and always continue to the best available render. A literal product-use scene may be one direction among many when it is appropriate to the brief; it must not become the automatic default.
 
-VISIBLE-PROOF GATE
-A phone, POS terminal, card, purple set, customer, parcel or pedestal alone is not proof. Reject any candidate whose message depends on an invisible caption. For merchant_payments, reject phone + POS as unrelated display objects, stone/travertine pedestal still lifes, tablet + terminal + parcel tableaux, generic checkout scenes and split-screen logic. Both online commerce and physical acceptance must be readable as one connected merchant mechanism.
+VISIBLE-PROOF GUIDANCE
+A phone, POS terminal, card, purple set, customer, parcel or pedestal alone is not automatically a strong ad. Use this as a ranking and improvement signal, not a hard rejection. For merchant_payments, explore connected online and physical commerce when that is the brief, but also allow other valid campaign directions: merchant growth, trust, speed, reach, customer confidence, premium service, human moments, still life, travel, architecture, material metaphor and consequence-led storytelling. Never block the render because a candidate is imperfect.
 
 Each direction must materially differ in:
 - visual mechanism
@@ -9213,7 +9182,7 @@ if __name__ == "__main__":
     # =====================================================
 
     tests[
-        "strict_conceptual_strength_12_of_20"
+        "conceptual_strength_is_advisory"
     ] = (
         STC_MIN_CONCEPTUAL_STRENGTH
         ==
