@@ -1140,6 +1140,22 @@ def build_creative_constitution_text(
                 "- Camera choice must contribute to the "
                 "advertising idea."
             ),
+            (
+                "- Before scene architecture, distill the message "
+                "into product, functional benefit, human benefit, "
+                "single message and desired feeling."
+            ),
+            (
+                "- Every concept needs one visual sentence, one "
+                "hero event, one visible benefit proof and a "
+                "location that proves the message."
+            ),
+            (
+                "- Reject message drift: a travel/SIM brief must "
+                "not read as a POS payment ad, and a beautiful "
+                "destination or person holding a phone is not "
+                "enough without a meaningful event."
+            ),
         ]
     )
 
