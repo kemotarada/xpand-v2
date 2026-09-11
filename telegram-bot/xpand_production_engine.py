@@ -162,6 +162,7 @@ from xpand_stc_bank_skill import (
     STC_BANK_SHOT_DESIGN_CONTRACT,
     STC_MERCHANT_CONCEPT_LIBRARY,
     STC_STYLE_TRANSFORMATION_CONTRACT,
+    STC_PURPLE_STUDIO_COLOR_LOCK,
     STYLE_AUGMENTED_REALISM,
     STYLE_PREMIUM_REALISTIC,
     STYLE_PURPLE_ARCHITECTURAL,
@@ -4844,6 +4845,10 @@ STYLE TRANSFORMATION CONTRACT
 -----------------------------
 {STC_STYLE_TRANSFORMATION_CONTRACT}
 
+PURPLE STUDIO COLOR LOCK
+------------------------
+{STC_PURPLE_STUDIO_COLOR_LOCK}
+
 Create a polished campaign image at:
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
@@ -4916,6 +4921,10 @@ STC CONCEPT ATLAS
 STYLE TRANSFORMATION
 --------------------
 {STC_STYLE_TRANSFORMATION_CONTRACT}
+
+PURPLE STUDIO COLOR LOCK
+------------------------
+{STC_PURPLE_STUDIO_COLOR_LOCK}
 
 SERVICE LEGIBILITY
 -----------------
@@ -7288,6 +7297,10 @@ is purple architectural, redesign the set and visual mechanism, not just the wal
 {STC_MERCHANT_CONCEPT_LIBRARY}
 
 {STC_STYLE_TRANSFORMATION_CONTRACT}
+
+PURPLE STUDIO COLOR LOCK
+------------------------
+{STC_PURPLE_STUDIO_COLOR_LOCK}
 
 Physical payment acceptance and online commerce fulfillment must both remain
 legible without phone, card, screen, UI, QR, barcode, generated text or logo.
