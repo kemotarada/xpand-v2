@@ -3252,6 +3252,51 @@ gravity, reflection and lighting.
 
     merchant = ""
     digital_transfer = ""
+    travel_claim = ""
+
+    if contains_any(
+        request,
+        [
+            "sim",
+            "esim",
+            "roaming",
+            "connectivity",
+            "travel connectivity",
+            "every destination",
+            "wherever you go",
+            "شريحة",
+            "تجوال",
+            "اتصال",
+            "كل وجهة",
+            "اينما ذهبت",
+            "أينما ذهبت",
+        ],
+    ):
+
+        travel_claim = """
+TRAVEL / CONNECTIVITY CLAIM-PROOF IMMERSION
+===========================================
+
+The frame must prove “the service is still with me here,” not merely show a
+traveller. The destination is the primary evidence and must be noticed before
+the phone. Prefer one distinctive, difficult, remote, foreign or moving
+destination, one natural service action and one subtle travel cue.
+
+Use one coherent immersive viewpoint when appropriate: first-person POV,
+environmental POV, over-the-shoulder or candid observation. The traveller
+must be living the journey, not sitting elegantly and displaying a device.
+Imply where they came from, what is happening now and what happens next.
+
+Never add floating Wi-Fi icons, signal waves, location pins, arrows, network
+symbols, glowing connectivity graphics, holograms or explanatory overlays.
+Connectivity is proven diegetically through the situation and natural phone
+use. Never use a phone facing camera like a billboard.
+
+Avoid stacking passport, suitcase, plane, boarding pass, map, travel tag,
+phone and skyline. Use only props that support one proof moment. A business
+class seat, city skyline and phone alone communicate “someone is travelling,”
+not “the service works in every destination.”
+""".strip()
 
     if (
         benefit
@@ -3517,6 +3562,8 @@ no readable numbers,
 no fake financial interface.
 
 {digital_transfer}
+
+{travel_claim}
 
 {merchant}
 """.strip()
@@ -3912,6 +3959,14 @@ No network lines.
 No glowing payment trails.
 No lasers.
 No fintech particles.
+No floating Wi-Fi icon.
+No floating signal icon.
+No signal waves.
+No connection waves.
+No location pin.
+No explanatory connectivity graphic.
+No holographic travel indicator.
+No stacked travel-prop collection.
 
 No generic checkout tableau.
 No generic boutique counter.
