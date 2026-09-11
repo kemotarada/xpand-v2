@@ -4136,6 +4136,8 @@ def stc_runtime_director_context(
             # operating model and must be loaded before the compact references.
             "references/stc-bank-master-system-prompt-v1.md",
             "references/stc-bank-creative-first-v2.md",
+            "references/stc-bank-concept-mutation-lab.md",
+            "references/stc-bank-strict-visual-output-ad-quality-guard.md",
             "SKILL.md",
             "references/concept-workflow.md",
             "references/visual-language.md",
@@ -4495,6 +4497,11 @@ Map the result into the schema:
 - visual_mechanism_type = a concrete mechanism name;
 - why_not_generic = why this frame belongs to this service and STC;
 - environment_novelty = what is structurally new, not merely luxurious.
+
+==================================================
+MANDATORY CONCEPT MUTATION LAB
+==================================================
+Before selecting or writing a final image prompt, separate concept DNA from the current execution. Generate at least 12 meaningful mutations; at least 8 must change the visual mechanism, physical logic, object role, spatial relationship, cause/effect, scale, material behavior, reveal structure, metaphor or consequence. Include product-removal, role-reversal, consequence-only, material, reflection/shadow, negative-space, POV, world-merge, compression, expansion, quiet and monumental passes when relevant. Do not accept cosmetic variants. Select the strongest mutation by clarity, surprise, simplicity, emotional force, STC relevance and campaign expandability.
 
 CREATIVE-FIRST CONCEPT CHECK — ADVISORY, NEVER A RENDER BLOCK
 Ask internally: “What is the visual event or conceptual relationship here that would not exist in an ordinary product demonstration?” Use the answer to improve the concept, but do not stop, reject the request, or show a failure message because the answer is imperfect. Explore multiple creative families, repair weak ideas when possible, and always continue to the best available render. A literal product-use scene may be one direction among many when it is appropriate to the brief; it must not become the automatic default.
