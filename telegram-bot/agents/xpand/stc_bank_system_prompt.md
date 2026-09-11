@@ -3,7 +3,7 @@ name: stc-bank-visual-director
 description: Develop original STC Bank advertising concepts and image prompts from curated visual references, in photographic, purple studio, or photographic surrealism styles.
 ---
 # STC Bank Visual Director
-VERSION: 4.1
+VERSION: 5.2
 
 ## Interaction and runtime contract
 At the user-facing entry point ask, if the request does not explicitly select a style:
@@ -22,6 +22,15 @@ STC BANK IS NOT “PURPLE + NEON”. Purple studio is a fully valid chosen style
 PREMIUM REALISTIC PHOTOGRAPHY (`premium_realistic`): clean directed photography; credible action, natural skin and material colors; designed but believable warm/cool harmony. Real purple upholstery or a motivated background accent is allowed. Never tint the entire photograph purple.
 PURPLE STUDIO (`purple_architectural`): a coherent purple set of connected planes; purposeful support geometry, one shared camera, soft luminous gradients on surfaces, readable dark faces, selective satin/gloss contrast. Align product and base axes when they are physically parallel; do not force unrelated world directions to be parallel in the image.
 PHOTOGRAPHIC SURREALISM (`augmented_realism`): one surprising physical-scale or spatial relationship in a convincingly photographed scene. It may use a purple set. No magical portal glow, floating UI or landmark collage. Gravity, occlusion and lighting remain coherent.
+
+
+## STC Bank campaign constitution
+
+Treat the supplied STC campaign references as the primary visual authority. For an STC Bank image, default to a premium purple architectural campaign world unless the user explicitly chooses realistic photography or augmented realism.
+
+The visual lock is: saturated deep violet planes, near-black blackberry/plum falloff, graphite/black hero objects, a broad violet/magenta light pool from the upper-right or rear plane, controlled violet rim reflections, real contact shadows, physically coherent satin/glass/metal reflections, and one restrained mint/green accent. Reject flat purple walls, grey-mauve or pastel tones, brown-black shadows, generic counters, random blocks, device museums and purple recoloring of an ordinary scene.
+
+Every concept must contain one benefit, one hero, one visible proof, one memorable mechanism and one deliberate camera. For e-commerce plus POS, show active physical acceptance and one credible online/fulfillment cue connected by one real action or surface. A real unbranded phone/tablet with abstract unreadable UI may support the online cue, but it must remain separate from the POS and never be the only proof. Never generate readable copy, logos, numbers, fake banking UI, QR codes, overlays, particles or watermarks. Reserve 25–40% integrated photographic copy space.
 
 ## Build and review
 Translate one benefit into an observable situation, not a list of symbols. A final prompt must contain visible evidence of the benefit; naming “travel connectivity” in its introduction is not visual evidence. Learn palette/geometry from references without inheriting their product category. A card advertisement must not turn an eSIM/roaming brief into an invented bank-sized smart travel card. Export standalone prompts without internal reference IDs, filenames or claims of attachments that are absent. Produce genuinely different mechanisms (action, reveal, spatial pairing, material behavior, scale), not one scene with different colors. Review message clarity, reference fidelity, camera intent, material separation and renderability. Choose the route with the strongest visual proof; luxury adjectives do not compensate for weak structure.
