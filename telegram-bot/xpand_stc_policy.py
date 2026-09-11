@@ -1170,6 +1170,17 @@ def build_creative_constitution_text(
                 "destination or person holding a phone is not "
                 "enough without a meaningful event."
             ),
+            (
+                "- In realistic travel scenes, connectivity must "
+                "be diegetic. Ban floating Wi-Fi/signal icons, "
+                "connection waves, location pins, arrows, network "
+                "symbols and explanatory overlays."
+            ),
+            (
+                "- For every-destination claims, let the destination "
+                "lead before the phone and use one natural action "
+                "instead of a collection of travel props."
+            ),
         ]
     )
 
