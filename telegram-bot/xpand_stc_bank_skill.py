@@ -1840,6 +1840,102 @@ When a draft has the wrong camera, wrong color world or wrong visual hierarchy,
 re-stage the shot. Preserve the commercial proposition, not the failed pixels.
 """.strip()
 
+# =========================================================
+# STC BANK CONCEPT ATLAS — ADVERTISING IDEAS, NOT COLOR VARIATIONS
+# =========================================================
+
+STC_MERCHANT_CONCEPT_LIBRARY = r"""
+STC BANK MERCHANT CAMPAIGN CONCEPT ATLAS
+=========================================
+
+Generate concepts from different advertising grammars. Never render the same
+checkout tableau with a different wall color. Each selected concept must change
+the visual mechanism, the composition and the camera reason.
+
+1. THE FOLD / COMMERCE TAKES SHAPE
+The physical fold of a parcel becomes the central architectural gesture. The
+contactless payment gesture and the box closure meet at one precise crease.
+Use a sculptural folded plane, not a normal shop counter.
+
+2. THE GATEWAY / PAYMENT OPENS THE ORDER
+The POS is integrated into a real portal or threshold and the parcel is staged
+beyond it as the result of the transaction. One continuous physical set, not a
+split screen or magical UI. Use depth and controlled perspective.
+
+3. THE HANDOFF / TWO ACTIONS, ONE RHYTHM
+A close editorial choreography of two hands: one accepts payment and one seals
+the order. The frame is about timing, precision and trust, not the merchant's
+face or the location. Use macro/close lens language and graphic diagonals.
+
+4. THE PRODUCT THEATRE / SERVICE AS A HERO OBJECT
+Build a premium physical stage where the POS and parcel are designed as one
+composition with shadows, planes and negative space. The set must carry the
+STC identity; it must not look like a recolored office.
+
+5. THE COUNTER-INTELLIGENCE / ONE SURFACE, TWO CHANNELS
+Use an unusual but believable continuous material surface that transitions from
+contactless acceptance into parcel dispatch. No drawn route, arrows or UI; the
+material, seam or change of level performs the idea.
+
+6. THE MERCHANT'S POINT OF VIEW
+Camera comes from the merchant's working viewpoint. The customer hand and POS
+enter the foreground while the parcel closure is the destination of the eye.
+The action, not a portrait, proves the service.
+
+7. THE OBJECT TRANSFORMATION
+One real object changes role through physical staging: a parcel flap becomes a
+plinth, a counter edge becomes a threshold, or a receipt-free tap becomes the
+start of a visible dispatch action. No supernatural effects and no readable text.
+
+8. SAUDI COMMERCE, ELEVATED
+Use a specific contemporary Saudi merchant category or material culture, but
+shoot it with campaign-level restraint, designed light and a strong crop. No
+stock smiling, no generic beige retail interior.
+
+9. THE SILENT PROOF
+Remove people almost entirely. Let the believable relationship between terminal,
+parcel, shadow and architectural plane communicate acceptance and fulfillment.
+Use product-advertising discipline, not an empty still life.
+
+10. THE CAMPAIGN ICON
+One simple, bold, award-minded physical composition that can extend into a
+series. It should be recognizable from silhouette and spatial idea alone.
+
+DIVERSITY RULE
+For every concept batch, vary at least four of: visual mechanism, shot size,
+camera height, lens, environment, human presence, object hierarchy, lighting
+logic and relationship between POS and parcel. A purple studio request must
+select a new visual grammar from this atlas; it may not recolor the previous scene.
+""".strip()
+
+STC_STYLE_TRANSFORMATION_CONTRACT = r"""
+STYLE CHANGE MEANS IDEA CHANGE
+==============================
+
+The selected STC style is an art-direction mode, not a color filter.
+
+PREMIUM REALISTIC
+Use a real contemporary Saudi environment and natural motivated light. Let the
+service behavior and human detail carry the campaign idea. Do not add purple
+architecture merely to signal the brand.
+
+PURPLE ARCHITECTURAL
+Re-invent the scene as a deliberate campaign set: portals, folded planes,
+thresholds, plinths, sculptural surfaces, controlled perspective and deep plum
+space. Do not place the old retail counter in a purple room. Change the visual
+mechanism, camera and object hierarchy.
+
+AUGMENTED REALISM
+Start with believable photography, then add exactly one physically coherent
+conceptual intervention that makes the banking benefit visible. The metaphor must
+be the idea, not a purple glow or decorative effect.
+
+STYLE PIVOT TEST
+If replacing the selected style with another style would leave the same scene,
+same camera, same object positions and same action, the concept has failed.
+""".strip()
+
+
 
 
 # =========================================================
@@ -1910,6 +2006,8 @@ def build_stc_bank_skill_context(
         STC_BANK_VISUAL_SKILL,
         STC_BANK_CAMPAIGN_DNA,
         STC_BANK_SHOT_DESIGN_CONTRACT,
+        STC_MERCHANT_CONCEPT_LIBRARY,
+        STC_STYLE_TRANSFORMATION_CONTRACT,
         style_direction(style),
     ]
 
