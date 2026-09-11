@@ -423,5 +423,31 @@
       "official color values"
     ],
     "exclude": "All source typography, logos, numbers, UI overlays and decorative graphics."
+  },
+  {
+    "asset_id": "stc_user_campaign_02",
+    "source_filename": "بطاقات_ائتمانية_بمزايا_استثنائيةاكتشف_بطاقات_STC_Bank_الائتمان_1789144666897.jpg",
+    "path": "stc_bank/curated/stc_user_campaign_02.jpg",
+    "sha256": "4a96da9d7af2ebf8eca2c56ee1be872efe3f7244a5d3801f059c9f905f6cfc7e",
+    "family": "premium_purple_architecture",
+    "title": "Saturated STC Bank campaign studio",
+    "observed_camera": "Elevated frontal three-quarter product theatre",
+    "observations": "Saturated deep-violet background with a brighter violet/magenta pool in the upper-right; dark violet falloff left and lower frame; glossy violet platform bevels; near-black cards with controlled violet rim light; restrained green accent; clean vertical product hierarchy and integrated copy space above.",
+    "dominant_jpeg_swatches": [
+      "#2C1359",
+      "#150E25",
+      "#653098",
+      "#472474",
+      "#853DB6",
+      "#994ACA",
+      "#0FB288"
+    ],
+    "swatch_caveat": "Whole-image quantization includes products, typography and green accent; use as a visual diagnostic, not official brand palette.",
+    "unknown": [
+      "exact lens",
+      "exact light dimensions",
+      "official color values"
+    ],
+    "exclude": "All source typography, logos, rates, card text, numbers and exact object arrangement."
   }
 ]
