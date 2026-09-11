@@ -1739,6 +1739,56 @@ Not from neon.
 
 
 # =========================================================
+# STC BANK CAMPAIGN DNA — LEARNED FROM OFFICIAL CAMPAIGN REFERENCES
+# =========================================================
+
+STC_BANK_CAMPAIGN_DNA = r"""
+STC BANK CAMPAIGN ART DIRECTION
+===============================
+
+The supplied STC Bank campaign references establish a recognizable
+commercial system. Learn the system; never clone a source image.
+
+CAMPAIGN CHARACTER
+- benefit-first, not decoration-first
+- one memorable visual idea per frame
+- one hero object, gesture or physical metaphor
+- premium editorial advertising, not stock photography
+- confident, minimal and immediately readable
+- modern Saudi commercial context when people are present
+
+VISUAL SYSTEM
+- deep aubergine, near-black violet and controlled saturated purple
+- graphite, black and dark neutral surfaces for contrast
+- white and vivid green are reserved for designed typography and small
+  brand accents in post-production; never generate readable copy in the image
+- deliberate studio lighting, clean edge separation and controlled highlights
+- architectural planes, plinths or portals only when they support the idea
+- realistic materials, scale, gravity, contact shadows and perspective
+
+BANK-AD IDEA ARCHETYPES
+- product as a gateway to a real benefit or experience
+- one physical object turning an abstract benefit into a visible moment
+- premium product hero with a single meaningful environmental cue
+- human behavior that proves ease, confidence or control
+- a real-world before/after relationship without split-screen or UI
+- a carefully staged service moment with one clear cause and effect
+
+COMPOSITION LAW
+- create a visual hierarchy: message idea first, product/service proof second,
+  brand atmosphere third
+- reserve integrated calm space for later copy, never an empty artificial panel
+- avoid centered portrait posing, generic smiling staff and decorative fintech props
+- the image must still communicate the benefit with all text removed
+
+REFERENCE DISCIPLINE
+- use references for tonal balance, lighting, palette, material quality,
+  spatial restraint and campaign maturity
+- do not copy their exact objects, people, wording, logos or composition
+""".strip()
+
+
+# =========================================================
 # BENEFIT DIRECTION
 # =========================================================
 
@@ -1804,6 +1854,7 @@ def build_stc_bank_skill_context(
 
     parts = [
         STC_BANK_VISUAL_SKILL,
+        STC_BANK_CAMPAIGN_DNA,
         style_direction(style),
     ]
 
