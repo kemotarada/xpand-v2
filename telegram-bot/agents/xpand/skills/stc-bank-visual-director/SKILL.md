@@ -23,7 +23,12 @@ Before writing any image prompt, silently complete this chain:
 6. Camera: one deliberate viewpoint chosen because it improves the message.
 7. Finish: light, material, shadow, reflection and copy space.
 
-If the visible proof is missing, reject the idea and invent a new one. A phone, a POS terminal, a purple room, a card, a globe or a pedestal is a prop, not an advertising idea. Luxury adjectives never compensate for missing proof.
+If the visible proof is missing, improve the idea and rank it lower; do not stop the render or show a creative failure message. A phone, a POS terminal, a purple room, a card, a globe or a pedestal is a prop, not automatically an advertising idea.
+
+## Creative-first diversity
+Before selecting a winner, generate twelve different grammars: premium human moment, narrative still life, material metaphor, monumental environment, threshold/access, object transformation, travel/journey, authentic Saudi/Gulf commerce, camera-led revelation, conceptual sculpture, quiet luxury and consequence-led realism. Do not create cosmetic variants of one purple countertop. Vary mechanism, hero relationship, environment, scale, camera, materials, human presence and emotional temperature. At least three directions must work without a phone and two without a POS; no more than three may use a visible hand and no more than two may use a POS as the hero.
+
+These are improvement signals, not a hard creative gate; always continue with the strongest available direction when the image engine is available.
 
 ## Reference-derived campaign grammar
 The STC reference set does not use one repeated aesthetic. It uses a disciplined hierarchy: one benefit, one human or product moment, one dominant hero, and a composition prepared for strong Arabic copy later. The image generator still produces no text.
@@ -46,7 +51,7 @@ Do not demand that imagery communicate exact rates, amounts or legal details. Th
 ## Service lock: merchant payments
 For e-commerce plus point-of-sale requests, the message is one connected merchant payment ecosystem. The frame must make both channels understandable without text or readable UI, and must show the relationship between them as the idea.
 
-Reject before rendering:
+Avoid and downgrade before rendering:
 - phone + POS terminal displayed as unrelated trophies;
 - phone + POS arranged on a stone, marble, travertine or generic pedestal;
 - POS foreground with a worker packing a box in the background;
@@ -55,7 +60,7 @@ Reject before rendering:
 - a fake hybrid payment device, phone/POS fusion or floating interface;
 - a split-screen or infographic composition.
 
-Prefer a causal, spatial or material mechanism: a real order moving into a physical handoff, one continuous merchant surface connecting digital storefront and checkout, a perspective reveal in which the online action and in-store acceptance share a credible commercial moment, or another original mechanism that can be understood without a caption. Use only the objects needed to prove it.
+Prefer a causal, spatial or material mechanism: a real order moving into a physical handoff, one continuous merchant surface connecting digital storefront and checkout, a perspective reveal in which the online action and in-store acceptance share a credible commercial moment, or another original mechanism that can be understood without a caption. Use only the objects needed to prove it. These are improvement signals, not a hard creative gate; always continue with the strongest available direction when the image engine is available.
 
 ## Three visual routes
 ### Premium realistic photography
