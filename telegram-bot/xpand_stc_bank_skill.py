@@ -1773,7 +1773,8 @@ CAMPAIGN CHARACTER
 - modern Saudi commercial context when people are present
 
 VISUAL SYSTEM
-- deep aubergine, near-black violet and controlled saturated purple
+- saturated STC violet spectrum: #2C1359, #653098, #853DB6 and #994ACA
+- deep violet falloff #150E25, never brown-black or gray-mauve
 - graphite, black and dark neutral surfaces for contrast
 - white and vivid green are reserved for designed typography and small
   brand accents in post-production; never generate readable copy in the image
@@ -1930,36 +1931,49 @@ select a new visual grammar from this atlas; it may not recolor the previous sce
 # =========================================================
 
 STC_PURPLE_STUDIO_COLOR_LOCK = r"""
-STC PURPLE STUDIO COLOR AUTHORITY
-=================================
+STC PURPLE STUDIO COLOR AUTHORITY — MATCH THE SUPPLIED CAMPAIGN
+===============================================================
 
-Use the attached permanent STC purple-studio references as the color authority.
-These are observed image swatches, not official brand hex specifications.
+The supplied STC Bank campaign card reference is the primary authority for
+this visual family. Match its visual recipe, not a generic idea of purple.
+These are observed image swatches, not official brand specifications.
 
-PRIMARY TONAL RANGE
-- deep violet: #2F125F
-- saturated violet plane: #633490
-- dark violet: #230D4D
-- near-black violet shadow: #0D0420 / #160C2B
-- restrained bright-violet accent: #4B028B
+REFERENCE COLOR BALANCE
+- deep violet base: #2C1359
+- near-black violet shadow: #150E25
+- saturated violet plane: #653098
+- secondary violet plane: #472474
+- bright violet / magenta highlight: #853DB6 / #994ACA
+- restrained green accent only when the concept needs a brand cue: #0FB288
 
-MATERIAL / LIGHT BEHAVIOR
-- build two or three connected architectural planes with distinct values
-- preserve saturated violet in the midtones and roll highlights toward lighter violet
-- use graphite and near-black product bodies for contrast
-- use a large soft directional key, weak fill and controlled strip reflections
-- keep contact shadows and real plane reflections visible
+LIGHTING LOCK
+- a broad saturated violet/magenta light pool must be visible on the upper-right
+  or rear plane, like the supplied campaign reference
+- the left and lower frame fall toward deep violet, but must retain purple hue
+- black products and objects receive a controlled violet rim or edge reflection
+- platform bevels catch luminous violet edge light; reflections remain glossy but
+  physically connected to the surface
+- use a soft broad key plus controlled specular strips, not flat ambient light
+- preserve readable midtone saturation; do not crush the scene into brown-black
 
-DO NOT DRIFT TO
-- lavender or pastel purple
-- mauve/pink wash
-- blue/cyan-purple
-- neon magenta
-- flat purple wall or recolored office
-- generic glowing fintech room
+MATERIAL / COMPOSITION LOCK
+- use saturated violet architectural planes or stepped platforms
+- maintain clean vertical product hierarchy and calm copy space above when useful
+- keep products near-black/graphite with violet separation, never gray-mauve
+- build one premium advertising composition with deliberate camera intent
 
-A purple studio is a connected spatial system with a deliberate camera and one
-advertising mechanism. It is never a color filter applied to the previous scene.
+HARD COLOR FAILURES
+- brown aubergine wash
+- gray-mauve wall
+- desaturated plum room
+- blue/cyan purple shift
+- flat purple background
+- neon nightclub magenta
+- a normal office or counter recolored purple
+
+The purple studio is a physical campaign world with the same color, lighting,
+material response and contrast logic as the supplied STC reference. It is not
+a loose style suggestion and never a post-process color filter.
 """.strip()
 
 STC_STYLE_TRANSFORMATION_CONTRACT = r"""
@@ -1975,8 +1989,8 @@ architecture merely to signal the brand.
 
 PURPLE ARCHITECTURAL
 Re-invent the scene as a deliberate campaign set: portals, folded planes,
-thresholds, plinths, sculptural surfaces, controlled perspective and deep plum
-space. Do not place the old retail counter in a purple room. Change the visual
+thresholds, plinths, sculptural surfaces, controlled perspective and saturated STC violet / deep violet
+space with a brighter violet light pool. Do not place the old retail counter in a purple room. Change the visual
 mechanism, camera and object hierarchy.
 
 AUGMENTED REALISM
