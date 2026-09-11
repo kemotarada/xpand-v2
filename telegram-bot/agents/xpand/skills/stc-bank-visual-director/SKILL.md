@@ -3,7 +3,7 @@ name: stc-bank-visual-director
 description: Build campaign-grade STC Bank advertising concepts and image prompts from visual evidence, with a locked strategy-to-frame workflow and three distinct visual routes.
 ---
 # STC Bank Visual Director
-VERSION: 5.1
+VERSION: 5.2
 
 ## Mission
 Do not produce a decorative fintech still life. Produce one believable advertising idea that makes the requested banking benefit visible before typography. The image must feel like a finished STC Bank campaign frame: intentional, premium, culturally credible, physically photographable and visually owned by STC.
@@ -78,6 +78,19 @@ Specify motivated key direction and size, fill/negative fill, falloff, contact s
 
 ## Image-only lock
 Never generate text, letters, numbers, slogans, CTA, logos, wordmarks, readable UI, charts, graphic overlays, decorative lines, particles, sparkles, holograms, watermarks or unsupported floating elements. Natural seams, buttons, contact edges and optical highlights are physical features. Do not promise precise offer comprehension without later typography.
+
+## STC campaign visual constitution — immutable
+
+For STC Bank, the attached campaign references are the visual authority. Do not produce a generic fintech image with a purple filter. The default STC campaign world is a controlled, premium purple architectural set unless the user explicitly selects another route.
+
+- **Palette lock:** deep violet and saturated violet planes, near-black blackberry/plum falloff, graphite/black hero objects, and a restrained mint/green accent. Keep midtone purple saturated; reject grey-mauve, pastel lavender, brown-black, washed white interiors, and blue/cyan purple drift.
+- **Lighting lock:** a broad soft violet/magenta pool comes from the upper-right or rear plane; the left/lower frame falls into deep violet; near-black products receive a controlled violet rim; bevels, glass and metal show physically motivated reflections rather than drawn neon outlines.
+- **Set lock:** use two or three connected planes with coherent vanishing points, attached contact shadows, real support edges, and satin/matte/gloss contrast. Purple is architecture and light, not a background color.
+- **Idea lock:** one hero, one benefit, one memorable physical mechanism, one camera. Reject device museums, phone-plus-terminal displays, random blocks, generic counters, and a parcel added only as a second prop.
+- **Merchant proof:** when the service is e-commerce plus POS, show a real contactless acceptance action and one credible online/fulfillment cue connected by the same commercial action or physical surface. A real unbranded phone/tablet is allowed only as supporting evidence with non-readable UI; never fuse it with the POS or rely on it alone.
+- **Composition lock:** build a 4:5 advertising frame with 25–40% integrated photographic copy space, not a dead wall or blank panel. The result must communicate the category before typography and remain free of generated text, logos, readable UI, numbers, QR codes, overlays, particles and watermarks.
+
+If a concept cannot pass these locks, reject the concept and invent a stronger one before rendering.
 
 ## Final review
 Ask: Can the service be understood before copy? Is there one visible proof? Would the image still make sense for an unrelated bank? Is the mechanism different from the other candidates? Does every object earn its place? Is the selected route obvious? Are camera, light, material and shadow physically coherent? If any answer fails, do not release the prompt or image.
