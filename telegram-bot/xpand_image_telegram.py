@@ -425,6 +425,18 @@ STC_STYLE_PENDING_TTL_SECONDS = max(
 # STC HIGH ALERT SETTINGS
 # =========================================================
 
+STC_DEEP_CREATIVE_GATE = """
+STC DEEP CREATIVE DEVELOPMENT GATE — DO NOT GENERATE A QUICK IMAGE
+Before any image call, develop and compare multiple campaign ideas for the requested service.
+1. Resolve the single merchant truth the ad must communicate.
+2. Propose materially different visual mechanisms, not alternate rooms or alternate device arrangements.
+3. Test each mechanism against STC Bank reference DNA: purple architectural campaign world, disciplined premium light, material realism, restraint and Saudi commercial relevance.
+4. Reject generic phone-plus-POS still lifes, random purple rooms, decorative neon paths, floating fintech objects and scenes that need copy to explain the service.
+5. Select one idea only after an executive review and a finalist jury; the selected idea must have one memorable physical action, clear service proof and campaign-level distinctiveness.
+6. Only then write the shot contract and start image production.
+"""
+
+
 STC_HIGH_ALERT_ENABLED = env_bool(
     "XPAND_STC_HIGH_ALERT",
     True,
@@ -449,9 +461,12 @@ STC_BLOCK_QA_FAILURE_FALLBACK = env_bool(
 )
 
 
+# STC campaign work must never silently downgrade to a fast generic image.
+# A technical failure is surfaced so the creative route can be repaired,
+# rather than shipping a weaker visual that violates the STC brief.
 STC_ALLOW_TECHNICAL_FALLBACK = env_bool(
     "XPAND_STC_ALLOW_TECHNICAL_FALLBACK",
-    True,
+    False,
 )
 
 
@@ -3539,6 +3554,13 @@ def prepare_generation_input(
     )
 
     if brand_id == "stc_bank":
+        creative_request = (
+            STC_DEEP_CREATIVE_GATE
+            + "\n\n"
+            + creative_request
+        )
+
+    if brand_id == "stc_bank":
 
         benefit_family = clean_text(
             resolve_stc_benefit_family_id(
@@ -3563,7 +3585,7 @@ def prepare_generation_input(
             visual_references=references,
             style_hint=selected_stc_style,
             mode=creative_mode,
-            top_count=3,
+            top_count=(5 if brand_id == "stc_bank" else 3),
         )
 
     except Exception as error:
@@ -3776,6 +3798,9 @@ def prepare_generation_input(
                 ==
                 "stc_bank"
             ),
+
+        "stc_deep_idea_gate":
+            bool(brand_id == "stc_bank"),
 
         "stc_creative_constitution":
             stc_creative_constitution,
@@ -5395,6 +5420,11 @@ def generate_and_deliver(
     print(
         "creative_mode =",
         creative_mode,
+    )
+
+    print(
+        "stc_deep_idea_gate =",
+        prepared.get("stc_deep_idea_gate", False),
     )
 
     print(
