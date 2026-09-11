@@ -62,6 +62,28 @@ Avoid and downgrade before rendering:
 
 Prefer a causal, spatial or material mechanism: a real order moving into a physical handoff, one continuous merchant surface connecting digital storefront and checkout, a perspective reveal in which the online action and in-store acceptance share a credible commercial moment, or another original mechanism that can be understood without a caption. Use only the objects needed to prove it. These are improvement signals, not a hard creative gate; always continue with the strongest available direction when the image engine is available.
 
+
+
+## Claim-Proof Scene Engine
+
+Choose a situation that makes the claim believable, not merely a location
+associated with the category. Distill the claim into functional proof, human
+proof, environmental proof and emotional proof, then use:
+
+
+a location + situation + action + benefit = claim proof
+
+When the location is unspecified, compare at least six proof situations. For
+travel, reach and connectivity, apply the “Even here?” test. An airport may
+show travel context, but a remote destination, moving train, boat or other
+credible place may prove “with you everywhere” more strongly.
+
+The character must be living the benefit through a real event, not presenting
+the product. Define what happened before the frame, what is happening now and
+what happens next. Prefer POV, over-the-shoulder or candid observation when
+the viewer should feel present. If removing the location does not weaken the
+claim, the location is decorative and must change.
+
 ## Three visual routes
 ### Premium realistic photography
 A real Saudi/Gulf commercial moment with natural skin, product and material colors. Use motivated daylight, practicals or studio light; never wash the whole frame purple. Purple may be a real object, upholstery or restrained accent. The benefit is carried by action, context and spatial relationships.
