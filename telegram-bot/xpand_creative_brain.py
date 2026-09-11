@@ -581,7 +581,7 @@ DIMENSION_WEIGHTS: Dict[
 # CALL POLICY
 # =========================================================
 
-NORMAL_CONCEPT_COUNT = 4
+NORMAL_CONCEPT_COUNT = 8
 
 
 STC_HIGH_ALERT_CONCEPT_COUNT = max(
@@ -4087,6 +4087,9 @@ def stc_runtime_director_context(
     try:
         runtime = __import__("xpand_stc_skill_runtime")
         names = [
+            # The attached master prompt is the complete creative-director
+            # operating model and must be loaded before the compact references.
+            "references/stc-bank-master-system-prompt-v1.md",
             "SKILL.md",
             "references/concept-workflow.md",
             "references/visual-language.md",
@@ -4106,7 +4109,7 @@ def stc_runtime_director_context(
                 parts.append(runtime.read_skill_file(name))
             except Exception:
                 continue
-        return "\n\n".join(parts)[:18000]
+        return "\n\n".join(parts)[:56000]
     except Exception:
         return clean_text(STC_BANK_VISUAL_SKILL, 12000)
 
@@ -4124,7 +4127,7 @@ def build_ideation_prompt(
     benefit_family: str,
     stc_style: str,
     recovery: bool = False,
-    concept_count: int = 4,
+    concept_count: int = 8,
     high_alert: bool = False,
 ) -> str:
 
@@ -4399,6 +4402,15 @@ RUNTIME REFERENCE DNA
     visual_references,
     7000,
 )}
+
+==================================================
+3-REFERENCE FUSION
+==================================================
+For each serious STC direction, use three distinct reference roles when references are available:
+- Reference A: concept mechanism and visual idea.
+- Reference B: lighting, materials and finish.
+- Reference C: camera, composition and perspective.
+Fuse only the learned visual grammar into an original scene. Never copy a reference layout, product, person, text, logo or exact object arrangement.
 
 ==================================================
 STYLE HINT
@@ -4719,6 +4731,11 @@ Return one:
 - perspective
 
 for each concept.
+
+==================================================
+CREATIVE DIRECTOR SCORE — 100 POINTS
+==================================================
+Evaluate every concept internally using: Message Clarity 30, STC Brand Fit 25, Premium Feel 20, Originality 15, Generatability 10. Reject any concept below 82 and replace it rather than padding the prompt with adjectives. Also check one hero, one dominant idea, intentional composition, camera meaning, benefit clarity, non-stock behavior, copy space and no generated text/logo/UI.
 
 {strict_block}
 
