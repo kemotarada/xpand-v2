@@ -4196,6 +4196,21 @@ Every concept needs ONE visual mechanism that works
 in one still image.
 
 ==================================================
+DEEP CREATIVE DEVELOPMENT PROTOCOL
+==================================================
+
+Do not choose the first plausible scene. Treat this as a campaign strategy review, not prompt decoration.
+
+Use the available director calls as a deliberate sequence:
+- First: generate materially different advertising mechanisms for the service.
+- Second: challenge each mechanism for STC identity, memorability, service proof, realism and campaign ownership.
+- Third: compare finalists and select the one with the strongest idea, not the prettiest render.
+
+A successful idea must remain understandable without Arabic copy and must communicate a specific merchant truth in one still frame. If removing the phone, POS or purple lighting leaves no idea, reject the concept.
+
+Reject fast substitutes: a phone and POS placed in a purple room, a generic checkout, decorative mint/neon paths, floating fintech objects, a product pedestal, or a visually polished scene with no causal relationship between online commerce and physical acceptance.
+
+==================================================
 MANDATORY DIVERSITY
 ==================================================
 
