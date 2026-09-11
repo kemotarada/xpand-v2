@@ -4649,6 +4649,7 @@ def build_final_renderer_prompt(
     ],
     aspect_ratio: str,
     requested_size: str,
+    edit_mode: bool = False,
 ) -> str:
 
     stc_request = (
@@ -5037,7 +5038,7 @@ def gemini_multi_reference_edit(
 
         response = generate_image(
             prompt,
-            mode="google_fast",
+            mode="google_pro",
             number=1,
             aspect_ratio=(
                 aspect_ratio
@@ -8333,6 +8334,7 @@ def run_production(
             requested_size=(
                 requested_size
             ),
+            edit_mode=bool(additional_references),
         )
     )
 
