@@ -1689,6 +1689,13 @@ IDEA AND SERVICE LOCK
 
 PHYSICAL REALITY
 Everything obeys gravity, scale, perspective, occlusion, light direction, contact shadows, reflection geometry and material-specific roughness. No fusion, holograms, neon trails, particles, sparkles, HUD or invented payment hardware. Premium comes from concept, camera, light, materials, composition and restraint—not neon.
+
+EDIT-SPECIFIC FAILURE LOCK
+- When editing an approved prior render, preserve its exact camera, crop, surface silhouette, phone position, POS position, hand relationship and visual hierarchy. Do not redesign or invent a new composition.
+- Keep the POS fully inside the frame with comfortable margins; the terminal, contactless contact area, hand and card must be readable as one complete action. Never crop the POS, card or hand at the lower edge.
+- The phone screen must retain a restrained non-readable e-commerce/order cue: simple product/order shapes or blocks are allowed, but no blank abstract wallpaper, fake banking UI, readable text or numbers.
+- A mint seam may be a thin recessed material detail or a very soft reflected accent. It must not become a bright neon cable, road, light trail or graphic line.
+- Reject a giant empty purple void, an oversized phone-only hero, a tiny/cropped POS, a disconnected card, a generic product render, or a scene that loses the service relationship during refinement.
 """.strip()
 
 
@@ -1763,6 +1770,8 @@ MERCHANT PAYMENTS
 - Select one grammar: continuous commerce surface, threshold/reveal, close handoff choreography, reflection-led pairing, product theatre, or a specific Saudi merchant moment.
 - Show one believable unbranded POS in an active contactless interaction. For the online side, allow one supporting unbranded phone/tablet with non-readable abstract UI, or a physically credible fulfillment cue; never use both as unrelated trophies.
 - Keep phone/tablet, POS and parcel physically separate but connected by the same action, surface, shadow and perspective. Never fuse hardware, use a split screen, or default to a counter-plus-parcel tableau.
+- The POS must be fully visible inside the 4:5 crop with the tap/contact area readable; reserve enough lower-frame breathing room for the hand and card.
+- The online cue must look like commerce/order intent, not a blank abstract wallpaper. Use minimal non-readable product/order shapes only.
 - The first read is the commercial relationship, not a portrait, device catalogue or random luxury still life.
 
 QUALITY TEST
