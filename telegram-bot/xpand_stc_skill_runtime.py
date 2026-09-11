@@ -38,6 +38,13 @@ def prompt_engineering_direction():
 def camera_finish_direction():
     return read_skill_file("references/camera-light-material-atlas.md")
 
+
+
+def realism_environment_direction():
+    return read_skill_file(
+        "references/stc-bank-realism-environment-authenticity.md"
+    )
+
 def style_direction(style):
     name = STYLE_FILES.get(style)
     return read_skill_file("references/" + name) if name else ""
