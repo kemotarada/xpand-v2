@@ -1667,7 +1667,7 @@ from xpand_stc_skill_runtime import (
     prompt_engineering_direction,
     camera_finish_direction,
     master_system_prompt,
-    non_literal_concept_gate,
+    creative_first_system_prompt,
 )
 
 STC_BANK_VISUAL_SKILL = core_direction()
@@ -1966,7 +1966,7 @@ def build_stc_bank_skill_context(
     parts = [
         STC_BANK_VISUAL_SKILL,
         master_system_prompt(),
-        non_literal_concept_gate(),
+        creative_first_system_prompt(),
         prompt_engineering_direction(),
         camera_finish_direction(),
         STC_BANK_CAMPAIGN_DNA,
