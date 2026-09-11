@@ -6,7 +6,7 @@ This reference is mandatory for every STC Bank image prompt. It converts brand r
 
 ## Style selection
 When the user asks for a prompt and has not chosen a route, ask exactly once in Arabic:
-أي أسلوب بدك للصورة؟ 1. واقعي فوتوغرافي 2. بيئة بنفسجية معمارية 3. سريالية فوتوغرافية واقعية
+أي اتجاه بصري بدك؟ 1. Purple Studio / Brand World 2. Premium Realistic Lifestyle 3. Conceptual Photorealism 4. Digital / UI Hybrid — بدون نصوص أو جرافيك مقروء 5. اختار أنت الأنسب للفكرة
 
 Use the correct technical route names:
 - Premium Realistic Photography: a real, clean, believable location with motivated natural or studio light. Do not apply a global purple filter.
