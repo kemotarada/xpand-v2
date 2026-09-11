@@ -2495,3 +2495,7 @@ This creative-first system is authoritative for ideation variety, not for stoppi
 All concept scores, memorability tests and literal-versus-conceptual checks are advisory ranking signals. They may trigger internal repair or regeneration, but they must never prevent the final image request from being rendered. Never show the user a quality-gate rejection, technical guard message, or “cannot generate” response when the image engine is available. If review fails or is incomplete, use the best available concept and continue to image generation.
 
 The no-text, no-generated-logo and physical-believability rules still apply to the image prompt, but they are output constraints, not creative ideation limits.
+
+## Location & Environment Creative Director
+
+Run the complete reference layer at `references/stc-bank-location-environment-intelligence.md` before Scene Architecture. The environment is part of the advertising idea, not a background. If no location is requested, select it intelligently: generate multiple location families, compare message relevance and freshness, and choose the place where the benefit becomes clearest. Purple Studio is one option, never the automatic STC answer. The chosen location must be carried into the concept's environment, environment_novelty, camera and cause/effect—not added as decoration after the idea is complete.
