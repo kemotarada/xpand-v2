@@ -8468,7 +8468,7 @@ def run_production(
                     aspect_ratio=(aspect_ratio),
                     pass_name=("gemini_technical_fallback_final_v601"),
                     output_image_size=(requested_size),
-                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
+                    model_override=(GOOGLE_IMAGE_PRO_MODEL),
                     max_reference_images=(len(final_refs)),
                 )
                 if not isinstance(fallback_final.metadata, dict):
@@ -8927,7 +8927,7 @@ def run_production(
                     aspect_ratio=(aspect_ratio),
                     pass_name=("gemini_preview_recovery_v601"),
                     output_image_size=(requested_size),
-                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
+                    model_override=(GOOGLE_IMAGE_PRO_MODEL),
                     max_reference_images=0,
                 )
                 if strong_preview_recovery
