@@ -63,8 +63,23 @@ def clean_public_prompt(value):
     text = re.sub(r"[,;]\s*[,;]", ",", text)
     return re.sub(r"[ \t]{2,}", " ", text).strip()
 
+def stc_execution_order():
+    return """MANDATORY STC EXECUTION ORDER
+1. Extract concept DNA and run the Concept Mutation Lab before final prompt writing.
+2. Generate materially different mutations; do not polish the first acceptable idea.
+3. Translate the selected mutation into one photographable advertising scene.
+4. Run the Strict Visual Output Guard before generation and again after generation.
+5. The image contains the scene only: no readable text, logos, UI or design-instruction labels.
+""".strip()
+
+def concept_mutation_lab_prompt():
+    return read_skill_file("references/stc-bank-concept-mutation-lab.md")
+
+def strict_visual_output_guard_prompt():
+    return read_skill_file("references/stc-bank-strict-visual-output-ad-quality-guard.md")
+
 def prompt_direction(style):
-    return "\n\n".join(filter(None, [core_direction(), style_direction(style), reference_observations(style),
+    return "\n\n".join(filter(None, [stc_execution_order(), concept_mutation_lab_prompt(), core_direction(), style_direction(style), reference_observations(style),
         read_skill_file("references/concept-workflow.md"),
         read_skill_file("references/reference-campaign-grammar.md"),
         read_skill_file("references/prompt-specification.md"),
@@ -74,4 +89,5 @@ def prompt_direction(style):
         creative_first_system_prompt(),
         prompt_engineering_direction(),
         camera_finish_direction(),
-        read_skill_file("references/effects-and-finish.md")]))
+        read_skill_file("references/effects-and-finish.md"),
+        strict_visual_output_guard_prompt()]))
