@@ -1899,6 +1899,13 @@ same camera, same object positions and same action, the concept has failed.
 
 
 
+
+
+STC_CREATIVE_FIRST_EXECUTION_POLICY = r"""
+CREATIVE-FIRST STC CAMPAIGN BOARD
+Generate one direction from each of twelve different advertising grammars: premium human moment, narrative still life, material metaphor, monumental environment, threshold/access, object transformation, travel/journey, authentic Saudi/Gulf commerce, camera-led revelation, conceptual sculpture, quiet luxury and consequence-led realism. Vary mechanism, hero relationship, environment, spatial structure, camera family, materials, human presence and emotional temperature. No more than three visible-hand concepts, two POS-hero concepts or two indoor retail counters. At least three directions work without a phone and two without a POS. These are advisory ranking and repair signals, never a render-blocking gate.
+""".strip()
+
 # =========================================================
 # BENEFIT DIRECTION
 # =========================================================
@@ -1972,6 +1979,7 @@ def build_stc_bank_skill_context(
         STC_BANK_CAMPAIGN_DNA,
         STC_BANK_SHOT_DESIGN_CONTRACT,
         STC_MERCHANT_CONCEPT_LIBRARY,
+        STC_CREATIVE_FIRST_EXECUTION_POLICY,
         STC_STYLE_TRANSFORMATION_CONTRACT,
         STC_PURPLE_STUDIO_COLOR_LOCK,
         style_direction(style),
