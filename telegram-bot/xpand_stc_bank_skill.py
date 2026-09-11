@@ -1670,87 +1670,24 @@ STC_BANK_VISUAL_SKILL = core_direction()
 # IMAGE MODEL GUARD
 # =========================================================
 
-STC_BANK_IMAGE_GUARD = r"""
-STC BANK IMAGE EXECUTION LOCK
-=============================
+STC_BANK_IMAGE_GUARD = r\"\"\"\nSTC BANK IMAGE EXECUTION LOCK V4.1
+===============================
 
-Create IMAGE ONLY.
+Create IMAGE ONLY. The image model must not generate headline, body copy, CTA, offer text, percentages, financial numbers, legal copy, logos, wordmarks, watermarks, signatures, readable banking UI, QR codes or barcodes. Reserve 25–40% integrated photographic space for typography added later.
 
-NO visible:
-- headline
-- body copy
-- CTA
-- offer text
-- percentages
-- financial numbers
-- legal copy
-- logo
-- STC wordmark
-- STC Bank logo
-- VISA/Mastercard logo
-- watermark
-- signature
-- invented readable banking UI
+STC CAMPAIGN WORLD
+- Default STC route: premium purple architectural campaign world unless the user explicitly selects premium realistic or augmented realism.
+- Palette: deep violet base, saturated violet/magenta plane, near-black blackberry/plum falloff, graphite/black hero objects, and one restrained mint/green accent. Preserve saturated violet midtones; reject grey-mauve, pastel lavender, brown-black, washed white interiors and blue/cyan purple drift.
+- Light: broad soft violet/magenta pool from upper-right or rear plane, deep-violet falloff at left/lower frame, controlled violet rim on dark objects, real contact shadows and physically motivated reflections on metal, glass and satin surfaces.
+- Set: two or three connected architectural planes with one vanishing system; purple is architecture and light, never a flat backdrop or post-process tint.
 
-Leave intentional clean negative space for manual typography.
+IDEA AND SERVICE LOCK
+- One hero, one benefit, one memorable physical mechanism, one deliberate camera.
+- For e-commerce plus POS, show a believable contactless acceptance action and one credible online/fulfillment cue joined by a real commercial relationship. A real unbranded phone/tablet may support the online cue only when its UI is abstract and unreadable; it must remain separate from the POS and never carry the whole message.
+- Reject phone-plus-POS displays, generic counters, parcel-as-unrelated-prop, device museums, split screens, collages, floating hardware, random blocks and any scene that needs a caption to explain why the objects are together.
 
-STC Bank defaults to the permanent purple architectural campaign world unless
-the user explicitly asks for premium realistic or augmented realism.
-
-Purple must match the attached STC studio references in hue, value and material
-behavior; it is architecture and light, never a color wash.
-
-For explicit premium realistic scenes:
-preserve natural colors, clean skin tones, real materials,
-credible Saudi context and professional commercial lighting.
-
-For purple studio scenes:
-use real geometric architecture, physical support planes,
-coherent perspective, elegant contact shadows, restrained
-specular highlights and premium material reflections.
-
-For conceptual/surreal scenes:
-use exactly one physical visual metaphor integrated into
-photographic realism.
-
-NO:
-- floating cards
-- floating phones
-- floating POS
-- floating banking icons
-- coins
-- generic globe
-- network lines
-- transfer routes
-- laser beams
-- neon trails
-- holograms
-- HUD
-- particles
-- sparkles
-- random fintech graphics
-
-Everything must obey:
-gravity,
-scale,
-perspective,
-occlusion,
-light direction,
-contact shadows,
-reflection logic,
-material behavior.
-
-Premium comes from:
-concept,
-camera,
-light,
-materials,
-behavior,
-composition,
-restraint.
-
-Not from neon.
-""".strip()
+PHYSICAL REALITY
+Everything obeys gravity, scale, perspective, occlusion, light direction, contact shadows, reflection geometry and material-specific roughness. No fusion, holograms, neon trails, particles, sparkles, HUD or invented payment hardware. Premium comes from concept, camera, light, materials, composition and restraint—not neon.\n\"\"\".strip()
 
 
 # =========================================================
@@ -1807,122 +1744,56 @@ REFERENCE DISCIPLINE
 # STC BANK SHOT DESIGN CONTRACT
 # =========================================================
 
-STC_BANK_SHOT_DESIGN_CONTRACT = r"""
-STC BANK DIRECTOR'S SHOT DESIGN CONTRACT
-=========================================
+STC_BANK_SHOT_DESIGN_CONTRACT = r\"\"\"\nSTC BANK DIRECTOR'S SHOT DESIGN CONTRACT V4.1
+===============================================
 
-Before generating an image, design the advertisement as a shot. Do not start
-from a generic location and hope the camera makes it premium.
+Design the advertisement as a single campaign frame before rendering. Answer: what is the one benefit, what is the one visible proof, what is the hero, why does the camera help, and what can be removed without weakening the idea?
 
-Every STC Bank frame must answer five questions: what is the single idea, what
-is the hero action, where does the eye land first, why does this feel like STC,
-and what can be removed without weakening the message?
+GLOBAL SHOT RULES
+- Choose one mechanism and one camera grammar; do not combine incompatible angles.
+- Use a 4:5 crop with a dominant hero, readable foreground/midground/background hierarchy and 25–40% integrated copy-safe photographic space.
+- The STC purple route uses connected violet planes, near-black/graphite objects, a bright violet/magenta light pool toward upper-right or rear, deep-violet falloff, controlled rim reflections and attached contact shadows.
+- Do not turn a generic scene into STC by recoloring it. The set, hero relationship and camera must be designed together.
 
-DEFAULT CAMERA DISCIPLINE
-- choose a deliberate shot size: tight hero, controlled medium, or environmental
-  wide; never default to a generic eye-level medium-wide scene
-- state camera height, lens family, angle, focus plane and crop before rendering
-- use a 4:5 composition with a clear foreground/midground/background hierarchy
-- keep the product or service action inside the visual center of gravity
-- use negative space as designed copy space, not accidental empty ceiling or wall
+MERCHANT PAYMENTS
+- Make online commerce and physical acceptance read as one connected merchant ecosystem through one causal action or physical continuity.
+- Select one grammar: continuous commerce surface, threshold/reveal, close handoff choreography, reflection-led pairing, product theatre, or a specific Saudi merchant moment.
+- Show one believable unbranded POS in an active contactless interaction. For the online side, allow one supporting unbranded phone/tablet with non-readable abstract UI, or a physically credible fulfillment cue; never use both as unrelated trophies.
+- Keep phone/tablet, POS and parcel physically separate but connected by the same action, surface, shadow and perspective. Never fuse hardware, use a split screen, or default to a counter-plus-parcel tableau.
+- The first read is the commercial relationship, not a portrait, device catalogue or random luxury still life.
 
-MERCHANT PAYMENTS SHOT
-- the service action is the hero; the merchant's face is optional and normally
-  excluded from frame or reduced to a non-dominant partial profile
-- show two readable actions in one causal frame: a real contactless tap at a
-  believable POS and active closure/preparation of one cardboard parcel
-- use a tight 3/4 countertop view or controlled top-down/low-grazing hybrid,
-  generally 45–65mm equivalent, with hands and objects larger than the room
-- place the terminal and parcel on the same graphite counter plane; no display
-  pedestal, no disconnected foreground terminal
-- use deep aubergine/plum architectural planes with graphite and natural cardboard
-  as the STC world; no beige shop interior, bright windows or generic purple trim
-- create a diagonal action relationship between the tapping hand, terminal,
-  parcel seam and the merchant's closing hand
-- the first read is commerce being accepted and fulfilled, not a portrait
-
-ANTI-STOCK TEST
-Reject the concept internally if it could be used unchanged for a restaurant,
-telecom shop or generic ecommerce brand. It needs one bank-specific service proof
-and one intentional campaign composition.
-
-ANTI-CAMERA-FAILURE TEST
-Reject any frame with giant upper emptiness, a tiny terminal, a face dominating
-the crop, a horizon/window pulling the eye away, or a purple accent that is not
-part of a coherent architectural set.
-
-STAGING PRINCIPLE
-When a draft has the wrong camera, wrong color world or wrong visual hierarchy,
-re-stage the shot. Preserve the commercial proposition, not the failed pixels.
-""".strip()
+QUALITY TEST
+Reject any concept that could be reused unchanged for a restaurant, telecom shop or generic e-commerce brand. Reject giant empty upper space, tiny terminal, face-led crop, flat purple wall, fake UI, decorative neon and unsupported floating objects.\n\"\"\".strip()
 
 # =========================================================
 # STC BANK CONCEPT ATLAS — ADVERTISING IDEAS, NOT COLOR VARIATIONS
 # =========================================================
 
-STC_MERCHANT_CONCEPT_LIBRARY = r"""
-STC BANK MERCHANT CAMPAIGN CONCEPT ATLAS
-=========================================
+STC_MERCHANT_CONCEPT_LIBRARY = r\"\"\"\nSTC BANK MERCHANT CAMPAIGN CONCEPT ATLAS V4.1
+=============================================
 
-Generate concepts from different advertising grammars. Never render the same
-checkout tableau with a different wall color. Each selected concept must change
-the visual mechanism, the composition and the camera reason.
+Choose exactly one mechanism per image. Concepts must differ by mechanism, camera and object hierarchy—not only by wall color.
 
-1. THE FOLD / COMMERCE TAKES SHAPE
-The physical fold of a parcel becomes the central architectural gesture. The
-contactless payment gesture and the box closure meet at one precise crease.
-Use a sculptural folded plane, not a normal shop counter.
+1. CONTINUOUS COMMERCE SURFACE
+A single sculptural violet/graphite surface carries a real order cue into a physical checkout action. The surface changes level or material once; that continuity is the bridge. No arrows, split screen or generic counter.
 
-2. THE GATEWAY / PAYMENT OPENS THE ORDER
-The POS is integrated into a real portal or threshold and the parcel is staged
-beyond it as the result of the transaction. One continuous physical set, not a
-split screen or magical UI. Use depth and controlled perspective.
+2. THE THRESHOLD REVEAL
+A believable architectural opening contains the active POS at the near threshold and a carefully staged fulfillment outcome beyond it. One depth system, one light direction, real scale and contact. No magical portal glow.
 
-3. THE HANDOFF / TWO ACTIONS, ONE RHYTHM
-A close editorial choreography of two hands: one accepts payment and one seals
-the order. The frame is about timing, precision and trust, not the merchant's
-face or the location. Use macro/close lens language and graphic diagonals.
+3. THE PRECISE HANDOFF
+A close editorial choreography: one hand completes contactless acceptance while another hand receives or seals the order at the same moment. Use hands, material tension and timing as the hero; no merchant portrait.
 
-4. THE PRODUCT THEATRE / SERVICE AS A HERO OBJECT
-Build a premium physical stage where the POS and parcel are designed as one
-composition with shadows, planes and negative space. The set must carry the
-STC identity; it must not look like a recolored office.
+4. REFLECTION-LED COMMERCE
+A physical POS action is sharp in the foreground while a controlled reflection in a real glossy plane reveals the online/fulfillment side. Reflection must belong to the same surface and camera, never a floating duplicate or fake overlay.
 
-5. THE COUNTER-INTELLIGENCE / ONE SURFACE, TWO CHANNELS
-Use an unusual but believable continuous material surface that transitions from
-contactless acceptance into parcel dispatch. No drawn route, arrows or UI; the
-material, seam or change of level performs the idea.
+5. PRODUCT THEATRE, NOT A PEDESTAL
+Use a designed violet campaign set where POS, product/order cue and fulfillment object form one intentional silhouette. Every support has a reason, attached shadow and shared vanishing point; reject random cubes and device museums.
 
-6. THE MERCHANT'S POINT OF VIEW
-Camera comes from the merchant's working viewpoint. The customer hand and POS
-enter the foreground while the parcel closure is the destination of the eye.
-The action, not a portrait, proves the service.
+6. SAUDI COMMERCE, ELEVATED
+Choose one specific contemporary Saudi merchant category and express its online-to-physical workflow with premium restraint, natural behavior and STC purple architecture. No stock smile, beige shop interior or ordinary checkout documentation.
 
-7. THE OBJECT TRANSFORMATION
-One real object changes role through physical staging: a parcel flap becomes a
-plinth, a counter edge becomes a threshold, or a receipt-free tap becomes the
-start of a visible dispatch action. No supernatural effects and no readable text.
-
-8. SAUDI COMMERCE, ELEVATED
-Use a specific contemporary Saudi merchant category or material culture, but
-shoot it with campaign-level restraint, designed light and a strong crop. No
-stock smiling, no generic beige retail interior.
-
-9. THE SILENT PROOF
-Remove people almost entirely. Let the believable relationship between terminal,
-parcel, shadow and architectural plane communicate acceptance and fulfillment.
-Use product-advertising discipline, not an empty still life.
-
-10. THE CAMPAIGN ICON
-One simple, bold, award-minded physical composition that can extend into a
-series. It should be recognizable from silhouette and spatial idea alone.
-
-DIVERSITY RULE
-For every concept batch, vary at least four of: visual mechanism, shot size,
-camera height, lens, environment, human presence, object hierarchy, lighting
-logic and relationship between POS and parcel. A purple studio request must
-select a new visual grammar from this atlas; it may not recolor the previous scene.
-""".strip()
+RELEASE TEST
+The image must have one dominant hero, one causal banking cue, one readable online/physical relationship, physically coherent light and reflections, and calm integrated copy space. If the idea needs a caption to explain the relationship, discard it.\n\"\"\".strip()
 
 
 
