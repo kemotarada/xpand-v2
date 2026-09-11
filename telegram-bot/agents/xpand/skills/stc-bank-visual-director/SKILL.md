@@ -108,3 +108,9 @@ Develop ideas by mechanism, not by color or prop inventory. Candidate mechanisms
 
 ### Prompt quality discipline
 Every final prompt must name one scientific camera setup, one perspective system, one lighting direction, one shadow logic, one material/reflection behavior and one integrated copy-safe region. Keep the image photographic and free of text, logos, UI, lines, particles, holograms, overlays and unsupported floating elements. Never stack incompatible angles or convert a reference image into an exact composition.
+
+## Attached master system prompt — mandatory reference
+
+The complete user-supplied STC Bank AI Advertising Creative Director master prompt is stored verbatim at references/stc-bank-master-system-prompt-v1.md. Load it for every STC prompt and image-generation request. It is the full creative-director operating model: business benefit, meaning, visual idea, metaphor, hero, scene architecture, camera, lighting, materials, composition and final prompt. Do not summarize it away before the creative decision is made.
+
+Use its concept director, visual translation ladder, 3-reference fusion, 8–12 direction generation, diversity guard, Concept Card, scoring model and failure conditions. Keep the existing STC image-only and user-requested no-graphics lock as the final output constraint when the master prompt contains broader exploratory examples.
