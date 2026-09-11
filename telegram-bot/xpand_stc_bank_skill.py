@@ -1670,7 +1670,8 @@ STC_BANK_VISUAL_SKILL = core_direction()
 # IMAGE MODEL GUARD
 # =========================================================
 
-STC_BANK_IMAGE_GUARD = r\"\"\"\nSTC BANK IMAGE EXECUTION LOCK V4.1
+STC_BANK_IMAGE_GUARD = r"""
+STC BANK IMAGE EXECUTION LOCK V4.1
 ===============================
 
 Create IMAGE ONLY. The image model must not generate headline, body copy, CTA, offer text, percentages, financial numbers, legal copy, logos, wordmarks, watermarks, signatures, readable banking UI, QR codes or barcodes. Reserve 25–40% integrated photographic space for typography added later.
@@ -1687,7 +1688,8 @@ IDEA AND SERVICE LOCK
 - Reject phone-plus-POS displays, generic counters, parcel-as-unrelated-prop, device museums, split screens, collages, floating hardware, random blocks and any scene that needs a caption to explain why the objects are together.
 
 PHYSICAL REALITY
-Everything obeys gravity, scale, perspective, occlusion, light direction, contact shadows, reflection geometry and material-specific roughness. No fusion, holograms, neon trails, particles, sparkles, HUD or invented payment hardware. Premium comes from concept, camera, light, materials, composition and restraint—not neon.\n\"\"\".strip()
+Everything obeys gravity, scale, perspective, occlusion, light direction, contact shadows, reflection geometry and material-specific roughness. No fusion, holograms, neon trails, particles, sparkles, HUD or invented payment hardware. Premium comes from concept, camera, light, materials, composition and restraint—not neon.
+""".strip()
 
 
 # =========================================================
@@ -1744,7 +1746,8 @@ REFERENCE DISCIPLINE
 # STC BANK SHOT DESIGN CONTRACT
 # =========================================================
 
-STC_BANK_SHOT_DESIGN_CONTRACT = r\"\"\"\nSTC BANK DIRECTOR'S SHOT DESIGN CONTRACT V4.1
+STC_BANK_SHOT_DESIGN_CONTRACT = r"""
+STC BANK DIRECTOR'S SHOT DESIGN CONTRACT V4.1
 ===============================================
 
 Design the advertisement as a single campaign frame before rendering. Answer: what is the one benefit, what is the one visible proof, what is the hero, why does the camera help, and what can be removed without weakening the idea?
@@ -1763,13 +1766,15 @@ MERCHANT PAYMENTS
 - The first read is the commercial relationship, not a portrait, device catalogue or random luxury still life.
 
 QUALITY TEST
-Reject any concept that could be reused unchanged for a restaurant, telecom shop or generic e-commerce brand. Reject giant empty upper space, tiny terminal, face-led crop, flat purple wall, fake UI, decorative neon and unsupported floating objects.\n\"\"\".strip()
+Reject any concept that could be reused unchanged for a restaurant, telecom shop or generic e-commerce brand. Reject giant empty upper space, tiny terminal, face-led crop, flat purple wall, fake UI, decorative neon and unsupported floating objects.
+""".strip()
 
 # =========================================================
 # STC BANK CONCEPT ATLAS — ADVERTISING IDEAS, NOT COLOR VARIATIONS
 # =========================================================
 
-STC_MERCHANT_CONCEPT_LIBRARY = r\"\"\"\nSTC BANK MERCHANT CAMPAIGN CONCEPT ATLAS V4.1
+STC_MERCHANT_CONCEPT_LIBRARY = r"""
+STC BANK MERCHANT CAMPAIGN CONCEPT ATLAS V4.1
 =============================================
 
 Choose exactly one mechanism per image. Concepts must differ by mechanism, camera and object hierarchy—not only by wall color.
@@ -1793,7 +1798,8 @@ Use a designed violet campaign set where POS, product/order cue and fulfillment 
 Choose one specific contemporary Saudi merchant category and express its online-to-physical workflow with premium restraint, natural behavior and STC purple architecture. No stock smile, beige shop interior or ordinary checkout documentation.
 
 RELEASE TEST
-The image must have one dominant hero, one causal banking cue, one readable online/physical relationship, physically coherent light and reflections, and calm integrated copy space. If the idea needs a caption to explain the relationship, discard it.\n\"\"\".strip()
+The image must have one dominant hero, one causal banking cue, one readable online/physical relationship, physically coherent light and reflections, and calm integrated copy space. If the idea needs a caption to explain the relationship, discard it.
+""".strip()
 
 
 
