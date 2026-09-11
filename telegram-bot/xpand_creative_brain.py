@@ -4137,6 +4137,7 @@ def stc_runtime_director_context(
             "references/stc-bank-master-system-prompt-v1.md",
             "references/stc-bank-creative-first-v2.md",
             "references/stc-bank-concept-mutation-lab.md",
+            "references/stc-bank-location-environment-intelligence.md",
             "references/stc-bank-strict-visual-output-ad-quality-guard.md",
             "SKILL.md",
             "references/concept-workflow.md",
@@ -4245,6 +4246,8 @@ A purple room is not an advertising idea.
 
 Every concept needs ONE visual mechanism that works
 in one still image.
+
+Before building the scene, define internally: LOCATION CONCEPT — WHY THIS LOCATION — MESSAGE CONNECTION — EMOTIONAL PURPOSE — VISUAL OPPORTUNITY — REAL vs CONCEPTUAL vs HYBRID — CAMERA OPPORTUNITY — STC BRAND INTEGRATION. The location decision must precede Scene Architecture.
 
 ==================================================
 DEEP CREATIVE DEVELOPMENT PROTOCOL
@@ -4499,6 +4502,12 @@ Map the result into the schema:
 - environment_novelty = what is structurally new, not merely luxurious.
 
 ==================================================
+MANDATORY LOCATION & ENVIRONMENT INTELLIGENCE
+==================================================
+Before Scene Architecture, treat location as part of the advertising idea, not as background decoration. When the user does not specify a location, do not ask by default. Generate at least 8 materially different environment directions across real commercial, Saudi urban, global/travel, transportation, natural, architectural, cultural, conceptual and hybrid families. Test each with: where does the benefit naturally happen, why is this place stronger than a studio, can the location become the metaphor or consequence, what has not been overused recently, and how does the location change the camera?
+
+Select the strongest location using message relevance, conceptual potential, memorability, emotion, STC compatibility, freshness and feasibility. Map the decision into environment and environment_novelty. The final scene must answer: WHY IS THIS THE BEST PLACE TO COMMUNICATE THIS BENEFIT? Purple Studio is one option only. If the concept would work identically anywhere, change the environment.
+
 MANDATORY CONCEPT MUTATION LAB
 ==================================================
 Before selecting or writing a final image prompt, separate concept DNA from the current execution. Generate at least 12 meaningful mutations; at least 8 must change the visual mechanism, physical logic, object role, spatial relationship, cause/effect, scale, material behavior, reveal structure, metaphor or consequence. Include product-removal, role-reversal, consequence-only, material, reflection/shadow, negative-space, POV, world-merge, compression, expansion, quiet and monumental passes when relevant. Do not accept cosmetic variants. Select the strongest mutation by clarity, surprise, simplicity, emotional force, STC relevance and campaign expandability.
