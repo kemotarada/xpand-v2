@@ -345,6 +345,19 @@ def detect_stc_visual_style(
             STYLE_PREMIUM_REALISTIC
         )
 
+    # STC Bank defaults to the permanent purple architectural campaign world
+    # unless the user explicitly asks for realistic or augmented realism.
+    if (
+        "stc" in source
+        or "اس تي سي" in source
+        or "بنك stc" in source
+        or "stc بنك" in source
+    ):
+
+        return (
+            STYLE_PURPLE_ARCHITECTURAL
+        )
+
     return ""
 
 
@@ -1681,11 +1694,13 @@ NO visible:
 
 Leave intentional clean negative space for manual typography.
 
-STC Bank does NOT automatically mean a fully purple scene.
+STC Bank defaults to the permanent purple architectural campaign world unless
+the user explicitly asks for premium realistic or augmented realism.
 
-Purple must be controlled and motivated.
+Purple must match the attached STC studio references in hue, value and material
+behavior; it is architecture and light, never a color wash.
 
-For realistic scenes:
+For explicit premium realistic scenes:
 preserve natural colors, clean skin tones, real materials,
 credible Saudi context and professional commercial lighting.
 
@@ -1908,6 +1923,45 @@ logic and relationship between POS and parcel. A purple studio request must
 select a new visual grammar from this atlas; it may not recolor the previous scene.
 """.strip()
 
+
+
+# =========================================================
+# STC PURPLE STUDIO COLOR LOCK — OBSERVED REFERENCE PALETTE
+# =========================================================
+
+STC_PURPLE_STUDIO_COLOR_LOCK = r"""
+STC PURPLE STUDIO COLOR AUTHORITY
+=================================
+
+Use the attached permanent STC purple-studio references as the color authority.
+These are observed image swatches, not official brand hex specifications.
+
+PRIMARY TONAL RANGE
+- deep violet: #2F125F
+- saturated violet plane: #633490
+- dark violet: #230D4D
+- near-black violet shadow: #0D0420 / #160C2B
+- restrained bright-violet accent: #4B028B
+
+MATERIAL / LIGHT BEHAVIOR
+- build two or three connected architectural planes with distinct values
+- preserve saturated violet in the midtones and roll highlights toward lighter violet
+- use graphite and near-black product bodies for contrast
+- use a large soft directional key, weak fill and controlled strip reflections
+- keep contact shadows and real plane reflections visible
+
+DO NOT DRIFT TO
+- lavender or pastel purple
+- mauve/pink wash
+- blue/cyan-purple
+- neon magenta
+- flat purple wall or recolored office
+- generic glowing fintech room
+
+A purple studio is a connected spatial system with a deliberate camera and one
+advertising mechanism. It is never a color filter applied to the previous scene.
+""".strip()
+
 STC_STYLE_TRANSFORMATION_CONTRACT = r"""
 STYLE CHANGE MEANS IDEA CHANGE
 ==============================
@@ -2008,6 +2062,7 @@ def build_stc_bank_skill_context(
         STC_BANK_SHOT_DESIGN_CONTRACT,
         STC_MERCHANT_CONCEPT_LIBRARY,
         STC_STYLE_TRANSFORMATION_CONTRACT,
+        STC_PURPLE_STUDIO_COLOR_LOCK,
         style_direction(style),
     ]
 
