@@ -186,6 +186,7 @@ try:
     from xpand_stc_bank_skill import (
         STC_BANK_VISUAL_SKILL,
         STC_BANK_CAMPAIGN_DNA,
+        STC_BANK_SHOT_DESIGN_CONTRACT,
         is_stc_bank_request,
     )
 
@@ -193,6 +194,7 @@ except Exception:
 
     STC_BANK_VISUAL_SKILL = ""
     STC_BANK_CAMPAIGN_DNA = ""
+    STC_BANK_SHOT_DESIGN_CONTRACT = ""
 
     def is_stc_bank_request(
         value: Any,
@@ -1561,6 +1563,9 @@ def stc_brand_pack_prompt_fragment(
 
         "campaign_visual_dna":
             STC_BANK_CAMPAIGN_DNA,
+
+        "shot_design_contract":
+            STC_BANK_SHOT_DESIGN_CONTRACT,
 
         "campaign_archetypes":
             [
@@ -4217,6 +4222,12 @@ Never clone:
 - copy
 - logo
 - readable UI
+
+==================================================
+STC DIRECTOR'S SHOT DESIGN CONTRACT
+==================================================
+
+{STC_BANK_SHOT_DESIGN_CONTRACT}
 
 ==================================================
 PHOTOGRAPHIC REALISM
