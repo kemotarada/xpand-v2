@@ -142,3 +142,25 @@ The Mutation Lab must change the idea's mechanism, physical logic or consequence
 ## Location & Environment Creative Director
 
 Location selection is a mandatory stage before Scene Architecture. Load `references/stc-bank-location-environment-intelligence.md` and treat its full rules as execution authority. Do not default to a purple studio, generic indoor set or product pedestal when the brief does not require one. Generate multiple environment families, select the place that makes the benefit strongest, and make the location carry the message, emotion, scale, consequence or metaphor. If the concept would work identically anywhere, redesign the location.
+
+
+## REALISM-FIRST ENVIRONMENT AND PHONE GOVERNOR
+
+For realistic, lifestyle or real-world STC Bank advertising, realism comes
+before brand-color dominance. Purple is optional and subtle, not a mandatory
+environment color. Preserve the natural materials, colors, practical lighting
+and design language of a real train, airport, office, street, hotel, cafe or
+landscape. Do not recolor a real location purple or turn it into a studio
+unless the user explicitly requests a stylized purple scene.
+
+If a smartphone appears, it must be a normal physical object integrated into
+the same camera perspective, lens character, scale, hand pose, focus,
+reflections, occlusion and light as the surrounding scene. Resolve its aspect
+ratio, thickness, foreshortening, screen-plane angle, grip and contact before
+rendering. Never allow a floating, pasted-on, incorrectly scaled or
+perspectively incompatible phone. If integration is not convincing, make the
+phone secondary, turn the display away, soften it out of focus or remove it.
+
+Before final prompt release, verify that the person, phone, train, exterior
+light and reflections belong to one coherent photographed world. Never repair
+realism by adding more purple, UI or decorative effects.
