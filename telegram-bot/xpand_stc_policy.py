@@ -367,6 +367,28 @@ STC_BENEFIT_POLICIES: Dict[
                 ),
 
                 (
+                    "SERVICE INTERPRETATION RULE: never reduce a service "
+                    "to its most literal object. E-commerce and Point of "
+                    "Sale Services must be treated as a connected service "
+                    "system, not as a POS-machine advertisement."
+                ),
+
+                (
+                    "The merchant service ecosystem includes online "
+                    "selling, physical selling, payment acceptance, "
+                    "merchant enablement, business growth and seamless "
+                    "connected commerce. The visual idea must express the "
+                    "system or a meaningful consequence of that system."
+                ),
+
+                (
+                    "A POS terminal is a tool inside the story, never the "
+                    "story by itself. If it appears, define its role in a "
+                    "merchant workflow and make the environment, action or "
+                    "consequence carry the larger service meaning."
+                ),
+
+                (
                     "Online / e-commerce acceptance and "
                     "physical point-of-sale acceptance must "
                     "both be visually understood."
@@ -381,6 +403,15 @@ STC_BENEFIT_POLICIES: Dict[
                 (
                     "The commercial message must work without "
                     "generated text, slogans or readable UI."
+                ),
+
+                (
+                    "Prefer a merchant ecosystem, fulfillment network, "
+                    "retail transformation, connected storefront, "
+                    "commerce street or other location-led mechanism over "
+                    "a product render. Online and physical channels may "
+                    "be shown through one causal world, not two unrelated "
+                    "devices placed beside each other."
                 ),
 
                 (
@@ -436,6 +467,21 @@ STC_BENEFIT_POLICIES: Dict[
                     "Preserve the message that e-commerce and "
                     "physical POS belong to one connected "
                     "merchant ecosystem."
+                ),
+
+                (
+                    "Interpret the service as a merchant-growth system: "
+                    "online selling, physical selling, acceptance, "
+                    "enablement and connected commerce. Do not let a POS "
+                    "terminal become the sole hero unless the user "
+                    "explicitly asks for a terminal-focused visual."
+                ),
+
+                (
+                    "The selected environment must make the service "
+                    "ecosystem visible. Prefer a real, hybrid or "
+                    "conceptual commerce world over a generic purple "
+                    "studio when that better communicates the benefit."
                 ),
 
                 (
@@ -1068,6 +1114,17 @@ def build_creative_constitution_text(
                 "painting the image purple."
             ),
             (
+                "- In realistic or real-world scenes, preserve "
+                "the location's natural colors and lighting. "
+                "Purple is optional, subtle and never a default "
+                "environment treatment."
+            ),
+            (
+                "- A visible smartphone must match the camera "
+                "perspective, scale, hand pose, focus, reflections "
+                "and light of the same physical scene."
+            ),
+            (
                 "- Do not generate readable campaign copy, "
                 "slogan or logo inside the image."
             ),
@@ -1182,6 +1239,17 @@ def build_final_render_locks_text(
             (
                 "- Camera must feel campaign-grade and "
                 "intentional, not default catalog framing."
+            ),
+            (
+                "- Realism outranks brand-color dominance. Do not "
+                "turn a real train, airport, office, café, street "
+                "or hotel into a purple studio unless the user "
+                "explicitly selected a stylized purple environment."
+            ),
+            (
+                "- If a smartphone appears, repair its perspective, "
+                "scale, grip, occlusion, screen plane and reflections "
+                "until it belongs to the same photographed world."
             ),
             (
                 "- Every visible object must be physically "
