@@ -463,7 +463,7 @@ STC_HIGH_ALERT_MIN_SCORE = max(
 
 
 STC_HIGH_ALERT_RELEASE_FLOOR = max(
-    84.0,
+    85.0,
     min(
         STC_HIGH_ALERT_MIN_SCORE,
         env_float(
@@ -3792,6 +3792,15 @@ def strict_qualified_concepts(
 
             continue
 
+        # Conceptual Strength is a universal STC gate, not a mode-specific luxury.
+        if (
+            "conceptual_strength_below_12_of_20"
+            in
+            stc_dimension_gate_failures(concept)
+        ):
+
+            continue
+
         if high_alert:
 
             if (
@@ -4655,7 +4664,7 @@ concept_strength:
 Is there one strong single-frame advertising proposition?
 
 conceptual_strength:
-Is this a memorable advertising idea rather than a literal product demonstration? Score 0–20: 0–5 literal demonstration, 6–10 designed presentation, 11–15 clear metaphor, 16–20 memorable advertising idea. Any score below 12 rejects the concept.
+Is this a memorable advertising idea rather than a literal product demonstration? Score 0–20: 0–5 literal demonstration, 6–10 designed presentation, 11–15 clear metaphor, 16–20 memorable advertising idea. Any score below 12 rejects the concept. Final approval requires at least 85/100 overall.
 
 brand_fit:
 Could this genuinely belong to STC Bank?
@@ -9166,11 +9175,11 @@ if __name__ == "__main__":
     # =====================================================
 
     tests[
-        "normal_four_concepts"
+        "normal_eight_concepts"
     ] = (
         NORMAL_CONCEPT_COUNT
         ==
-        4
+        8
     )
 
     tests[
@@ -9202,6 +9211,14 @@ if __name__ == "__main__":
     # =====================================================
     # STRICT THRESHOLDS
     # =====================================================
+
+    tests[
+        "strict_conceptual_strength_12_of_20"
+    ] = (
+        STC_MIN_CONCEPTUAL_STRENGTH
+        ==
+        12.0
+    )
 
     tests[
         "strict_concept_strength_88"
