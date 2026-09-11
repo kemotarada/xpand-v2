@@ -2601,6 +2601,77 @@ STC_GENERIC_PATTERNS = [
 ]
 
 
+MESSAGE_ACTION_MARKERS = [
+    "arrive",
+    "arrived",
+    "arrival",
+    "boarding",
+    "moving",
+    "travelling",
+    "traveling",
+    "using",
+    "connect",
+    "connected",
+    "continue",
+    "opens",
+    "crosses",
+    "hands",
+    "pays",
+    "payment happens",
+    "يصل",
+    "وصل",
+    "وصول",
+    "يصعد",
+    "يتحرك",
+    "يسافر",
+    "يستخدم",
+    "متصل",
+    "يستمر",
+    "يفتح",
+    "يعبر",
+    "يدفع",
+    "تحدث عملية الدفع",
+]
+
+
+MESSAGE_POSE_MARKERS = [
+    "person standing",
+    "man standing",
+    "woman standing",
+    "holding a phone",
+    "holds a phone",
+    "showing a phone",
+    "traveler looking at phone",
+    "رجل واقف",
+    "شخص واقف",
+    "امرأة واقفة",
+    "يمسك الهاتف",
+    "يحمل الهاتف",
+    "يستعرض الهاتف",
+]
+
+
+TRAVEL_MESSAGE_MARKERS = [
+    "sim",
+    "esim",
+    "roaming",
+    "connectivity",
+    "travel service",
+    "travel connectivity",
+    "every destination",
+    "wherever you go",
+    "international connection",
+    "شريحة",
+    "e sim",
+    "تجوال",
+    "اتصال",
+    "وجهة",
+    "كل وجهة",
+    "أينما ذهبت",
+    "أينما تذهب",
+]
+
+
 STC_FINTECH_CLICHES = [
 
     "network lines",
@@ -3602,6 +3673,133 @@ def local_concept_penalties(
     # PURPLE IS NOT THE IDEA
     # =====================================================
 
+    # =====================================================
+    # MESSAGE-TO-IDEA / MESSAGE DRIFT
+    # =====================================================
+
+    brief = clean_text(
+        user_request,
+        7000,
+    )
+
+    message_fields_weak = (
+        len(
+            clean_text(
+                concept.marketing_message,
+                2200,
+            )
+        )
+        <
+        12
+        or
+        len(
+            clean_text(
+                concept.message_connection,
+                2200,
+            )
+        )
+        <
+        20
+        or
+        len(
+            clean_text(
+                concept.campaign_hook,
+                1800,
+            )
+        )
+        <
+        20
+    )
+
+    if message_fields_weak:
+        penalty += 6.0
+        failures.append(
+            "message_distillation_weak"
+        )
+
+    if (
+        clean_text(
+            concept.environment,
+            2400,
+        )
+        and
+        len(
+            clean_text(
+                concept.why_location,
+                2200,
+            )
+        )
+        <
+        20
+    ):
+        penalty += 5.0
+        failures.append(
+            "location_proof_missing"
+        )
+
+    pose_only = (
+        contains_any(
+            text,
+            MESSAGE_POSE_MARKERS,
+        )
+        and
+        not contains_any(
+            text,
+            MESSAGE_ACTION_MARKERS,
+        )
+    )
+
+    if pose_only:
+        penalty += 12.0
+        failures.append(
+            "story_reduced_to_static_pose"
+        )
+
+    travel_brief = contains_any(
+        brief,
+        TRAVEL_MESSAGE_MARKERS,
+    )
+
+    if travel_brief:
+        if contains_any(
+            text,
+            MERCHANT_PHYSICAL_MARKERS,
+        ):
+            penalty += 22.0
+            failures.append(
+                "message_drift_travel_to_payment"
+            )
+
+        if pose_only:
+            penalty += 8.0
+            failures.append(
+                "travel_pose_without_service_event"
+            )
+
+        if not contains_any(
+            text,
+            [
+                "travel",
+                "journey",
+                "destination",
+                "arrival",
+                "movement",
+                "train",
+                "airport",
+                "station",
+                "رحلة",
+                "وجهة",
+                "وصول",
+                "قطار",
+                "مطار",
+                "محطة",
+            ],
+        ):
+            penalty += 8.0
+            failures.append(
+                "travel_message_location_unclear"
+            )
+
     if (
         stc_style
         ==
@@ -4236,6 +4434,7 @@ def stc_runtime_director_context(
             "SKILL.md",
             "references/stc-bank-location-environment-intelligence.md",
             "references/stc-bank-realism-environment-authenticity.md",
+            "references/stc-bank-message-to-idea-intelligence.md",
             "references/stc-bank-strict-visual-output-ad-quality-guard.md",
             "references/creative-concept-execution-intelligence.md",
             "references/concept-workflow.md",
@@ -4602,6 +4801,35 @@ IDEATION
 
 Generate exactly {concept_count} fundamentally different
 advertising concepts.
+
+MESSAGE-TO-IDEA INTELLIGENCE GATE — MANDATORY
+Before inventing any scene, privately distill the brief into:
+product/service, functional benefit, human benefit, one single message and
+desired feeling. Then write one internal visual sentence in the form:
+"When X happens, Y visibly happens" or "Because of X, Y becomes possible."
+
+For every direction, run the First-Second Test:
+- 0–1 second: what is noticed first?
+- 1–2 seconds: what visual event or relationship is recognized?
+- 2–3 seconds: what benefit becomes understandable?
+
+Reject or repair a direction when it is only a person holding a phone, a
+traveler posing in a destination, a card display, a generic POS payment or a
+beautiful location. Those are category demonstrations, not automatically
+advertising ideas.
+
+Every direction must state or make evident:
+- one hero event, not a static pose
+- one visible benefit proof without typography
+- why this location is necessary
+- why every major object is present
+- the most likely message misunderstanding and how the image prevents it
+
+MESSAGE DRIFT LOCK
+An international SIM/travel brief must not visually read as a POS/payment ad.
+An e-commerce/POS brief must not read as a phone-and-terminal product
+catalogue. A person standing with a phone in a beautiful place must not be
+accepted without a meaningful action, consequence or visual relationship.
 
 CREATIVE-FIRST CAMPAIGN BOARD
 Use the twelve mandatory concept families in the STC BANK HIGH ALERT
