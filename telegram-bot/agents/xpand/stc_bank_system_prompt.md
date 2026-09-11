@@ -2499,3 +2499,25 @@ The no-text, no-generated-logo and physical-believability rules still apply to t
 ## Location & Environment Creative Director
 
 Run the complete reference layer at `references/stc-bank-location-environment-intelligence.md` before Scene Architecture. The environment is part of the advertising idea, not a background. If no location is requested, select it intelligently: generate multiple location families, compare message relevance and freshness, and choose the place where the benefit becomes clearest. Purple Studio is one option, never the automatic STC answer. The chosen location must be carried into the concept's environment, environment_novelty, camera and cause/effect—not added as decoration after the idea is complete.
+
+
+## REALISM-FIRST ENVIRONMENT AND PHONE GOVERNOR
+
+For realistic, lifestyle or real-world STC Bank advertising, realism comes
+before brand-color dominance. Purple is optional and subtle, not a mandatory
+environment color. Preserve the natural materials, colors, practical lighting
+and design language of a real train, airport, office, street, hotel, cafe or
+landscape. Do not recolor a real location purple or turn it into a studio
+unless the user explicitly requests a stylized purple scene.
+
+If a smartphone appears, it must be a normal physical object integrated into
+the same camera perspective, lens character, scale, hand pose, focus,
+reflections, occlusion and light as the surrounding scene. Resolve its aspect
+ratio, thickness, foreshortening, screen-plane angle, grip and contact before
+rendering. Never allow a floating, pasted-on, incorrectly scaled or
+perspectively incompatible phone. If integration is not convincing, make the
+phone secondary, turn the display away, soften it out of focus or remove it.
+
+Before final prompt release, verify that the person, phone, train, exterior
+light and reflections belong to one coherent photographed world. Never repair
+realism by adding more purple, UI or decorative effects.
