@@ -2243,6 +2243,36 @@ def evaluation_schema() -> Dict[
                     "boolean",
             },
 
+            "immersive_destination_clear": {
+                "type":
+                    "boolean",
+            },
+
+            "natural_travel_behavior": {
+                "type":
+                    "boolean",
+            },
+
+            "diegetic_service_proof": {
+                "type":
+                    "boolean",
+            },
+
+            "environment_dominates": {
+                "type":
+                    "boolean",
+            },
+
+            "journey_continuity": {
+                "type":
+                    "boolean",
+            },
+
+            "no_explanatory_icon": {
+                "type":
+                    "boolean",
+            },
+
             "claim_proof_clear": {
                 "type":
                     "boolean",
@@ -2345,6 +2375,12 @@ def evaluation_schema() -> Dict[
             "concept_is_scene_only",
             "mechanism_survives_single_frame",
             "looks_like_real_bank_campaign",
+            "immersive_destination_clear",
+            "natural_travel_behavior",
+            "diegetic_service_proof",
+            "environment_dominates",
+            "journey_continuity",
+            "no_explanatory_icon",
             "claim_proof_clear",
             "story_event_not_pose",
             "location_proves_claim",
@@ -2774,6 +2810,98 @@ TRAVEL_MESSAGE_MARKERS = [
 ]
 
 
+TRAVEL_EXPLANATORY_ICON_MARKERS = [
+    "floating wifi",
+    "wifi icon",
+    "signal icon",
+    "connection icon",
+    "connectivity icon",
+    "floating signal",
+    "signal waves",
+    "connection waves",
+    "wifi waves",
+    "glowing connection",
+    "glowing signal",
+    "location pin",
+    "floating arrow",
+    "network symbol",
+    "موجات واي فاي",
+    "موجات اتصال",
+    "ايقونة اتصال",
+    "أيقونة اتصال",
+    "اشارة اتصال",
+    "إشارة اتصال",
+    "رمز الشبكة",
+    "دبوس موقع",
+]
+
+
+TRAVEL_PROP_MARKERS = [
+    "passport",
+    "suitcase",
+    "luggage",
+    "airplane",
+    "boarding pass",
+    "travel tag",
+    "map",
+    "hotel key",
+    "travel bag",
+    "جواز",
+    "حقيبة سفر",
+    "شنطة",
+    "طائرة",
+    "بطاقة صعود",
+    "خريطة",
+]
+
+
+TRAVEL_IMMERSIVE_LOCATION_MARKERS = [
+    "remote",
+    "mountain",
+    "snow",
+    "island",
+    "boat",
+    "sea",
+    "cable car",
+    "desert journey",
+    "isolated",
+    "countryside",
+    "remote lodge",
+    "village",
+    "mountain camp",
+    "رحلة نائية",
+    "جبل",
+    "ثلج",
+    "جزيرة",
+    "قارب",
+    "بحر",
+    "تلفريك",
+    "صحراء",
+    "معزول",
+    "ريف",
+    "قرية",
+    "كوخ",
+]
+
+
+TRAVEL_PRESENTATION_MARKERS = [
+    "showing phone",
+    "presenting phone",
+    "phone toward camera",
+    "businessman holding phone",
+    "businessman using phone",
+    "sitting elegantly",
+    "advertising smile",
+    "model displaying",
+    "يعرض الهاتف",
+    "يقدم الهاتف",
+    "الهاتف باتجاه الكاميرا",
+    "رجل اعمال يمسك الهاتف",
+    "رجل أعمال يمسك الهاتف",
+    "ابتسامة إعلانية",
+]
+
+
 STC_FINTECH_CLICHES = [
 
     "network lines",
@@ -3107,6 +3235,8 @@ HARD_REJECT_FAILURES: Set[str] = {
     "production_not_feasible",
 
     "message_drift_travel_to_payment",
+
+    "travel_explanatory_icon",
 }
 
 
@@ -3963,6 +4093,48 @@ def local_concept_penalties(
     )
 
     if travel_brief:
+        explanatory_icon = contains_any(
+            text,
+            TRAVEL_EXPLANATORY_ICON_MARKERS,
+        )
+
+        if explanatory_icon:
+            penalty += 45.0
+            failures.append(
+                "travel_explanatory_icon"
+            )
+
+        travel_prop_count = count_matches(
+            text,
+            TRAVEL_PROP_MARKERS,
+        )
+
+        if travel_prop_count >= 4:
+            penalty += 15.0
+            failures.append(
+                "travel_prop_collection"
+            )
+
+        presentation_pose = contains_any(
+            text,
+            TRAVEL_PRESENTATION_MARKERS,
+        )
+
+        if presentation_pose:
+            penalty += 14.0
+            failures.append(
+                "travel_product_presentation_pose"
+            )
+
+        if not contains_any(
+            text,
+            TRAVEL_IMMERSIVE_LOCATION_MARKERS,
+        ):
+            penalty += 10.0
+            failures.append(
+                "travel_destination_proof_weak"
+            )
+
         if contains_any(
             text,
             MERCHANT_PHYSICAL_MARKERS,
@@ -4634,6 +4806,7 @@ def stc_runtime_director_context(
         runtime = __import__("xpand_stc_skill_runtime")
         names = [
             "references/stc-bank-claim-proof-scene-engine.md",
+            "references/stc-bank-travel-claim-proof-immersive-storytelling.md",
             "SKILL.md",
             "references/stc-bank-location-environment-intelligence.md",
             "references/stc-bank-realism-environment-authenticity.md",
@@ -5034,6 +5207,24 @@ An e-commerce/POS brief must not read as a phone-and-terminal product
 catalogue. A person standing with a phone in a beautiful place must not be
 accepted without a meaningful action, consequence or visual relationship.
 
+TRAVEL CLAIM-PROOF IMMERSION PATCH
+When the brief concerns travel, SIM, eSIM, roaming or connectivity:
+- airport, train, hotel, passport, luggage and skyline are only travel signals;
+- generate at least five proof scenarios and choose the place that makes the
+  viewer think "even here?";
+- use one distinctive destination, one natural action and one subtle travel cue;
+- make the destination read before the phone and let the journey occupy the
+  frame;
+- prefer POV, environmental POV, over-the-shoulder or candid observation;
+- define why now, before/after continuity and the single hero relationship:
+  distinctive place + active service use + continued journey.
+
+Never add floating Wi-Fi, signal waves, location pins, arrows, network symbols,
+glowing connection graphics or explanatory overlays to a realistic scene.
+Connectivity must be diegetic: proven by the situation and natural service
+use. A business-class traveller sitting elegantly with a phone, passport,
+luggage and a city skyline is not sufficient proof of "with you everywhere".
+
 CLAIM-PROOF SCENE ENGINE — REQUIRED BEFORE SCENE ARCHITECTURE
 Translate the single message into:
 - claim: the exact promise
@@ -5297,6 +5488,28 @@ advertising_readiness:
 Could a senior bank creative director authorize production?
 
 CLAIM-PROOF REVIEW
+
+For travel/SIM/connectivity concepts also return:
+
+immersive_destination_clear:
+TRUE only when the destination itself communicates meaningful distance,
+foreignness, movement or difficulty before the phone.
+
+natural_travel_behavior:
+TRUE only when the subject is living the journey rather than presenting a
+device in a polished travel pose.
+
+diegetic_service_proof:
+TRUE only when the service is proven through real use and situation, without
+floating Wi-Fi, signal waves, location pins, arrows or explanatory graphics.
+
+environment_dominates:
+TRUE only when the environment has enough visual presence to establish
+"I am somewhere" before "the service is here too."
+
+journey_continuity:
+TRUE only when the frame implies where the traveller came from, what is
+happening now and what happens next.
 
 claim_proof_clear:
 TRUE only when the image visibly demonstrates the exact promise, not merely
@@ -6412,6 +6625,94 @@ def apply_evaluations_to_concepts(
             )
         )
 
+        travel_claim_brief = contains_any(
+            user_request,
+            TRAVEL_MESSAGE_MARKERS,
+        )
+
+        immersive_destination_clear = bool(
+            evaluation.get(
+                "immersive_destination_clear",
+                not travel_claim_brief,
+            )
+        )
+
+        natural_travel_behavior = bool(
+            evaluation.get(
+                "natural_travel_behavior",
+                not travel_claim_brief,
+            )
+        )
+
+        diegetic_service_proof = bool(
+            evaluation.get(
+                "diegetic_service_proof",
+                not travel_claim_brief,
+            )
+        )
+
+        environment_dominates = bool(
+            evaluation.get(
+                "environment_dominates",
+                not travel_claim_brief,
+            )
+        )
+
+        journey_continuity = bool(
+            evaluation.get(
+                "journey_continuity",
+                not travel_claim_brief,
+            )
+        )
+
+        no_explanatory_icon = bool(
+            evaluation.get(
+                "no_explanatory_icon",
+                not travel_claim_brief,
+            )
+        )
+
+        if travel_claim_brief:
+            travel_quality_checks = (
+                (
+                    immersive_destination_clear,
+                    "immersive_destination_unclear",
+                    10.0,
+                ),
+                (
+                    natural_travel_behavior,
+                    "natural_travel_behavior_missing",
+                    10.0,
+                ),
+                (
+                    diegetic_service_proof,
+                    "diegetic_service_proof_missing",
+                    12.0,
+                ),
+                (
+                    environment_dominates,
+                    "travel_environment_does_not_lead",
+                    8.0,
+                ),
+                (
+                    journey_continuity,
+                    "journey_continuity_missing",
+                    8.0,
+                ),
+                (
+                    no_explanatory_icon,
+                    "travel_explanatory_icon_review",
+                    18.0,
+                ),
+            )
+
+            for passed, failure, extra_penalty in travel_quality_checks:
+                if not passed:
+                    penalty += extra_penalty
+                    failures.append(
+                        failure
+                    )
+
         if not claim_proof_clear:
             penalty += 12.0
             failures.append(
@@ -6578,6 +6879,18 @@ def apply_evaluations_to_concepts(
 
             "claim_proof":
                 {
+                    "immersive_destination_clear":
+                        immersive_destination_clear,
+                    "natural_travel_behavior":
+                        natural_travel_behavior,
+                    "diegetic_service_proof":
+                        diegetic_service_proof,
+                    "environment_dominates":
+                        environment_dominates,
+                    "journey_continuity":
+                        journey_continuity,
+                    "no_explanatory_icon":
+                        no_explanatory_icon,
                     "claim_proof_clear":
                         claim_proof_clear,
                     "story_event_not_pose":
