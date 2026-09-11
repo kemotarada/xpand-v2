@@ -3169,6 +3169,9 @@ Reject generic checkout documentation, a merchant portrait with tiny devices, a 
 
 PURPLE CAMPAIGN FINISH
 For the purple route use connected saturated violet planes, deep-violet falloff, near-black/graphite hero objects, a broad violet/magenta pool from the upper-right or rear plane, restrained mint/green accent, realistic contact shadows and reflections tied to actual surface normals and light sources.
+
+EDIT MODE OVERRIDE
+If an approved prior render is attached, Image 1 is the composition to edit, not a loose reference. Preserve the exact silhouette and camera. Apply only the named local corrections. Never crop a hero object, replace a readable service cue with blank wallpaper, turn a material seam into neon, or re-stage the scene into a new product still life.
 """.strip()
 
 # =========================================================
@@ -4678,6 +4681,11 @@ def build_final_renderer_prompt(
             preview_qa=preview_qa,
         )
     )
+    # In edit mode, preserve the approved prior composition even when the
+    # preview audit flags local defects; clean recomposition would discard the
+    # very geometry the user asked us to refine.
+    if edit_mode:
+        preview_requires_clean_recomposition = False
 
     image_role_instruction = (
         "NO PREVISUALIZATION INPUT IS PROVIDED.\n\n"
@@ -7914,6 +7922,15 @@ def run_production(
             aspect_ratio
         ),
     )
+
+    edit_mode = bool(additional_references)
+    if edit_mode:
+        compiled.prompt = clean_text(
+            compiled.prompt
+            + "\n\nIMAGE EDIT MODE OVERRIDE — PRESERVE IMAGE 1\n"
+            + "Image 1 is the approved prior render. Edit it in place. Preserve the exact camera, crop, surface silhouette, phone/POS positions, hand relationship, STC lighting and purple material world. Apply only the requested local fixes. Keep the POS fully inside frame with lower-edge breathing room; keep a restrained non-readable order cue on the phone; keep mint as a subdued material seam, never neon. Do not redesign, restage, crop, add a second concept or replace the service proof with blank abstract wallpaper.",
+            50000,
+        )
 
     # =====================================================
     # LOG HEADER
