@@ -189,6 +189,7 @@ try:
         STC_BANK_SHOT_DESIGN_CONTRACT,
         STC_MERCHANT_CONCEPT_LIBRARY,
         STC_STYLE_TRANSFORMATION_CONTRACT,
+        STC_PURPLE_STUDIO_COLOR_LOCK,
         is_stc_bank_request,
     )
 
@@ -199,6 +200,7 @@ except Exception:
     STC_BANK_SHOT_DESIGN_CONTRACT = ""
     STC_MERCHANT_CONCEPT_LIBRARY = ""
     STC_STYLE_TRANSFORMATION_CONTRACT = ""
+    STC_PURPLE_STUDIO_COLOR_LOCK = ""
 
     def is_stc_bank_request(
         value: Any,
@@ -1576,6 +1578,9 @@ def stc_brand_pack_prompt_fragment(
 
         "style_transformation_contract":
             STC_STYLE_TRANSFORMATION_CONTRACT,
+
+        "purple_studio_color_lock":
+            STC_PURPLE_STUDIO_COLOR_LOCK,
 
         "campaign_archetypes":
             [
@@ -4250,6 +4255,12 @@ STYLE TRANSFORMATION CONTRACT
 ==================================================
 
 {STC_STYLE_TRANSFORMATION_CONTRACT}
+
+==================================================
+PURPLE STUDIO COLOR LOCK
+==================================================
+
+{STC_PURPLE_STUDIO_COLOR_LOCK}
 
 ==================================================
 PHOTOGRAPHIC REALISM
