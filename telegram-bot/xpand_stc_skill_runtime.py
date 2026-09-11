@@ -108,7 +108,7 @@ def travel_claim_proof_direction():
     )
 
 def prompt_direction(style):
-    return "\n\n".join(filter(None, [stc_execution_order(), concept_mutation_lab_prompt(), location_environment_intelligence_prompt(), message_to_idea_direction(), claim_proof_scene_direction(), core_direction(), style_direction(style), reference_observations(style),
+    return "\n\n".join(filter(None, [stc_execution_order(), concept_mutation_lab_prompt(), location_environment_intelligence_prompt(), message_to_idea_direction(), claim_proof_scene_direction(), travel_claim_proof_direction(), core_direction(), style_direction(style), reference_observations(style),
         read_skill_file("references/concept-workflow.md"),
         read_skill_file("references/reference-campaign-grammar.md"),
         read_skill_file("references/prompt-specification.md"),
