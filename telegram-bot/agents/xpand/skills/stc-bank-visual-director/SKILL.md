@@ -137,3 +137,8 @@ The following two references are mandatory runtime stages, not optional inspirat
 - references/stc-bank-strict-visual-output-ad-quality-guard.md — runs before generation and after generation.
 
 The Mutation Lab must change the idea's mechanism, physical logic or consequence; changing only lens, color, lighting or object position is not a mutation. The Visual Guard treats all layout metadata as invisible composition instructions. Never render the words that describe reserved space, and never accept a result containing readable text, logos, fake UI, labels or the known purple-wall/opening/POS/card/boxes failure pattern.
+
+
+## Location & Environment Creative Director
+
+Location selection is a mandatory stage before Scene Architecture. Load `references/stc-bank-location-environment-intelligence.md` and treat its full rules as execution authority. Do not default to a purple studio, generic indoor set or product pedestal when the brief does not require one. Generate multiple environment families, select the place that makes the benefit strongest, and make the location carry the message, emotion, scale, consequence or metaphor. If the concept would work identically anywhere, redesign the location.
