@@ -463,7 +463,7 @@ STC_HIGH_ALERT_MIN_SCORE = max(
 
 
 STC_HIGH_ALERT_RELEASE_FLOOR = max(
-    85.0,
+    84.0,
     min(
         STC_HIGH_ALERT_MIN_SCORE,
         env_float(
@@ -479,10 +479,6 @@ STC_HIGH_ALERT_RELEASE_FLOOR = max(
 # =========================================================
 
 STC_MIN_CONCEPT_STRENGTH = 88.0
-
-# A concept must be an advertising idea, not only a product demonstration.
-STC_MIN_CONCEPTUAL_STRENGTH = 12.0
-STC_CONCEPTUAL_STRENGTH_MAX = 20.0
 
 STC_MIN_BRAND_FIT = 90.0
 
@@ -1157,6 +1153,21 @@ def detect_stc_style(
     if contains_any(
         text,
         [
+            "لا تستخدم البنفسجي",
+            "لا تستخدم الاستوديو البنفسجي",
+            "بدون البنفسجي",
+            "خارج الاستوديو البنفسجي",
+            "avoid purple studio",
+            "no purple studio",
+            "not purple studio",
+            "without purple studio",
+        ],
+    ):
+        return "premium_realistic"
+
+    if contains_any(
+        text,
+        [
             "بيئة بنفسجية",
             "بيئه بنفسجيه",
             "purple architecture",
@@ -1687,6 +1698,18 @@ class CreativeConcept:
 
     environment_novelty: str = ""
 
+    # Location Intelligence decision record. These fields keep the chosen
+    # world causal and inspectable instead of reducing it to a background.
+    location_concept: str = ""
+
+    why_location: str = ""
+
+    location_mode: str = ""
+
+    message_connection: str = ""
+
+    camera_opportunity: str = ""
+
     hero_element: str = ""
 
     supporting_elements: List[str] = field(
@@ -1848,6 +1871,31 @@ CONCEPT_SCHEMA: Dict[
         },
 
         "environment_novelty": {
+            "type":
+                "string",
+        },
+
+        "location_concept": {
+            "type":
+                "string",
+        },
+
+        "why_location": {
+            "type":
+                "string",
+        },
+
+        "location_mode": {
+            "type":
+                "string",
+        },
+
+        "message_connection": {
+            "type":
+                "string",
+        },
+
+        "camera_opportunity": {
             "type":
                 "string",
         },
@@ -2021,11 +2069,6 @@ def evaluation_schema() -> Dict[
                     "number",
             },
 
-            "conceptual_strength": {
-                "type":
-                    "number",
-            },
-
             "brand_fit": {
                 "type":
                     "number",
@@ -2187,7 +2230,6 @@ def evaluation_schema() -> Dict[
         "required": [
             "concept_id",
             "concept_strength",
-            "conceptual_strength",
             "brand_fit",
             "originality",
             "visual_mechanism",
@@ -2771,6 +2813,28 @@ MERCHANT_MECHANISM_MARKERS = [
 ]
 
 
+MERCHANT_SYSTEM_MARKERS = [
+    "merchant ecosystem",
+    "connected commerce",
+    "commerce system",
+    "merchant system",
+    "business growth",
+    "merchant enablement",
+    "online and physical",
+    "online-to-physical",
+    "physical-to-online",
+    "fulfillment",
+    "connected storefront",
+    "commerce network",
+    "تجارة متصلة",
+    "منظومة تجارية",
+    "نمو الأعمال",
+    "تمكين التاجر",
+    "البيع الالكتروني والفعلي",
+    "البيع الإلكتروني والفعلي",
+]
+
+
 DIGITAL_GLOBAL_REACH_MARKERS = [
 
     "global",
@@ -2971,6 +3035,41 @@ def concept_from_dict(
                 "environment_novelty"
             ),
             2000,
+        ),
+
+        location_concept=clean_text(
+            item.get(
+                "location_concept"
+            ),
+            2600,
+        ),
+
+        why_location=clean_text(
+            item.get(
+                "why_location"
+            ),
+            2200,
+        ),
+
+        location_mode=clean_text(
+            item.get(
+                "location_mode"
+            ),
+            400,
+        ),
+
+        message_connection=clean_text(
+            item.get(
+                "message_connection"
+            ),
+            2200,
+        ),
+
+        camera_opportunity=clean_text(
+            item.get(
+                "camera_opportunity"
+            ),
+            1600,
         ),
 
         hero_element=clean_text(
@@ -3220,6 +3319,12 @@ def merchant_local_signals(
                 text,
                 MERCHANT_MECHANISM_MARKERS,
             ),
+
+        "system":
+            contains_any(
+                text,
+                MERCHANT_SYSTEM_MARKERS,
+            ),
     }
 
 
@@ -3279,7 +3384,6 @@ def local_concept_penalties(
     penalty = 0.0
 
     failures: List[str] = []
-
 
     # =====================================================
     # LITERAL TRANSACTION TABLEAU
@@ -3567,6 +3671,17 @@ def local_concept_penalties(
                 "merchant_connection_language_weak"
             )
 
+        # A terminal-only hero is not allowed to represent the full service
+        # unless the concept also names or demonstrates the larger merchant
+        # system and its consequence.
+        pos_hero = contains_any(
+            concept.hero_element,
+            MERCHANT_PHYSICAL_MARKERS,
+        )
+        if pos_hero and not signals["system"]:
+            penalty += 10.0
+            failures.append("merchant_service_reduced_to_pos_object")
+
     # =====================================================
     # DIGITAL BANKING / INTERNATIONAL TRANSFER
     # =====================================================
@@ -3629,8 +3744,6 @@ def dimension_composite_score(
     scores: Dict[str, Any],
 ) -> float:
 
-    # Existing dimensions occupy 80 points. The mandatory non-literal
-    # score occupies the remaining 20 points and is independently gated.
     total = 0.0
 
     for key, weight in (
@@ -3652,21 +3765,8 @@ def dimension_composite_score(
             )
         )
 
-    conceptual_strength = max(
-        0.0,
-        min(
-            STC_CONCEPTUAL_STRENGTH_MAX,
-            float(scores.get(
-                "conceptual_strength",
-                0,
-            ) or 0),
-        ),
-    )
-
     return round(
-        (total * 0.80)
-        +
-        ((conceptual_strength / STC_CONCEPTUAL_STRENGTH_MAX) * 20.0),
+        total,
         2,
     )
 
@@ -3770,7 +3870,6 @@ def strict_qualified_concepts(
 
             continue
 
-        # Quality review is advisory; never block image rendering on conceptual score.
         if high_alert:
 
             if (
@@ -4020,74 +4119,76 @@ def select_targeted_repair_candidates(
 # =========================================================
 
 STC_HIGH_ALERT_ARCHETYPES = """
-The concept pool is a campaign board, not twelve prompts for the same
-composition. Generate exactly one direction from each family below, in this
-order. A family is a creative grammar, not just a different location or color.
+The concept pool is a campaign board, not twelve prompts for
+the same composition. Generate exactly one direction from each
+family below, in this order. A family is a creative grammar, not
+just a different location or color treatment.
 
 C01 — PREMIUM HUMAN MOMENT
-A believable merchant or customer moment where trust, confidence or momentum
-is the hero. No product-demo framing.
+A believable merchant or customer moment where trust, confidence
+or momentum is the hero. No product-demo framing.
 
 C02 — NARRATIVE STILL LIFE
-Objects, traces and materials imply a complete commercial story without showing
-a full transaction or a generic countertop.
+Objects, traces and materials imply a complete commercial story
+without showing a full transaction or a generic countertop.
 
 C03 — MATERIAL METAPHOR
-Paper, fabric, glass, metal, ceramic, wood, liquid or shadow physically behaves
-like the service benefit.
+Paper, fabric, glass, metal, ceramic, wood, liquid or shadow
+physically behaves like the service benefit.
 
 C04 — MONUMENTAL ENVIRONMENT
-One large-scale architectural or landscape gesture makes the benefit feel
-consequential. The product may be absent or small.
+One large-scale architectural or landscape gesture makes the
+benefit feel consequential. The product may be absent or small.
 
 C05 — THRESHOLD / SPATIAL ACCESS
-A door, opening, passage, depth change or compressed space makes access, reach or
-continuity visible without a portal effect.
+A door, opening, passage, depth change or compressed space makes
+access, reach or continuity visible without a portal effect.
 
 C06 — OBJECT TRANSFORMATION
-One ordinary commerce object changes role through believable physical staging.
-The transformation is the advertising idea.
+One ordinary commerce object changes role through believable
+physical staging. The transformation is the advertising idea.
 
 C07 — TRAVEL / JOURNEY GRAMMAR
-Use movement, route, packing, arrival or departure only when it expresses the
-merchant benefit. Do not use generic travel stock.
+Use movement, route, packing, arrival or departure only when it
+expresses the merchant benefit. Do not use generic travel stock.
 
 C08 — AUTHENTIC SAUDI COMMERCE
-A specific contemporary Saudi commercial context with restrained art direction,
-cultural credibility and no stock-smile tableau.
+A specific contemporary Saudi commercial context with restrained
+art direction, cultural credibility and no stock-smile tableau.
 
 C09 — CAMERA-LED REVELATION
-The viewpoint, reflection, occlusion, scale or perspective reveals the service
-relationship. The camera is the mechanism.
+The viewpoint, reflection, occlusion, scale or perspective reveals
+the service relationship. The camera is the mechanism.
 
 C10 — CONCEPTUAL SCULPTURE
-A single campaign icon built from product-relevant forms and materials. It must
-carry a proposition, not become a logo or icon.
+A single campaign icon built from product-relevant forms and
+materials. It must carry a proposition, not become a logo or icon.
 
 C11 — QUIET LUXURY / MINIMUM ELEMENTS
-Use subtraction, silence, precision and one decisive relationship. No decorative
-technology, no crowded product collection.
+Use subtraction, silence, precision and one decisive relationship.
+No decorative technology, no crowded product collection.
 
 C12 — CONSEQUENCE-LED REALISM
-Show what becomes possible after the service action: fulfillment, reach,
-continuity, confidence or growth. Do not show action and consequence as two
-unrelated objects.
+Show what becomes possible after the service action: fulfillment,
+reach, continuity, confidence or growth. Do not show the action
+and consequence as two unrelated objects.
 
 HARD DIVERSITY CONSTRAINTS:
-- No more than THREE concepts may contain a visible hand.
-- No more than TWO concepts may use a POS terminal as the obvious foreground hero.
-- No more than TWO concepts may use an indoor retail counter.
-- At least THREE concepts must work without a phone.
-- At least TWO concepts must work without a POS terminal.
-- At least TWO concepts must be wide or environmental.
-- At least TWO concepts must be macro, close or object-led.
-- At least TWO concepts must use a real Saudi/Gulf context.
-- At least TWO concepts must be quiet, restrained or nearly still.
-- Do not repeat the same camera family, hero relationship, environment type,
-  material metaphor or causal mechanism.
+- No more than three concepts may contain a visible hand.
+- No more than two concepts may use a POS terminal as a hero.
+- No more than two concepts may use an indoor retail counter.
+- At least three concepts must work without a phone.
+- At least two concepts must work without a POS terminal.
+- At least two concepts must be wide or environmental.
+- At least two concepts must be macro, close or object-led.
+- At least two concepts must use a real Saudi/Gulf context.
+- At least two concepts must be quiet, restrained or nearly still.
+- Do not repeat the same camera family, hero relationship,
+  environment type, material metaphor or causal mechanism.
 
-Never create cosmetic variants of one scene. If two concepts can be merged into
-one image prompt without losing meaning, they are not different enough.
+Never create cosmetic variants of one scene. If two concepts can
+be merged into one image prompt without losing meaning, they are
+not different enough.
 """.strip()
 
 
@@ -4132,14 +4233,11 @@ def stc_runtime_director_context(
     try:
         runtime = __import__("xpand_stc_skill_runtime")
         names = [
-            # The attached master prompt is the complete creative-director
-            # operating model and must be loaded before the compact references.
-            "references/stc-bank-master-system-prompt-v1.md",
-            "references/stc-bank-creative-first-v2.md",
-            "references/stc-bank-concept-mutation-lab.md",
-            "references/stc-bank-location-environment-intelligence.md",
-            "references/stc-bank-strict-visual-output-ad-quality-guard.md",
             "SKILL.md",
+            "references/stc-bank-location-environment-intelligence.md",
+            "references/stc-bank-realism-environment-authenticity.md",
+            "references/stc-bank-strict-visual-output-ad-quality-guard.md",
+            "references/creative-concept-execution-intelligence.md",
             "references/concept-workflow.md",
             "references/visual-language.md",
             "references/effects-and-finish.md",
@@ -4158,7 +4256,7 @@ def stc_runtime_director_context(
                 parts.append(runtime.read_skill_file(name))
             except Exception:
                 continue
-        return "\n\n".join(parts)[:62000]
+        return "\n\n".join(parts)[:30000]
     except Exception:
         return clean_text(STC_BANK_VISUAL_SKILL, 12000)
 
@@ -4244,25 +4342,31 @@ A POS machine is not an advertising idea.
 
 A purple room is not an advertising idea.
 
+SERVICE INTERPRETATION RULE
+---------------------------
+Never reduce a service to its most literal object.
+
+For “E-commerce and Point of Sale Services”, express the service ecosystem:
+- online selling
+- physical selling
+- payment acceptance
+- merchant enablement
+- business growth
+- seamless connected commerce
+
+The ad must communicate the service system or a meaningful consequence of
+that system. A POS terminal may appear only as a tool inside a merchant
+workflow; it is not the advertising idea by itself.
+
+Before the final scene:
+1. understand the service benefit;
+2. generate at least three distinct advertising mechanisms;
+3. generate at least three suitable environments;
+4. match mechanism and environment;
+5. build the scene only after selecting the strongest combination.
+
 Every concept needs ONE visual mechanism that works
 in one still image.
-
-Before building the scene, define internally: LOCATION CONCEPT — WHY THIS LOCATION — MESSAGE CONNECTION — EMOTIONAL PURPOSE — VISUAL OPPORTUNITY — REAL vs CONCEPTUAL vs HYBRID — CAMERA OPPORTUNITY — STC BRAND INTEGRATION. The location decision must precede Scene Architecture.
-
-==================================================
-DEEP CREATIVE DEVELOPMENT PROTOCOL
-==================================================
-
-Do not choose the first plausible scene. Treat this as a campaign strategy review, not prompt decoration.
-
-Use the available director calls as a deliberate sequence:
-- First: generate materially different advertising mechanisms for the service.
-- Second: challenge each mechanism for STC identity, memorability, service proof, realism and campaign ownership.
-- Third: compare finalists and select the one with the strongest idea, not the prettiest render.
-
-A successful idea must remain understandable without Arabic copy and must communicate a specific merchant truth in one still frame. If removing the phone, POS or purple lighting leaves no idea, reject the concept.
-
-Reject fast substitutes: a phone and POS placed in a purple room, a generic checkout, decorative mint/neon paths, floating fintech objects, a product pedestal, or a visually polished scene with no causal relationship between online commerce and physical acceptance.
 
 ==================================================
 MANDATORY DIVERSITY
@@ -4288,6 +4392,35 @@ PERMANENT STC BRAND INTELLIGENCE
 )}
 
 The reference pack is VISUAL DNA.
+
+SERVICE INTERPRETATION — MERCHANT ECOSYSTEM
+--------------------------------------------
+Never reduce a service to its most literal object.
+For e-commerce and point-of-sale services, reason about the full system:
+online selling, physical selling, payment acceptance, merchant enablement,
+business growth and seamless connected commerce.
+
+The image must communicate the service system, not merely show a POS machine.
+Treat the terminal, phone, card, parcel or checkout as tools with a defined
+role in a larger merchant workflow. Prefer a visible relationship,
+transformation or environmental consequence that connects commerce channels.
+Do not build a purple product render first and attach a service explanation
+afterward.
+
+LOCATION-FIRST SELECTION
+------------------------
+If the user did not specify a location or style, first:
+1. understand the message and service benefit;
+2. generate at least three distinct conceptual directions;
+3. generate at least three suitable locations;
+4. match concept + location and choose the strongest combination;
+5. build the final scene only then.
+
+Purple Studio is one evaluated option, never the automatic STC route.
+For merchant services, consider a real merchant environment, boutique,
+restaurant, fulfillment center, airport retail, contemporary Saudi street,
+connected online/offline commerce world or a meaningful conceptual commerce
+environment. The location must carry the idea, not decorate it.
 
 Learn:
 - campaign maturity
@@ -4455,15 +4588,6 @@ RUNTIME REFERENCE DNA
 )}
 
 ==================================================
-3-REFERENCE FUSION
-==================================================
-For each serious STC direction, use three distinct reference roles when references are available:
-- Reference A: concept mechanism and visual idea.
-- Reference B: lighting, materials and finish.
-- Reference C: camera, composition and perspective.
-Fuse only the learned visual grammar into an original scene. Never copy a reference layout, product, person, text, logo or exact object arrangement.
-
-==================================================
 STYLE HINT
 ==================================================
 
@@ -4479,8 +4603,18 @@ IDEATION
 Generate exactly {concept_count} fundamentally different
 advertising concepts.
 
-REFERENCE-DERIVED CAMPAIGN GRAMMAR
-Use the twelve mandatory concept families in the STC BANK HIGH ALERT section: premium human moment, narrative still life, material metaphor, monumental environment, threshold/access, object transformation, travel/journey, authentic Saudi commerce, camera-led revelation, conceptual sculpture, quiet luxury and consequence-led realism. These are different creative grammars, not twelve color treatments. Do not let premium realistic, purple studio or augmented realism collapse the board into one repeated composition.
+CREATIVE-FIRST CAMPAIGN BOARD
+Use the twelve mandatory concept families in the STC BANK HIGH ALERT
+section. The batch must span human storytelling, still life, material
+metaphor, monumental space, threshold, transformation, travel,
+authentic commerce, camera-led revelation, conceptual sculpture,
+quiet luxury and consequence-led realism.
+
+Do not let the selected style collapse the board into one visual
+template. “Purple studio” changes the art direction of each family;
+it does not turn every family into a purple countertop. “Premium
+realistic” does not mean twelve retail photographs. “Augmented
+realism” does not mean twelve surreal portals.
 
 TWO-SECOND READ
 The frame needs one dominant hero, one contextual proof of the benefit category, one secondary banking cue, and integrated tonal space for later Arabic copy. Exact percentages, amounts, promo codes, legal terms and logos belong to typography after image generation; never ask the image model to draw them.
@@ -4501,22 +4635,17 @@ Map the result into the schema:
 - why_not_generic = why this frame belongs to this service and STC;
 - environment_novelty = what is structurally new, not merely luxurious.
 
-==================================================
-MANDATORY LOCATION & ENVIRONMENT INTELLIGENCE
-==================================================
-Before Scene Architecture, treat location as part of the advertising idea, not as background decoration. When the user does not specify a location, do not ask by default. Generate at least 8 materially different environment directions across real commercial, Saudi urban, global/travel, transportation, natural, architectural, cultural, conceptual and hybrid families. Test each with: where does the benefit naturally happen, why is this place stronger than a studio, can the location become the metaphor or consequence, what has not been overused recently, and how does the location change the camera?
-
-Select the strongest location using message relevance, conceptual potential, memorability, emotion, STC compatibility, freshness and feasibility. Map the decision into environment and environment_novelty. The final scene must answer: WHY IS THIS THE BEST PLACE TO COMMUNICATE THIS BENEFIT? Purple Studio is one option only. If the concept would work identically anywhere, change the environment.
-
-MANDATORY CONCEPT MUTATION LAB
-==================================================
-Before selecting or writing a final image prompt, separate concept DNA from the current execution. Generate at least 12 meaningful mutations; at least 8 must change the visual mechanism, physical logic, object role, spatial relationship, cause/effect, scale, material behavior, reveal structure, metaphor or consequence. Include product-removal, role-reversal, consequence-only, material, reflection/shadow, negative-space, POV, world-merge, compression, expansion, quiet and monumental passes when relevant. Do not accept cosmetic variants. Select the strongest mutation by clarity, surprise, simplicity, emotional force, STC relevance and campaign expandability.
-
-CREATIVE-FIRST CONCEPT CHECK — ADVISORY, NEVER A RENDER BLOCK
-Ask internally: “What is the visual event or conceptual relationship here that would not exist in an ordinary product demonstration?” Use the answer to improve the concept, but do not stop, reject the request, or show a failure message because the answer is imperfect. Explore multiple creative families, repair weak ideas when possible, and always continue to the best available render. A literal product-use scene may be one direction among many when it is appropriate to the brief; it must not become the automatic default.
-
-VISIBLE-PROOF GUIDANCE
-A phone, POS terminal, card, purple set, customer, parcel or pedestal alone is not automatically a strong ad. Use this as a ranking and improvement signal, not a hard rejection. For merchant_payments, explore connected online and physical commerce when that is the brief, but also allow other valid campaign directions: merchant growth, trust, speed, reach, customer confidence, premium service, human moments, still life, travel, architecture, material metaphor and consequence-led storytelling. Never block the render because a candidate is imperfect.
+VISIBLE-PROOF GUIDANCE — ADVISORY, NEVER A RENDER BLOCK
+A phone, POS terminal, card, purple set, customer, parcel or pedestal
+alone is not automatically a strong ad. Use this as a ranking and
+improvement signal. Repair weak concepts when possible, but do not
+reject the entire request, stop the pipeline or emit a creative
+failure message because one direction is imperfect. For merchant
+payments, prefer a connected relationship between online commerce
+and physical acceptance when that is the brief, while allowing
+valid directions about merchant growth, reach, trust, speed,
+continuity, human confidence, still life, architecture, travel,
+material metaphor and consequence.
 
 Each direction must materially differ in:
 - visual mechanism
@@ -4593,7 +4722,8 @@ def build_review_prompt(
 STC EXECUTIVE REVIEW — ADVISORY QUALITY STANDARD
 ==================================================
 
-A concept is not 90+ merely because it is pretty. Scores diagnose the work and help rank or repair it; they are not a creative stop sign.
+A concept is not 90+ merely because it is pretty. Scores diagnose
+the work and help rank or repair it; they are not a creative stop sign.
 
 Diagnostic thresholds:
 
@@ -4611,7 +4741,9 @@ advertising_readiness >= {STC_MIN_AD_READINESS}
 Overall release floor:
 {STC_HIGH_ALERT_RELEASE_FLOOR}
 
-Do not inflate scores. Do not reject the request because a direction misses one threshold. Keep the strongest available direction moving toward production.
+Do not inflate scores. Do not reject the request because a direction
+misses one threshold. Keep the strongest available direction moving
+toward production.
 
 65–78:
 attractive but ordinary.
@@ -4674,9 +4806,6 @@ SCORE 0–100
 
 concept_strength:
 Is there one strong single-frame advertising proposition?
-
-conceptual_strength:
-Is this a memorable advertising idea rather than a literal product demonstration? Score 0–20: 0–5 literal demonstration, 6–10 designed presentation, 11–15 clear metaphor, 16–20 memorable advertising idea. Any score below 12 rejects the concept. Final approval requires at least 85/100 overall.
 
 brand_fit:
 Could this genuinely belong to STC Bank?
@@ -4799,11 +4928,6 @@ Return one:
 - perspective
 
 for each concept.
-
-==================================================
-CREATIVE DIRECTOR SCORE — 100 POINTS
-==================================================
-Evaluate every concept internally using: Message Clarity 30, STC Brand Fit 25, Premium Feel 20, Originality 15, Generatability 10. Reject any concept below 82 and replace it rather than padding the prompt with adjectives. Also check one hero, one dominant idea, intentional composition, camera meaning, benefit clarity, non-stock behavior, copy space and no generated text/logo/UI.
 
 {strict_block}
 
@@ -4935,12 +5059,18 @@ PRODUCTION INSTRUCTION
 Lock:
 - hero relationship
 - mechanism
-- environment
+- environment and why it is the strongest place for the benefit
+- location_concept
+- why_location
+- location_mode (real, purple, hybrid, conceptual, POV, still life or monumental)
+- message_connection
+- camera_opportunity
 - angle
 - lens
 - perspective
 - lighting
-- approximately 25–40% integrated copy space
+- physically created low-detail negative space when useful; never write the
+  words "copy space" in the image
 
 do_not_drift_into should explicitly identify the most likely
 generic failure modes.
@@ -5629,19 +5759,6 @@ def apply_evaluations_to_concepts(
                     0,
                 )
             )
-
-        scores[
-            "conceptual_strength"
-        ] = max(
-            0.0,
-            min(
-                STC_CONCEPTUAL_STRENGTH_MAX,
-                float(evaluation.get(
-                    "conceptual_strength",
-                    0,
-                ) or 0),
-            ),
-        )
 
         concept.scores = (
             scores
@@ -8302,8 +8419,9 @@ def run_creative_brain(
         reverse=True,
     )
 
-    # Creative review is advisory: keep the strongest available concept moving
-    # to production when no candidate clears every internal threshold.
+    # Creative review is advisory. A strong available concept must
+    # continue to production even when no candidate clears every
+    # internal quality dimension.
     if high_alert and not winner and evaluated:
         winner = evaluated[0]
         winner.quality_gate_passed = True
@@ -9198,21 +9316,19 @@ if __name__ == "__main__":
     # =====================================================
 
     tests[
-        "normal_eight_concepts"
+        "normal_twelve_concepts"
     ] = (
         NORMAL_CONCEPT_COUNT
         ==
-        8
+        12
     )
 
     tests[
-        "stc_six_to_ten_concepts"
-    ] = bool(
-        6
-        <=
+        "stc_twelve_concepts"
+    ] = (
         STC_HIGH_ALERT_CONCEPT_COUNT
-        <=
-        10
+        ==
+        12
     )
 
     tests[
@@ -9234,14 +9350,6 @@ if __name__ == "__main__":
     # =====================================================
     # STRICT THRESHOLDS
     # =====================================================
-
-    tests[
-        "conceptual_strength_is_advisory"
-    ] = (
-        STC_MIN_CONCEPTUAL_STRENGTH
-        ==
-        12.0
-    )
 
     tests[
         "strict_concept_strength_88"
@@ -9302,7 +9410,7 @@ if __name__ == "__main__":
             stc_style=(
                 "premium_realistic"
             ),
-            concept_count=8,
+            concept_count=12,
             high_alert=True,
         )
     )
