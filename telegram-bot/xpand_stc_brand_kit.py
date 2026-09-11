@@ -2090,7 +2090,7 @@ class BrandKit:
         # This avoids dumping all 20 images into Gemini.
         #
 
-        return self.select_assets(
+        selected = self.select_assets(
 
             benefit_family=(
                 benefit_family
@@ -2124,6 +2124,22 @@ class BrandKit:
                 exclude_asset_ids
             ),
         )
+
+        # Purple studio is a permanent campaign reference, not an optional
+        # rotation. Keep it in every purple generation set.
+        if visual_family == "premium_purple_architecture":
+            forced = next(
+                (
+                    asset
+                    for asset in self.existing_assets()
+                    if asset.asset_id == "stc_user_studio_01"
+                ),
+                None,
+            )
+            if forced is not None and forced.asset_id not in {item.asset_id for item in selected}:
+                selected = [forced] + selected
+
+        return selected[:max(1, min(7, int(max_total)))]
 
 
     # =====================================================
