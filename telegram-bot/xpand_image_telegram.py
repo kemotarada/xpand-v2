@@ -245,6 +245,7 @@ from xpand_creative_brain import (
 # =========================================================
 
 from xpand_production_engine import (
+    ProductionReference,
     MODE_MASTERPIECE as PRODUCTION_MODE_MASTERPIECE,
     TARGET_GEMINI,
     run_production,
