@@ -3801,7 +3801,9 @@ def prepare_generation_input(
 
     elif brand_id == "stc_bank":
 
-        mode_override = "google_fast"
+        # Deep/masterpiece STC requests must never silently downgrade to
+        # the fast provider. Technical recovery remains non-fast.
+        mode_override = "google_pro"
 
     # =====================================================
     # RESULT
@@ -4824,11 +4826,9 @@ def smart_fallback_policy(
                 "technical_failure"
             ):
 
-                allowed = bool(
-                    STC_ALLOW_TECHNICAL_FALLBACK
-                    and
-                    MASTERPIECE_ALLOW_SMART_FALLBACK
-                )
+                # Technical failures are recoverable delivery errors, not
+                # creative approval failures. Never block the image route.
+                allowed = True
 
                 return {
                     "allowed":
@@ -4870,15 +4870,19 @@ def smart_fallback_policy(
     if (
         masterpiece_attempted
         and
-        not MASTERPIECE_ALLOW_SMART_FALLBACK
+        masterpiece_failure_kind
+        ==
+        "technical_failure"
     ):
 
+        # Technical failure must not become a user-facing gate. The fallback
+        # provider is non-fast for deep/masterpiece requests.
         return {
             "allowed":
-                False,
+                True,
 
             "reason":
-                "normal_masterpiece_fallback_disabled",
+                "technical_failure_delivery_recovery",
         }
 
     return {
