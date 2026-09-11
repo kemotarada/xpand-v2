@@ -159,6 +159,7 @@ from xpand_image_engine import (
 from xpand_stc_bank_skill import (
     STC_BANK_IMAGE_GUARD,
     STC_BANK_CAMPAIGN_DNA,
+    STC_BANK_SHOT_DESIGN_CONTRACT,
     STYLE_AUGMENTED_REALISM,
     STYLE_PREMIUM_REALISTIC,
     STYLE_PURPLE_ARCHITECTURAL,
@@ -4847,6 +4848,10 @@ STC CAMPAIGN DNA — APPLY THIS SYSTEM, DO NOT CLONE REFERENCES
 ---------------------------------------------------------------
 {STC_BANK_CAMPAIGN_DNA}
 
+STC SHOT DESIGN CONTRACT — DESIGN THE FRAME BEFORE RENDERING
+--------------------------------------------------------------
+{STC_BANK_SHOT_DESIGN_CONTRACT}
+
 Create a polished campaign image at:
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
@@ -4899,27 +4904,37 @@ CLEAN MERCHANT PAYMENTS FINAL — CLIENT-READY 4:5 PHOTOGRAPH
 {merchant_source_instruction}
 
 ONE CAUSAL SCENE, NOT A COLLAGE:
-A real merchant works at one premium Saudi retail/service counter in a
-medium-wide eye-level three-quarter camera where the counter, merchant, POS and
-parcel are all clearly visible. One visible customer hand performs a physical
-contactless tap on one believable unbranded POS terminal while the merchant's
-other hand actively closes one plain parcel for online-order dispatch on the
-same counter. The merchant, both hands, POS and parcel must share one camera,
-one light system, one perspective and believable contact shadows. The viewer
-must read physical payment plus active online fulfillment from one causal action.
+Design this as a STC Bank campaign shot, not a retail documentary. Use a tight
+4:5 three-quarter countertop composition, approximately 45–65mm equivalent,
+camera at counter height and slightly above the action. The terminal, parcel seam,
+customer hand and merchant's closing hand occupy the visual center; the objects
+are large and readable while the room is compressed into a dark controlled
+background. The merchant's face is outside the frame or only a small secondary
+partial profile — never the hero.
+
+Use one graphite stone counter plane inside a coherent deep aubergine/near-black
+violet architectural set with restrained motivated light. No bright windows, beige
+retail interior, purple door trim or unrelated shelves. One customer hand performs
+a clear physical contactless tap on one believable unbranded POS terminal while
+the merchant's other hand actively presses the lid seam closed on one plain brown
+cardboard parcel for online dispatch. The tap and closure form a deliberate diagonal
+relationship, share one perspective and have believable contact shadows. The
+viewer must read payment accepted plus commerce fulfilled in one glance.
 
 HARD EXCLUSIONS:
 No laptop, tablet, smartphone, extra display, app screen, UI, keypad digits,
 payment card of any kind, card face, chip, logo, QR code, barcode, parcel
 label, generated text, floating object, split screen, unrelated props,
-product catalogue, generic checkout or isolated terminal beauty shot. Show
+product catalogue, generic checkout, warm lifestyle interior, bright windows,
+purple trim, giant empty upper frame, merchant portrait or isolated terminal
+beauty shot. Show
 payment only as a believable empty-hand contactless tap gesture on the blank
 POS terminal. The POS display and parcel are neutral and unreadable. Do not invent hardware.
 
-Use premium purple architectural styling only through real surfaces or
-motivated light; keep skin, merchandise, parcel and hardware natural. Make
-the merchant action the hero and reserve calm integrated copy space without
-creating a dead panel.
+Use premium purple architectural styling through real graphite/plum surfaces,
+controlled directional light and clean edge separation; keep skin, cardboard and
+hardware natural. Make the two service actions the hero. Reserve only a small
+integrated calm area for later copy — never create dead space above the scene.
 
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
@@ -7090,11 +7105,15 @@ Fix only the defects diagnosed by final QA; do not redesign.
         repair_scope_lock = """
 REPAIR MODE — IMMUTABLE
 -----------------------
-LIMITED MERCHANT STRUCTURAL REPAIR. Image 1 is the primary visual source.
-Preserve its camera, merchant, counter, POS, parcel, lighting and materials.
-Only strengthen the visible causal relationship between physical POS payment
-and active parcel preparation. Do not replace the scene, change the setting,
-add screens, add cards, add text or logos, or redesign the campaign.
+MERCHANT CAMPAIGN RE-STAGE REPAIR. Preserve the commercial proposition: one
+contactless POS payment plus active parcel closure in one frame. Do not preserve
+a failed camera, warm generic retail interior, face-dominant crop, giant upper
+empty space, disconnected terminal or weak purple styling. Re-stage the shot
+into the STC director's contract: tight 4:5 countertop composition, merchant face
+non-dominant or out of frame, graphite counter, deep aubergine/near-black violet
+architectural world, two readable hands and physically connected service actions.
+You may change crop, camera height, lens feel, background, light direction and
+object scale. Do not add phone, laptop, card, UI, QR, barcode, labels, text or logos.
 """.strip()
     if preview_recovery:
         reference_role_text = """
