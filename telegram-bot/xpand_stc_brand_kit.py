@@ -2125,14 +2125,14 @@ class BrandKit:
             ),
         )
 
-        # Purple studio is a permanent campaign reference, not an optional
-        # rotation. Keep it in every purple generation set.
+        # The supplied saturated STC campaign is the primary authority, not an
+        # optional rotation. Keep it in every purple generation set.
         if visual_family == "premium_purple_architecture":
             forced = next(
                 (
                     asset
                     for asset in self.existing_assets()
-                    if asset.asset_id == "stc_user_studio_01"
+                    if asset.asset_id == "stc_user_campaign_02"
                 ),
                 None,
             )
