@@ -187,6 +187,8 @@ try:
         STC_BANK_VISUAL_SKILL,
         STC_BANK_CAMPAIGN_DNA,
         STC_BANK_SHOT_DESIGN_CONTRACT,
+        STC_MERCHANT_CONCEPT_LIBRARY,
+        STC_STYLE_TRANSFORMATION_CONTRACT,
         is_stc_bank_request,
     )
 
@@ -195,6 +197,8 @@ except Exception:
     STC_BANK_VISUAL_SKILL = ""
     STC_BANK_CAMPAIGN_DNA = ""
     STC_BANK_SHOT_DESIGN_CONTRACT = ""
+    STC_MERCHANT_CONCEPT_LIBRARY = ""
+    STC_STYLE_TRANSFORMATION_CONTRACT = ""
 
     def is_stc_bank_request(
         value: Any,
@@ -1566,6 +1570,12 @@ def stc_brand_pack_prompt_fragment(
 
         "shot_design_contract":
             STC_BANK_SHOT_DESIGN_CONTRACT,
+
+        "merchant_concept_library":
+            STC_MERCHANT_CONCEPT_LIBRARY,
+
+        "style_transformation_contract":
+            STC_STYLE_TRANSFORMATION_CONTRACT,
 
         "campaign_archetypes":
             [
@@ -4228,6 +4238,18 @@ STC DIRECTOR'S SHOT DESIGN CONTRACT
 ==================================================
 
 {STC_BANK_SHOT_DESIGN_CONTRACT}
+
+==================================================
+MERCHANT CONCEPT ATLAS
+==================================================
+
+{STC_MERCHANT_CONCEPT_LIBRARY}
+
+==================================================
+STYLE TRANSFORMATION CONTRACT
+==================================================
+
+{STC_STYLE_TRANSFORMATION_CONTRACT}
 
 ==================================================
 PHOTOGRAPHIC REALISM
