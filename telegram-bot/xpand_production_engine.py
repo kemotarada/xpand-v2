@@ -5535,6 +5535,10 @@ QA_FLAGS_SCHEMA = {
             "type":
                 "boolean",
         },
+        "stc_color_lighting_mismatch": {
+            "type":
+                "boolean",
+        },
         "invented_payment_hardware": {
             "type":
                 "boolean",
@@ -5571,6 +5575,7 @@ QA_FLAGS_SCHEMA = {
         "brand_identity_weak",
         "merchant_fusion_failed",
         "reference_drift",
+        "stc_color_lighting_mismatch",
         "invented_payment_hardware",
         "phone_pos_fusion",
         "random_stone_pedestal",
@@ -6077,6 +6082,18 @@ REFERENCE ADHERENCE
 reference_drift = TRUE when the image feels like generic
 luxury/fintech rather than a visual world informed by the
 STC reference DNA.
+
+STC COLOR / LIGHTING LOCK
+-------------------------
+
+stc_color_lighting_mismatch = TRUE when the image does not match the supplied
+STC campaign reference: brown or gray-mauve aubergine, weak/desaturated purple,
+flat purple wall, blue-purple drift, missing saturated violet/magenta light pool
+toward the upper-right/rear, missing deep-violet falloff toward the left/lower
+frame, or missing violet rim light and luminous platform bevel response.
+This flag is about campaign color, contrast and light direction—not whether the
+objects are identical to the reference. If TRUE, reduce reference_adherence and
+lighting_materials and choose correct/rebuild; do not approve.
 
 MERCHANT MESSAGE
 ----------------
