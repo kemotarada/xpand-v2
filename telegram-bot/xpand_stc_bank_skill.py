@@ -1661,7 +1661,12 @@ def get_stc_style_instruction(
 # CENTRAL VISUAL SKILL
 # =========================================================
 
-from xpand_stc_skill_runtime import core_direction, style_direction
+from xpand_stc_skill_runtime import (
+    core_direction,
+    style_direction,
+    prompt_engineering_direction,
+    camera_finish_direction,
+)
 
 STC_BANK_VISUAL_SKILL = core_direction()
 
@@ -1958,6 +1963,8 @@ def build_stc_bank_skill_context(
 
     parts = [
         STC_BANK_VISUAL_SKILL,
+        prompt_engineering_direction(),
+        camera_finish_direction(),
         STC_BANK_CAMPAIGN_DNA,
         STC_BANK_SHOT_DESIGN_CONTRACT,
         STC_MERCHANT_CONCEPT_LIBRARY,
