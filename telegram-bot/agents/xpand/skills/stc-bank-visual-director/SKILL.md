@@ -128,3 +128,12 @@ Load references/non-literal-concept-gate-mandatory.md before approving any STC c
 ## Creative-first ideation reference
 
 Load references/stc-bank-creative-first-v2.md for diverse concept families, 12-direction exploration and campaign-level variation. Treat its quality checks as advisory guidance; never block the final image render.
+
+
+## STC BANK — ATTACHED PROMPTS ARE EXECUTION AUTHORITY
+
+The following two references are mandatory runtime stages, not optional inspiration:
+- references/stc-bank-concept-mutation-lab.md — runs before final concept selection and prompt writing.
+- references/stc-bank-strict-visual-output-ad-quality-guard.md — runs before generation and after generation.
+
+The Mutation Lab must change the idea's mechanism, physical logic or consequence; changing only lens, color, lighting or object position is not a mutation. The Visual Guard treats all layout metadata as invisible composition instructions. Never render the words that describe reserved space, and never accept a result containing readable text, logos, fake UI, labels or the known purple-wall/opening/POS/card/boxes failure pattern.
