@@ -45,6 +45,13 @@ def realism_environment_direction():
         "references/stc-bank-realism-environment-authenticity.md"
     )
 
+
+
+def message_to_idea_direction():
+    return read_skill_file(
+        "references/stc-bank-message-to-idea-intelligence.md"
+    )
+
 def style_direction(style):
     name = STYLE_FILES.get(style)
     return read_skill_file("references/" + name) if name else ""
