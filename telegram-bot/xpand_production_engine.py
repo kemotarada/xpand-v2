@@ -3297,8 +3297,7 @@ POV, handoff choreography, material transition, silent product proof or another 
 
 The POS, fulfillment proof, people and architecture must share believable scale,
 perspective, light and physical contact. Penalize generic retail documentation,
-face-led framing, disconnected props, weak camera and purple recoloring. No phone,
-card, laptop, UI, QR, barcode, generated text or logo is required.
+face-led framing, disconnected props, weak camera and purple recoloring. A phone/tablet is optional supporting evidence only; if used, keep it separate from the POS with abstract unreadable UI. No card, laptop, QR, barcode, generated text or logo is required.
 """.strip()
 
         merchant = (
@@ -7302,7 +7301,10 @@ PURPLE STUDIO COLOR LOCK
 {STC_PURPLE_STUDIO_COLOR_LOCK}
 
 Physical payment acceptance and online commerce fulfillment must both remain
-legible without phone, card, screen, UI, QR, barcode, generated text or logo.
+legible without readable words or UI. Use one causal mechanism from the approved
+atlas. A real unbranded phone/tablet may be supporting evidence with abstract,
+unreadable UI, but it must remain separate from the POS and never carry the whole
+message. No split screen, collage, QR code, barcode, generated text or logo.
 Use a deliberate 4:5 advertising crop, intentional camera, premium light,
 physical contact shadows and a strong visual hierarchy.
 
@@ -7316,8 +7318,9 @@ Image 1 is the approved strong preview. Reproduce it faithfully as the final ima
 Preserve the exact hero, merchant, POS, parcel, camera, perspective, lighting,
 materials, copy-space placement and purple STC environment. Do not redesign or
 rebuild the campaign. Correct only the explicitly diagnosed defect. No new objects,
-no reference collage, no courier, no second location, no phone, no UI, no text, no
-logo, no QR code, no barcode and no readable markings.
+no reference collage, no courier, no second location, no invented or unrelated
+object, no readable UI, no text, no logo, no QR code, no barcode and no readable
+markings. Preserve any approved supporting phone/tablet as a separate physical cue.
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
