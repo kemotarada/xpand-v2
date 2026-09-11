@@ -23,6 +23,9 @@ def read_skill_file(name):
 def core_direction():
     return read_skill_file("SKILL.md")
 
+def master_system_prompt():
+    return read_skill_file("references/stc-bank-master-system-prompt-v1.md")
+
 def prompt_engineering_direction():
     return read_skill_file("references/prompt-engineering.md")
 
@@ -60,6 +63,7 @@ def prompt_direction(style):
         read_skill_file("references/reference-campaign-grammar.md"),
         read_skill_file("references/prompt-specification.md"),
         read_skill_file("references/visual-language.md"),
+        master_system_prompt(),
         prompt_engineering_direction(),
         camera_finish_direction(),
         read_skill_file("references/effects-and-finish.md")]))
