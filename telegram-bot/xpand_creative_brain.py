@@ -1688,6 +1688,24 @@ class CreativeConcept:
 
     marketing_message: str = ""
 
+    claim: str = ""
+
+    functional_proof: str = ""
+
+    human_proof: str = ""
+
+    environmental_proof: str = ""
+
+    emotional_proof: str = ""
+
+    hero_event: str = ""
+
+    claim_proof_type: str = ""
+
+    copy_independence_test: str = ""
+
+    message_drift_risk: str = ""
+
     visual_metaphor: str = ""
 
     visual_mechanism_type: str = ""
@@ -1850,6 +1868,51 @@ CONCEPT_SCHEMA: Dict[
                 "string",
         },
 
+        "claim": {
+            "type":
+                "string",
+        },
+
+        "functional_proof": {
+            "type":
+                "string",
+        },
+
+        "human_proof": {
+            "type":
+                "string",
+        },
+
+        "environmental_proof": {
+            "type":
+                "string",
+        },
+
+        "emotional_proof": {
+            "type":
+                "string",
+        },
+
+        "hero_event": {
+            "type":
+                "string",
+        },
+
+        "claim_proof_type": {
+            "type":
+                "string",
+        },
+
+        "copy_independence_test": {
+            "type":
+                "string",
+        },
+
+        "message_drift_risk": {
+            "type":
+                "string",
+        },
+
         "visual_metaphor": {
             "type":
                 "string",
@@ -1984,6 +2047,15 @@ CONCEPT_SCHEMA: Dict[
         "campaign_hook",
         "core_idea",
         "marketing_message",
+        "claim",
+        "functional_proof",
+        "human_proof",
+        "environmental_proof",
+        "emotional_proof",
+        "hero_event",
+        "claim_proof_type",
+        "copy_independence_test",
+        "message_drift_risk",
         "visual_metaphor",
         "visual_mechanism_type",
         "why_not_generic",
@@ -2171,6 +2243,31 @@ def evaluation_schema() -> Dict[
                     "boolean",
             },
 
+            "claim_proof_clear": {
+                "type":
+                    "boolean",
+            },
+
+            "story_event_not_pose": {
+                "type":
+                    "boolean",
+            },
+
+            "location_proves_claim": {
+                "type":
+                    "boolean",
+            },
+
+            "copy_independent": {
+                "type":
+                    "boolean",
+            },
+
+            "message_drift_risk": {
+                "type":
+                    "boolean",
+            },
+
             "merchant_online_channel_clear": {
                 "type":
                     "boolean",
@@ -2248,6 +2345,11 @@ def evaluation_schema() -> Dict[
             "concept_is_scene_only",
             "mechanism_survives_single_frame",
             "looks_like_real_bank_campaign",
+            "claim_proof_clear",
+            "story_event_not_pose",
+            "location_proves_claim",
+            "copy_independent",
+            "message_drift_risk",
             "merchant_online_channel_clear",
             "merchant_pos_channel_clear",
             "merchant_channels_fused",
@@ -3003,6 +3105,8 @@ HARD_REJECT_FAILURES: Set[str] = {
     "digital_banking_cliche",
 
     "production_not_feasible",
+
+    "message_drift_travel_to_payment",
 }
 
 
@@ -3071,6 +3175,69 @@ def concept_from_dict(
                 "marketing_message"
             ),
             2200,
+        ),
+
+        claim=clean_text(
+            item.get(
+                "claim"
+            ),
+            2200,
+        ),
+
+        functional_proof=clean_text(
+            item.get(
+                "functional_proof"
+            ),
+            2200,
+        ),
+
+        human_proof=clean_text(
+            item.get(
+                "human_proof"
+            ),
+            2200,
+        ),
+
+        environmental_proof=clean_text(
+            item.get(
+                "environmental_proof"
+            ),
+            2200,
+        ),
+
+        emotional_proof=clean_text(
+            item.get(
+                "emotional_proof"
+            ),
+            1600,
+        ),
+
+        hero_event=clean_text(
+            item.get(
+                "hero_event"
+            ),
+            2200,
+        ),
+
+        claim_proof_type=clean_text(
+            item.get(
+                "claim_proof_type"
+            ),
+            600,
+        ),
+
+        copy_independence_test=clean_text(
+            item.get(
+                "copy_independence_test"
+            ),
+            1800,
+        ),
+
+        message_drift_risk=clean_text(
+            item.get(
+                "message_drift_risk"
+            ),
+            1800,
         ),
 
         visual_metaphor=clean_text(
@@ -3715,6 +3882,41 @@ def local_concept_penalties(
         penalty += 6.0
         failures.append(
             "message_distillation_weak"
+        )
+
+    claim_proof_fields_weak = any(
+        len(
+            clean_text(
+                value,
+                2200,
+            )
+        )
+        <
+        18
+        for value
+        in (
+            concept.claim,
+            concept.functional_proof,
+            concept.human_proof,
+            concept.environmental_proof,
+            concept.hero_event,
+            concept.copy_independence_test,
+        )
+    )
+
+    if claim_proof_fields_weak:
+        penalty += 8.0
+        failures.append(
+            "claim_proof_distillation_weak"
+        )
+
+    if not clean_text(
+        concept.claim_proof_type,
+        600,
+    ):
+        penalty += 4.0
+        failures.append(
+            "claim_proof_type_missing"
         )
 
     if (
@@ -4431,6 +4633,7 @@ def stc_runtime_director_context(
     try:
         runtime = __import__("xpand_stc_skill_runtime")
         names = [
+            "references/stc-bank-claim-proof-scene-engine.md",
             "SKILL.md",
             "references/stc-bank-location-environment-intelligence.md",
             "references/stc-bank-realism-environment-authenticity.md",
@@ -4831,6 +5034,37 @@ An e-commerce/POS brief must not read as a phone-and-terminal product
 catalogue. A person standing with a phone in a beautiful place must not be
 accepted without a meaningful action, consequence or visual relationship.
 
+CLAIM-PROOF SCENE ENGINE — REQUIRED BEFORE SCENE ARCHITECTURE
+Translate the single message into:
+- claim: the exact promise
+- functional_proof: the real situation that demonstrates it
+- human_proof: what the customer is naturally doing
+- environmental_proof: what makes the promise harder to doubt
+- emotional_proof: what the viewer should feel
+
+Generate at least six internally different proof situations when the user
+does not specify a location. Compare them by claim-proof strength, human story,
+message clarity, memorability, emotion, STC fit and freshness. Do not accept
+the first category location merely because it is relevant: airport is travel
+context, but a remote mountain camp, moving train, boat at sea or another
+credible destination may prove "with you everywhere" more strongly.
+
+Use the structure:
+LOCATION + SITUATION + ACTION + BENEFIT = CLAIM PROOF
+
+For each concept, explicitly provide:
+- one hero_event, not a product pose
+- one claim_proof_type such as distance, movement, foreignness, difficulty,
+  context, contrast or transition
+- a copy_independence_test
+- the most likely message_drift_risk
+
+Apply the continuity test: what happened ten seconds before, what is happening
+now, and what happens ten seconds later? Prefer POV, over-the-shoulder or
+candid observation when the claim is experiential. The environment must change
+the meaning; if replacing it with any other place leaves the claim unchanged,
+the location is decorative and must be mutated.
+
 CREATIVE-FIRST CAMPAIGN BOARD
 Use the twelve mandatory concept families in the STC BANK HIGH ALERT
 section. The batch must span human storytelling, still life, material
@@ -5062,6 +5296,26 @@ Is the idea memorable?
 advertising_readiness:
 Could a senior bank creative director authorize production?
 
+CLAIM-PROOF REVIEW
+
+claim_proof_clear:
+TRUE only when the image visibly demonstrates the exact promise, not merely
+the service category.
+
+story_event_not_pose:
+TRUE only when the subject is living through an action or consequence rather
+than presenting a phone, card or terminal.
+
+location_proves_claim:
+TRUE only when removing or changing the location would weaken the claim.
+
+copy_independent:
+TRUE only when the scene still suggests the promise with the headline hidden.
+
+message_drift_risk:
+TRUE when the scene could more strongly be interpreted as another service.
+For a travel/SIM brief, POS or payment interpretation is a failure.
+
 weighted_score:
 Return a strict overall score.
 
@@ -5292,6 +5546,15 @@ Lock:
 - why_location
 - location_mode (real, purple, hybrid, conceptual, POV, still life or monumental)
 - message_connection
+- claim
+- functional_proof
+- human_proof
+- environmental_proof
+- emotional_proof
+- hero_event
+- claim_proof_type
+- copy_independence_test
+- message_drift_risk
 - camera_opportunity
 - angle
 - lens
@@ -6114,6 +6377,94 @@ def apply_evaluations_to_concepts(
                 "not_bank_campaign_ready"
             )
 
+        claim_proof_clear = bool(
+            evaluation.get(
+                "claim_proof_clear",
+                False,
+            )
+        )
+
+        story_event_not_pose = bool(
+            evaluation.get(
+                "story_event_not_pose",
+                False,
+            )
+        )
+
+        location_proves_claim = bool(
+            evaluation.get(
+                "location_proves_claim",
+                False,
+            )
+        )
+
+        copy_independent = bool(
+            evaluation.get(
+                "copy_independent",
+                False,
+            )
+        )
+
+        review_message_drift = bool(
+            evaluation.get(
+                "message_drift_risk",
+                False,
+            )
+        )
+
+        if not claim_proof_clear:
+            penalty += 12.0
+            failures.append(
+                "claim_proof_not_clear"
+            )
+
+        if not story_event_not_pose:
+            penalty += 10.0
+            failures.append(
+                "story_event_is_pose"
+            )
+
+        if not location_proves_claim:
+            penalty += 10.0
+            failures.append(
+                "location_does_not_prove_claim"
+            )
+
+        if not copy_independent:
+            penalty += 8.0
+            failures.append(
+                "claim_depends_on_copy"
+            )
+
+        if review_message_drift:
+            penalty += 18.0
+            failures.append(
+                "review_message_drift_risk"
+            )
+
+        concept.weighted_score = max(
+            0.0,
+            round(
+                concept.weighted_score
+                -
+                penalty,
+                2,
+            ),
+        )
+
+        concept.debate["claim_proof"] = {
+            "claim_proof_clear":
+                claim_proof_clear,
+            "story_event_not_pose":
+                story_event_not_pose,
+            "location_proves_claim":
+                location_proves_claim,
+            "copy_independent":
+                copy_independent,
+            "message_drift_risk":
+                review_message_drift,
+        }
+
         if not production_feasible:
 
             failures.append(
@@ -6224,6 +6575,20 @@ def apply_evaluations_to_concepts(
 
             "local_penalty":
                 penalty,
+
+            "claim_proof":
+                {
+                    "claim_proof_clear":
+                        claim_proof_clear,
+                    "story_event_not_pose":
+                        story_event_not_pose,
+                    "location_proves_claim":
+                        location_proves_claim,
+                    "copy_independent":
+                        copy_independent,
+                    "message_drift_risk":
+                        review_message_drift,
+                },
 
             "strengths":
                 [
@@ -9115,6 +9480,33 @@ def concept_to_dict(
 
         "marketing_message":
             concept.marketing_message,
+
+        "claim":
+            concept.claim,
+
+        "functional_proof":
+            concept.functional_proof,
+
+        "human_proof":
+            concept.human_proof,
+
+        "environmental_proof":
+            concept.environmental_proof,
+
+        "emotional_proof":
+            concept.emotional_proof,
+
+        "hero_event":
+            concept.hero_event,
+
+        "claim_proof_type":
+            concept.claim_proof_type,
+
+        "copy_independence_test":
+            concept.copy_independence_test,
+
+        "message_drift_risk":
+            concept.message_drift_risk,
 
         "visual_metaphor":
             concept.visual_metaphor,
