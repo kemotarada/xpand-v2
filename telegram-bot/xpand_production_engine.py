@@ -1336,7 +1336,7 @@ def stc_visual_family_for_brand_kit(
             request
         )
         or
-        STYLE_PREMIUM_REALISTIC
+        STYLE_PURPLE_ARCHITECTURAL
     )
 
     if style == STYLE_PURPLE_ARCHITECTURAL:
@@ -3199,7 +3199,7 @@ def build_stc_visual_constitution(
             request
         )
         or
-        STYLE_PREMIUM_REALISTIC
+        STYLE_PURPLE_ARCHITECTURAL
     )
 
     style_text = """
@@ -3220,12 +3220,17 @@ materials keep physically believable color and texture.
     ):
 
         style_text = """
-PURPLE ARCHITECTURAL
+PURPLE ARCHITECTURAL — STC CAMPAIGN MATCH
 
-Purple may exist in believable physical architecture,
-paint, glass, surfaces or motivated lighting.
+Match the supplied saturated STC Bank campaign reference: deep violet base,
+brighter violet/magenta pool toward the upper-right or rear plane, deep-violet
+falloff toward the left/lower frame, violet rim light on near-black products and
+luminous violet platform bevels. Preserve saturated purple midtones.
 
-Never recolor people, products or the whole frame purple.
+Reject brown aubergine, gray-mauve, flat purple, blue-purple drift, weak ambient
+light and any normal office/counter recolored purple. Keep materials physically
+credible, with real contact shadows, glossy edge reflections and deliberate
+platform perspective.
 """.strip()
 
     elif (
