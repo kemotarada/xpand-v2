@@ -7570,6 +7570,7 @@ def run_production(
     aspect_ratio: str = "4:5",
     mode: str = MODE_MASTERPIECE,
     target_model: str = TARGET_GEMINI,
+    additional_references: Optional[Sequence[ProductionReference]] = None,
 ) -> ProductionResult:
 
     started = (
@@ -7688,6 +7689,11 @@ def run_production(
         )
     )
 
+    if additional_references:
+        memory_references = unique_references(
+            list(additional_references) + list(memory_references)
+        )
+
     product_refs = (
         product_references(
             memory_references
@@ -7793,6 +7799,16 @@ def run_production(
                 ),
             )
         )
+
+    if additional_references:
+        reference_limit = (
+            STC_RENDER_REFERENCE_LIMIT
+            if stc_request
+            else MAX_PHYSICAL_REFERENCE_IMAGES
+        )
+        physical_refs = unique_references(
+            list(additional_references) + list(physical_refs)
+        )[:reference_limit]
 
     telemetry[
         "physical_reference_count"
