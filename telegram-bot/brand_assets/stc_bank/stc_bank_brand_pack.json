@@ -1,7 +1,7 @@
 {
   "brand_id": "stc_bank",
   "brand_name": "STC Bank",
-  "version": "4.2",
+  "version": "4.3",
   "default_visual_family": "premium_purple_architecture",
   "identity_keywords": [
     "modern Saudi banking",
@@ -13,7 +13,11 @@
     "restrained STC purple and green accents",
     "human-centered banking",
     "simple but memorable advertising ideas",
-    "high-end material realism"
+    "high-end material realism",
+    "deep-violet architectural campaign world",
+    "violet-magenta motivated lighting",
+    "physically coherent reflections",
+    "one-mechanism advertising"
   ],
   "required_brand_signals": [
     "premium Saudi visual language",
@@ -51,7 +55,13 @@
     "no_graphic_overlays": true,
     "no_visible_text_or_logos": true,
     "require_reference_style_match": true,
-    "require_stc_studio_color_lock": true
+    "require_stc_studio_color_lock": true,
+    "require_stc_palette_lock": true,
+    "require_violet_magenta_light_pool": true,
+    "require_physical_reflection_logic": true,
+    "require_single_visual_mechanism": true,
+    "reject_forced_counter_tableau": true,
+    "merchant_online_cue_may_use_unreadable_device": true
   },
   "banned_patterns": [
     "tablet beside POS terminal",
@@ -74,7 +84,13 @@
     "cheap stock photo banking scene",
     "low-saturation brown-purple studio",
     "dark brown wall with weak violet light",
-    "muted mauve lighting that loses STC saturation"
+    "muted mauve lighting that loses STC saturation",
+    "forced counter plus parcel tableau",
+    "flat purple wall",
+    "gray mauve wash",
+    "random purple blocks",
+    "device museum",
+    "phone and pos as unrelated trophies"
   ],
   "approved_mechanisms": [
     "physical visual bridge",
