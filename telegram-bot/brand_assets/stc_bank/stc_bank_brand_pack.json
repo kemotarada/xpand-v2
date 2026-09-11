@@ -1,8 +1,8 @@
 {
   "brand_id": "stc_bank",
   "brand_name": "STC Bank",
-  "version": "4.0",
-  "default_visual_family": "premium_realistic",
+  "version": "4.1",
+  "default_visual_family": "premium_purple_architecture",
   "identity_keywords": [
     "modern Saudi banking",
     "premium financial confidence",
@@ -28,8 +28,8 @@
     "STC Bank identity without depending on logos"
   ],
   "global_rules": {
-    "purple_is_optional": true,
-    "purple_is_not_default": true,
+    "purple_is_optional": false,
+    "purple_is_not_default": false,
     "no_generated_text": true,
     "no_generated_logo": true,
     "no_fake_bank_ui": true,
@@ -49,7 +49,9 @@
     "copy_space_min_percent": 25,
     "copy_space_max_percent": 40,
     "no_graphic_overlays": true,
-    "no_visible_text_or_logos": true
+    "no_visible_text_or_logos": true,
+    "require_reference_style_match": true,
+    "require_stc_studio_color_lock": true
   },
   "banned_patterns": [
     "tablet beside POS terminal",
@@ -757,6 +759,49 @@
       ],
       "priority": 110,
       "notes": "Two warm shawarma wraps in one hand, white storefront and clean blue sky; upward view, warm food highlights, legible context; remove signage/text/logo/card strip; avoid oversaturated food."
+    },
+    {
+      "asset_id": "stc_user_studio_01",
+      "path": "stc_bank/user_references/stc_studio_reference_01.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference",
+        "campaign_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 100,
+      "notes": "User-supplied STC studio campaign reference: use for deep-violet hue, connected architectural planes, restrained light and advertising composition; never copy its text, logos or exact objects."
     }
-  ]
+  ],
+  "reference_color_lock": {
+    "source": "observed swatches from the permanent STC purple studio references; not official brand hex values",
+    "primary": [
+      "#2F125F",
+      "#633490",
+      "#230D4D"
+    ],
+    "shadow": [
+      "#0D0420",
+      "#160C2B"
+    ],
+    "accent": [
+      "#4B028B"
+    ],
+    "material_behavior": [
+      "deep violet architectural planes",
+      "graphite/near-black product bodies",
+      "controlled lighter-violet highlights",
+      "restrained green accent only when conceptually justified"
+    ],
+    "negative": [
+      "lavender room",
+      "mauve wash",
+      "blue-purple shift",
+      "neon magenta",
+      "flat purple backdrop"
+    ]
+  }
 }
