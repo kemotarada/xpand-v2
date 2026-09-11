@@ -43,7 +43,7 @@
 # Therefore these rules can never disappear because of
 # character-budget compaction:
 #
-# - 25–40% integrated quiet negative space
+# - 25–40% integrated copy space
 # - NO artificial blank panel
 # - NO hero pushed into bottom
 # - NO stone/travertine pedestal
@@ -204,7 +204,7 @@ except Exception:
 # =========================================================
 
 ENGINE_NAME = "XPAND Production Engine"
-ENGINE_VERSION = "6.1.0"
+ENGINE_VERSION = "6.0.1"
 
 
 # =========================================================
@@ -1336,7 +1336,7 @@ def stc_visual_family_for_brand_kit(
             request
         )
         or
-        STYLE_PURPLE_ARCHITECTURAL
+        STYLE_PREMIUM_REALISTIC
     )
 
     if style == STYLE_PURPLE_ARCHITECTURAL:
@@ -3150,29 +3150,32 @@ def requires_reality_reinterpretation(
 def merchant_payment_execution_lock() -> str:
     """Keep service legibility while allowing multiple campaign mechanisms."""
     return """
-MERCHANT PAYMENTS — ADAPTIVE CAMPAIGN CONTRACT V6.1
----------------------------------------------------
+MERCHANT PAYMENTS — ADAPTIVE CAMPAIGN CONTRACT
+-----------------------------------------------
 
-Build one campaign idea that makes physical payment acceptance and online commerce/fulfillment read as one connected merchant ecosystem. Use exactly one mechanism from the approved concept atlas; do not force every brief into a counter-plus-parcel tableau.
+The image must communicate physical payment plus online commerce/fulfillment in
+one coherent advertising idea. The approved creative concept determines the
+visual mechanism, object hierarchy, camera, environment and human presence.
+Do not force every idea into a POS-on-counter-and-box tableau.
+
+Acceptable campaign grammars include: object-led product theatre, a folded parcel
+architecture, a portal/threshold, a merchant point of view, a close handoff
+choreography, a material transition, a silent product proof or a specific Saudi
+commerce moment. Use only one decisive mechanism per frame.
 
 SERVICE PROOF
-- one believable unbranded physical POS in an active contactless action;
-- one credible online/fulfillment cue: a real unbranded phone/tablet with abstract unreadable UI, a product/order handoff, or a physical fulfillment outcome;
-- both proofs share one causal action or continuous surface, one camera, one light logic and believable scale;
-- phone/tablet and POS remain separate physical objects; never fuse them, float them or display them as unrelated trophies.
+- one believable unbranded physical POS/contactless action
+- one believable proof of online commerce or fulfillment
+- both proofs share coherent perspective, light, scale and physical logic
+- no phone, card, laptop, UI, QR, barcode, generated text or logo is required
 
-CAMPAIGN GRAMMARS
-Choose one: continuous commerce surface, threshold/reveal, close handoff choreography, reflection-led pairing, product theatre, or a specific Saudi commerce moment. The chosen grammar must control the hero, camera and object hierarchy.
-
-HARD FAILURES
-Reject generic checkout documentation, a merchant portrait with tiny devices, a parcel added only as a second prop, split screen, collage, fake UI, readable text, QR/barcode, invented hardware, random blocks, flat purple wall, grey-mauve wash, neon fintech graphics and any scene that needs a caption to explain the relationship.
-
-PURPLE CAMPAIGN FINISH
-For the purple route use connected saturated violet planes, deep-violet falloff, near-black/graphite hero objects, a broad violet/magenta pool from the upper-right or rear plane, restrained mint/green accent, realistic contact shadows and reflections tied to actual surface normals and light sources.
-
-EDIT MODE OVERRIDE
-If an approved prior render is attached, Image 1 is the composition to edit, not a loose reference. Preserve the exact silhouette and camera. Apply only the named local corrections. Never crop a hero object, replace a readable service cue with blank wallpaper, turn a material seam into neon, or re-stage the scene into a new product still life.
+A purple architectural request must create a new campaign set and visual grammar,
+not recolor the previous realistic scene. The viewer should understand the service
+without text, but the frame must feel like a designed bank advertisement rather
+than documentation of a workday.
 """.strip()
+
+
 
 # =========================================================
 # STC VISUAL CONSTITUTION
@@ -3196,7 +3199,7 @@ def build_stc_visual_constitution(
             request
         )
         or
-        STYLE_PURPLE_ARCHITECTURAL
+        STYLE_PREMIUM_REALISTIC
     )
 
     style_text = """
@@ -3300,7 +3303,8 @@ POV, handoff choreography, material transition, silent product proof or another 
 
 The POS, fulfillment proof, people and architecture must share believable scale,
 perspective, light and physical contact. Penalize generic retail documentation,
-face-led framing, disconnected props, weak camera and purple recoloring. A phone/tablet is optional supporting evidence only; if used, keep it separate from the POS with abstract unreadable UI. No card, laptop, QR, barcode, generated text or logo is required.
+face-led framing, disconnected props, weak camera and purple recoloring. No phone,
+card, laptop, UI, QR, barcode, generated text or logo is required.
 """.strip()
 
         merchant = (
@@ -3368,17 +3372,40 @@ Use the reference set for tonal balance, lighting, material quality, Saudi
 commercial realism, subject scale and copy-space placement — never for an
 exact composition or a collage of unrelated references.
 
-STC SIGNATURE COLOR AND FINISH — IMMUTABLE
+STC SIGNATURE COLOR AND FINISH — CONDITIONAL
 ------------------------------------------
-Use a deep, high-contrast STC Bank palette: near-black blackberry/plum shadows,
-rich saturated architectural purple, graphite/black hardware and a restrained
-vivid green accent. Purple must read as deep and premium, not pale lavender.
-Green is an accent only on a small motivated light, edge, seam or material detail;
-do not flood the frame with green. Keep skin, cardboard, metal and merchandise
-atural. Reject washed-out grey-lilac lighting, pastel purple, white retail interiors,
-flat studio illumination and low-contrast fog. The frame must feel like a finished
-STC Bank campaign: dark tonal base, controlled purple architecture, crisp highlights,
-clean material separation and one deliberate hero light.
+Use STC Bank's premium visual intelligence, not a mandatory purple environment.
+For premium realistic or real-world scenes, preserve natural train, airport,
+office, street, hotel, café, landscape, skin, cardboard, metal and merchandise
+colors. Purple is optional and subtle: a motivated reflection, interface detail,
+small accent or restrained edge light is enough. Never apply a purple filter,
+purple wash or purple practical lighting that turns a real location into a
+studio. Deep architectural purple is reserved for the explicitly selected
+Purple Studio route or a concept that clearly requires stylization.
+The frame must feel like a finished STC Bank campaign through idea, camera,
+material quality, lighting discipline, composition and selective brand cues.
+
+REALISM AND ENVIRONMENTAL AUTHENTICITY — MANDATORY
+--------------------------------------------------
+Realism outranks brand-color dominance. A real environment keeps its own design
+language and natural materials. A train interior must retain plausible seat,
+ceiling, window, trim and practical-light colors; do not make the carriage
+purple merely because the brand is STC. The person, phone, carriage, exterior
+light and reflections must read as one continuous photographed world.
+
+If a smartphone appears, lock its physical integration before rendering:
+normal aspect ratio and thickness, correct scale in the hand, believable grip
+and finger placement, camera-consistent foreshortening, screen plane aligned to
+the shot, correct occlusion and contact, matching focus and depth of field,
+matching reflections and light direction. No floating phone, pasted screen,
+incompatible angle, distorted proportions or hand that does not actually hold
+the device. If the phone cannot be made physically convincing, make it
+secondary, turn the display away, soften it out of focus or remove it.
+
+Before finalizing, verify natural environmental color, coherent perspective,
+realistic reflections, natural skin tone, correct contact shadows and a
+location-authentic atmosphere. Never solve a realism problem with more purple,
+more UI or decorative effects.
 
 PHYSICAL REALITY FIREWALL
 -------------------------
@@ -3460,7 +3487,7 @@ Never use an unusual angle as a meaningless gimmick.
 COPY SPACE
 ----------
 
-Use roughly 25–40% integrated quiet negative space when useful.
+Use roughly 25–40% integrated copy space when useful.
 
 Do NOT:
 - reserve 30–40% blank sky/wall automatically
@@ -3536,15 +3563,31 @@ def build_immutable_final_locks(
 MERCHANT MESSAGE — IMMUTABLE
 ----------------------------
 
-E-COMMERCE + PHYSICAL POS MUST READ AS ONE CONNECTED MERCHANT ECOSYSTEM.
+E-COMMERCE + PHYSICAL POS MUST READ AS ONE CONNECTED
+MERCHANT ECOSYSTEM.
 
-Choose exactly one campaign grammar from the approved atlas and make it the hero: continuous surface, threshold/reveal, close handoff, reflection-led pairing, product theatre or a specific Saudi commerce moment. Do not default to a generic counter, a device display or a parcel placed in the background.
+Both channels must be visually understandable without text.
 
-Show one believable unbranded POS in an active contactless interaction. Show one credible online/fulfillment cue through a meaningful action: an unbranded phone/tablet with abstract non-readable UI, a product/order handoff or a physical fulfillment outcome. The cue is supporting evidence, never a fake interface or the only proof.
+A smartphone screen alone is NOT sufficient proof
+of e-commerce.
 
-Keep all objects separate and physically real. Connect them through one action, shared surface, handoff, reflection or depth relationship. No phone/POS fusion, floating hardware, split screen, collage, readable text, QR/barcode, random blocks or unrelated checkout props.
+A POS terminal alone is NOT sufficient proof
+of the complete service.
 
-The frame must be a premium 4:5 STC campaign image with one dominant hero, intentional camera, saturated deep-violet architecture when the purple route is selected, violet/magenta upper-right or rear light, deep-violet falloff, restrained green accent, material-specific reflections and integrated copy space.
+FINAL MERCHANT SHOT CONTRACT:
+Create one vertical 4:5 premium STC merchant photograph, not a collage:
+one real merchant at one counter, one hand actively completing payment on
+one believable unbranded POS terminal, and the same counter holding one
+plain sealed parcel being prepared for dispatch. The POS, hand, merchant and
+parcel must share one camera perspective, light and causal workflow.
+
+No laptop, tablet, smartphone, extra screen, interface, keypad digits, QR
+code, barcode, label text, logo, floating object or unrelated checkout prop.
+The terminal display and parcel surface are blank and unreadable. The image
+must prove physical acceptance plus online fulfillment through action, not
+through words or UI.
+
+Do not replace the message with generic checkout activity.
 """.strip()
 
         merchant_lock = (
@@ -3600,13 +3643,14 @@ Final aspect ratio:
 Final resolution intent:
 {requested_size}
 
-Use approximately 25–40% integrated quiet negative space.
+Use approximately 25–40% integrated copy space.
 
 NO artificial blank panel; quiet upper-third space is allowed.
 
 Keep negative space photographic and integrated.
 
-NO hero pushed into the bottom half merely to manufacture empty space.
+NO hero pushed into the bottom half merely to create
+copy space.
 
 Negative space must be integrated naturally into
 architecture, depth, lighting or scene structure.
@@ -3674,14 +3718,6 @@ NO readable financial interface.
 {brand_lock}
 
 {merchant_lock}
-
-STRICT VISUAL OUTPUT GUARD — IMMUTABLE
--------------------------------------
-The generated image must contain the scene only. Never render readable Arabic or English text, letters, words, numbers, slogans, labels, logos, watermarks, signage, fake UI or any phrase describing a reserved design area. A reserved area is only an empty, low-detail visual region created by composition.
-
-Mandatory final exclusions: NO TEXT, NO TYPOGRAPHY, NO LETTERS, NO WORDS, NO NUMBERS, NO LOGOS, NO BRAND MARKS, NO WATERMARKS, NO SIGNAGE, NO LABELS, NO FAKE UI TEXT, NO DESIGN-SPACE LABELS, NO PLACEHOLDER WORDS.
-
-Reject and regenerate if any readable character, label, logo, fake interface, floating card, random prop, meaningless box, generic purple platform, or the failure pattern of purple wall + opening + POS + card + background boxes appears without a causal advertising idea. The opening must express access, transition, connection, commerce flow or consequence; otherwise remove it.
 
 FINAL SELF-CHECK
 ----------------
@@ -3802,6 +3838,51 @@ def reference_role_manifest(
 # NEGATIVE LOCK
 # =========================================================
 
+STC_VISUAL_EXCLUSION_TAIL = """
+STC STRICT VISUAL OUTPUT LOCK
+Leave negative space through composition only; keep the empty region blank,
+low-detail and visually quiet. This is an invisible layout instruction, never
+visible writing.
+NO TEXT. NO TYPOGRAPHY. NO LETTERS. NO WORDS. NO NUMBERS.
+NO LOGOS. NO BRAND MARKS. NO WATERMARKS. NO SIGNAGE. NO LABELS.
+NO FAKE UI TEXT. NO PLACEHOLDER WORDS. NO COPY-SPACE LABELS.
+NO QR CODES. NO BARCODES. NO READABLE CARD OR PACKAGE PRINT.
+
+REALISM-FIRST COLOR LOCK
+For realistic or real-world scenes, preserve the location's natural colors,
+materials and practical lighting. Purple is optional and subtle, never a
+default environment treatment. Do not tint a train, airport, office, street,
+hotel, café or landscape purple unless a stylized purple environment was
+explicitly requested.
+
+SMARTPHONE PHYSICAL-INTEGRATION LOCK
+If a smartphone appears, it must have believable aspect ratio, thickness,
+scale, grip, finger placement, foreshortening, screen-plane angle, occlusion,
+contact, focus, reflections and light direction consistent with the camera and
+the same photographed world. No floating phone, pasted screen, warped phone,
+incompatible perspective or unnatural hand pose. If integration is uncertain,
+make the phone secondary, turn the screen away, soften it or remove it.
+""".strip()
+
+
+def enforce_stc_visual_output_tail(prompt: str) -> str:
+    """Sanitize layout metadata before generation and append hard exclusions."""
+    text = str(prompt or "")
+    replacements = (
+        (r"(?i)\bintegrated\s+copy\s+space\b", "a visually quiet low-detail region"),
+        (r"(?i)\bcopy[\s-]*space\s+label\b", "visible layout label"),
+        (r"(?i)\bcopy[\s-]*space\b", "visually quiet negative space"),
+        (r"(?i)\bheadline\s+(?:safe\s+)?zone\b", "clean low-detail region"),
+        (r"(?i)\blogo\s+(?:safe\s+)?zone\b", "uninterrupted background region"),
+        (r"(?i)\b(?:text|logo)\s+here\b", "no visible writing"),
+        (r"(?i)\bplaceholder\s+(?:copy|text|label)\b", "no visible writing"),
+    )
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text + "\n\n" + STC_VISUAL_EXCLUSION_TAIL
+
+
 def base_negative_prompt() -> str:
 
     return """
@@ -3845,6 +3926,11 @@ No broken grip.
 No fake reflections.
 No contradictory perspective.
 No impossible object support.
+No purple wash over a realistic environment.
+No purple train, airport, office, café or street by default.
+No oversized, undersized or malformed smartphone.
+No phone with perspective, grip, reflections or focus that contradict the shot.
+No pasted-on smartphone screen.
 """.strip()
 
 
@@ -4297,11 +4383,14 @@ Do not copy their exact old scene.
 Solve the message with a physically believable frame.
 
 For STC merchant payments:
-show one active physical contactless acceptance and one credible online/fulfillment cue as one connected merchant ecosystem. A real unbranded phone/tablet may support the online cue only with abstract, non-readable UI; keep it separate from the POS.
+show online/e-commerce commerce and physical payment
+acceptance as one real connected merchant ecosystem.
 
-Never invent or fuse hardware.
+Never invent a device to explain the service.
 
-Never use a stone pedestal, generic counter or split screen as a shortcut for premium.
+Never merge phone + POS.
+
+Never use a stone pedestal as a shortcut for premium.
 
 Do not reserve a giant empty top area.
 
@@ -4644,35 +4733,6 @@ def requires_clean_contract_render(
 # FINAL GPT-IMAGE-2 PROMPT V6.0.1
 # =========================================================
 
-def enforce_stc_visual_output_tail(prompt: str) -> str:
-    """Remove layout metadata that image models may render as visible copy."""
-    cleaned = (prompt or "")
-    for source, replacement in (
-        ("copy space", "quiet negative space"),
-        ("Copy space", "Quiet negative space"),
-        ("COPY SPACE", "QUIET NEGATIVE SPACE"),
-        ("copy-space", "design-space"),
-    ):
-        cleaned = cleaned.replace(source, replacement)
-    return cleaned.rstrip() + "\n\n" + "\n".join((
-        "FINAL IMAGE EXCLUSION TAIL — HIGHEST PRIORITY",
-        "NO TEXT",
-        "NO TYPOGRAPHY",
-        "NO LETTERS",
-        "NO WORDS",
-        "NO NUMBERS",
-        "NO LOGOS",
-        "NO BRAND MARKS",
-        "NO WATERMARKS",
-        "NO SIGNAGE",
-        "NO LABELS",
-        "NO FAKE UI TEXT",
-        "NO DESIGN-SPACE LABELS",
-        "NO PLACEHOLDER WORDS",
-        "IMAGE CONTAINS THE SCENE ONLY.",
-    ))
-
-
 def build_final_renderer_prompt(
     *,
     compiled: CompiledPrompt,
@@ -4685,7 +4745,6 @@ def build_final_renderer_prompt(
     ],
     aspect_ratio: str,
     requested_size: str,
-    edit_mode: bool = False,
 ) -> str:
 
     stc_request = (
@@ -4718,11 +4777,6 @@ def build_final_renderer_prompt(
             preview_qa=preview_qa,
         )
     )
-    # In edit mode, preserve the approved prior composition even when the
-    # preview audit flags local defects; clean recomposition would discard the
-    # very geometry the user asked us to refine.
-    if edit_mode:
-        preview_requires_clean_recomposition = False
 
     image_role_instruction = (
         "NO PREVISUALIZATION INPUT IS PROVIDED.\n\n"
@@ -4953,12 +5007,10 @@ PURPLE STUDIO COLOR LOCK
 SERVICE LEGIBILITY
 -----------------
 Physical contactless acceptance and online commerce fulfillment must both be
-understandable without readable words or UI. Choose one causal mechanism: a
-continuous surface, threshold/reveal, close handoff, reflection-led pairing or
-product theatre. One real unbranded phone/tablet may appear as supporting
-e-commerce evidence with abstract unreadable UI; it must stay separate from the
-POS and never carry the whole message. Do not use split screen, collage, QR code,
-barcode, floating hardware or a generic counter-plus-parcel tableau.
+understandable without generated words or UI. They may appear through different
+spatial roles, a physical metaphor, a choreographed handoff, a portal, a fold,
+a material transition or a product-theatre composition. Do not add a phone,
+laptop, screen, card, QR code or barcode to explain them.
 
 PHOTOGRAPHIC AND ADVERTISING QUALITY
 -------------------------------------
@@ -4977,8 +5029,7 @@ Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
 
-        return enforce_stc_visual_output_tail(
-            fit_prompt_with_immutable_locks(
+        return fit_prompt_with_immutable_locks(
             core_prompt,
             immutable_locks,
             label=(
@@ -4987,7 +5038,6 @@ Resolution intent: {requested_size}
             budget=(
                 FINAL_PROMPT_BUDGET
             ),
-        )
         )
 
 
@@ -5076,7 +5126,7 @@ def gemini_multi_reference_edit(
 
         response = generate_image(
             prompt,
-            mode="google_pro",
+            mode="google_fast",
             number=1,
             aspect_ratio=(
                 aspect_ratio
@@ -7348,10 +7398,7 @@ PURPLE STUDIO COLOR LOCK
 {STC_PURPLE_STUDIO_COLOR_LOCK}
 
 Physical payment acceptance and online commerce fulfillment must both remain
-legible without readable words or UI. Use one causal mechanism from the approved
-atlas. A real unbranded phone/tablet may be supporting evidence with abstract,
-unreadable UI, but it must remain separate from the POS and never carry the whole
-message. No split screen, collage, QR code, barcode, generated text or logo.
+legible without phone, card, screen, UI, QR, barcode, generated text or logo.
 Use a deliberate 4:5 advertising crop, intentional camera, premium light,
 physical contact shadows and a strong visual hierarchy.
 
@@ -7365,9 +7412,8 @@ Image 1 is the approved strong preview. Reproduce it faithfully as the final ima
 Preserve the exact hero, merchant, POS, parcel, camera, perspective, lighting,
 materials, copy-space placement and purple STC environment. Do not redesign or
 rebuild the campaign. Correct only the explicitly diagnosed defect. No new objects,
-no reference collage, no courier, no second location, no invented or unrelated
-object, no readable UI, no text, no logo, no QR code, no barcode and no readable
-markings. Preserve any approved supporting phone/tablet as a separate physical cue.
+no reference collage, no courier, no second location, no phone, no UI, no text, no
+logo, no QR code, no barcode and no readable markings.
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
@@ -7617,7 +7663,6 @@ def run_production(
     aspect_ratio: str = "4:5",
     mode: str = MODE_MASTERPIECE,
     target_model: str = TARGET_GEMINI,
-    additional_references: Optional[Sequence[ProductionReference]] = None,
 ) -> ProductionResult:
 
     started = (
@@ -7736,11 +7781,6 @@ def run_production(
         )
     )
 
-    if additional_references:
-        memory_references = unique_references(
-            list(additional_references) + list(memory_references)
-        )
-
     product_refs = (
         product_references(
             memory_references
@@ -7847,16 +7887,6 @@ def run_production(
             )
         )
 
-    if additional_references:
-        reference_limit = (
-            STC_RENDER_REFERENCE_LIMIT
-            if stc_request
-            else MAX_PHYSICAL_REFERENCE_IMAGES
-        )
-        physical_refs = unique_references(
-            list(additional_references) + list(physical_refs)
-        )[:reference_limit]
-
     telemetry[
         "physical_reference_count"
     ] = len(
@@ -7961,15 +7991,6 @@ def run_production(
             aspect_ratio
         ),
     )
-
-    edit_mode = bool(additional_references)
-    if edit_mode:
-        compiled.prompt = clean_text(
-            compiled.prompt
-            + "\n\nIMAGE EDIT MODE OVERRIDE — PRESERVE IMAGE 1\n"
-            + "Image 1 is the approved prior render. Edit it in place. Preserve the exact camera, crop, surface silhouette, phone/POS positions, hand relationship, STC lighting and purple material world. Apply only the requested local fixes. Keep the POS fully inside frame with lower-edge breathing room; keep a restrained non-readable order cue on the phone; keep mint as a subdued material seam, never neon. Do not redesign, restage, crop, add a second concept or replace the service proof with blank abstract wallpaper.",
-            50000,
-        )
 
     # =====================================================
     # LOG HEADER
@@ -8372,9 +8393,9 @@ def run_production(
             requested_size=(
                 requested_size
             ),
-            edit_mode=bool(additional_references),
         )
     )
+    final_prompt = enforce_stc_visual_output_tail(final_prompt)
 
     print(
         "Final prompt chars:",
@@ -8508,7 +8529,7 @@ def run_production(
                     aspect_ratio=(aspect_ratio),
                     pass_name=("gemini_technical_fallback_final_v601"),
                     output_image_size=(requested_size),
-                    model_override=(GOOGLE_IMAGE_PRO_MODEL),
+                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
                     max_reference_images=(len(final_refs)),
                 )
                 if not isinstance(fallback_final.metadata, dict):
@@ -8967,7 +8988,7 @@ def run_production(
                     aspect_ratio=(aspect_ratio),
                     pass_name=("gemini_preview_recovery_v601"),
                     output_image_size=(requested_size),
-                    model_override=(GOOGLE_IMAGE_PRO_MODEL),
+                    model_override=(GOOGLE_IMAGE_FAST_MODEL),
                     max_reference_images=0,
                 )
                 if strong_preview_recovery
@@ -10214,6 +10235,7 @@ if __name__ == "__main__":
             requested_size="2K",
         )
     )
+    final_prompt = enforce_stc_visual_output_tail(final_prompt)
 
     tests[
         "final_prompt_gpt_image_2"
@@ -10259,7 +10281,7 @@ if __name__ == "__main__":
     tests[
         "final_prompt_copy_space_immutable"
     ] = (
-        "25–40% integrated quiet negative space"
+        "25–40% integrated copy space"
         in final_prompt
     )
 
@@ -10379,7 +10401,7 @@ if __name__ == "__main__":
             "NO random travertine pedestal"
             in forced
             and
-            "25–40% integrated quiet negative space"
+            "25–40% integrated copy space"
             in forced
             and
             (
@@ -10411,7 +10433,7 @@ if __name__ == "__main__":
         problems=[
             (
                 "Payment hardware looks invented "
-                "and reserved space is excessive."
+                "and copy space is excessive."
             )
         ],
         correction_instruction=(
