@@ -26,6 +26,9 @@ def core_direction():
 def master_system_prompt():
     return read_skill_file("references/stc-bank-master-system-prompt-v1.md")
 
+def creative_first_system_prompt():
+    return read_skill_file("references/stc-bank-creative-first-v2.md")
+
 def non_literal_concept_gate():
     return read_skill_file("references/non-literal-concept-gate-mandatory.md")
 
@@ -67,7 +70,7 @@ def prompt_direction(style):
         read_skill_file("references/prompt-specification.md"),
         read_skill_file("references/visual-language.md"),
         master_system_prompt(),
-        non_literal_concept_gate(),
+        creative_first_system_prompt(),
         prompt_engineering_direction(),
         camera_finish_direction(),
         read_skill_file("references/effects-and-finish.md")]))
