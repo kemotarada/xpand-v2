@@ -204,7 +204,7 @@ except Exception:
 # =========================================================
 
 ENGINE_NAME = "XPAND Production Engine"
-ENGINE_VERSION = "6.0.1"
+ENGINE_VERSION = "6.1.0"
 
 
 # =========================================================
@@ -3150,32 +3150,26 @@ def requires_reality_reinterpretation(
 def merchant_payment_execution_lock() -> str:
     """Keep service legibility while allowing multiple campaign mechanisms."""
     return """
-MERCHANT PAYMENTS — ADAPTIVE CAMPAIGN CONTRACT
------------------------------------------------
+MERCHANT PAYMENTS — ADAPTIVE CAMPAIGN CONTRACT V6.1
+---------------------------------------------------
 
-The image must communicate physical payment plus online commerce/fulfillment in
-one coherent advertising idea. The approved creative concept determines the
-visual mechanism, object hierarchy, camera, environment and human presence.
-Do not force every idea into a POS-on-counter-and-box tableau.
-
-Acceptable campaign grammars include: object-led product theatre, a folded parcel
-architecture, a portal/threshold, a merchant point of view, a close handoff
-choreography, a material transition, a silent product proof or a specific Saudi
-commerce moment. Use only one decisive mechanism per frame.
+Build one campaign idea that makes physical payment acceptance and online commerce/fulfillment read as one connected merchant ecosystem. Use exactly one mechanism from the approved concept atlas; do not force every brief into a counter-plus-parcel tableau.
 
 SERVICE PROOF
-- one believable unbranded physical POS/contactless action
-- one believable proof of online commerce or fulfillment
-- both proofs share coherent perspective, light, scale and physical logic
-- no phone, card, laptop, UI, QR, barcode, generated text or logo is required
+- one believable unbranded physical POS in an active contactless action;
+- one credible online/fulfillment cue: a real unbranded phone/tablet with abstract unreadable UI, a product/order handoff, or a physical fulfillment outcome;
+- both proofs share one causal action or continuous surface, one camera, one light logic and believable scale;
+- phone/tablet and POS remain separate physical objects; never fuse them, float them or display them as unrelated trophies.
 
-A purple architectural request must create a new campaign set and visual grammar,
-not recolor the previous realistic scene. The viewer should understand the service
-without text, but the frame must feel like a designed bank advertisement rather
-than documentation of a workday.
+CAMPAIGN GRAMMARS
+Choose one: continuous commerce surface, threshold/reveal, close handoff choreography, reflection-led pairing, product theatre, or a specific Saudi commerce moment. The chosen grammar must control the hero, camera and object hierarchy.
+
+HARD FAILURES
+Reject generic checkout documentation, a merchant portrait with tiny devices, a parcel added only as a second prop, split screen, collage, fake UI, readable text, QR/barcode, invented hardware, random blocks, flat purple wall, grey-mauve wash, neon fintech graphics and any scene that needs a caption to explain the relationship.
+
+PURPLE CAMPAIGN FINISH
+For the purple route use connected saturated violet planes, deep-violet falloff, near-black/graphite hero objects, a broad violet/magenta pool from the upper-right or rear plane, restrained mint/green accent, realistic contact shadows and reflections tied to actual surface normals and light sources.
 """.strip()
-
-
 
 # =========================================================
 # STC VISUAL CONSTITUTION
@@ -3540,31 +3534,15 @@ def build_immutable_final_locks(
 MERCHANT MESSAGE — IMMUTABLE
 ----------------------------
 
-E-COMMERCE + PHYSICAL POS MUST READ AS ONE CONNECTED
-MERCHANT ECOSYSTEM.
+E-COMMERCE + PHYSICAL POS MUST READ AS ONE CONNECTED MERCHANT ECOSYSTEM.
 
-Both channels must be visually understandable without text.
+Choose exactly one campaign grammar from the approved atlas and make it the hero: continuous surface, threshold/reveal, close handoff, reflection-led pairing, product theatre or a specific Saudi commerce moment. Do not default to a generic counter, a device display or a parcel placed in the background.
 
-A smartphone screen alone is NOT sufficient proof
-of e-commerce.
+Show one believable unbranded POS in an active contactless interaction. Show one credible online/fulfillment cue through a meaningful action: an unbranded phone/tablet with abstract non-readable UI, a product/order handoff or a physical fulfillment outcome. The cue is supporting evidence, never a fake interface or the only proof.
 
-A POS terminal alone is NOT sufficient proof
-of the complete service.
+Keep all objects separate and physically real. Connect them through one action, shared surface, handoff, reflection or depth relationship. No phone/POS fusion, floating hardware, split screen, collage, readable text, QR/barcode, random blocks or unrelated checkout props.
 
-FINAL MERCHANT SHOT CONTRACT:
-Create one vertical 4:5 premium STC merchant photograph, not a collage:
-one real merchant at one counter, one hand actively completing payment on
-one believable unbranded POS terminal, and the same counter holding one
-plain sealed parcel being prepared for dispatch. The POS, hand, merchant and
-parcel must share one camera perspective, light and causal workflow.
-
-No laptop, tablet, smartphone, extra screen, interface, keypad digits, QR
-code, barcode, label text, logo, floating object or unrelated checkout prop.
-The terminal display and parcel surface are blank and unreadable. The image
-must prove physical acceptance plus online fulfillment through action, not
-through words or UI.
-
-Do not replace the message with generic checkout activity.
+The frame must be a premium 4:5 STC campaign image with one dominant hero, intentional camera, saturated deep-violet architecture when the purple route is selected, violet/magenta upper-right or rear light, deep-violet falloff, restrained green accent, material-specific reflections and integrated copy space.
 """.strip()
 
         merchant_lock = (
@@ -4310,14 +4288,11 @@ Do not copy their exact old scene.
 Solve the message with a physically believable frame.
 
 For STC merchant payments:
-show online/e-commerce commerce and physical payment
-acceptance as one real connected merchant ecosystem.
+show one active physical contactless acceptance and one credible online/fulfillment cue as one connected merchant ecosystem. A real unbranded phone/tablet may support the online cue only with abstract, non-readable UI; keep it separate from the POS.
 
-Never invent a device to explain the service.
+Never invent or fuse hardware.
 
-Never merge phone + POS.
-
-Never use a stone pedestal as a shortcut for premium.
+Never use a stone pedestal, generic counter or split screen as a shortcut for premium.
 
 Do not reserve a giant empty top area.
 
@@ -4934,10 +4909,12 @@ PURPLE STUDIO COLOR LOCK
 SERVICE LEGIBILITY
 -----------------
 Physical contactless acceptance and online commerce fulfillment must both be
-understandable without generated words or UI. They may appear through different
-spatial roles, a physical metaphor, a choreographed handoff, a portal, a fold,
-a material transition or a product-theatre composition. Do not add a phone,
-laptop, screen, card, QR code or barcode to explain them.
+understandable without readable words or UI. Choose one causal mechanism: a
+continuous surface, threshold/reveal, close handoff, reflection-led pairing or
+product theatre. One real unbranded phone/tablet may appear as supporting
+e-commerce evidence with abstract unreadable UI; it must stay separate from the
+POS and never carry the whole message. Do not use split screen, collage, QR code,
+barcode, floating hardware or a generic counter-plus-parcel tableau.
 
 PHOTOGRAPHIC AND ADVERTISING QUALITY
 -------------------------------------
