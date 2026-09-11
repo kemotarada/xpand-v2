@@ -158,6 +158,7 @@ from xpand_image_engine import (
 
 from xpand_stc_bank_skill import (
     STC_BANK_IMAGE_GUARD,
+    STC_BANK_CAMPAIGN_DNA,
     STYLE_AUGMENTED_REALISM,
     STYLE_PREMIUM_REALISTIC,
     STYLE_PURPLE_ARCHITECTURAL,
@@ -4841,6 +4842,10 @@ STC CONTEXT
 -----------
 
 {constitution}
+
+STC CAMPAIGN DNA — APPLY THIS SYSTEM, DO NOT CLONE REFERENCES
+---------------------------------------------------------------
+{STC_BANK_CAMPAIGN_DNA}
 
 Create a polished campaign image at:
 Aspect ratio: {aspect_ratio}
