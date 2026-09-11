@@ -1151,6 +1151,20 @@ def build_creative_constitution_text(
                 "location that proves the message."
             ),
             (
+                "- Choose a proof location, not merely a category "
+                "location. If changing the location does not weaken "
+                "the claim, the location is decorative."
+            ),
+            (
+                "- For reach, travel and connectivity claims, apply "
+                "the Even Here test and compare non-obvious proof "
+                "situations before accepting an airport or city."
+            ),
+            (
+                "- The scene must contain location + situation + "
+                "action + benefit. A product pose is not claim proof."
+            ),
+            (
                 "- Reject message drift: a travel/SIM brief must "
                 "not read as a POS payment ad, and a beautiful "
                 "destination or person holding a phone is not "
