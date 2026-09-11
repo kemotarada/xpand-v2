@@ -480,6 +480,10 @@ STC_HIGH_ALERT_RELEASE_FLOOR = max(
 
 STC_MIN_CONCEPT_STRENGTH = 88.0
 
+# A concept must be an advertising idea, not only a product demonstration.
+STC_MIN_CONCEPTUAL_STRENGTH = 12.0
+STC_CONCEPTUAL_STRENGTH_MAX = 20.0
+
 STC_MIN_BRAND_FIT = 90.0
 
 STC_MIN_ORIGINALITY = 88.0
@@ -2026,6 +2030,11 @@ def evaluation_schema() -> Dict[
                     "number",
             },
 
+            "conceptual_strength": {
+                "type":
+                    "number",
+            },
+
             "brand_fit": {
                 "type":
                     "number",
@@ -2187,6 +2196,7 @@ def evaluation_schema() -> Dict[
         "required": [
             "concept_id",
             "concept_strength",
+            "conceptual_strength",
             "brand_fit",
             "originality",
             "visual_mechanism",
@@ -3279,6 +3289,20 @@ def local_concept_penalties(
 
     failures: List[str] = []
 
+    conceptual_strength = float(
+        scores.get(
+            "conceptual_strength",
+            0,
+        ) or 0
+    )
+
+    if conceptual_strength < STC_MIN_CONCEPTUAL_STRENGTH:
+        failures.append(
+            "conceptual_strength_below_12_of_20"
+        )
+
+
+
     # =====================================================
     # LITERAL TRANSACTION TABLEAU
     # =====================================================
@@ -3627,6 +3651,8 @@ def dimension_composite_score(
     scores: Dict[str, Any],
 ) -> float:
 
+    # Existing dimensions occupy 80 points. The mandatory non-literal
+    # score occupies the remaining 20 points and is independently gated.
     total = 0.0
 
     for key, weight in (
@@ -3648,8 +3674,21 @@ def dimension_composite_score(
             )
         )
 
+    conceptual_strength = max(
+        0.0,
+        min(
+            STC_CONCEPTUAL_STRENGTH_MAX,
+            float(scores.get(
+                "conceptual_strength",
+                0,
+            ) or 0),
+        ),
+    )
+
     return round(
-        total,
+        (total * 0.80)
+        +
+        ((conceptual_strength / STC_CONCEPTUAL_STRENGTH_MAX) * 20.0),
         2,
     )
 
@@ -4090,6 +4129,7 @@ def stc_runtime_director_context(
             # The attached master prompt is the complete creative-director
             # operating model and must be loaded before the compact references.
             "references/stc-bank-master-system-prompt-v1.md",
+            "references/non-literal-concept-gate-mandatory.md",
             "SKILL.md",
             "references/concept-workflow.md",
             "references/visual-language.md",
@@ -4109,7 +4149,7 @@ def stc_runtime_director_context(
                 parts.append(runtime.read_skill_file(name))
             except Exception:
                 continue
-        return "\n\n".join(parts)[:56000]
+        return "\n\n".join(parts)[:62000]
     except Exception:
         return clean_text(STC_BANK_VISUAL_SKILL, 12000)
 
@@ -4450,6 +4490,10 @@ Map the result into the schema:
 - why_not_generic = why this frame belongs to this service and STC;
 - environment_novelty = what is structurally new, not merely luxurious.
 
+NON-LITERAL CONCEPT GATE — MANDATORY
+Before any concept can reach evaluation or final prompt construction, answer internally: “What visual event in this image could not exist in an ordinary product demonstration?”
+Reject scenes that can be described only as “a person using the product,” including hand tapping a terminal, phone displaying an app, or a product placed on a pedestal. Require one benefit-carrying mechanism: transformation, spatial compression, visual analogy, object-function change, environment reaction, scale shift, reflection/shadow metaphor, reveal, gateway, physicalized benefit, cause-and-effect visual, or unexpected spatial relationship. The mechanism must survive as a single frame and must not be decorative. If removing the product leaves no recognizable advertising idea, reject and regenerate.
+
 VISIBLE-PROOF GATE
 A phone, POS terminal, card, purple set, customer, parcel or pedestal alone is not proof. Reject any candidate whose message depends on an invisible caption. For merchant_payments, reject phone + POS as unrelated display objects, stone/travertine pedestal still lifes, tablet + terminal + parcel tableaux, generic checkout scenes and split-screen logic. Both online commerce and physical acceptance must be readable as one connected merchant mechanism.
 
@@ -4609,6 +4653,9 @@ SCORE 0–100
 
 concept_strength:
 Is there one strong single-frame advertising proposition?
+
+conceptual_strength:
+Is this a memorable advertising idea rather than a literal product demonstration? Score 0–20: 0–5 literal demonstration, 6–10 designed presentation, 11–15 clear metaphor, 16–20 memorable advertising idea. Any score below 12 rejects the concept.
 
 brand_fit:
 Could this genuinely belong to STC Bank?
@@ -5561,6 +5608,19 @@ def apply_evaluations_to_concepts(
                     0,
                 )
             )
+
+        scores[
+            "conceptual_strength"
+        ] = max(
+            0.0,
+            min(
+                STC_CONCEPTUAL_STRENGTH_MAX,
+                float(evaluation.get(
+                    "conceptual_strength",
+                    0,
+                ) or 0),
+            ),
+        )
 
         concept.scores = (
             scores
