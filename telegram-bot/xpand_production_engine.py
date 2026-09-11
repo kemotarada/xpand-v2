@@ -160,6 +160,8 @@ from xpand_stc_bank_skill import (
     STC_BANK_IMAGE_GUARD,
     STC_BANK_CAMPAIGN_DNA,
     STC_BANK_SHOT_DESIGN_CONTRACT,
+    STC_MERCHANT_CONCEPT_LIBRARY,
+    STC_STYLE_TRANSFORMATION_CONTRACT,
     STYLE_AUGMENTED_REALISM,
     STYLE_PREMIUM_REALISTIC,
     STYLE_PURPLE_ARCHITECTURAL,
@@ -3145,43 +3147,33 @@ def requires_reality_reinterpretation(
 # =========================================================
 
 def merchant_payment_execution_lock() -> str:
-    """Give Merchant Payments one decisive, testable photographic action."""
+    """Keep service legibility while allowing multiple campaign mechanisms."""
     return """
-MERCHANT PAYMENTS — CANONICAL ONE-FRAME CONTRACT
-------------------------------------------------
+MERCHANT PAYMENTS — ADAPTIVE CAMPAIGN CONTRACT
+-----------------------------------------------
 
-Create one premium Saudi retail/service environment and one decisive moment.
-Do not make a catalogue of fintech props, a split scene or a static counter
-checklist. The entire message must be legible from one physical relationship:
+The image must communicate physical payment plus online commerce/fulfillment in
+one coherent advertising idea. The approved creative concept determines the
+visual mechanism, object hierarchy, camera, environment and human presence.
+Do not force every idea into a POS-on-counter-and-box tableau.
 
-1. DOMINANT ACTION — a visible CUSTOMER hand performs a believable contactless
-   tap on one normal, unbranded physical POS terminal in the foreground. The
-   hand must visibly touch or hover immediately above the terminal contactless
-   area; do not show a card.
-2. SUPPORTING PROOF — the SAME MERCHANT's other hand actively closes one plain
-   unbranded parcel for an online order on the SAME counter.
+Acceptable campaign grammars include: object-led product theatre, a folded parcel
+architecture, a portal/threshold, a merchant point of view, a close handoff
+choreography, a material transition, a silent product proof or a specific Saudi
+commerce moment. Use only one decisive mechanism per frame.
 
-The POS, both hands, merchant, parcel and counter share one camera, perspective,
-lighting system and depth relationship. Use a decisive medium-close three-quarter
-advertising composition: the merchant is the centered hero, the blank graphite POS
-is clearly readable in the lower-left foreground, and the brown shipping box is
-clearly readable in the lower-right foreground. Keep the POS and the parcel
-physically close together on one ordinary checkout counter, with the merchant
-visibly working behind that counter. Avoid a wide empty lobby, glass wall, display
-cabinet, shelving or decorative architecture competing with the action. The parcel is specifically a small plain brown
-corrugated cardboard shipping box with a lid being closed or sealed by tape.
-It is NOT a shopping bag, gift bag, retail bag, envelope, product carrier,
-display cabinet, shelf, pedestal or decorative prop. Do not make a customer
-hold a bag; show the merchant's second hand on the cardboard box lid.
-This is the only approved execution for merchant_payments in this pass. Do not
-add a courier, second location, phone, tablet, laptop, floating UI, split-screen,
-rotating transformation, display wall, shelving unit or abstract fintech object.
+SERVICE PROOF
+- one believable unbranded physical POS/contactless action
+- one believable proof of online commerce or fulfillment
+- both proofs share coherent perspective, light, scale and physical logic
+- no phone, card, laptop, UI, QR, barcode, generated text or logo is required
 
-The viewer must understand physical payment plus online fulfilment without text.
-POS display and parcel label are blank and unreadable: no letters, digits, logos,
-card-network marks, QR codes, barcodes, balances or interface elements. Keep the
-terminal commercially plausible and the human contact anatomically correct.
+A purple architectural request must create a new campaign set and visual grammar,
+not recolor the previous realistic scene. The viewer should understand the service
+without text, but the frame must feel like a designed bank advertisement rather
+than documentation of a workday.
 """.strip()
+
 
 
 # =========================================================
@@ -3297,24 +3289,16 @@ app mockup or a generic fintech render.
 MERCHANT-PAYMENTS CAMPAIGN MECHANISM
 ====================================
 
-Build one decisive, photographic advertising moment — not a catalogue
-of banking props and not a multi-panel explanation.
+Use the approved creative concept as the source of the advertising mechanism.
+Do not force a fixed POS-on-counter-and-box tableau. The frame must make physical
+payment acceptance and online commerce/fulfillment legible through one deliberate
+visual idea: object-led theatre, folded architecture, portal/threshold, merchant
+POV, handoff choreography, material transition, silent product proof or another concept from the STC merchant atlas.
 
-DOMINANT ACTION:
-A visible customer hand performs a believable contactless tap on one blank,
-unbranded physical POS terminal in the foreground.
-
-SUPPORTING PROOF:
-The same merchant uses the other hand to actively close one plain parcel
-for an online order on the same counter. The POS, hands, merchant and parcel
-must share one camera, one perspective, one light system and real contact.
-
-The viewer must understand physical payment plus online fulfilment from the
-gesture and spatial relationship alone. Do not add a courier, second location,
-smartphone, tablet, app screen or split scene unless the user explicitly asks.
-Use one premium Saudi retail/service environment with restrained STC purple
-architecture or motivated purple light. Keep the action human, legible and
-commercially plausible; never turn it into a static counter tableau.
+The POS, fulfillment proof, people and architecture must share believable scale,
+perspective, light and physical contact. Penalize generic retail documentation,
+face-led framing, disconnected props, weak camera and purple recoloring. No phone,
+card, laptop, UI, QR, barcode, generated text or logo is required.
 """.strip()
 
         merchant = (
@@ -4852,6 +4836,14 @@ STC SHOT DESIGN CONTRACT — DESIGN THE FRAME BEFORE RENDERING
 --------------------------------------------------------------
 {STC_BANK_SHOT_DESIGN_CONTRACT}
 
+MERCHANT CONCEPT ATLAS — SELECT THE APPROVED IDEA, DO NOT REPEAT A TABLEAU
+-----------------------------------------------------------------------
+{STC_MERCHANT_CONCEPT_LIBRARY}
+
+STYLE TRANSFORMATION CONTRACT
+-----------------------------
+{STC_STYLE_TRANSFORMATION_CONTRACT}
+
 Create a polished campaign image at:
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
@@ -4894,62 +4886,72 @@ Resolution intent: {requested_size}
         "palette and photographic finish only."
     )
     if benefit == "merchant_payments":
-        # Keep this renderer contract short and causal. The generic final
-        # prompt is intentionally not used here because compaction can remove
-        # the exact merchant-to-parcel relationship the image must preserve.
         core_prompt = f"""
-CLEAN MERCHANT PAYMENTS FINAL — CLIENT-READY 4:5 PHOTOGRAPH
+ADAPTIVE STC BANK MERCHANT CAMPAIGN — CLIENT-READY 4:5 IMAGE
 ===============================================================
 
 {merchant_source_instruction}
 
-ONE CAUSAL SCENE, NOT A COLLAGE:
-Design this as a STC Bank campaign shot, not a retail documentary. Use a tight
-4:5 three-quarter countertop composition, approximately 45–65mm equivalent,
-camera at counter height and slightly above the action. The terminal, parcel seam,
-customer hand and merchant's closing hand occupy the visual center; the objects
-are large and readable while the room is compressed into a dark controlled
-background. The merchant's face is outside the frame or only a small secondary
-partial profile — never the hero.
+APPROVED CREATIVE IDEA
+----------------------
+{clean_text(compiled.prompt, 7600)}
 
-Use one graphite stone counter plane inside a coherent deep aubergine/near-black
-violet architectural set with restrained motivated light. No bright windows, beige
-retail interior, purple door trim or unrelated shelves. One customer hand performs
-a clear physical contactless tap on one believable unbranded POS terminal while
-the merchant's other hand actively presses the lid seam closed on one plain brown
-cardboard parcel for online dispatch. The tap and closure form a deliberate diagonal
-relationship, share one perspective and have believable contact shadows. The
-viewer must read payment accepted plus commerce fulfilled in one glance.
+The approved creative idea is authoritative. Do not force every merchant
+request into the same POS-on-counter-and-box tableau. Preserve the meaning of
+physical payment plus online commerce/fulfillment, but express it through the
+selected visual mechanism, concept archetype, environment and camera.
 
-HARD EXCLUSIONS:
-No laptop, tablet, smartphone, extra display, app screen, UI, keypad digits,
-payment card of any kind, card face, chip, logo, QR code, barcode, parcel
-label, generated text, floating object, split screen, unrelated props,
-product catalogue, generic checkout, warm lifestyle interior, bright windows,
-purple trim, giant empty upper frame, merchant portrait or isolated terminal
-beauty shot. Show
-payment only as a believable empty-hand contactless tap gesture on the blank
-POS terminal. The POS display and parcel are neutral and unreadable. Do not invent hardware.
+CAMPAIGN REQUIREMENT
+--------------------
+The image must read as a designed bank advertisement, not a photograph of a
+person doing work. The concept needs one memorable visual mechanism, a deliberate
+silhouette or spatial gesture, a controlled focal hierarchy and a reason for its
+camera. If the selected style is purple architectural, rebuild the scene as a
+purpose-designed STC set; never recolor the previous realistic scene.
 
-Use premium purple architectural styling through real graphite/plum surfaces,
-controlled directional light and clean edge separation; keep skin, cardboard and
-hardware natural. Make the two service actions the hero. Reserve only a small
-integrated calm area for later copy — never create dead space above the scene.
+STC CONCEPT ATLAS
+-----------------
+{STC_MERCHANT_CONCEPT_LIBRARY}
+
+STYLE TRANSFORMATION
+--------------------
+{STC_STYLE_TRANSFORMATION_CONTRACT}
+
+SERVICE LEGIBILITY
+-----------------
+Physical contactless acceptance and online commerce fulfillment must both be
+understandable without generated words or UI. They may appear through different
+spatial roles, a physical metaphor, a choreographed handoff, a portal, a fold,
+a material transition or a product-theatre composition. Do not add a phone,
+laptop, screen, card, QR code or barcode to explain them.
+
+PHOTOGRAPHIC AND ADVERTISING QUALITY
+-------------------------------------
+Use a deliberate 4:5 crop, intentional camera height and lens, designed light,
+real contact shadows, premium material separation and integrated copy space.
+Do not default to eye-level medium-wide photography, generic retail interiors,
+bright windows, a face-led composition, a tiny terminal or a disconnected box.
+
+HARD EXCLUSIONS
+---------------
+No generated headline, body copy, logo, wordmark, UI, readable numbers, card
+face, QR, barcode, split screen, collage, generic fintech graphics, random neon,
+purple recoloring of a normal office, or unrelated decorative objects.
 
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
 
-    return fit_prompt_with_immutable_locks(
-        core_prompt,
-        immutable_locks,
-        label=(
-            "gemini_pro_image_final_v601"
-        ),
-        budget=(
-            FINAL_PROMPT_BUDGET
-        ),
-    )
+        return fit_prompt_with_immutable_locks(
+            core_prompt,
+            immutable_locks,
+            label=(
+                "gemini_pro_image_adaptive_merchant_final_v701"
+            ),
+            budget=(
+                FINAL_PROMPT_BUDGET
+            ),
+        )
 
 
 # =========================================================
@@ -6065,15 +6067,14 @@ STC reference DNA.
 MERCHANT MESSAGE
 ----------------
 
-For merchant_payments, use ONLY this canonical visual contract:
-
-- one visible customer hand performs a contactless tap on one believable blank POS;
-- the same merchant's other hand actively closes one plain parcel on the same counter;
-- one camera, one environment and one continuous physical relationship.
-
-merchant_fusion_failed = TRUE only when this contract is not visually understandable.
-Do not invent an additional required transformation, rotation, map, courier, phone, UI
-or readable text. Do not require readable text or UI as proof.
+For merchant_payments, evaluate the approved creative contract rather than a
+fixed composition. Physical payment acceptance and online commerce/fulfillment
+must be visually legible through the selected concept mechanism. A different
+arrangement of hands, POS, parcel, architecture or product theatre is valid when
+it is intentional, coherent and more advertising-led than a generic checkout
+photo. Flag failure for weak service proof, repeated stock tableau, generic
+retail photography, bad camera, face dominance or purple recoloring — not merely
+for changing the object arrangement.
 
 {build_stc_visual_constitution(
     original_request
@@ -7035,10 +7036,13 @@ Fix only diagnosed defects.
 
     if merchant_structural_repair:
         repair_mode = """
-LIMITED STRUCTURAL REPAIR — SAME MERCHANT SCENE
-Use Image 1 as the primary composition. Keep the same merchant, counter, POS
-and parcel. Improve only the legibility of one continuous checkout-plus-fulfillment
-workflow; do not rebuild from scratch or introduce new objects.
+MERCHANT CAMPAIGN RE-STAGE — ADAPTIVE REPAIR
+Preserve the commercial proposition and the approved concept only when they are
+working. Do not preserve a failed camera, repeated POS-plus-box tableau, generic
+retail setting or purple recoloring. You may rebuild the composition, camera,
+architecture, lighting, object hierarchy and human presence using the STC concept
+atlas. Keep physical payment and online fulfillment legible without phone, card,
+UI, QR, barcode, text or logo.
 """.strip()
     if preview_recovery:
         repair_mode = """
@@ -7105,15 +7109,12 @@ Fix only the defects diagnosed by final QA; do not redesign.
         repair_scope_lock = """
 REPAIR MODE — IMMUTABLE
 -----------------------
-MERCHANT CAMPAIGN RE-STAGE REPAIR. Preserve the commercial proposition: one
-contactless POS payment plus active parcel closure in one frame. Do not preserve
-a failed camera, warm generic retail interior, face-dominant crop, giant upper
-empty space, disconnected terminal or weak purple styling. Re-stage the shot
-into the STC director's contract: tight 4:5 countertop composition, merchant face
-non-dominant or out of frame, graphite counter, deep aubergine/near-black violet
-architectural world, two readable hands and physically connected service actions.
-You may change crop, camera height, lens feel, background, light direction and
-object scale. Do not add phone, laptop, card, UI, QR, barcode, labels, text or logos.
+MERCHANT CAMPAIGN RE-STAGE REPAIR. Preserve the commercial proposition and
+approved creative concept only when they are working. Do not preserve a failed
+camera, repeated POS-plus-box tableau, generic retail setting, face-dominant crop
+or purple recoloring. Rebuild using the selected concept, STC style transformation
+contract and merchant concept atlas. Physical payment and online fulfillment must
+remain legible without phone, card, UI, QR, barcode, text or logo.
 """.strip()
     if preview_recovery:
         reference_role_text = """
@@ -7196,10 +7197,12 @@ END_XPAND_REPAIR_SCOPE_V601
 
     if merchant_structural_repair:
         repair_priorities = """
-- keep the original 4:5 camera and merchant-centered framing
-- make one visible contactless POS payment and active parcel preparation read together
-- preserve the purple architectural STC world and natural materials
-- remove any text, logo, card, UI, QR code or barcode without changing the scene
+- identify whether the failed image lost the concept, camera, STC world or service legibility
+- preserve only the approved idea that is working; do not preserve failed pixels
+- select a different merchant concept grammar when the current tableau is generic
+- change crop, camera, architecture, lighting, object hierarchy and human presence when needed
+- keep payment acceptance and online fulfillment visually understandable
+- remove text, logo, card, UI, QR code, barcode and readable markings
 """.strip()
     if preview_recovery:
         repair_priorities = """
@@ -7262,15 +7265,35 @@ Create one improved final campaign image.
 
     if merchant_structural_repair:
         core_prompt = f"""
-MERCHANT PAYMENTS — CANONICAL STRUCTURAL REBUILD
-Do not depend on a failed image or on an invented prior transformation. Build one
-clean photographic 4:5 campaign frame from this contract: a visible customer hand
-performs a contactless tap on one believable blank POS while the same merchant's
-other hand actively closes one plain parcel on the same counter. The two actions,
-merchant, POS and parcel must share one camera, perspective, lighting and depth.
-Use one restrained purple STC architectural/service environment. No courier, second
-location, phone, tablet, laptop, floating UI, split scene, rotating transformation,
-card, text, logo, QR code, barcode or readable marking.
+MERCHANT CAMPAIGN RE-STAGE — ADAPTIVE FINAL REPAIR
+==================================================
+
+Image 1 is a failed candidate, not a composition to preserve.
+
+APPROVED CREATIVE CONTRACT
+--------------------------
+{clean_text(compiled.prompt, 7600)}
+
+FINAL QA DIAGNOSIS
+------------------
+{qa_feedback_summary(qa)}
+
+Rebuild the image as a designed STC Bank campaign. Preserve the commercial
+proposition and any successful concept logic, but do not preserve a generic
+POS-on-counter-and-box arrangement, bad camera, face-led crop, warm retail room
+or a purple recoloring of a normal office. Choose a different concept grammar
+from the merchant concept atlas when the current idea is repetitive. If the style
+is purple architectural, redesign the set and visual mechanism, not just the wall.
+
+{STC_MERCHANT_CONCEPT_LIBRARY}
+
+{STC_STYLE_TRANSFORMATION_CONTRACT}
+
+Physical payment acceptance and online commerce fulfillment must both remain
+legible without phone, card, screen, UI, QR, barcode, generated text or logo.
+Use a deliberate 4:5 advertising crop, intentional camera, premium light,
+physical contact shadows and a strong visual hierarchy.
+
 Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
