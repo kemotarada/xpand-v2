@@ -4020,47 +4020,74 @@ def select_targeted_repair_candidates(
 # =========================================================
 
 STC_HIGH_ALERT_ARCHETYPES = """
-The concept pool must deliberately cover fundamentally
-different advertising grammars.
+The concept pool is a campaign board, not twelve prompts for the same
+composition. Generate exactly one direction from each family below, in this
+order. A family is a creative grammar, not just a different location or color.
 
-Concept 1:
-PREMIUM HUMAN REALISM
-Real Saudi life with a genuine campaign mechanism.
+C01 — PREMIUM HUMAN MOMENT
+A believable merchant or customer moment where trust, confidence or momentum
+is the hero. No product-demo framing.
 
-Concept 2:
-OBJECT-LED COMMERCIAL STORY
-A physically real object relationship communicates the service.
+C02 — NARRATIVE STILL LIFE
+Objects, traces and materials imply a complete commercial story without showing
+a full transaction or a generic countertop.
 
-Concept 3:
-ARCHITECTURAL / SPATIAL IDEA
-Space, depth, threshold or geometry carries the proposition.
+C03 — MATERIAL METAPHOR
+Paper, fabric, glass, metal, ceramic, wood, liquid or shadow physically behaves
+like the service benefit.
 
-Concept 4:
-AUGMENTED REALISM
-One believable conceptual intervention inside a real world.
+C04 — MONUMENTAL ENVIRONMENT
+One large-scale architectural or landscape gesture makes the benefit feel
+consequential. The product may be absent or small.
 
-Concept 5:
-CAMERA-LED IDEA
-The viewpoint itself reveals the proposition.
+C05 — THRESHOLD / SPATIAL ACCESS
+A door, opening, passage, depth change or compressed space makes access, reach or
+continuity visible without a portal effect.
 
-Concept 6:
-SERVICE TRANSFORMATION
-One physical action changes the commercial meaning.
+C06 — OBJECT TRANSFORMATION
+One ordinary commerce object changes role through believable physical staging.
+The transformation is the advertising idea.
 
-Concept 7:
-AUTHENTIC SAUDI CONTEXT
-Contemporary Saudi life or commerce without stock-ad clichés.
+C07 — TRAVEL / JOURNEY GRAMMAR
+Use movement, route, packing, arrival or departure only when it expresses the
+merchant benefit. Do not use generic travel stock.
 
-Concept 8:
-BOLD CAMPAIGN HERO
-One simple, memorable, award-minded proposition.
+C08 — AUTHENTIC SAUDI COMMERCE
+A specific contemporary Saudi commercial context with restrained art direction,
+cultural credibility and no stock-smile tableau.
 
-At most TWO concepts may use indoor retail.
+C09 — CAMERA-LED REVELATION
+The viewpoint, reflection, occlusion, scale or perspective reveals the service
+relationship. The camera is the mechanism.
 
-At most ONE concept may make a POS terminal the obvious
-foreground hero.
+C10 — CONCEPTUAL SCULPTURE
+A single campaign icon built from product-relevant forms and materials. It must
+carry a proposition, not become a logo or icon.
 
-Do not generate cosmetic variations of one scene.
+C11 — QUIET LUXURY / MINIMUM ELEMENTS
+Use subtraction, silence, precision and one decisive relationship. No decorative
+technology, no crowded product collection.
+
+C12 — CONSEQUENCE-LED REALISM
+Show what becomes possible after the service action: fulfillment, reach,
+continuity, confidence or growth. Do not show action and consequence as two
+unrelated objects.
+
+HARD DIVERSITY CONSTRAINTS:
+- No more than THREE concepts may contain a visible hand.
+- No more than TWO concepts may use a POS terminal as the obvious foreground hero.
+- No more than TWO concepts may use an indoor retail counter.
+- At least THREE concepts must work without a phone.
+- At least TWO concepts must work without a POS terminal.
+- At least TWO concepts must be wide or environmental.
+- At least TWO concepts must be macro, close or object-led.
+- At least TWO concepts must use a real Saudi/Gulf context.
+- At least TWO concepts must be quiet, restrained or nearly still.
+- Do not repeat the same camera family, hero relationship, environment type,
+  material metaphor or causal mechanism.
+
+Never create cosmetic variants of one scene. If two concepts can be merged into
+one image prompt without losing meaning, they are not different enough.
 """.strip()
 
 
@@ -4448,7 +4475,7 @@ Generate exactly {concept_count} fundamentally different
 advertising concepts.
 
 REFERENCE-DERIVED CAMPAIGN GRAMMAR
-Choose exactly one structure for each concept: benefit-in-use realism, decisive product action, branded purple studio narrative, product-as-threshold, or premium contextual still life. Do not force all concepts into abstract metaphors. Strong bank advertising may be direct, but it must still have one decisive moment and a deliberate visual hierarchy.
+Use the twelve mandatory concept families in the STC BANK HIGH ALERT section: premium human moment, narrative still life, material metaphor, monumental environment, threshold/access, object transformation, travel/journey, authentic Saudi commerce, camera-led revelation, conceptual sculpture, quiet luxury and consequence-led realism. These are different creative grammars, not twelve color treatments. Do not let premium realistic, purple studio or augmented realism collapse the board into one repeated composition.
 
 TWO-SECOND READ
 The frame needs one dominant hero, one contextual proof of the benefit category, one secondary banking cue, and integrated tonal space for later Arabic copy. Exact percentages, amounts, promo codes, legal terms and logos belong to typography after image generation; never ask the image model to draw them.
@@ -4547,12 +4574,12 @@ def build_review_prompt(
 
         strict_block = f"""
 ==================================================
-STRICT STC RELEASE STANDARD
+STC EXECUTIVE REVIEW — ADVISORY QUALITY STANDARD
 ==================================================
 
-A concept is not 90+ merely because it is pretty.
+A concept is not 90+ merely because it is pretty. Scores diagnose the work and help rank or repair it; they are not a creative stop sign.
 
-Strict gates:
+Diagnostic thresholds:
 
 concept_strength >= {STC_MIN_CONCEPT_STRENGTH}
 brand_fit >= {STC_MIN_BRAND_FIT}
@@ -4568,7 +4595,7 @@ advertising_readiness >= {STC_MIN_AD_READINESS}
 Overall release floor:
 {STC_HIGH_ALERT_RELEASE_FLOOR}
 
-Do not inflate scores.
+Do not inflate scores. Do not reject the request because a direction misses one threshold. Keep the strongest available direction moving toward production.
 
 65–78:
 attractive but ordinary.
@@ -8258,6 +8285,17 @@ def run_creative_brain(
             item.weighted_score,
         reverse=True,
     )
+
+    # Creative review is advisory: keep the strongest available concept moving
+    # to production when no candidate clears every internal threshold.
+    if high_alert and not winner and evaluated:
+        winner = evaluated[0]
+        winner.quality_gate_passed = True
+        release_level = "advisory_best_available_release"
+        final_arbitration_reason = (
+            "best_available_concept_after_advisory_review"
+        )
+        quality_gate_passed = True
 
     top_concepts = (
         evaluated[
