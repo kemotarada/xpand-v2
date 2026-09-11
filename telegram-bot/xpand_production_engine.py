@@ -4644,6 +4644,35 @@ def requires_clean_contract_render(
 # FINAL GPT-IMAGE-2 PROMPT V6.0.1
 # =========================================================
 
+def enforce_stc_visual_output_tail(prompt: str) -> str:
+    """Remove layout metadata that image models may render as visible copy."""
+    cleaned = (prompt or "")
+    for source, replacement in (
+        ("copy space", "quiet negative space"),
+        ("Copy space", "Quiet negative space"),
+        ("COPY SPACE", "QUIET NEGATIVE SPACE"),
+        ("copy-space", "design-space"),
+    ):
+        cleaned = cleaned.replace(source, replacement)
+    return cleaned.rstrip() + "\n\n" + "\n".join((
+        "FINAL IMAGE EXCLUSION TAIL — HIGHEST PRIORITY",
+        "NO TEXT",
+        "NO TYPOGRAPHY",
+        "NO LETTERS",
+        "NO WORDS",
+        "NO NUMBERS",
+        "NO LOGOS",
+        "NO BRAND MARKS",
+        "NO WATERMARKS",
+        "NO SIGNAGE",
+        "NO LABELS",
+        "NO FAKE UI TEXT",
+        "NO DESIGN-SPACE LABELS",
+        "NO PLACEHOLDER WORDS",
+        "IMAGE CONTAINS THE SCENE ONLY.",
+    ))
+
+
 def build_final_renderer_prompt(
     *,
     compiled: CompiledPrompt,
@@ -4948,7 +4977,8 @@ Aspect ratio: {aspect_ratio}
 Resolution intent: {requested_size}
 """.strip()
 
-        return fit_prompt_with_immutable_locks(
+        return enforce_stc_visual_output_tail(
+            fit_prompt_with_immutable_locks(
             core_prompt,
             immutable_locks,
             label=(
@@ -4957,6 +4987,7 @@ Resolution intent: {requested_size}
             budget=(
                 FINAL_PROMPT_BUDGET
             ),
+        )
         )
 
 
