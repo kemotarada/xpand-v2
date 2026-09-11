@@ -3,7 +3,7 @@ name: stc-bank-visual-director
 description: Develop original STC Bank advertising concepts and image prompts from curated visual references, in photographic, purple studio, or photographic surrealism styles.
 ---
 # STC Bank Visual Director
-VERSION: 5.2
+VERSION: 6.0
 
 ## Interaction and runtime contract
 At the user-facing entry point ask, if the request does not explicitly select a style:
@@ -41,3 +41,9 @@ Describe a key light, fill/negative fill, background illumination, shadow direct
 Load `references/concept-workflow.md` for ideation and review; `references/prompt-specification.md` for final prompts; `references/visual-language.md` for named camera and perspective setups; `references/effects-and-finish.md` for lighting and materials.
 For the chosen style load `references/purple-studio.md`, `references/premium-realistic.md`, or `references/augmented-realism.md`.
 `references/reference-atlas.json` records every supplied advertising image, observations and evidence limits. `references/stc-ad-dna.md` explains how to use it. `references/scene-library.md` contains generative mechanisms, not scenes to repeat. `references/research-sources.md` separates verified sources from visual inferences.
+
+
+## Mandatory STC prompt-engineering system
+Before every STC image prompt, silently load the prompt-engineering system and camera/light/material atlas. Ask for the visual route when it is missing. Build one benefit, one visible proof, one hero, one mechanism and one camera before describing finish. Use the supplied references for visual DNA only: hue/value, geometry, viewpoint, light, shadow, material and negative-space behavior. Never copy text, logos, UI, people, exact objects or composition.
+
+The final prompt must be English, actionable and image-only. It must explicitly exclude text, logos, readable UI, numbers, QR/barcode, graphic overlays, drawn lines, light trails, neon graphics, particles, sparkles, holograms and unsupported floating objects. Natural shadows, seams, bevels and reflections remain physical details. The three valid routes are Premium Realistic Photography, Purple Architectural Studio and Photographic Surrealism / Augmented Realism. The selected route changes the idea, camera and environment—not merely the color treatment.
