@@ -164,3 +164,22 @@ phone secondary, turn the display away, soften it out of focus or remove it.
 Before final prompt release, verify that the person, phone, train, exterior
 light and reflections belong to one coherent photographed world. Never repair
 realism by adding more purple, UI or decorative effects.
+
+
+## Message-to-Idea Intelligence
+
+Before building a scene, distill the brief into the product/service,
+functional benefit, human benefit, single message and desired feeling. Then
+create one visual sentence, one hero event and one visible benefit proof.
+
+Run the First-Second Test: what is noticed at 0–1 seconds, what relationship
+is understood at 1–2 seconds, and what benefit becomes clear at 2–3 seconds.
+A person standing with a phone, a traveler posing in a destination, a card
+display or a generic POS payment is only a product demonstration—not an idea.
+Add a meaningful action, consequence, transformation or relationship.
+
+The location must prove the message, not merely look beautiful. Ask what the
+viewer could misunderstand. A travel or SIM brief must not visually read as a
+POS/payment ad. E-commerce and POS must read as connected merchant commerce,
+not as a catalogue of phone, terminal and boxes. The image must communicate
+before the headline explains it.
