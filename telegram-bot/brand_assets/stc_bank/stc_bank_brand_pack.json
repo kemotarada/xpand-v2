@@ -1,7 +1,7 @@
 {
   "brand_id": "stc_bank",
   "brand_name": "STC Bank",
-  "version": "4.1",
+  "version": "4.2",
   "default_visual_family": "premium_purple_architecture",
   "identity_keywords": [
     "modern Saudi banking",
@@ -71,7 +71,10 @@
     "digital tunnel",
     "glowing particles",
     "random fintech graphics",
-    "cheap stock photo banking scene"
+    "cheap stock photo banking scene",
+    "low-saturation brown-purple studio",
+    "dark brown wall with weak violet light",
+    "muted mauve lighting that loses STC saturation"
   ],
   "approved_mechanisms": [
     "physical visual bridge",
@@ -774,34 +777,54 @@
       ],
       "priority": 100,
       "notes": "User-supplied STC studio campaign reference: use for deep-violet hue, connected architectural planes, restrained light and advertising composition; never copy its text, logos or exact objects."
+    },
+    {
+      "asset_id": "stc_user_campaign_02",
+      "path": "stc_bank/curated/stc_user_campaign_02.jpg",
+      "kind": "image",
+      "roles": [
+        "style_reference",
+        "purple_reference",
+        "campaign_reference",
+        "lighting_reference"
+      ],
+      "styles": [
+        "premium_purple_architecture"
+      ],
+      "priority": 120,
+      "notes": "Primary user-supplied STC Bank campaign reference. Match its saturated violet gradient, bright upper-right light pool, luminous violet platform edges, near-black product bodies and restrained green accent. Do not copy its text, logos or exact card arrangement."
     }
   ],
   "reference_color_lock": {
-    "source": "observed swatches from the permanent STC purple studio references; not official brand hex values",
+    "source": "observed swatches and lighting from the supplied STC Bank campaign card reference; not official brand hex specifications",
     "primary": [
-      "#2F125F",
-      "#633490",
-      "#230D4D"
+      "#2C1359",
+      "#653098",
+      "#472474"
+    ],
+    "highlight": [
+      "#853DB6",
+      "#994ACA"
     ],
     "shadow": [
-      "#0D0420",
-      "#160C2B"
+      "#150E25"
     ],
     "accent": [
-      "#4B028B"
+      "#0FB288"
     ],
-    "material_behavior": [
-      "deep violet architectural planes",
-      "graphite/near-black product bodies",
-      "controlled lighter-violet highlights",
-      "restrained green accent only when conceptually justified"
+    "lighting": [
+      "bright saturated violet/magenta pool on the upper-right/rear plane",
+      "deep violet falloff toward the left and lower frame",
+      "violet rim light on black products and platform bevels",
+      "soft broad key with glossy controlled edge reflections"
     ],
     "negative": [
-      "lavender room",
-      "mauve wash",
+      "brown aubergine wash",
+      "gray-mauve wall",
+      "flat dark room",
       "blue-purple shift",
-      "neon magenta",
-      "flat purple backdrop"
+      "neon nightclub",
+      "uniformly black shadows"
     ]
   }
 }
