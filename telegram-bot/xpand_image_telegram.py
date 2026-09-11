@@ -36,7 +36,7 @@
 # Telegram Delivery
 #
 #
-# V3.6 CORE POLICY
+# V4.3 CORE POLICY
 # ---------------------------------------------------------
 #
 # ONE semantic source of truth:
@@ -184,6 +184,12 @@ from xpand_stc_bank_skill import (
     stc_style_display_name,
     stc_style_question_needed,
 )
+
+# Previous generated images are kept locally so a follow-up edit can use the
+# actual prior render instead of silently starting a new chat turn.
+_LAST_IMAGE_CACHE_DIR = os.path.join(os.path.dirname(__file__), ".xpand_last_images")
+_LAST_IMAGE_CACHE_TTL_SECONDS = 6 * 60 * 60
+
 
 
 # =========================================================
@@ -1102,6 +1108,85 @@ IMAGE_ASSET_MARKERS = [
 ]
 
 
+IMAGE_EDIT_MARKERS = [
+    "عدّل",
+    "عدل",
+    "تعديل",
+    "حافظ على",
+    "خفّف",
+    "خفف",
+    "اجعل",
+    "استبدل",
+    "حسّن",
+    "حسن",
+    "النسخة الحالية",
+    "الصورة الحالية",
+    "الصورة الأخيرة",
+    "same composition",
+    "keep the same",
+    "edit the image",
+    "refine the image",
+]
+
+IMAGE_EDIT_CONTEXT_MARKERS = [
+    "الصورة",
+    "الإعلان",
+    "الاعلان",
+    "التكوين",
+    "شاشة الهاتف",
+    "الهاتف",
+    "pos",
+    "mint",
+    "انعكاس",
+    "الانعكاسات",
+    "screen",
+    "surface",
+]
+
+
+def _last_image_cache_path(chat_id, user_id):
+    safe_chat = re.sub(r"[^0-9A-Za-z_-]", "_", str(chat_id))
+    safe_user = re.sub(r"[^0-9A-Za-z_-]", "_", str(user_id))
+    return os.path.join(_LAST_IMAGE_CACHE_DIR, f"{safe_chat}_{safe_user}.bin")
+
+
+def remember_last_generated_image(chat_id, user_id, image) -> bool:
+    raw = getattr(image, "image_bytes", b"") or b""
+    if not isinstance(raw, (bytes, bytearray)) or not raw:
+        return False
+    try:
+        os.makedirs(_LAST_IMAGE_CACHE_DIR, exist_ok=True)
+        path = _last_image_cache_path(chat_id, user_id)
+        with open(path, "wb") as handle:
+            handle.write(bytes(raw))
+        with open(path + ".mime", "w", encoding="utf-8") as handle:
+            handle.write(clean_text(getattr(image, "mime_type", "image/png"), 80) or "image/png")
+        return True
+    except Exception as error:
+        print("⚠️ Last image cache write:", clean_text(error, 500), flush=True)
+        return False
+
+
+def load_last_generated_image(chat_id, user_id):
+    path = _last_image_cache_path(chat_id, user_id)
+    try:
+        if not os.path.exists(path):
+            return None
+        if time.time() - os.path.getmtime(path) > _LAST_IMAGE_CACHE_TTL_SECONDS:
+            return None
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        mime = "image/png"
+        mime_path = path + ".mime"
+        if os.path.exists(mime_path):
+            with open(mime_path, "r", encoding="utf-8") as handle:
+                mime = clean_text(handle.read(), 80) or mime
+        return {"image_bytes": raw, "mime_type": mime}
+    except Exception as error:
+        print("⚠️ Last image cache read:", clean_text(error, 500), flush=True)
+        return None
+
+
 IMAGE_QUESTION_MARKERS = [
     "اشرحلي",
     "اشرح لي",
@@ -1233,6 +1318,16 @@ def looks_like_image_generation_request(
         value
     ):
 
+        return True
+
+    # Follow-up visual edits often start with “حافظ على…” or “خفّف…” and
+    # therefore do not contain an image-generation verb. Route them into the
+    # image pipeline when the same message contains visual context.
+    if (
+        contains_any(value, IMAGE_EDIT_MARKERS)
+        and
+        contains_any(value, IMAGE_EDIT_CONTEXT_MARKERS)
+    ):
         return True
 
     return bool(
@@ -3287,6 +3382,7 @@ def prepare_generation_input(
     core,
     user_id,
     prompt: str,
+    chat_id=None,
 ) -> Dict[str, Any]:
 
     original_prompt = clean_text(
@@ -3389,6 +3485,8 @@ def prepare_generation_input(
             "references"
         )
     )[:5]
+
+    prior_image = load_last_generated_image(chat_id, user_id) if chat_id is not None else None
 
     # =====================================================
     # STC STYLE
@@ -3715,6 +3813,9 @@ def prepare_generation_input(
 
         "references":
             references,
+
+        "prior_image":
+            prior_image,
 
         "creative_mode":
             creative_mode,
@@ -4108,17 +4209,36 @@ def generate_masterpiece_images(
                 TARGET_GEMINI,
             )
 
+            prior_image = prepared.get("prior_image")
+            prior_reference = None
+            production_request = request_text
+            if prior_image and prior_image.get("image_bytes"):
+                prior_reference = ProductionReference(
+                    role="approved_prior_render",
+                    image_bytes=prior_image["image_bytes"],
+                    mime_type=prior_image.get("mime_type", "image/png"),
+                    source_id="last_generated_image",
+                    content_family="prior_render",
+                    user_note="Preserve this approved image and apply only the requested local edits.",
+                )
+                production_request = (
+                    "IMAGE EDIT MODE: Image 1 is the approved prior render. Preserve its composition, camera, hero relationship, STC palette, lighting and reflections. Apply only the local changes requested below; do not redesign the scene.\n\n"
+                    + request_text
+                )
+                print("🖼️ IMAGE EDIT MODE: prior render attached", flush=True)
+
             production = run_production(
                 core=core,
                 user_id=user_id,
                 brand_id=brand_id,
-                original_request=request_text,
+                original_request=production_request,
                 creative_direction=direction,
                 brand_context=brand_context,
                 camera_direction=camera,
                 aspect_ratio=aspect_ratio,
                 mode=PRODUCTION_MODE_MASTERPIECE,
                 target_model=TARGET_GEMINI,
+                additional_references=([prior_reference] if prior_reference else None),
             )
 
             final_image = getattr(
@@ -5141,6 +5261,7 @@ def generate_and_deliver(
         core,
         user_id,
         prompt,
+        chat_id=chat_id,
     )
 
     final_prompt = prepared[
@@ -5813,6 +5934,8 @@ def generate_and_deliver(
         images,
         start=1,
     ):
+
+        remember_last_generated_image(chat_id, user_id, image)
 
         delivered.append(
             deliver_generated_image(
