@@ -43,7 +43,7 @@
 # Therefore these rules can never disappear because of
 # character-budget compaction:
 #
-# - 25–40% integrated copy space
+# - 25–40% integrated quiet negative space
 # - NO artificial blank panel
 # - NO hero pushed into bottom
 # - NO stone/travertine pedestal
@@ -3460,7 +3460,7 @@ Never use an unusual angle as a meaningless gimmick.
 COPY SPACE
 ----------
 
-Use roughly 25–40% integrated copy space when useful.
+Use roughly 25–40% integrated quiet negative space when useful.
 
 Do NOT:
 - reserve 30–40% blank sky/wall automatically
@@ -3600,14 +3600,13 @@ Final aspect ratio:
 Final resolution intent:
 {requested_size}
 
-Use approximately 25–40% integrated copy space.
+Use approximately 25–40% integrated quiet negative space.
 
 NO artificial blank panel; quiet upper-third space is allowed.
 
 Keep negative space photographic and integrated.
 
-NO hero pushed into the bottom half merely to create
-copy space.
+NO hero pushed into the bottom half merely to manufacture empty space.
 
 Negative space must be integrated naturally into
 architecture, depth, lighting or scene structure.
@@ -3675,6 +3674,14 @@ NO readable financial interface.
 {brand_lock}
 
 {merchant_lock}
+
+STRICT VISUAL OUTPUT GUARD — IMMUTABLE
+-------------------------------------
+The generated image must contain the scene only. Never render readable Arabic or English text, letters, words, numbers, slogans, labels, logos, watermarks, signage, fake UI or any phrase describing a reserved design area. A reserved area is only an empty, low-detail visual region created by composition.
+
+Mandatory final exclusions: NO TEXT, NO TYPOGRAPHY, NO LETTERS, NO WORDS, NO NUMBERS, NO LOGOS, NO BRAND MARKS, NO WATERMARKS, NO SIGNAGE, NO LABELS, NO FAKE UI TEXT, NO DESIGN-SPACE LABELS, NO PLACEHOLDER WORDS.
+
+Reject and regenerate if any readable character, label, logo, fake interface, floating card, random prop, meaningless box, generic purple platform, or the failure pattern of purple wall + opening + POS + card + background boxes appears without a causal advertising idea. The opening must express access, transition, connection, commerce flow or consequence; otherwise remove it.
 
 FINAL SELF-CHECK
 ----------------
@@ -10221,7 +10228,7 @@ if __name__ == "__main__":
     tests[
         "final_prompt_copy_space_immutable"
     ] = (
-        "25–40% integrated copy space"
+        "25–40% integrated quiet negative space"
         in final_prompt
     )
 
@@ -10341,7 +10348,7 @@ if __name__ == "__main__":
             "NO random travertine pedestal"
             in forced
             and
-            "25–40% integrated copy space"
+            "25–40% integrated quiet negative space"
             in forced
             and
             (
@@ -10373,7 +10380,7 @@ if __name__ == "__main__":
         problems=[
             (
                 "Payment hardware looks invented "
-                "and copy space is excessive."
+                "and reserved space is excessive."
             )
         ],
         correction_instruction=(
