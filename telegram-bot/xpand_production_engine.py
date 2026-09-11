@@ -6752,18 +6752,16 @@ def qa_candidate_is_better(
     if existing is None:
         return True
 
-    # A passed candidate always wins over a rejected candidate.
-    if candidate.passed != existing.passed:
-        return bool(candidate.passed)
+    # QA is advisory now: always keep the highest-scoring generated image.
+    # A later repair may be materially better even when it still carries
+    # an advisory flag or blocker. Delivery no longer depends on passed.
+    candidate_score = float(candidate.score)
+    existing_score = float(existing.score)
 
-    # A failed repair is never allowed to replace the original failed
-    # candidate. It can only replace it after crossing the delivery gate.
-    if not candidate.passed and not existing.passed:
-        return False
+    if candidate_score != existing_score:
+        return candidate_score > existing_score
 
-    # Among candidates with the same successful pass state, preserve the
-    # strongest measured result.
-    return float(candidate.score) > float(existing.score)
+    return bool(candidate.passed) and not bool(existing.passed)
 
 
 # =========================================================
