@@ -1297,6 +1297,37 @@ def is_stc_prompt_only_request(text: str) -> bool:
     return wants_prompt and not wants_render
 
 
+
+def is_stc_deep_campaign_request(text: str) -> bool:
+    """Return True when the user wants ideation followed by production.
+
+    This is different from a prompt-only request: the user is asking XPAND
+    to think first and then make the campaign asset, not to stop at a prompt.
+    """
+    source = normalized(text)
+    if not is_stc_bank_request(text):
+        return False
+    planning_markers = (
+        "لا تبدأ بتوليد الصورة",
+        "لا تولد الصورة",
+        "لا تولّد الصورة",
+        "طوّر عدة أفكار",
+        "طور عدة افكار",
+        "حلل الفكرة",
+        "حلّل الفكرة",
+        "اختر فكرة واحدة",
+        "مراجعة إبداعية",
+        "مراجعه ابداعيه",
+        "خذ وقتك",
+        "بدي ياخد وقته",
+        "فكر وحلل",
+        "فكّر وحلّل",
+    )
+    return contains_any(source, planning_markers) and contains_any(
+        source, ("إعلان", "اعلان", "حملة", "حمله", "خدمة", "خدمات", "campaign", "ad")
+    )
+
+
 def looks_like_image_generation_request(
     text: str,
 ) -> bool:
@@ -1306,7 +1337,10 @@ def looks_like_image_generation_request(
         12000,
     )
 
-    if is_stc_prompt_only_request(value):
+    if (
+        is_stc_prompt_only_request(value)
+        or is_stc_deep_campaign_request(value)
+    ):
         return True
 
     if not value:
@@ -5253,7 +5287,15 @@ def generate_and_deliver(
         )
 
     from xpand_stc_design_session import wants_ideas, route_turn, run_turn
-    if is_stc_prompt_only_request(text) or (is_stc_bank_request(text) and wants_ideas(text)):
+    deep_campaign_request = is_stc_deep_campaign_request(text)
+
+    if (
+        not deep_campaign_request
+        and (
+            is_stc_prompt_only_request(text)
+            or (is_stc_bank_request(text) and wants_ideas(text))
+        )
+    ):
         import sys
         runtime = sys.modules[__name__]
         task = route_turn(runtime, chat_id, user_id, text)
@@ -5508,6 +5550,11 @@ def generate_and_deliver(
         prepared.get(
             "campaign_required"
         ),
+    )
+
+    print(
+        "deep_campaign_request =",
+        deep_campaign_request,
     )
 
     print(
