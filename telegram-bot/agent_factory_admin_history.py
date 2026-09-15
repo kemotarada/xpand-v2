@@ -621,11 +621,11 @@ def github_repository():
 
     for env_name in [
 
-        "GITHUB_REPOSITORY",
+        "KEMO_GITHUB_REPO",
 
         "KEMO_GITHUB_REPOSITORY",
 
-        "KEMO_GITHUB_REPO",
+        "GITHUB_REPOSITORY",
 
         "GITHUB_REPO",
     ]:
