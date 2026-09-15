@@ -2906,6 +2906,11 @@ def save_visual_reference(
                 ),
             )
 
+    print(
+        "✅ Brand Memory visual reference persisted permanently:",
+        brand_id,
+    )
+
     return item
 
 
