@@ -2,7 +2,6 @@
   "schema_version": "1.1",
   "agent_id": "xpand",
   "agent_name": "XPAND",
-
   "capabilities": {
     "general_chat": {
       "enabled": true,
@@ -13,7 +12,6 @@
         "method": "real_telegram_message_test"
       }
     },
-
     "voice": {
       "enabled": false,
       "status": "disabled_image_focus",
@@ -34,86 +32,99 @@
         "method": "real_voice_to_voice_test"
       }
     },
-
     "web_search": {
       "enabled": false,
       "status": "not_verified",
       "description": "Web search capability. Must not be claimed or used until runtime support is installed and successfully tested."
     },
-
     "company_knowledge": {
       "enabled": false,
       "status": "not_installed",
       "description": "Dedicated XPAND company knowledge base is not installed yet."
     },
-
     "documents_rag": {
       "enabled": false,
       "status": "not_installed",
       "description": "Document retrieval and RAG capability is not installed yet."
     },
-
     "crm": {
       "enabled": false,
       "status": "not_installed",
       "description": "CRM integration is not installed yet."
     },
-
     "lead_capture": {
       "enabled": false,
       "status": "not_installed",
       "description": "Lead capture integration is not installed yet."
     },
-
     "appointments": {
       "enabled": false,
       "status": "not_installed",
       "description": "Appointment management capability is not installed yet."
     },
-
     "calendar": {
       "enabled": false,
       "status": "not_installed",
       "description": "Calendar integration is not installed yet."
     },
-
     "email": {
       "enabled": false,
       "status": "not_installed",
       "description": "Email integration is not installed yet."
     },
-
     "image_generation": {
       "enabled": true,
       "status": "installed_pending_live_test",
       "description": "Gemini-first image generation, editing and multi-reference composition."
     },
-
     "live_call": {
       "enabled": false,
       "status": "not_verified",
       "description": "Live call capability must remain disabled in this manifest until the production call runtime is successfully tested."
     },
-
     "human_handoff": {
       "enabled": false,
       "status": "not_installed",
       "description": "Human handoff capability is not installed yet."
     },
-
     "analytics": {
       "enabled": false,
       "status": "not_installed",
       "description": "Analytics capability is not installed yet."
     },
-
     "admin_panel": {
       "enabled": false,
       "status": "not_installed",
       "description": "Admin panel capability is not installed yet."
+    },
+    "stc_copywriting": {
+      "enabled": true,
+      "status": "verified",
+      "description": "Premium bilingual Arabic and English copywriting for STC Bank advertising, merchant payments, digital banking, and customer-benefit campaigns.",
+      "arabic_capabilities": [
+        "كتابة عناوين وإعلانات عربية فخمة وواضحة لحملات بنك STC",
+        "تحويل مزايا الدفع والتجارة الإلكترونية والخدمات البنكية إلى رسائل مقنعة دون اختراع عروض أو أرقام",
+        "صياغة نسخ قصيرة للسوشيال ميديا وSMS وWhatsApp مع خطافات وعبارات دعوة للفعل مناسبة للسوق السعودي",
+        "مراجعة النبرة العربية وتجنب اللغة الروبوتية والمبالغات والادعاءات غير الموثقة"
+      ],
+      "english_capabilities": [
+        "Premium native-English STC Bank campaign copywriting",
+        "Benefit-led headlines, body copy, hooks, and CTAs for digital banking and merchant-payment campaigns",
+        "Channel-specific social, SMS, WhatsApp, and landing-page variants",
+        "Brand-safe copy that avoids unsupported rates, offers, guarantees, or financial claims"
+      ],
+      "workflow": [
+        "extract the verified customer benefit",
+        "generate multiple strategic angles",
+        "write Arabic and English variants",
+        "check brand safety, factuality, clarity, and CTA strength"
+      ],
+      "verification": {
+        "verified": true,
+        "method": "xpand_stc_bank_bilingual_copywriting_capability_v1"
+      }
     }
   },
-
   "behavior": {
     "company": "XPAND",
     "primary_user": "إيهاب",
@@ -123,7 +134,6 @@
     "concise_by_default": true,
     "avoid_robotic_language": true
   },
-
   "rules": {
     "never_mark_verified_without_real_test": true,
     "never_claim_disabled_capability": true,
@@ -134,6 +144,5 @@
     "memory_must_not_leak_between_users": true,
     "memory_must_not_leak_between_agents": true
   },
-
   "notes": "This is the runtime capability manifest for XPAND, the AI agent of XPAND company. The primary user is Ihab. Only capabilities confirmed by real runtime testing are marked as verified. Runtime capability state may also exist in Postgres. Secrets, API keys, Telegram tokens and database credentials must never be stored in this file."
 }
