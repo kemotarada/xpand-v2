@@ -4156,12 +4156,19 @@ def apply_pending_change(
 
     for item in changes:
 
-        path = clean_text(
+        # Normalize legacy agent-relative paths before both the SHA
+        # verification and the atomic Git tree write. Without this,
+        # an approved change could read the right file but commit to a
+        # non-existent root-level path.
+        normalized_path = normalize_github_content_path(
             item.get(
                 "path"
-            ),
-            1000
+            )
         )
+        item[
+            "path"
+        ] = normalized_path
+        path = normalized_path
 
 
         if not safe_code_path(
