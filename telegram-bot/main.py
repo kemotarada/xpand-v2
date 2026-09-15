@@ -9080,12 +9080,20 @@ def main():
         )
         return
 
-    telegram_poll_lock = (
-        acquire_telegram_poll_lock()
-    )
+    telegram_poll_lock = None
+    while telegram_poll_lock is None:
+        try:
+            telegram_poll_lock = acquire_telegram_poll_lock()
+        except Exception as error:
+            print(
+                f"⚠️ Telegram polling lock retry: {error}"
+            )
 
-    if telegram_poll_lock is None:
-        return
+        if telegram_poll_lock is None:
+            print(
+                "⏳ Telegram polling lock is busy; retrying in 5 seconds."
+            )
+            time.sleep(5)
 
     try:
         ensure_core_lessons(
