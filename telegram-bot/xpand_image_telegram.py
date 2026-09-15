@@ -5859,8 +5859,14 @@ def generate_and_deliver(
 
         try:
 
+            generation_prompt = (
+                prompt
+                if FREE_IMAGE_MODE
+                else final_prompt
+            )
+
             result = generate_image(
-                final_prompt,
+                generation_prompt,
                 mode=mode,
                 number=number,
                 aspect_ratio=aspect_ratio,
