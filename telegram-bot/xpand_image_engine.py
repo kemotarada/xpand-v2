@@ -95,6 +95,8 @@ import tempfile
 import time
 import uuid
 
+from urllib.parse import quote
+
 from dataclasses import (
     dataclass,
     field,
@@ -456,6 +458,14 @@ DEFAULT_QUALITY = str(
         "high",
     )
 ).strip().lower()
+
+
+# Temporary no-token image generation. Set to false to restore the
+# existing Gemini/OpenAI routing without changing provider settings.
+FREE_IMAGE_MODE = env_bool(
+    "XPAND_FREE_IMAGE_MODE",
+    False,
+)
 
 
 #
@@ -6923,6 +6933,101 @@ def run_openai_direct(
 
 
 # =========================================================
+# TEMPORARY NO-TOKEN FREE IMAGE ROUTE
+# =========================================================
+
+def _free_image_dimensions(aspect_ratio: str) -> Tuple[int, int]:
+    return {
+        "1:1": (512, 512),
+        "4:5": (512, 640),
+        "5:4": (640, 512),
+        "9:16": (384, 672),
+        "16:9": (672, 384),
+        "2:3": (448, 672),
+        "3:2": (672, 448),
+        "3:4": (512, 672),
+        "4:3": (672, 512),
+    }.get(aspect_ratio, (512, 512))
+
+
+def generate_with_free_provider(
+    original_prompt: str,
+    *,
+    aspect_ratio: str,
+    image_size: str,
+    quality: str,
+    number: int = 1,
+    reference_images: Sequence[Tuple[bytes, str]] = (),
+) -> ImageGenerationResponse:
+    started = time.monotonic()
+    enhanced = build_professional_prompt(original_prompt, aspect_ratio, image_size)
+    width, height = _free_image_dimensions(aspect_ratio)
+    route = build_route(
+        "pollinations",
+        "flux-free",
+        "Temporary no-token free image route",
+        aspect_ratio,
+        image_size,
+        quality,
+    )
+    images: List[GeneratedImage] = []
+    errors: List[str] = []
+    for index in range(max(1, min(safe_int(number, 1), 4))):
+        try:
+            url = "https://image.pollinations.ai/prompt/" + quote(enhanced, safe="")
+            response = requests.get(
+                url,
+                params={
+                    "width": str(width),
+                    "height": str(height),
+                    "nologo": "true",
+                    "enhance": "true",
+                    "seed": str(index + int(time.time())),
+                },
+                timeout=90,
+            )
+            response.raise_for_status()
+            mime_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            if not mime_type.startswith("image/") or len(response.content or b"") < 1000:
+                raise XPANDImageProviderError("Free image provider returned an invalid image.")
+            images.append(
+                GeneratedImage(
+                    image_bytes=bytes(response.content),
+                    mime_type=mime_type,
+                    provider="pollinations",
+                    model="flux-free",
+                    prompt=enhanced,
+                    original_prompt=original_prompt,
+                    aspect_ratio=aspect_ratio,
+                    image_size=image_size,
+                    quality="low",
+                    route_reason="Temporary no-token free generation.",
+                    metadata={
+                        "temporary_free_mode": True,
+                        "reference_images_ignored": bool(reference_images),
+                        "quality_gate": "disabled_temporarily",
+                    },
+                )
+            )
+        except Exception as error:
+            message = clean_text(error, 2500)
+            errors.append("pollinations: " + message)
+            print("⚠️ FREE IMAGE ROUTE:", message, flush=True)
+    if not images:
+        raise XPANDImageProviderError("Free image generation failed.\n" + "\n".join(errors))
+    return ImageGenerationResponse(
+        ok=True,
+        images=images,
+        selected_route="free",
+        routes=[route],
+        original_prompt=original_prompt,
+        enhanced_prompt=enhanced,
+        elapsed_seconds=round(time.monotonic() - started, 3),
+        errors=errors,
+    )
+
+
+# =========================================================
 # DIRECT GOOGLE ROUTE
 # =========================================================
 
@@ -8360,6 +8465,20 @@ def generate_image(
             4,
         ),
     )
+
+    if FREE_IMAGE_MODE:
+        print(
+            "🟢 TEMPORARY FREE IMAGE MODE: Pollinations / flux-free",
+            flush=True,
+        )
+        return generate_with_free_provider(
+            original_prompt,
+            aspect_ratio=final_aspect_ratio,
+            image_size=final_image_size,
+            quality="low",
+            number=number,
+            reference_images=reference_images,
+        )
 
     print("")
     print(
