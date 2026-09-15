@@ -41,6 +41,7 @@ import main as core
 
 import xpand_image_telegram as xpand_images
 import xpand_visual_reference_telegram as xpand_reference_images
+import xpand_background_developer
 
 
 # =========================================================
@@ -1473,6 +1474,8 @@ def print_header():
 def main():
 
     print_header()
+
+    xpand_background_developer.start()
 
 
     #
