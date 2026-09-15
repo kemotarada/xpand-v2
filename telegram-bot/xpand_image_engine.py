@@ -6960,7 +6960,15 @@ def generate_with_free_provider(
     reference_images: Sequence[Tuple[bytes, str]] = (),
 ) -> ImageGenerationResponse:
     started = time.monotonic()
-    enhanced = build_professional_prompt(original_prompt, aspect_ratio, image_size)
+    # Pollinations places the prompt in the URL path. Keep the temporary
+    # free route deliberately short so Arabic prompts cannot overflow the
+    # proxy's request-header limit.
+    compact_prompt = clean_text(original_prompt, 600)
+    if len(compact_prompt) > 520:
+        compact_prompt = compact_prompt[:520]
+    enhanced = build_professional_prompt(compact_prompt, aspect_ratio, image_size)
+    if len(enhanced) > 620:
+        enhanced = enhanced[:620]
     width, height = _free_image_dimensions(aspect_ratio)
     route = build_route(
         "pollinations",
