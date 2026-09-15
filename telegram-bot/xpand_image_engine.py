@@ -282,7 +282,34 @@ GEMINI_API_KEY = str(
 ).strip()
 
 
-# Provider selection is configurable; OpenAI is used automatically when keyed.
+# Free vision route: Qwen VL through OpenRouter.
+OPENROUTER_API_KEY = str(
+    os.environ.get(
+        "OPENROUTER_API_KEY",
+        "",
+    )
+).strip()
+
+OPENROUTER_ENABLED = env_bool(
+    "XPAND_OPENROUTER_ENABLED",
+    bool(OPENROUTER_API_KEY),
+)
+
+OPENROUTER_VISION_MODEL = str(
+    os.environ.get(
+        "XPAND_OPENROUTER_VISION_MODEL",
+        "qwen/qwen2.5-vl-32b-instruct:free",
+    )
+).strip()
+
+OPENROUTER_CHAT_URL = (
+    "https://openrouter.ai/api/v1/chat/completions"
+)
+
+OPENROUTER_UNAVAILABLE = False
+
+
+# Provider selection is configurable; OpenRouter free vision is preferred when keyed.
 OPENAI_ENABLED = env_bool(
     "XPAND_OPENAI_ENABLED",
     bool(OPENAI_API_KEY),
@@ -3408,6 +3435,92 @@ def _call_openai_response_once(
     return data
 
 
+def call_openrouter_director(
+    prompt: str,
+    *,
+    image_bytes: Optional[bytes] = None,
+    image_mime_type: str = "image/png",
+    json_mode: bool = False,
+    json_schema: Optional[Dict[str, Any]] = None,
+    max_output_tokens: int = 5000,
+) -> str:
+    """Use the free Qwen VL route without Gemini or OpenAI credentials."""
+    global OPENROUTER_UNAVAILABLE
+
+    if OPENROUTER_UNAVAILABLE:
+        raise XPANDImageProviderError(
+            "OpenRouter free vision provider is temporarily unavailable."
+        )
+    if not OPENROUTER_API_KEY:
+        raise XPANDImageConfigurationError(
+            "OPENROUTER_API_KEY missing."
+        )
+
+    request_prompt = clean_text(prompt, 100000)
+    if json_mode or json_schema:
+        request_prompt += (
+            "\n\nOUTPUT CONTRACT: Return exactly one complete valid JSON object. "
+            "No Markdown and no prose."
+        )
+        if json_schema:
+            request_prompt += "\nJSON SCHEMA:\n" + json.dumps(
+                json_schema, ensure_ascii=False
+            )
+
+    content: List[Dict[str, Any]] = [{
+        "type": "text",
+        "text": request_prompt,
+    }]
+    if image_bytes:
+        content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": image_data_uri(image_bytes, image_mime_type),
+            },
+        })
+
+    response = requests.post(
+        OPENROUTER_CHAT_URL,
+        headers={
+            "Authorization": "Bearer " + OPENROUTER_API_KEY,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://replit.com/",
+            "X-Title": "XPAND Visual Reference Intelligence",
+        },
+        json={
+            "model": OPENROUTER_VISION_MODEL,
+            "messages": [{"role": "user", "content": content}],
+            "temperature": 0.2,
+            "max_tokens": int(max_output_tokens),
+        },
+        timeout=REQUEST_TIMEOUT,
+    )
+
+    if not response.ok:
+        message = _provider_error_message(
+            "OpenRouter Qwen VL", response
+        )
+        if is_openai_quota_error(message):
+            OPENROUTER_UNAVAILABLE = True
+        raise XPANDImageProviderError(message)
+
+    data = _safe_json(response)
+    choices = data.get("choices", []) if isinstance(data, dict) else []
+    message = choices[0].get("message", {}) if choices else {}
+    text = message.get("content", "") if isinstance(message, dict) else ""
+    if isinstance(text, list):
+        text = "".join(
+            str(item.get("text", "")) if isinstance(item, dict) else str(item)
+            for item in text
+        )
+    text = clean_text(text, 120000)
+    if not text:
+        raise XPANDImageProviderError(
+            "OpenRouter Qwen VL returned no text."
+        )
+    return normalize_json_text(text) if (json_mode or json_schema) else text
+
+
 def _run_openai_director(
     prompt: str,
     *,
@@ -4033,6 +4146,24 @@ def call_openai_director(
         or
         json_schema
     )
+
+    # Prefer the free Qwen VL route for visual reference analysis.
+    if OPENROUTER_ENABLED and OPENROUTER_API_KEY:
+        try:
+            return call_openrouter_director(
+                prompt,
+                image_bytes=image_bytes,
+                image_mime_type=image_mime_type,
+                json_mode=structured,
+                json_schema=json_schema,
+            )
+        except Exception as error:
+            print(
+                "⚠️ OPENROUTER FREE VISION: "
+                + clean_text(error, 1800)
+            )
+            if not (OPENAI_ENABLED and OPENAI_API_KEY) and not GEMINI_API_KEY:
+                raise
 
     if GEMINI_ONLY_MODE:
         try:
