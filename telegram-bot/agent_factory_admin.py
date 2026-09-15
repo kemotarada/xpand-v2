@@ -2945,7 +2945,10 @@ def factory_ai_json(
     user_prompt
 ):
 
-    key = factory.gemini_api_key()
+    key = (
+        os.getenv("XPAND_DEVELOPER_GEMINI_API_KEY", "").strip()
+        or factory.gemini_api_key()
+    )
 
 
     if not key:
