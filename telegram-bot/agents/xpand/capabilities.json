@@ -122,6 +122,63 @@
       "verification": {
         "verified": true,
         "method": "xpand_stc_bank_bilingual_copywriting_capability_v1"
+      },
+      "evaluation_rubric": {
+        "criteria": [
+          {
+            "name": "factuality_and_claim_safety",
+            "weight": 25,
+            "requirement": "Use only verified inputs; flag missing rates, offers, eligibility, or financial claims instead of inventing them."
+          },
+          {
+            "name": "proposition_clarity",
+            "weight": 20,
+            "requirement": "One clear customer benefit is understandable quickly and is not buried under features."
+          },
+          {
+            "name": "arabic_naturalness",
+            "weight": 20,
+            "requirement": "Arabic is fluent, culturally appropriate for Saudi audiences, and free of literal translation artifacts."
+          },
+          {
+            "name": "channel_fit",
+            "weight": 15,
+            "requirement": "Length, structure, CTA, and tone match the requested channel."
+          },
+          {
+            "name": "persuasive_quality",
+            "weight": 10,
+            "requirement": "The copy has a credible hook, specific value, and a useful next action."
+          },
+          {
+            "name": "bilingual_consistency",
+            "weight": 10,
+            "requirement": "Arabic and English preserve the same verified proposition while sounding native in each language."
+          }
+        ],
+        "pass_condition": "Total score >= 80/100, with factuality_and_claim_safety passing and no unresolved unsupported claim."
+      },
+      "output_contract": {
+        "required_sections": [
+          "brief_assumptions",
+          "arabic_copy",
+          "english_copy",
+          "channel_variants",
+          "claim_checks",
+          "cta_options"
+        ],
+        "claim_check_values": [
+          "verified",
+          "needs_source",
+          "not_invented"
+        ],
+        "default_variants": [
+          "headline",
+          "short_social",
+          "sms_or_whatsapp",
+          "body_copy",
+          "cta"
+        ]
       }
     }
   },
