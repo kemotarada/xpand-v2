@@ -229,6 +229,7 @@ def _process_batch(core: Any, chat_id: Any, user_id: Any, messages: List[Dict[st
     core.send_action(chat_id, "typing")
     brand_id = _brand_for_caption(caption)
     analyses: List[Dict[str, Any]] = []
+    analysis_errors: List[str] = []
     for index, message in enumerate(messages, 1):
         try:
             image = _download(core, message)
@@ -264,9 +265,18 @@ def _process_batch(core: Any, chat_id: Any, user_id: Any, messages: List[Dict[st
             )
             analyses.append(dna)
         except Exception as error:
-            print("⚠️ XPAND image analysis:", _text(error, 1200))
+            message = _text(error, 1200)
+            analysis_errors.append(message)
+            print("⚠️ XPAND image analysis:", message)
     if not analyses:
-        core.send_message(chat_id, "لم أستطع قراءة أي صورة صالحة من المجموعة. ابعث الصور مرة ثانية بصيغة JPG أو PNG.")
+        error_text = " ".join(analysis_errors).lower()
+        if any(marker in error_text for marker in ("quota", "credits", "429", "provider unavailable", "prepayment")):
+            core.send_message(
+                chat_id,
+                "الصور وصلت، لكن مزوّد تحليل الرؤية غير متاح حاليًا بسبب نفاد رصيد المشروع. المشكلة ليست في JPG أو PNG. فعّل مزوّدًا متاحًا أو جدّد رصيد Gemini، ثم أعد إرسال الألبوم."
+            )
+        else:
+            core.send_message(chat_id, "وصلت الصور، لكن تعذر تحليلها. أرسل صورة JPG أو PNG واحدة للتجربة، وسأعرض سبب الخطأ الحقيقي إذا استمر.")
         return
     synthesis = _synthesize(analyses, brand_id)
     try:
