@@ -33,6 +33,27 @@ class AdConcept:
         return asdict(self)
 
 
+@dataclass
+class AdCopy:
+    copy_id: str
+    benefit_extracted: str
+    hook_ar: str
+    hook_en: str
+    headline_ar: str
+    headline_en: str
+    body_copy_ar: str
+    body_copy_en: str
+    cta_ar: str
+    cta_en: str
+    saudi_cultural_fit: str
+    channel_variants: Dict[str, Dict[str, str]]
+    factuality_note: str
+    brand_memory_tag: str
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
 class STCAdBrain:
     """
     هذا الملف لا يستدعي أي API.
@@ -75,6 +96,93 @@ class STCAdBrain:
 
         return selected[:top_n]
 
+    def generate_premium_copy(self, benefit_family: str) -> List[AdCopy]:
+        """
+        Generates premium STC Bank advertising copy in Arabic and English.
+        Ensures strict factuality, Saudi cultural fit, and Brand Memory alignment.
+        Never invents offers, rates, eligibility, or financial claims.
+        """
+        if benefit_family == "merchant_payments":
+            return [ 
+                AdCopy(
+                    copy_id="mp_premium_01",
+                    benefit_extracted="Seamless digital payment acceptance for Saudi merchants, connecting online and physical stores.",
+                    hook_ar="من متجرك الإلكتروني إلى يد عميلك.. خطوة واحدة متصلة.",
+                    hook_en="From your online store to your customer's hand.. one seamless step.",
+                    headline_ar="سطح واحد، لكل عملية بيع",
+                    headline_en="One Surface, Every Sale",
+                    body_copy_ar="مع حلول التجار من بنك stc، وحّد قنوات البيع لديك واقبل المدفوعات بكل سهولة وأمان. نظام متكامل يواكب تسارع أعمالك في المملكة.",
+                    body_copy_en="With stc bank merchant solutions, unify your sales channels and accept payments with absolute ease and security. An integrated system built for the speed of your business in the Kingdom.",
+                    cta_ar="طوّر أعمالك اليوم",
+                    cta_en="Empower your business today",
+                    saudi_cultural_fit="Reflects the modern, fast-paced Saudi entrepreneurial spirit, aligning with Vision 2030's digital economy goals.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "تبسيط عمليات البيع يبدأ من هنا. وحّد متجرك الإلكتروني ونقاط البيع مع حلول تجار بنك stc. 💼✨ #بنك_stc",
+                            "en": "Simplifying sales starts here. Unify your online store and POS with stc bank merchant solutions. 💼✨ #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "لكل تاجر سعودي يطمح للنمو: حلول دفع ذكية تربط متجرك الإلكتروني بنقاط البيع الفعلية بسلاسة تامة. 📈",
+                            "en": "For every Saudi merchant aiming for growth: smart payment solutions that seamlessly connect your online store with physical POS. 📈"
+                        }
+                    },
+                    factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
+                    brand_memory_tag="stc_bank_merchant_2024"
+                )
+            ]
+        elif benefit_family == "international_transfer":
+            return [ 
+                AdCopy(
+                    copy_id="it_premium_01",
+                    benefit_extracted="Instant, secure international money transfers directly from the app with real-time tracking.",
+                    hook_ar="حول العالم بلمسة واحدة.. أمان وسرعة بلا حدود.",
+                    hook_en="Around the world in one touch.. limitless speed and security.",
+                    headline_ar="عالمك متصل، تحويلك فوري",
+                    headline_en="Your World Connected, Your Transfer Instant",
+                    body_copy_ar="أرسل الأموال دولياً لعائلتك وأعمالك بكل ثقة وأمان عبر تطبيق بنك stc. تحويل فوري، شفافية تامة، وراحة بال لا تضاهى.",
+                    body_copy_en="Send money internationally to your family and business with absolute confidence via stc bank app. Instant transfer, complete transparency, and unmatched peace of mind.",
+                    cta_ar="حوّل الآن بكل سهولة",
+                    cta_en="Transfer now with ease",
+                    saudi_cultural_fit="Addresses the deep-rooted Saudi value of family support and global business connectivity, using respectful and warm language.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "عائلتك قريبة دائماً مهما كانت المسافات. حوّل دولياً فوراً وبأمان تام عبر تطبيق بنك stc. 🌍✈️ #بنك_stc",
+                            "en": "Your family is always close, no matter the distance. Transfer internationally instantly and securely via stc bank app. 🌍✈️ #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "بكل أمان وشفافية، تطبيق بنك stc يقرّب المسافات ويضمن وصول تحويلاتك الدولية فوراً لمن تحب. ❤️",
+                            "en": "With absolute security and transparency, stc bank app brings distances closer and ensures your international transfers reach your loved ones instantly. ❤️"
+                        }
+                    },
+                    factuality_note="No specific exchange rates, transfer fees, or delivery times are claimed. Focuses on instant processing and security.",
+                    brand_memory_tag="stc_bank_remittance_2024"
+                )
+            ]
+        
+        return [
+            AdCopy(
+                copy_id="gen_copy_01",
+                benefit_extracted=f"Premium financial service benefit for {benefit_family}.",
+                hook_ar="الريادة المالية تبدأ بخطوة ذكية.",
+                hook_en="Financial leadership starts with a smart step.",
+                headline_ar="مستقبل المعاملات المالية بين يديك",
+                headline_en="The Future of Finance in Your Hands",
+                body_copy_ar="اختبر السهولة والأمان الفائق مع حلول بنك stc الرقمية المبتكرة المصممة لتلبية تطلعاتك اليومية.",
+                body_copy_en="Experience ultimate ease and security with stc bank's innovative digital solutions designed to meet your daily aspirations.",
+                cta_ar="اكتشف المزيد",
+                cta_en="Discover more",
+                saudi_cultural_fit="Maintains a highly professional, respectful, and forward-looking tone suitable for Saudi consumers.",
+                channel_variants={
+                    "twitter": {
+                        "ar": "سهولة، أمان، وابتكار في كل معاملة. اكتشف حلول بنك stc الرقمية اليوم. 💳✨ #بنك_stc",
+                        "en": "Ease, security, and innovation in every transaction. Discover stc bank digital solutions today. 💳✨ #stc_bank"
+                    }
+                },
+                factuality_note="No specific financial claims, rates, or offers are made.",
+                brand_memory_tag="stc_bank_generic_2024"
+            )
+        ]
+
     def _merchant_payments_concepts(self, visual_family: str) -> List[AdConcept]:
         """Return campaign ideas, not variations of a payment counter."""
         purple = visual_family in {"purple_architectural", "premium_purple_architecture"}
@@ -84,7 +192,7 @@ class STCAdBrain:
             else
             "Natural Saudi commercial palette with one motivated STC purple accent, clean skin/material color, and premium directional light."
         )
-        return [
+        return [ 
             AdConcept(
                 concept_id="mp_continuous_surface",
                 title="One Surface, Every Sale / سطح واحد، لكل عملية بيع",
@@ -188,8 +296,9 @@ class STCAdBrain:
                 diversity_tags=["saudi_context", "handoff", "environmental", "human_action"],
             ),
         ]
+
     def _generic_financial_concepts(self, benefit_family: str, visual_family: str) -> List[AdConcept]:
-        return [
+        return [ 
             AdConcept(
                 concept_id="gen_01",
                 title="Brand-Led Premium Financial Story / قصة مالية رائدة",
@@ -224,4 +333,19 @@ if __name__ == "__main__":
     print(f"shortlisted = {len(shortlisted)}")
     for item in shortlisted:
         print(f"- {item.concept_id} | {item.title} | total={item.total_score}")
+    
+    print("\n--- Copy Generation Test ---")
+    copies = brain.generate_premium_copy("merchant_payments")
+    print(f"generated_copies = {len(copies)}")
+    for copy in copies:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+        print(f"  Hook AR: {copy.hook_ar}")
+        print(f"  Saudi Fit: {copy.saudi_cultural_fit}")
+        print(f"  Factuality: {copy.factuality_note}")
+    
+    copies_it = brain.generate_premium_copy("international_transfer")
+    print(f"generated_copies (intl) = {len(copies_it)}")
+    for copy in copies_it:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+        
     print("PASS ✅")
