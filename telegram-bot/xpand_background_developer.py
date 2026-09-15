@@ -77,6 +77,7 @@ def run_cycle():
     if not _lock.acquire(blocking=False):
         print("⏭️ Autonomous XPAND cycle skipped: previous cycle is still running")
         return
+    admin = None
     try:
         import agent_factory_admin as admin
 
@@ -95,19 +96,29 @@ def run_cycle():
 
         commit_sha = admin.apply_pending_change(owner_id, pending)
         report = (
-            "✅ Kemo autonomous XPAND cycle completed.\\n\\n"
-            "Summary: " + str(staged.get("summary", "validated improvement")) + "\\n"
-            "Files: " + ", ".join(staged.get("files", [])) + "\\n"
-            "GitHub commit: " + commit_sha[:12] + "\\n"
-            "Validation: safe pipeline passed\\n"
+            "✅ Kemo autonomous XPAND cycle completed.\n\n"
+            "Summary: " + str(staged.get("summary", "validated improvement")) + "\n"
+            "Files: " + ", ".join(staged.get("files", [])) + "\n"
+            "GitHub commit: " + commit_sha[:12] + "\n"
+            "Validation: safe pipeline passed\n"
             "Next: continue with one focused STC Bank or Brand Memory improvement."
         )
         print(report)
         _send_telegram(report)
     except Exception as error:
+        if admin is not None and isinstance(error, admin.NoSafeCodeChange):
+            report = (
+                "ℹ️ Kemo autonomous XPAND cycle completed with no commit.\n\n"
+                "Reason: " + str(error)[:1800] + "\n"
+                "No safe change was ready; nothing was modified."
+            )
+            print(report)
+            _send_telegram(report)
+            return
+
         report = (
-            "⚠️ Kemo autonomous XPAND cycle stopped safely.\\n\\n"
-            "Reason: " + str(error)[:1800] + "\\n"
+            "⚠️ Kemo autonomous XPAND cycle stopped safely.\n\n"
+            "Reason: " + str(error)[:1800] + "\n"
             "No unvalidated commit was created."
         )
         print(report)
