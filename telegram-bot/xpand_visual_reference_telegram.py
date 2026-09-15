@@ -278,7 +278,7 @@ def _process_batch(core: Any, chat_id: Any, user_id: Any, messages: List[Dict[st
         if any(marker in error_text for marker in ("quota", "credits", "429", "provider unavailable", "prepayment")):
             core.send_message(
                 chat_id,
-                "الصور وصلت، لكن مزوّد تحليل الرؤية غير متاح حاليًا لأن أرصدة OpenAI وGemini المهيأة للمشروع مستنفدة. المشكلة ليست في JPG أو PNG. جدّد رصيد أحد المزوّدين ثم أعد إرسال الألبوم."
+                "الصور وصلت، لكن مزوّد الرؤية المجاني لم يُرجع تحليلاً قابلاً للقراءة. المشكلة ليست في JPG أو PNG؛ أعد الإرسال بعد لحظات."
             )
         else:
             core.send_message(chat_id, "وصلت الصور، لكن تعذر تحليلها. أرسل صورة JPG أو PNG واحدة للتجربة، وسأعرض سبب الخطأ الحقيقي إذا استمر.")
