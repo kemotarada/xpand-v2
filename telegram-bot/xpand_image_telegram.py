@@ -499,6 +499,16 @@ class STCStyleSelectionRequired(
 
 
 # =========================================================
+# TEMPORARY FREE IMAGE MODE
+# =========================================================
+
+FREE_IMAGE_MODE = env_bool(
+    "XPAND_FREE_IMAGE_MODE",
+    False,
+)
+
+
+# =========================================================
 # PENDING STC STYLE REQUESTS
 # =========================================================
 
@@ -5591,7 +5601,7 @@ def generate_and_deliver(
         creative_mode
         ==
         CREATIVE_MODE_MASTERPIECE
-    )
+    ) and not FREE_IMAGE_MODE
 
     guard_status = {
         "allowed": True,
