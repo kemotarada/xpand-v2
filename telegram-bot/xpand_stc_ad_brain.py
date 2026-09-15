@@ -171,14 +171,18 @@ class STCAdBrain:
                     body_copy_en="Invest and save smartly with stc bank tools specifically designed to empower your wealth management and financial aspirations in the Kingdom.",
                     cta_ar="ابدأ رحلة الادخار اليوم",
                     cta_en="Start your savings journey today",
-                    saudi_cultural_fit="Aligns with personal financial responsibility and long-term planning valued in Saudi culture and Vision 2030.",
+                    saudi_cultural_fit="Aligns with personal financial responsibility, prudent savings, and long-term planning valued in Saudi culture and Vision 2030.",
                     channel_variants={
                         "twitter": {
                             "ar": "مستقبلك المالي يستحق التخطيط الأذكى. اكتشف أدوات الادخار والاستثمار من بنك stc. 📊💡 #بنك_stc",
                             "en": "Your financial future deserves smarter planning. Discover savings and investment tools from stc bank. 📊💡 #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "خطط لخطوتك المالية القادمة بثقة. أدوات ذكية لإدارة وتنمية مدخراتك بكل سهولة وأمان مع تطبيق بنك stc. 🌿",
+                            "en": "Plan your next financial step with confidence. Smart tools to manage and grow your savings securely with stc bank app. 🌿"
                         }
                     },
-                    factuality_note="No specific investment yields, guaranteed returns, or fund percentages are claimed.",
+                    factuality_note="No specific investment yields, guaranteed returns, or fund percentages are claimed. Focuses purely on smart planning and financial tools.",
                     brand_memory_tag="stc_bank_wealth_2024"
                 )
             ]
