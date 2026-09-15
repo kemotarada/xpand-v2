@@ -283,14 +283,23 @@ GEMINI_API_KEY = str(
 
 
 # Gemini-only deployment: OpenAI is intentionally disabled.
-OPENAI_ENABLED = False
+OPENAI_ENABLED = env_bool(
+    "XPAND_OPENAI_ENABLED",
+    bool(OPENAI_API_KEY),
+)
 
 # A provider credit/quota outage is sticky for the lifetime of this process.
 # Avoid retrying the unavailable structured director on every QA/concept pass.
 OPENAI_STRUCTURED_UNAVAILABLE = False
 
+# Sticky process guard: do not retry an exhausted Gemini project for every image.
+GEMINI_DIRECTOR_UNAVAILABLE = False
+
 # Gemini-only production mode: OpenAI is intentionally never called.
-GEMINI_ONLY_MODE = True
+GEMINI_ONLY_MODE = env_bool(
+    "XPAND_GEMINI_ONLY_MODE",
+    not OPENAI_ENABLED,
+)
 
 
 # =========================================================
@@ -2827,7 +2836,7 @@ def response_status_error(
 def is_openai_quota_error(
     error: Any,
 ) -> bool:
-    """Return True for billing/quota failures where retrying OpenAI is wasteful."""
+    """Return True for billing/quota failures where retrying a provider is wasteful."""
     message = clean_text(
         error,
         8000,
@@ -2842,6 +2851,10 @@ def is_openai_quota_error(
         "billing_hard_limit",
         "add credits",
         "credit balance",
+        "credits depleted",
+        "prepayment",
+        "resource_exhausted",
+        "resource exhausted",
         "does not exist",
         "model_not_found",
         "unsupported model",
@@ -3704,6 +3717,12 @@ def call_gemini_director(
 ) -> str:
 
     global GEMINI_DIRECTOR_RUNTIME_MODEL
+    global GEMINI_DIRECTOR_UNAVAILABLE
+
+    if GEMINI_DIRECTOR_UNAVAILABLE:
+        raise XPANDImageProviderError(
+            "Gemini Director unavailable: project credits/quota are depleted."
+        )
 
     if not GEMINI_API_KEY:
 
@@ -3933,6 +3952,14 @@ def call_gemini_director(
             )
         )
 
+        if is_openai_quota_error(
+            last_error
+        ):
+            GEMINI_DIRECTOR_UNAVAILABLE = True
+            raise XPANDImageProviderError(
+                "Gemini Director unavailable: project credits/quota are depleted."
+            )
+
         model_problem = bool(
             re.search(
                 (
@@ -4008,14 +4035,22 @@ def call_openai_director(
     )
 
     if GEMINI_ONLY_MODE:
-        return call_gemini_director(
-            prompt,
-            image_bytes=(image_bytes),
-            image_mime_type=(image_mime_type),
-            json_mode=(structured),
-            json_schema=(json_schema),
-            json_schema_name=(json_schema_name),
-        )
+        try:
+            return call_gemini_director(
+                prompt,
+                image_bytes=(image_bytes),
+                image_mime_type=(image_mime_type),
+                json_mode=(structured),
+                json_schema=(json_schema),
+                json_schema_name=(json_schema_name),
+            )
+        except Exception as error:
+            if is_openai_quota_error(error):
+                raise XPANDImageProviderError(
+                    "Vision provider unavailable: Gemini project credits/quota are depleted. "
+                    "Configure a working OpenAI provider or restore Gemini credits."
+                ) from error
+            raise
 
     #
     # STRUCTURED:
