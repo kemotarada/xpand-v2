@@ -115,7 +115,7 @@ from xpand_image_engine import (
 # MODULE
 # =========================================================
 
-VERSION = "2.0"
+VERSION = "2.1"
 
 MODULE_NAME = (
     "XPAND Visual Intelligence"
@@ -1711,8 +1711,8 @@ Do NOT generate an image.
 
 Do NOT expose chain-of-thought.
 
-Return concise technical observations and useful production
-rules.
+Return exhaustive, production-ready observations and useful advertising
+rules. Do not omit visible details merely to stay concise.
 
 ==================================================
 USER NOTE
@@ -1831,6 +1831,26 @@ Analyze:
 - attention path through the frame
 - what makes the visual commercially effective
 - what is merely decoration
+
+==================================================
+ADVERTISING STRATEGY / COMMUNICATION
+==================================================
+
+Analyze:
+
+- advertising objective and likely proposition
+- intended audience and customer context
+- persuasion mechanism and visible proof
+- brand role and trust / premium / technology signal
+- emotional effect and expected action
+- strengths and weaknesses as an advertisement
+- technical quality and platform suitability
+- practical recommendations for improvement
+- an original reconstruction prompt that transfers principles
+  without copying text, logos, people or exact composition
+
+Separate observed facts from inferences, interpretations and
+uncertainties.
 
 ==================================================
 CAMERA
@@ -2155,6 +2175,21 @@ Required schema:
     "emotional_effect": "",
     "commercial_effect": "",
     "decorative_only_elements": []
+  }},
+
+  "advertising_strategy": {{
+    "objective": "",
+    "proposition": "",
+    "audience": "",
+    "persuasion_mechanism": "",
+    "brand_role": "",
+    "emotional_effect": "",
+    "technical_quality": "",
+    "platform_suitability": "",
+    "strengths": [],
+    "weaknesses": [],
+    "recommendations": [],
+    "reconstruction_prompt": ""
   }},
 
   "camera": {{
@@ -2777,6 +2812,13 @@ def analyze_visual_reference(
             safe_dict(
                 data.get(
                     "visual_hook"
+                )
+            ),
+
+        "advertising_strategy":
+            safe_dict(
+                data.get(
+                    "advertising_strategy"
                 )
             ),
 
