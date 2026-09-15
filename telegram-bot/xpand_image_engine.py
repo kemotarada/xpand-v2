@@ -3380,7 +3380,7 @@ def _call_openai_response_once(
 
         raise XPANDImageProviderError(
             _provider_error_message(
-                "Gemini Vision",
+                "OpenAI Director",
                 response,
             )
         )
@@ -3396,7 +3396,7 @@ def _call_openai_response_once(
 
         raise XPANDImageProviderError(
             (
-                "Gemini Vision returned "
+                "OpenAI Director returned "
                 "invalid response."
             )
         )
