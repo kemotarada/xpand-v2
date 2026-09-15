@@ -3518,7 +3518,8 @@ def call_openrouter_director(
         raise XPANDImageProviderError(
             "OpenRouter Qwen VL returned no text."
         )
-    return normalize_json_text(text) if (json_mode or json_schema) else text
+    # Keep raw output for image analysis; the visual parser accepts prose safely.
+    return text if image_bytes else (normalize_json_text(text) if (json_mode or json_schema) else text)
 
 
 def _run_openai_director(
@@ -4162,6 +4163,9 @@ def call_openai_director(
                 "⚠️ OPENROUTER FREE VISION: "
                 + clean_text(error, 1800)
             )
+            # Never route an image-reference failure into Gemini/OpenAI fallback.
+            if image_bytes is not None:
+                raise
             if not (OPENAI_ENABLED and OPENAI_API_KEY) and not GEMINI_API_KEY:
                 raise
 
