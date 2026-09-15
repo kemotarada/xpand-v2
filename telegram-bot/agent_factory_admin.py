@@ -2623,6 +2623,29 @@ def safe_code_path(
     return True
 
 
+def safe_new_code_path(
+    path
+):
+    """Allow only safe source/config extensions for newly created files."""
+    if not safe_code_path(path):
+        return False
+
+    lower = clean_text(path, 1000).lower()
+    return lower.endswith((
+        ".py",
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".json",
+        ".toml",
+        ".yaml",
+        ".yml",
+        ".css",
+        ".html",
+    ))
+
+
 # =========================================================
 # REPOSITORY TREE
 # =========================================================
@@ -3333,7 +3356,7 @@ def generate_code_changes(
     system_instruction = """
 You are XPAND Agent Factory's senior maintenance engineer.
 
-Create safe FULL-FILE replacements for the owner's requested
+Create safe FULL-FILE replacements or safe new source files for the owner's requested
 code change.
 
 Rules:
@@ -3353,7 +3376,7 @@ Rules:
 
 7. Never delete files.
 
-8. Return only files that actually require changes.
+8. Return only files that actually require changes or safe new source files.
 
 9. Every returned file MUST contain its COMPLETE final
    content.
@@ -3378,7 +3401,7 @@ Schema:
   "summary": "short description",
   "files": [
     {
-      "path": "existing/path.py",
+      "path": "existing/or/new/path.py",
       "content": "COMPLETE FINAL FILE CONTENT"
     }
   ]
@@ -3415,128 +3438,74 @@ Schema:
 
 
     allowed = {
-
-        item[
-            "path"
-        ]:
-            item
-
-        for item
-        in files
+        item["path"]: item
+        for item in files
     }
-
 
     for item in (
         result.get(
             "files"
         )
-        or
-        []
+        or []
     ):
-
-        if not isinstance(
-            item,
-            dict
-        ):
-
+        if not isinstance(item, dict):
             continue
 
-
-        path = clean_text(
-            item.get(
-                "path"
-            ),
-            1000
-        ).lstrip(
-            "/"
-        )
-
-
-        content = str(
-            item.get(
-                "content"
+        path = normalize_github_content_path(
+            clean_text(
+                item.get("path"),
+                1000
             )
-            or
-            ""
+        )
+        content = str(
+            item.get("content")
+            or ""
         )
 
+        existing = None
+        if path in allowed:
+            existing = allowed[path]
+        else:
+            # Existing files must have been supplied as model context. A 404
+            # is the only case in which a safe new source file is allowed.
+            try:
+                github_get_file(path)
+            except RuntimeError as error:
+                if "GitHub HTTP 404:" not in str(error):
+                    raise
+                if not safe_new_code_path(path):
+                    continue
+            else:
+                continue
 
-        if path not in allowed:
-
+        if not safe_code_path(path):
             continue
-
-
-        if not safe_code_path(
-            path
-        ):
-
-            continue
-
 
         if not content:
-
             continue
 
-
-        if len(
-            content.encode(
-                "utf-8"
-            )
-        ) > MAX_FILE_BYTES:
-
+        if len(content.encode("utf-8")) > MAX_FILE_BYTES:
             raise RuntimeError(
-                (
-                    "Generated file too large: "
-                    +
-                    path
-                )
+                "Generated file too large: " + path
             )
 
-
-        if content_contains_secret(
-            content
-        ):
-
+        if content_contains_secret(content):
             raise RuntimeError(
-                (
-                    "Generated code contains a protected secret: "
-                    +
-                    path
-                )
+                "Generated code contains a protected secret: " + path
             )
 
-
-        if (
-            content
-            ==
-            allowed[
-                path
-            ][
-                "content"
-            ]
-        ):
-
+        if existing is not None and content == existing["content"]:
             continue
 
-
-        generated.append(
-            {
-
-                "path":
-                    path,
-
-                "base_sha":
-                    allowed[
-                        path
-                    ][
-                        "sha"
-                    ],
-
-                "content":
-                    content
-            }
-        )
-
+        generated.append({
+            "path": path,
+            "base_sha": (
+                existing.get("sha", "")
+                if existing is not None
+                else ""
+            ),
+            "content": content
+        })
 
     if not generated:
 
@@ -4155,71 +4124,46 @@ def apply_pending_change(
 
     # -----------------------------------------------------
     # VERIFY CURRENT SHA
-    # -----------------------------------------------------
 
     for item in changes:
-
-        # Normalize legacy agent-relative paths before both the SHA
-        # verification and the atomic Git tree write. Without this,
-        # an approved change could read the right file but commit to a
-        # non-existent root-level path.
         normalized_path = normalize_github_content_path(
-            item.get(
-                "path"
-            )
+            item.get("path")
         )
-        item[
-            "path"
-        ] = normalized_path
+        item["path"] = normalized_path
         path = normalized_path
 
-
-        if not safe_code_path(
-            path
-        ):
-
+        if not safe_code_path(path):
             raise RuntimeError(
-                (
-                    "Unsafe path in pending change: "
-                    +
-                    path
-                )
+                "Unsafe path in pending change: " + path
             )
 
-
-        current = github_get_file(
-            path
+        base_sha = clean_text(
+            item.get("base_sha"),
+            200
         )
+        current = None
+        try:
+            current = github_get_file(path)
+        except RuntimeError as error:
+            if base_sha or "GitHub HTTP 404:" not in str(error):
+                raise
 
-
-        if (
-            clean_text(
-                current.get(
-                    "sha"
-                ),
-                200
-            )
-            !=
-            clean_text(
-                item.get(
-                    "base_sha"
-                ),
-                200
-            )
-        ):
-
-            raise RuntimeError(
-                (
+        if base_sha:
+            if (
+                current is None
+                or clean_text(current.get("sha"), 200) != base_sha
+            ):
+                raise RuntimeError(
                     "File changed after staging: "
-                    +
-                    path
-                    +
-                    ". Create a fresh fix instead."
+                    + path
+                    + ". Create a fresh fix instead."
                 )
+        elif current is not None:
+            raise RuntimeError(
+                "New file appeared after staging: " + path
             )
 
 
-    # -----------------------------------------------------
     # ATOMIC COMMIT
     # -----------------------------------------------------
 
