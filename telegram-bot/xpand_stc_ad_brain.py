@@ -36,7 +36,7 @@ class AdConcept:
 class STCAdBrain:
     """
     هذا الملف لا يستدعي أي API.
-    وظيفته: منع XPAND من الانهيار إلى "مشهد عادي"،
+    وظيفته: منع XPAND من الانهيار إلى "مشهد عادي",
     وإجباره على التفكير كفريق إبداعي إعلاني.
     """
 
@@ -87,11 +87,11 @@ class STCAdBrain:
         return [
             AdConcept(
                 concept_id="mp_continuous_surface",
-                title="One Surface, Every Sale",
-                headline_strategy="One connected commerce flow.",
+                title="One Surface, Every Sale / سطح واحد، لكل عملية بيع",
+                headline_strategy="One connected commerce flow linking online intent and physical acceptance.",
                 core_idea="A sculptural merchant surface carries an unbranded online order cue into a real contactless checkout action; one change of level makes the digital-to-physical relationship visible.",
                 visual_mechanism="Continuous material transition: an abstract product/order cue on a real device leads along one supported surface to a separate POS tap and the prepared handoff.",
-                benefit_translation="STC Bank connects online commerce and physical acceptance for the same merchant.",
+                benefit_translation="STC Bank connects online commerce and physical acceptance for the same merchant under one seamless experience.",
                 environment=f"Purpose-built premium STC campaign set, not a shop counter: {palette}",
                 hero_subject="The continuous surface and decisive tapping hand, with the POS as the causal hero.",
                 scene_structure="Asymmetric 4:5 frame; foreground contactless action, midground material bridge, secondary online/fulfillment cue; 25–40% integrated copy space.",
@@ -104,11 +104,11 @@ class STCAdBrain:
             ),
             AdConcept(
                 concept_id="mp_threshold_reveal",
-                title="The Sale Opens",
-                headline_strategy="From online intent to accepted payment.",
+                title="The Sale Opens / انطلاقة المبيعات",
+                headline_strategy="From online intent to accepted payment in one fluid motion.",
                 core_idea="A real architectural threshold frames a physical POS acceptance in the foreground and the fulfilled order beyond it, making one commercial action feel like access to the next stage.",
                 visual_mechanism="Perspective reveal through one physical opening; the POS remains near and separate, while the order outcome is visible through the same depth and light.",
-                benefit_translation="One STC merchant ecosystem carries the customer from digital order to physical acceptance.",
+                benefit_translation="One STC merchant ecosystem carries the customer from digital order to physical acceptance effortlessly.",
                 environment=f"Sculptural violet threshold set with graphite interior depth; {palette}",
                 hero_subject="A hand completing the tap at the threshold, with the order outcome as secondary proof.",
                 scene_structure="Low oblique 4:5 composition with a strong doorway silhouette, foreground action and calm upper-right copy space integrated into the lit plane.",
@@ -121,8 +121,8 @@ class STCAdBrain:
             ),
             AdConcept(
                 concept_id="mp_precise_handoff",
-                title="The Moment Connects",
-                headline_strategy="One tap, one connected operation.",
+                title="The Moment Connects / لحظة الاتصال التجاري",
+                headline_strategy="One tap, one connected operation for modern Saudi enterprises.",
                 core_idea="Two hands perform one timed commercial handoff: one completes contactless acceptance while the other receives or seals the same order, with a supporting non-readable online cue kept secondary.",
                 visual_mechanism="Synchronized hand choreography creates cause and effect without a split screen, graphic line or unrelated device display.",
                 benefit_translation="STC Bank keeps digital order and physical payment in the same merchant rhythm.",
@@ -138,11 +138,11 @@ class STCAdBrain:
             ),
             AdConcept(
                 concept_id="mp_reflection_pairing",
-                title="Every Channel in View",
-                headline_strategy="Commerce, reflected as one.",
+                title="Every Channel in View / رؤية شاملة لكل القنوات",
+                headline_strategy="Commerce, reflected as one unified ecosystem.",
                 core_idea="A sharp physical POS tap is paired with a real reflection in the same glossy plane that reveals the online/fulfillment context, never as a floating duplicate.",
                 visual_mechanism="Reflection-led pairing: one surface and one camera make the two channels visibly belong to the same merchant workflow.",
-                benefit_translation="STC Bank unifies the visible checkout and the online order journey.",
+                benefit_translation="STC Bank unifies the visible checkout and the online order journey for maximum clarity.",
                 environment=f"Deep-violet STC studio with a purposeful smoked-glass plane and restrained green accent; {palette}",
                 hero_subject="The contactless gesture and its physically correct reflected relationship.",
                 scene_structure="Elevated oblique 4:5 frame with hero action on the lower third, reflection as secondary proof and calm lit upper plane for copy.",
@@ -155,11 +155,11 @@ class STCAdBrain:
             ),
             AdConcept(
                 concept_id="mp_product_theatre",
-                title="The Merchant Engine",
-                headline_strategy="One system behind the sale.",
+                title="The Merchant Engine / محرك التاجر الذكي",
+                headline_strategy="One powerful system behind every thriving sale.",
                 core_idea="A designed STC product theatre compresses the merchant workflow into one bold silhouette: a real POS action, one order cue and a physical handoff share a purposeful set.",
                 visual_mechanism="Scale and spatial compression: the support planes make the online and physical stages readable as one operating system without a diagram.",
-                benefit_translation="STC Bank supports the merchant across digital and in-person commerce.",
+                benefit_translation="STC Bank supports the merchant across digital and in-person commerce with uncompromising reliability.",
                 environment=f"Premium violet architectural theatre with two connected planes, deep recess and graphite hero supports; {palette}",
                 hero_subject="A real POS in active use, not a card or terminal displayed as a trophy.",
                 scene_structure="Controlled frontal three-quarter 4:5 silhouette with one dominant action, one secondary order cue and 30% integrated upper-plane copy space.",
@@ -172,11 +172,11 @@ class STCAdBrain:
             ),
             AdConcept(
                 concept_id="mp_saudi_commerce",
-                title="A Business in Motion",
-                headline_strategy="Built for every way customers buy.",
+                title="A Business in Motion / تجارة سعودية نابضة بالحياة",
+                headline_strategy="Built for every way customers buy across the Kingdom.",
                 core_idea="A specific contemporary Saudi merchant category is captured at the instant an online order becomes an in-person handoff, with the POS action driving the moment.",
                 visual_mechanism="Foreground/background cause and effect: a contactless acceptance action leads the eye to a real order handoff in one continuous premium environment.",
-                benefit_translation="STC Bank helps Saudi merchants serve online and in-store customers through one connected service.",
+                benefit_translation="STC Bank helps Saudi merchants serve online and in-store customers through one connected financial service.",
                 environment="Specific modern Saudi specialty retailer with controlled STC purple architectural accents, tactile local material culture and no stock-office staging.",
                 hero_subject="Merchant hands and customer handoff; faces remain secondary.",
                 scene_structure="Eye-level oblique 4:5 environmental close shot, real depth, dark purple practical light and integrated side copy space.",
@@ -192,7 +192,7 @@ class STCAdBrain:
         return [
             AdConcept(
                 concept_id="gen_01",
-                title="Brand-Led Premium Financial Story",
+                title="Brand-Led Premium Financial Story / قصة مالية رائدة",
                 headline_strategy="Benefit transformed into a branded visual story.",
                 core_idea=f"Translate {benefit_family} into a premium STC Bank advertising image.",
                 visual_mechanism="Clear consumer benefit mapped into one strong ad mechanism.",
