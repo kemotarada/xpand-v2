@@ -250,20 +250,23 @@ def _process_batch(core: Any, chat_id: Any, user_id: Any, messages: List[Dict[st
                     "campaign_set_id": set_id,
                 },
             )
-            save_visual_reference(
-                core, user_id, brand_id=brand_id,
-                telegram_file_id=image.get("file_id", ""),
-                telegram_file_unique_id=image.get("file_unique_id", ""),
-                reference_role="campaign_reference", user_note=note, dna=dna,
-                product_lock=dna.get("product_lock", {}),
-                source_metadata={
-                    "source_type": "telegram_user_upload",
-                    "source_authority": "user_supplied",
-                    "media_group_id": message.get("media_group_id", ""),
-                    "campaign_set_id": set_id,
-                    "image_fingerprint": dna.get("image_fingerprint_sha256", ""),
-                },
-            )
+            try:
+                save_visual_reference(
+                    core, user_id, brand_id=brand_id,
+                    telegram_file_id=image.get("file_id", ""),
+                    telegram_file_unique_id=image.get("file_unique_id", ""),
+                    reference_role="campaign_reference", user_note=note, dna=dna,
+                    product_lock=dna.get("product_lock", {}),
+                    source_metadata={
+                        "source_type": "telegram_user_upload",
+                        "source_authority": "user_supplied",
+                        "media_group_id": message.get("media_group_id", ""),
+                        "campaign_set_id": set_id,
+                        "image_fingerprint": dna.get("image_fingerprint_sha256", ""),
+                    },
+                )
+            except Exception as persistence_error:
+                print("⚠️ XPAND visual reference persistence:", _text(persistence_error, 1200))
             analyses.append(dna)
         except Exception as error:
             message = _text(error, 1200)
