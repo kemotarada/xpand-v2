@@ -1093,6 +1093,30 @@ def _brand_column(
     )
 
 
+def _latest_order(
+    columns: set,
+) -> str:
+    """Return a safe newest-first ordering for legacy schemas."""
+
+    column = _first_existing_column(
+        columns,
+        [
+            "updated_at",
+            "created_at",
+            "id",
+        ],
+    )
+
+    return f"{column} DESC" if column else ""
+
+
+def _order_sql(
+    columns: set,
+) -> str:
+    order = _latest_order(columns)
+    return f"ORDER BY {order}" if order else ""
+
+
 # =========================================================
 # ACTIVE BRAND
 # =========================================================
@@ -1167,7 +1191,7 @@ def set_active_brand(
             SELECT *
             FROM {BRAND_STATE_TABLE}
             WHERE {user_col} = %s
-            ORDER BY id DESC
+            {_order_sql(columns)}
             LIMIT 1
             """,
             (
@@ -1477,7 +1501,7 @@ def upsert_brand_profile(
             FROM {BRAND_PROFILES_TABLE}
             WHERE {user_col} = %s
             AND {brand_col} = %s
-            ORDER BY id DESC
+            {_order_sql(columns)}
             LIMIT 1
             """,
             (
@@ -1519,17 +1543,26 @@ def upsert_brand_profile(
                     "updated_at = NOW()"
                 )
 
-            params.append(
-                existing.get(
-                    "id"
+            if "id" in columns and existing.get("id") is not None:
+
+                where_sql = "id = %s"
+                params.append(existing.get("id"))
+
+            else:
+
+                where_sql = (
+                    f"{user_col} = %s AND {brand_col} = %s"
                 )
-            )
+                params.extend([
+                    str(user_id),
+                    brand_id,
+                ])
 
             _execute(
                 f"""
                 UPDATE {BRAND_PROFILES_TABLE}
                 SET {", ".join(assignments)}
-                WHERE id = %s
+                WHERE {where_sql}
                 """,
                 params,
             )
@@ -1667,7 +1700,7 @@ def get_brand_profile(
             FROM {BRAND_PROFILES_TABLE}
             WHERE {user_col} = %s
             AND {brand_col} = %s
-            ORDER BY id DESC
+            {_order_sql(columns)}
             LIMIT 1
             """,
             (
@@ -2506,7 +2539,7 @@ def find_existing_visual_reference(
                 AND (
                     {" OR ".join(direct_conditions)}
                 )
-                ORDER BY id DESC
+                {_order_sql(columns)}
                 LIMIT 1
                 """,
                 params,
@@ -2530,7 +2563,7 @@ def find_existing_visual_reference(
             FROM {VISUAL_REFERENCES_TABLE}
             WHERE {user_col} = %s
             AND {brand_col} = %s
-            ORDER BY id DESC
+            {_order_sql(columns)}
             LIMIT 200
             """,
             (
@@ -2926,14 +2959,7 @@ def load_visual_references(
 
             return []
 
-        order = (
-            "created_at DESC"
-            if
-            "created_at"
-            in columns
-            else
-            "id DESC"
-        )
+        order = _latest_order(columns)
 
         rows = _fetch_all(
             f"""
@@ -4897,7 +4923,7 @@ def _save_brand_visual_profile(
         FROM {VISUAL_PROFILES_TABLE}
         WHERE {user_col} = %s
         AND {brand_col} = %s
-        ORDER BY id DESC
+        {_order_sql(columns)}
         LIMIT 1
         """,
         (
@@ -5060,7 +5086,7 @@ def get_brand_visual_profile(
             FROM {VISUAL_PROFILES_TABLE}
             WHERE {user_col} = %s
             AND {brand_col} = %s
-            ORDER BY id DESC
+            {_order_sql(columns)}
             LIMIT 1
             """,
             (
