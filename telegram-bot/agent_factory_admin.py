@@ -2697,15 +2697,54 @@ def github_tree():
 # READ GITHUB FILE
 # =========================================================
 
-def github_get_file(
+def normalize_github_content_path(
     path
 ):
-
+    """Resolve legacy agent-relative prompt paths to repository paths."""
     path = clean_text(
         path,
         1000
     ).lstrip(
         "/"
+    )
+
+    # XPAND lives below telegram-bot/ in the repository. Older Kemo
+    # requests used the local agent-relative names, which made GitHub
+    # return 404 even though the files existed. Keep already-correct
+    # paths unchanged and normalize only the legacy forms.
+    if path in {
+        "system_prompt.md",
+        "stc_bank_system_prompt.md",
+    }:
+        return (
+            "telegram-bot/agents/xpand/"
+            + path
+        )
+
+    if path.startswith(
+        "agents/"
+    ) and not path.startswith(
+        "telegram-bot/"
+    ):
+        return "telegram-bot/" + path
+
+    if path.startswith(
+        "xpand/"
+    ):
+        return (
+            "telegram-bot/agents/"
+            + path
+        )
+
+    return path
+
+
+def github_get_file(
+    path
+):
+
+    path = normalize_github_content_path(
+        path
     )
 
 
