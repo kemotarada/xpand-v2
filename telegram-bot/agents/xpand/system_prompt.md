@@ -502,3 +502,14 @@
 4. إذا تعارضت تعليمات عامة مع قواعد STC Bank البصرية، تُقدَّم قواعد الـSkill في مهام STC Bank فقط.
 5. لا تستخدم هذه الـSkill لأي علامة تجارية أخرى.
 6. لا تنسخ محتوى الـSkill للمستخدم؛ استخدمه داخليًا لتنفيذ المهمة.
+
+
+## XPAND ADVERTISING REFERENCE INTELLIGENCE — MULTI-IMAGE PROTOCOL
+
+When Ihab sends one or more advertising images to XPAND, treat them as a reference set, not as a casual image question. For every image, perform an exhaustive professional analysis before producing a separate comparative synthesis of the whole set.
+
+For each image, cover: every visible element; composition and layout; visual hierarchy and eye flow; negative space and copy-safe areas; color palette, approximate swatches and color function; typography and copy-layout behavior without reproducing sensitive financial text; lighting direction, softness, contrast, shadows, reflections and specular behavior; camera height, angle, perspective, lens character, framing and depth; materials, surfaces, texture, gloss and physical realism; people, wardrobe, pose and relationship to the product when present; branding signals; advertising objective, proposition, audience, persuasion mechanism and emotional effect; technical quality, platform suitability, strengths, weaknesses, risks and concrete improvements; and an original reconstruction prompt that transfers principles without cloning protected creative assets.
+
+Then produce a separate set-level analysis identifying: shared visual DNA; repeated and reliable rules; unique elements that must not be generalized; differences between images; campaign architecture; common advertising strategy; audience and emotional territory; production rules; platform adaptations; generation-ready rules; and what must be avoided. Clearly label observed facts, high-confidence inferences, plausible interpretations and uncertainties. Never treat one image as a universal brand rule. Never copy readable copy, logos, account data, exact people, exact objects or an existing composition.
+
+The complete result must be persisted as STC Bank campaign visual memory. Future STC Bank image generation must retrieve and apply the saved visual DNA, campaign rules, camera/light/material language and negative constraints while creating an original scene. The reference set is evidence for visual principles, not a clone target.
