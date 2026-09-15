@@ -158,6 +158,30 @@ class STCAdBrain:
                     brand_memory_tag="stc_bank_remittance_2024"
                 )
             ]
+        elif benefit_family == "wealth_management":
+            return [
+                AdCopy(
+                    copy_id="wm_premium_01",
+                    benefit_extracted="Smart financial planning and wealth growth tools tailored for Saudi ambitions.",
+                    hook_ar="خطط لمستقبلك المالي بثقة ورؤية واضحة.
+                    hook_en="Plan your financial future with confidence and clear vision.",
+                    headline_ar="ثروتك تنمو بحكمة واستدامة",
+                    headline_en="Your Wealth Grows Wisely and Sustainably",
+                    body_copy_ar="استثمر وادخر بذكاء مع أدوات بنك stc المصممة خصيصاً لتمكينك من إدارة ثروتك وتحقيق طموحاتك المالية في المملكة.",
+                    body_copy_en="Invest and save smartly with stc bank tools specifically designed to empower your wealth management and financial aspirations in the Kingdom.",
+                    cta_ar="ابدأ رحلة الادخار اليوم",
+                    cta_en="Start your savings journey today",
+                    saudi_cultural_fit="Aligns with personal financial responsibility and long-term planning valued in Saudi culture and Vision 2030.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "مستقبلك المالي يستحق التخطيط الأذكى. اكتشف أدوات الادخار والاستثمار من بنك stc. 📊💡 #بنك_stc",
+                            "en": "Your financial future deserves smarter planning. Discover savings and investment tools from stc bank. 📊💡 #stc_bank"
+                        }
+                    },
+                    factuality_note="No specific investment yields, guaranteed returns, or fund percentages are claimed.",
+                    brand_memory_tag="stc_bank_wealth_2024"
+                )
+            ]
         
         return [
             AdCopy(
@@ -336,9 +360,16 @@ def run_validation() -> bool:
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
 
+    copies_wm = brain.generate_premium_copy("wealth_management")
+    assert len(copies_wm) > 0, "Expected wealth management copy"
+    assert copies_wm[0].headline_ar, "Missing wealth management Arabic headline"
+
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
 
+
+if __name__ == "__mainらっしゃい":
+    pass
 
 if __name__ == "__main__":
     brain = STCAdBrain()
@@ -365,6 +396,11 @@ if __name__ == "__main__":
     copies_it = brain.generate_premium_copy("international_transfer")
     print(f"generated_copies (intl) = {len(copies_it)}")
     for copy in copies_it:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_wm = brain.generate_premium_copy("wealth_management")
+    print(f"generated_copies (wealth) = {len(copies_wm)}")
+    for copy in copies_wm:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
         
     run_validation()
