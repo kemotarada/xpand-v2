@@ -321,6 +321,25 @@ class STCAdBrain:
         ]
 
 
+def run_validation() -> bool:
+    brain = STCAdBrain()
+    concepts = brain.generate_concepts("merchant_payments", "purple_architectural")
+    shortlisted = brain.shortlist(concepts, top_n=3)
+    assert len(concepts) >= 6, "Expected at least 6 merchant payment concepts"
+    assert len(shortlisted) == 3, "Expected exactly 3 shortlisted concepts"
+
+    copies = brain.generate_premium_copy("merchant_payments")
+    assert len(copies) > 0, "Expected premium merchant payment copy"
+    assert copies[0].headline_ar, "Missing Arabic headline"
+    assert copies[0].headline_en, "Missing English headline"
+
+    copies_it = brain.generate_premium_copy("international_transfer")
+    assert len(copies_it) > 0, "Expected international transfer copy"
+
+    print("STC Ad Brain Validation Passed Successfully ✅")
+    return True
+
+
 if __name__ == "__main__":
     brain = STCAdBrain()
     concepts = brain.generate_concepts("merchant_payments", "premium_realistic")
@@ -348,4 +367,5 @@ if __name__ == "__main__":
     for copy in copies_it:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
         
+    run_validation()
     print("PASS ✅")
