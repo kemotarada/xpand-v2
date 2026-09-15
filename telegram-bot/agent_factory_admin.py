@@ -78,7 +78,7 @@ GITHUB_TOKEN = str(
 GITHUB_REPO = str(
     os.getenv(
         "KEMO_GITHUB_REPO",
-        "kemotarada/kemo-telegram-bot"
+        "kemotarada/xpand-v2"
     )
 ).strip()
 
