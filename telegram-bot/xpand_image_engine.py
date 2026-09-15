@@ -282,7 +282,7 @@ GEMINI_API_KEY = str(
 ).strip()
 
 
-# Gemini-only deployment: OpenAI is intentionally disabled.
+# Provider selection is configurable; OpenAI is used automatically when keyed.
 OPENAI_ENABLED = env_bool(
     "XPAND_OPENAI_ENABLED",
     bool(OPENAI_API_KEY),
@@ -295,7 +295,7 @@ OPENAI_STRUCTURED_UNAVAILABLE = False
 # Sticky process guard: do not retry an exhausted Gemini project for every image.
 GEMINI_DIRECTOR_UNAVAILABLE = False
 
-# Gemini-only production mode: OpenAI is intentionally never called.
+# Explicit Gemini-only mode remains available through the environment override.
 GEMINI_ONLY_MODE = env_bool(
     "XPAND_GEMINI_ONLY_MODE",
     not OPENAI_ENABLED,
