@@ -163,7 +163,7 @@ class STCAdBrain:
                 AdCopy(
                     copy_id="wm_premium_01",
                     benefit_extracted="Smart financial planning and wealth growth tools tailored for Saudi ambitions.",
-                    hook_ar="خطط لمستقبلك المالي بثقة ورؤية واضحة.
+                    hook_ar="خطط لمستقبلك المالي بثقة ورؤية واضحة.",
                     hook_en="Plan your financial future with confidence and clear vision.",
                     headline_ar="ثروتك تنمو بحكمة واستدامة",
                     headline_en="Your Wealth Grows Wisely and Sustainably",
@@ -289,7 +289,7 @@ class STCAdBrain:
                 concept_id="mp_product_theatre",
                 title="The Merchant Engine / محرك التاجر الذكي",
                 headline_strategy="One powerful system behind every thriving sale.",
-                core_idea="A designed STC product theatre compresses the merchant workflow into one bold silhouette: a real POS action, one order cue and a physical handoff share a purposeful set.",
+                core_idea="An designed STC product theatre compresses the merchant workflow into one bold silhouette: a real POS action, one order cue and a physical handoff share a purposeful set.",
                 visual_mechanism="Scale and spatial compression: the support planes make the online and physical stages readable as one operating system without a diagram.",
                 benefit_translation="STC Bank supports the merchant across digital and in-person commerce with uncompromising reliability.",
                 environment=f"Premium violet architectural theatre with two connected planes, deep recess and graphite hero supports; {palette}",
@@ -356,9 +356,13 @@ def run_validation() -> bool:
     assert len(copies) > 0, "Expected premium merchant payment copy"
     assert copies[0].headline_ar, "Missing Arabic headline"
     assert copies[0].headline_en, "Missing English headline"
+    assert copies[0].hook_ar, "Missing Arabic hook"
+    assert copies[0].hook_en, "Missing English hook"
+    assert copies[0].saudi_cultural_fit, "Missing Saudi cultural fit note"
 
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
+    assert copies_it[0].headline_ar, "Missing intl Arabic headline"
 
     copies_wm = brain.generate_premium_copy("wealth_management")
     assert len(copies_wm) > 0, "Expected wealth management copy"
@@ -367,9 +371,6 @@ def run_validation() -> bool:
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
 
-
-if __name__ == "__mainらっしゃい":
-    pass
 
 if __name__ == "__main__":
     brain = STCAdBrain()
