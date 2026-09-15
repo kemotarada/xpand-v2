@@ -8650,6 +8650,20 @@ def memory_statistics(
     }
 
 
+# =========================================================
+# OPTIONAL IMAGE MESSAGE HOOK
+# =========================================================
+
+# XPAND installs the real handler at runtime. Keeping a no-op default here
+# preserves the core bot for agents that do not consume image messages.
+def handle_image_message(
+    chat_id,
+    user_id,
+    message,
+):
+    return False
+
+
 def handle_command(
     chat_id,
     user_id,
@@ -9309,6 +9323,37 @@ def main():
                     chat_id,
                     user_id
                 )
+
+                image_message = (
+                    message.get(
+                        "photo"
+                    )
+                    or
+                    message.get(
+                        "document"
+                    )
+                )
+
+                if image_message:
+                    try:
+                        if handle_image_message(
+                            chat_id,
+                            user_id,
+                            message,
+                        ):
+                            continue
+                    except Exception as error:
+                        print(
+                            f"❌ IMAGE MESSAGE: {error}"
+                        )
+                        send_message(
+                            chat_id,
+                            (
+                                "صار خلل وأنا بحلل الصورة. "
+                                "جرّب تبعتها مرة ثانية."
+                            )
+                        )
+                        continue
 
                 voice = message.get(
                     "voice"
