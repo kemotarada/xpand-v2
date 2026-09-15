@@ -447,6 +447,14 @@ def extract_json_object(
 
             pass
 
+    # Free vision models can return useful prose instead of strict JSON.
+    if text:
+        return {
+            "summary": text[:12000],
+            "observed_facts": ["Raw visual analysis preserved from the free vision model."],
+            "inferred_rules": [],
+            "generation_risks": ["The model response was not valid JSON."],
+        }
     return {}
 
 
