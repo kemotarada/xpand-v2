@@ -40,6 +40,11 @@ import urllib.parse
 from datetime import datetime, timezone
 
 
+class NoSafeCodeChange(RuntimeError):
+    """Raised when a cycle completes without a safe file change."""
+
+
+
 # =========================================================
 # EXISTING KEMO STACK
 # =========================================================
@@ -3517,7 +3522,7 @@ Schema:
         )
 
 
-        raise RuntimeError(
+        raise NoSafeCodeChange(
             reason
             or
             "AI did not produce a safe code change."
