@@ -10,6 +10,7 @@ from xpand_stc_bank_skill import detect_stc_visual_style, stc_style_question_nee
 from xpand_stc_brand_kit import load_default_stc_brand_kit
 from xpand_stc_skill_runtime import SKILL_ROOT, core_direction, style_direction, clean_public_prompt
 from xpand_creative_brain import CreativeConcept
+from xpand_stc_ad_brain import STCAdBrain
 
 class STCV4Tests(unittest.TestCase):
     def test_reference_integrity(self):
@@ -40,6 +41,24 @@ class STCV4Tests(unittest.TestCase):
         self.assertFalse(stc_style_question_needed('بدي برومت لبنك STC بيئة بنفسجية'))
         self.assertEqual(t.resolve_stc_style_reply('فانتزي'),'augmented_realism')
         self.assertEqual(t.resolve_stc_style_reply('واقعي'),'premium_realistic')
+
+    def test_stc_ad_brain_premium_copy(self):
+        brain = STCAdBrain()
+        for family in ['merchant_payments', 'international_transfer', 'wealth_management', 'other']:
+            copies = brain.generate_premium_copy(family)
+            self.assertTrue(len(copies) > 0)
+            for copy in copies:
+                self.assertTrue(copy.headline_ar)
+                self.assertTrue(copy.headline_en)
+                self.assertTrue(copy.hook_ar)
+                self.assertTrue(copy.hook_en)
+                self.assertTrue(copy.body_copy_ar)
+                self.assertTrue(copy.body_copy_en)
+                self.assertTrue(copy.cta_ar)
+                self.assertTrue(copy.cta_en)
+                self.assertTrue(copy.saudi_cultural_fit)
+                self.assertTrue(copy.factuality_note)
+                self.assertTrue(copy.brand_memory_tag)
 
     def test_prompt_resume_never_generates(self):
         brief='بدي برومت لبنك STC عن شريحة السفر 4:5'
