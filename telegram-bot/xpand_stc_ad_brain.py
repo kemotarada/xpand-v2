@@ -186,6 +186,54 @@ class STCAdBrain:
                     brand_memory_tag="stc_bank_wealth_2024"
                 )
             ]
+        elif benefit_family == "savings_vaults":
+            return [
+                AdCopy(
+                    copy_id="sv_premium_01",
+                    benefit_extracted="Dedicated digital savings vaults for achieving personal financial goals securely.",
+                    hook_ar="كل هدف مالي له حصالة ذكية تحفظه.",
+                    hook_en="Every financial goal has a smart vault to protect it.",
+                    headline_ar="ادخر لأجل ما تحب، بكل أمان",
+                    headline_en="Save for What You Love, Securely",
+                    body_copy_ar="أنشئ حصالاتك المخصصة لكل هدف في حياتك عبر تطبيق بنك stc. نظم مدخراتك بسهولة وتابع نموها خطوة بخطوة.",
+                    body_copy_en="Create dedicated vaults for every goal in your life via stc bank app. Organize your savings easily and track their growth step by step.",
+                    cta_ar="أنشئ حصالتك الآن",
+                    cta_en="Create your vault now",
+                    saudi_cultural_fit="Resonates with personal discipline, family milestones, and smart future preparation.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "خطط لأحلامك ونظم مدخراتك بذكاء مع حصالات بنك stc الرقمية. 🎯💰 #بنك_stc",
+                            "en": "Plan your dreams and organize your savings smartly with stc bank digital vaults. 🎯💰 #stc_bank"
+                        }
+                    },
+                    factuality_note="No specific interest rates or tiered APY figures are promised. Focuses entirely on goal setting and organization.",
+                    brand_memory_tag="stc_bank_savings_2024"
+                )
+            ]
+        elif benefit_family == "business_financing":
+            return [
+                AdCopy(
+                    copy_id="bf_premium_01",
+                    benefit_extracted="Accessible business financing solutions designed to fuel enterprise expansion in the Kingdom.",
+                    hook_ar="لدعم نمو شركتك.. تمويل يواكب طموحك.",
+                    hook_en="To power your company's growth.. financing built for your ambition.",
+                    headline_ar="شريكك المالي لتمكين وتوسيع أعمالك",
+                    headline_en="Your Financial Partner for Business Expansion",
+                    body_copy_ar="احصل على حلول تمويلية مرنة وسريعة من بنك stc مصممة خصيصاً لدعم المشاريع الصغيرة والمتوسطة والشركات في المملكة.",
+                    body_copy_en="Access flexible and agile business financing solutions from stc bank, custom-designed to support SMEs and enterprises in the Kingdom.",
+                    cta_ar="اكتشف حلول الأعمال",
+                    cta_en="Explore business solutions",
+                    saudi_cultural_fit="Directly supports Saudi SMEs and entrepreneurs contributing to the vibrant Vision 2030 economic landscape.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "طموح شركتك يستحق شريكاً يثق بقدراتك. اكتشف حلول تمويل الأعمال من بنك stc. 📈🤝 #بنك_stc",
+                            "en": "Your company's ambition deserves a partner that trusts your capability. Discover business financing from stc bank. 📈🤝 #stc_bank"
+                        }
+                    },
+                    factuality_note="No loan amounts, approval timelines, or interest rates are explicitly claimed. Focuses on partnership and enterprise enablement.",
+                    brand_memory_tag="stc_bank_business_2024"
+                )
+            ]
         
         return [
             AdCopy(
@@ -372,6 +420,14 @@ def run_validation() -> bool:
     assert len(copies_wm) > 0, "Expected wealth management copy"
     assert copies_wm[0].headline_ar, "Missing wealth management Arabic headline"
 
+    copies_sv = brain.generate_premium_copy("savings_vaults")
+    assert len(copies_sv) > 0, "Expected savings vaults copy"
+    assert copies_sv[0].headline_ar, "Missing savings vaults Arabic headline"
+
+    copies_bf = brain.generate_premium_copy("business_financing")
+    assert len(copies_bf) > 0, "Expected business financing copy"
+    assert copies_bf[0].headline_ar, "Missing business financing Arabic headline"
+
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
 
@@ -406,6 +462,16 @@ if __name__ == "__main__":
     copies_wm = brain.generate_premium_copy("wealth_management")
     print(f"generated_copies (wealth) = {len(copies_wm)}")
     for copy in copies_wm:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_sv = brain.generate_premium_copy("savings_vaults")
+    print(f"generated_copies (savings) = {len(copies_sv)}")
+    for copy in copies_sv:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_bf = brain.generate_premium_copy("business_financing")
+    print(f"generated_copies (financing) = {len(copies_bf)}")
+    for copy in copies_bf:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
         
     run_validation()
