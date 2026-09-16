@@ -124,12 +124,16 @@ class STCAdBrain:
                         "instagram": {
                             "ar": "لكل تاجر سعودي يطمح للنمو: حلول دفع ذكية تربط متجرك الإلكتروني بنقاط البيع الفعلية بسلاسة تامة. 📈",
                             "en": "For every Saudi merchant aiming for growth: smart payment solutions that seamlessly connect your online store with physical POS. 📈"
+                        },
+                        "linkedin": {
+                            "ar": "تمكين قطاع التجزئة والمنشآت الصغيرة في المملكة بحلول دفع موحدة وموثوقة من بنك stc. استثمر في كفاءة أعمالك.",
+                            "en": "Empowering retail and SMEs in the Kingdom with unified, reliable payment solutions from stc bank. Invest in your business efficiency."
                         }
                     },
                     factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
                     brand_memory_tag="stc_bank_merchant_2024"
                 )
-            ]
+            ] 
         elif benefit_family == "international_transfer":
             return [ 
                 AdCopy(
@@ -152,6 +156,10 @@ class STCAdBrain:
                         "instagram": {
                             "ar": "بكل أمان وشفافية، تطبيق بنك stc يقرّب المسافات ويضمن وصول تحويلاتك الدولية فوراً لمن تحب. ❤️",
                             "en": "With absolute security and transparency, stc bank app brings distances closer and ensures your international transfers reach your loved ones instantly. ❤️"
+                        },
+                        "tiktok": {
+                            "ar": "حوّل لأهلك براحة بال وسرعة فائقة مع تطبيق بنك stc 🌍💸 #بنك_stc",
+                            "en": "Transfer to loved ones with ultimate peace of mind and speed using stc bank app 🌍💸 #stc_bank"
                         }
                     },
                     factuality_note="No specific exchange rates, transfer fees, or delivery times are claimed. Focuses on instant processing and security.",
@@ -180,6 +188,10 @@ class STCAdBrain:
                         "instagram": {
                             "ar": "خطط لخطوتك المالية القادمة بثقة. أدوات ذكية لإدارة وتنمية مدخراتك بكل سهولة وأمان مع تطبيق بنك stc. 🌿",
                             "en": "Plan your next financial step with confidence. Smart tools to manage and grow your savings securely with stc bank app. 🌿"
+                        },
+                        "linkedin": {
+                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي وفردي مع حلول بنك stc المبتكرة.",
+                            "en": "Building wealth and managing financial planning with institutional and personal awareness using stc bank innovative solutions."
                         }
                     },
                     factuality_note="No specific investment yields, guaranteed returns, or fund percentages are claimed. Focuses purely on smart planning and financial tools.",
@@ -204,6 +216,10 @@ class STCAdBrain:
                         "twitter": {
                             "ar": "خطط لأحلامك ونظم مدخراتك بذكاء مع حصالات بنك stc الرقمية. 🎯💰 #بنك_stc",
                             "en": "Plan your dreams and organize your savings smartly with stc bank digital vaults. 🎯💰 #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "لكل حلم حصالة تجمع خطواتك نحوه. نظم أهدافك اليوم مع حصالات تطبيق بنك stc. ✨",
+                            "en": "Every dream has a vault gathering your steps toward it. Organize your goals today with stc bank app vaults. ✨"
                         }
                     },
                     factuality_note="No specific interest rates or tiered APY figures are promised. Focuses entirely on goal setting and organization.",
@@ -228,6 +244,10 @@ class STCAdBrain:
                         "twitter": {
                             "ar": "طموح شركتك يستحق شريكاً يثق بقدراتك. اكتشف حلول تمويل الأعمال من بنك stc. 📈🤝 #بنك_stc",
                             "en": "Your company's ambition deserves a partner that trusts your capability. Discover business financing from stc bank. 📈🤝 #stc_bank"
+                        },
+                        "linkedin": {
+                            "ar": "تمكين المنشآت الصغيرة والمتوسطة بحلول تمويلية مرنة تدفع عجلة الاقتصاد الوطني في المملكة.",
+                            "en": "Empowering SMEs with flexible financing solutions driving the national economy in the Kingdom."
                         }
                     },
                     factuality_note="No loan amounts, approval timelines, or interest rates are explicitly claimed. Focuses on partnership and enterprise enablement.",
@@ -411,10 +431,14 @@ def run_validation() -> bool:
     assert copies[0].hook_ar, "Missing Arabic hook"
     assert copies[0].hook_en, "Missing English hook"
     assert copies[0].saudi_cultural_fit, "Missing Saudi cultural fit note"
+    assert "twitter" in copies[0].channel_variants, "Missing twitter variant"
+    assert "instagram" in copies[0].channel_variants, "Missing instagram variant"
+    assert "linkedin" in copies[0].channel_variants, "Missing linkedin variant"
 
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
     assert copies_it[0].headline_ar, "Missing intl Arabic headline"
+    assert "tiktok" in copies_it[0].channel_variants, "Missing tiktok variant"
 
     copies_wm = brain.generate_premium_copy("wealth_management")
     assert len(copies_wm) > 0, "Expected wealth management copy"
