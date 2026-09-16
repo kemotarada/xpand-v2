@@ -190,7 +190,7 @@ class STCAdBrain:
                             "en": "Plan your next financial step with confidence. Smart tools to manage and grow your savings securely with stc bank app. 🌿"
                         },
                         "linkedin": {
-                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي وفردي مع حلول بنك stc المبتكرة.",
+                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي والفردي مع حلول بنك stc المبتكرة.",
                             "en": "Building wealth and managing financial planning with institutional and personal awareness using stc bank innovative solutions."
                         }
                     },
