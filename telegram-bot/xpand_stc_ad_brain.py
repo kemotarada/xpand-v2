@@ -254,6 +254,62 @@ class STCAdBrain:
                     brand_memory_tag="stc_bank_business_2024"
                 )
             ]
+        elif benefit_family == "digital_wallets":
+            return [
+                AdCopy(
+                    copy_id="dw_premium_01",
+                    benefit_extracted="Instant everyday digital wallet payments with secure encryption and seamless peer-to-peer transfers.",
+                    hook_ar="محفظتك الرقمية لكل مشترياتك اليومية.. سرعة وأمان في جيبك.",
+                    hook_en="Your digital wallet for all daily purchases.. speed and security in your pocket.",
+                    headline_ar="معامَلاتك اليومية، بأمان تام وسرعة بلا حدود",
+                    headline_en="Your Daily Transactions, Fully Secured and Limitless",
+                    body_copy_ar="أنجز مدفوعاتك اليومية وحوّل الأموال لأصدقائك بلمسة واحدة عبر محفظة بنك stc الرقمية. سهولة فائقة تلبي إيقاع حياتك.",
+                    body_copy_en="Handle your daily payments and transfer money to friends in one touch via stc bank digital wallet. Ultimate ease matching the rhythm of your life.",
+                    cta_ar="حمل التطبيق وابدأ الآن",
+                    cta_en="Download the app and start now",
+                    saudi_cultural_fit="Fits the cashless, tech-savvy lifestyle of modern Saudi consumers and youth.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "ادفع وحوّل بكل مرونة وسرعة. محفظة بنك stc رفيقك الرقمي لكل يوم. 📱💳 #بنك_stc",
+                            "en": "Pay and transfer with total flexibility and speed. stc bank digital wallet is your daily digital companion. 📱💳 #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "كل مدفوعاتك اليومية في مكان واحد وبأعلى معايير الأمان مع محفظة بنك stc. ✨",
+                            "en": "All your daily payments in one place with the highest security standards using stc bank wallet. ✨"
+                        }
+                    },
+                    factuality_note="No specific cash-back percentages or wallet limits are claimed. Focuses on everyday usability and security.",
+                    brand_memory_tag="stc_bank_wallet_2024"
+                )
+            ]
+        elif benefit_family == "card_issuing":
+            return [
+                AdCopy(
+                    copy_id="ci_premium_01",
+                    benefit_extracted="Customized physical and digital payment cards with instant in-app activation and worldwide acceptance.",
+                    hook_ar="بطاقتك التي تشبه طموحك.. تصدرها فوراً وتستخدمها في كل مكان.",
+                    hook_en="Your card that matches your ambition.. issued instantly, used everywhere.",
+                    headline_ar="بطاقتك الرقمية والمادية، بين يديك فوراً",
+                    headline_en="Your Digital and Physical Card, Instantly Yours",
+                    body_copy_ar="اطلب بطاقتك من بنك stc عبر التطبيق واستمتع بقبول عالمي واسع ومعايير أمان متقدمة تناسب كل مشترياتك المحلية والدولية.",
+                    body_copy_en="Order your stc bank card via the app and enjoy wide global acceptance and advanced security standards for all your local and international purchases.",
+                    cta_ar="اطلب بطاقتك الآن",
+                    cta_en="Order your card now",
+                    saudi_cultural_fit="Appeals to premium lifestyle preferences and travelers seeking instant, reliable payment instruments.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "جاهزة للاستخدام المحلي والدولي لحظة إصدارها. اكتشف بطاقات بنك stc. 💳✈️ #بنك_stc",
+                            "en": "Ready for local and international use the moment it's issued. Discover stc bank cards. 💳✈️ #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "أناقة التصميم وقوة الأمان في بطاقة واحدة من بنك stc. اطلبها الآن عبر التطبيق. ✨",
+                            "en": "Design elegance and robust security in one card from stc bank. Order it now via the app. ✨"
+                        }
+                    },
+                    factuality_note="No specific annual fees, FX markups, or reward tier points are claimed. Focuses on instant issuance and acceptance.",
+                    brand_memory_tag="stc_bank_cards_2024"
+                )
+            ]
         
         return [
             AdCopy(
@@ -452,6 +508,14 @@ def run_validation() -> bool:
     assert len(copies_bf) > 0, "Expected business financing copy"
     assert copies_bf[0].headline_ar, "Missing business financing Arabic headline"
 
+    copies_dw = brain.generate_premium_copy("digital_wallets")
+    assert len(copies_dw) > 0, "Expected digital wallets copy"
+    assert copies_dw[0].headline_ar, "Missing digital wallets Arabic headline"
+
+    copies_ci = brain.generate_premium_copy("card_issuing")
+    assert len(copies_ci) > 0, "Expected card issuing copy"
+    assert copies_ci[0].headline_ar, "Missing card issuing Arabic headline"
+
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
 
@@ -496,6 +560,16 @@ if __name__ == "__main__":
     copies_bf = brain.generate_premium_copy("business_financing")
     print(f"generated_copies (financing) = {len(copies_bf)}")
     for copy in copies_bf:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_dw = brain.generate_premium_copy("digital_wallets")
+    print(f"generated_copies (wallets) = {len(copies_dw)}")
+    for copy in copies_dw:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_ci = brain.generate_premium_copy("card_issuing")
+    print(f"generated_copies (cards) = {len(copies_ci)}")
+    for copy in copies_ci:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
         
     run_validation()
