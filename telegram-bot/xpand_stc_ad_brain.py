@@ -360,8 +360,7 @@ class STCAdBrain:
             AdConcept(
                 concept_id="mp_product_theatre",
                 title="The Merchant Engine / محرك التاجر الذكي",
-                headline_strategy="One powerful system behind every thriving sale.
-",
+                headline_strategy="One powerful system behind every thriving sale.\n",
                 core_idea="An designed STC product theatre compresses the merchant workflow into one bold silhouette: a real POS action, one order cue and a physical handoff share a purposeful set.",
                 visual_mechanism="Scale and spatial compression: the support planes make the online and physical stages readable as one operating system without a diagram.",
                 benefit_translation="STC Bank supports the merchant across digital and in-person commerce with uncompromising reliability.",
