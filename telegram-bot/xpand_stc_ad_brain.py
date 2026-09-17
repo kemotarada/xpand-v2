@@ -295,7 +295,7 @@ class STCAdBrain:
                 headline_strategy="One connected commerce flow linking online intent and physical acceptance.",
                 core_idea="A sculptural merchant surface carries an unbranded online order cue into a real contactless checkout action; one change of level makes the digital-to-physical relationship visible.",
                 visual_mechanism="Continuous material transition: an abstract product/order cue on a real device leads along one supported surface to a separate POS tap and the prepared handoff.",
-                benefit_translation="STC Bank connects online commerce and physical acceptance for the same merchant under one seamless experience.",
+                benefit_translation="STC Bank connects online commerce and physical acceptance for the same merchant under one seamless environment.",
                 environment=f"Purpose-built premium STC campaign set, not a shop counter: {palette}",
                 hero_subject="The continuous surface and decisive tapping hand, with the POS as the causal hero.",
                 scene_structure="Asymmetric 4:5 frame; foreground contactless action, midground material bridge, secondary online/fulfillment cue; 25–40% integrated copy space.",
@@ -360,7 +360,8 @@ class STCAdBrain:
             AdConcept(
                 concept_id="mp_product_theatre",
                 title="The Merchant Engine / محرك التاجر الذكي",
-                headline_strategy="One powerful system behind every thriving sale.",
+                headline_strategy="One powerful system behind every thriving sale.
+",
                 core_idea="An designed STC product theatre compresses the merchant workflow into one bold silhouette: a real POS action, one order cue and a physical handoff share a purposeful set.",
                 visual_mechanism="Scale and spatial compression: the support planes make the online and physical stages readable as one operating system without a diagram.",
                 benefit_translation="STC Bank supports the merchant across digital and in-person commerce with uncompromising reliability.",
