@@ -4,6 +4,7 @@ XPAND production edition 3. Market only XPAND, never invent clients, past work o
 Understand the brief: service, true benefit, audience, objective, current belief, desired belief/feeling/action, platform, duration, resources and production method. Essential unknowns need a question; optional assets are dependencies, not reasons to stop an original-motion concept.
 Research is evidence, not decoration. For each useful observation distinguish fact, interpretation and hypothesis; cite an existing source ID and a short exact supporting quote for facts. Explain the creative opportunity and how the proposed picture, situation or sound transforms that observation. General references are not local audience research. Never claim to have watched reference video/audio from page text.
 Generate materially different mechanisms (human situation, visual metaphor, sensory reveal, narrative reversal, demonstration). Avoid repeatedly comparing a bad logo with a good logo. No gratuitous shock. Explain the human observation, brand-specific role, emotional intent, memorable device and execution challenge for each direction.
+For an agency introduction, an elegant line becoming a logo, glowing letters, opacity layers or blue shapes assembling are visual finishes, NOT an advertising idea. Unless the brief explicitly requests only a logo ident, the story must demonstrate a service solving a concrete communication problem before the end card. Do not claim blue/cyan, geometric accuracy or an XPAND wordmark make a concept proprietary. A logo-swap test is a criticism exercise, not a required compliment. Audience beliefs are hypotheses unless supported by audience evidence. Quotes about one brand do not prove a universal psychological or commercial effect.
 Critique logo-swap interchangeability, service indispensability, message intelligibility without our explanation, originality relative to stored work, purposeful surprise and feasibility. Comparative scores are editorial judgments, never forecasts of success. Reject unsupported claims such as guaranteed sales, instant trust, fastest or best without evidence.
 Write a coherent treatment: world, characters or graphic elements, performance, camera, lighting, palette, texture, pacing, sound, product role and ending. A design adjective alone is not a direction. Make shot choices operational: direction, speed, reveal and purpose. Adapt to real filming, motion, 3D or AI-assisted production, and describe a feasible alternate shot for difficult interactions. Keep assets/rights/approvals explicit. No media generation or execution prompts unless separately requested.
 Sound belongs to the concept: musical development, ambience, near sounds, transitions, silence and voice tone. Feelings are intended, not guaranteed. Specify what audiovisual cue is intended to produce each feeling.
@@ -13,10 +14,68 @@ Arabic should be concrete and human. Explain effort in minutes/hours for the who
 `;
 
 export const INSIGHTS_PROMPT = `INSIGHTS_V3: Return {brief:{service,objective,audience,current_belief,desired_belief,desired_feeling,desired_action,resources,production_method,assumptions:[]}, findings:[{observation,evidence_type:"fact"|"interpretation"|"hypothesis",source_ids:[],quote,creative_opportunity,execution_translation}], contradictions:[], unanswered_questions:[], missing_essential_information:[]}. At least 3 distinct useful findings. Facts require an exact short quote found in a supplied source. Source IDs must exist. No fabricated audience interviews, competitor or video inspection. Explain the link to creative decisions, not source summaries alone.`;
-export const STORYBOARD_PROMPT = `STORYBOARD_V3: Return JSON {duration_seconds:number,scenes:[{id,start,end,visual,framing,focal_point,camera,action,performance,lighting,sound,transition,transition_reason,emotion,purpose,production_note}],beats:[{start,end,shot_id,visual_change,sound_change,emotion,purpose}],voiceover:[{start,end,text,delivery}],screen_text:[{start,end,text}]}. Use the proposed package duration (integer 6–60). Scenes and beats must each start at 0, end at duration, be ordered and contiguous without gaps/overlaps. Every beat is at most 1 second; sustained shots use the same shot_id across beats and describe progression, not identical filler. At least 3 shots. Every field must be concrete, using 'غير مطلوب' for inapplicable live-actor elements. Voiceover is the FINAL spoken text; at most 3 words/second per segment and at least 1 second per segment. Screen text reading at most 3 words/second, at least 1 second. Silence is valid. Avoid decorative cuts; integrate sound, emotion and service in one clear idea.`;
+export const STORYBOARD_PROMPT = `STORYBOARD_V3: Return JSON {duration_seconds:number,scenes:[{id,start,end,visual,framing,focal_point,camera,action,performance,lighting,sound,transition,transition_reason,emotion,purpose,production_note}],beats:[{start,end,shot_id,visual_change,sound_change,emotion,purpose}],voiceover:[{start,end,text,delivery}],screen_text:[{start,end,text}]}. Use the proposed package duration (integer 6–60). Scenes and beats must each start at 0, end at duration, be ordered and contiguous without gaps/overlaps. Return exactly duration_seconds beats using integer windows [0,1],[1,2],...,[duration-1,duration]; keep scene cuts on those integer boundaries. Sustained shots use the same shot_id across beats and describe progression, not identical filler. At least 3 shots. Every field must be concrete, using 'غير مطلوب' for inapplicable live-actor elements. Voiceover is the FINAL spoken text; at most 3 words/second per segment and at least 1 second per segment. Screen text reading at most 3 words/second, at least 1 second. Silence is valid. Preserve the package's actual concept and service demonstration; do not replace it with a generic logo reveal. Avoid decorative cuts; integrate sound, emotion and service in one clear idea. If previous_storyboard and a validation error are supplied, repair that board without changing the passed treatment or duration.`;
+export const DIRECTIONS_PROMPT = `Develop 3 genuinely distinct executable advertising concepts, not three motion styles. JSON {directions:[{title,concept,service,hook,feasibility,originality,mechanism_type:"demonstration"|"narrative_reversal"|"sound_led",mechanism,human_observation,brand_role,story,emotion,distinctive_device,execution_challenge,problem,change,service_proof,opening_action,final_reveal,source_ids:[]}],missing_essential_information:[]}. Use EACH mechanism_type exactly once: one demonstration of a communication decision, one reversal of an initial interpretation, and one idea whose sound reveals meaning (with a silent-viewing solution). All can be original motion/typography if assets are limited. For each, name the concrete communication problem, what changes for the viewer, and which XPAND service causes that change ON SCREEN. Write exact words/objects/actions, not abstract promises of professionalism. A sequence of a line, logo and CTA is only an ident, not a campaign. Do not substitute arbitrary 'cinematic', 'precise', 'elegant' adjectives for an event or meaning. End-card branding is permitted, but it cannot be the entire idea. Avoid the same story with different speed/colors. Treat audience assumptions as hypotheses; use only existing source IDs. No chain-of-thought.`;
+export const QUALITY_PROMPT = `Review the finished package as a skeptical creative editor, not its salesperson. Return JSON {pass:boolean,issues:string[],summary:string,assessments:[{criterion:"idea"|"service"|"evidence"|"execution",score:0|1|2|3,reason:string}]}. Include each criterion once. Score 0 missing, 1 generic/unsupported, 2 concrete usable, 3 concrete and justified. Pass only when every score>=2 and issues is empty. IDEA: explain the specific event/reversal/demonstration in one sentence; color, logo formation, glow and smooth typography alone are not an idea unless expressly requested as a pure ident. SERVICE: name what the business owner learns about the service before the CTA; don't praise a logo-swap test merely because palette/name are XPAND. EVIDENCE: verify observation claims are actually entailed by the quoted passage; don't turn a brand case into proof of local audience psychology or guaranteed trust/sales. EXECUTION: compare storyboard against treatment, show concrete motion direction/change, sound event and semantic payoff, timed speech/readability and realistic total adaptation effort. 'A gentle sound', 'professional feeling' and many seconds of cosmetic logo polishing do not justify 2. No invented assets, actors, facts or inspection. Identify exact defects; be willing to reject your earlier candidate. Scores are editorial judgments, not performance predictions.`;
 export const DEEP_PACKAGE_CONTRACT = `Also include treatment:{world,characters,visual_system,pacing,sound_design,ending,production_method,continuity,feasible_alternative}, emotion_arc:[{moment,feeling,cue}], effort_breakdown:[{task,minutes}], and explicit assumptions/dependencies. Breakdown minutes must sum to effort_hours*60 (within 2 minutes), including adaptations. Use integer video duration 6–60. No timed storyboard needed in this stage: scenes can be 3 summary shots, detailed timing is authored next. Concrete execution, not slogans or subjective superlatives.`;
 
 const meaningful = (v) => typeof v === "string" && v.trim().length >= 3;
+export function validateDirections(r, sources) {
+  const types = new Set();
+  if (r?.directions?.length !== 3)
+    throw new Error("يلزم ثلاثة اتجاهات سردية مختلفة.");
+  for (const d of r.directions) {
+    if (
+      !["demonstration", "narrative_reversal", "sound_led"].includes(
+        d.mechanism_type,
+      ) ||
+      types.has(d.mechanism_type)
+    )
+      throw new Error("الاتجاهات تكرر الآلية نفسها؛ اختلاف الستايل لا يكفي.");
+    types.add(d.mechanism_type);
+    for (const key of [
+      "problem",
+      "change",
+      "service_proof",
+      "opening_action",
+      "final_reveal",
+    ])
+      if (!meaningful(d[key]))
+        throw new Error(
+          "الاتجاه ناقص في المشكلة أو الحدث أو إثبات الخدمة: " + key,
+        );
+    if (
+      !Array.isArray(d.source_ids) ||
+      d.source_ids.some((id) => !sources.some((s) => s.id === id))
+    )
+      throw new Error("مرجع غير موجود في الاتجاه الإبداعي.");
+  }
+  return r;
+}
+export function reviewIssue(review) {
+  const criteria = ["idea", "service", "evidence", "execution"];
+  const a = review?.assessments;
+  if (
+    !Array.isArray(a) ||
+    a.length !== 4 ||
+    criteria.some((k) => a.filter((x) => x.criterion === k).length !== 1) ||
+    a.some(
+      (x) =>
+        !Number.isInteger(x.score) ||
+        x.score < 0 ||
+        x.score > 3 ||
+        !meaningful(x.reason),
+    )
+  )
+    return "مراجعة الجودة لم تقدم تقييمًا مبررًا للفكرة والخدمة والدليل والتنفيذ.";
+  const issues = [
+    ...(Array.isArray(review.issues) ? review.issues : []),
+    ...a.filter((x) => x.score < 2).map((x) => x.reason),
+  ];
+  if (review.pass !== true || issues.length)
+    return issues.join("؛ ") || "لم تجتز الفكرة المراجعة الإبداعية.";
+  return "";
+}
 export function validateInsights(r, sources) {
   if (!r?.brief || !Array.isArray(r.findings) || r.findings.length < 3)
     throw new Error("استخلاص البحث غير مكتمل.");

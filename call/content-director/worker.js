@@ -10,6 +10,10 @@ import {
   INSIGHTS_PROMPT,
   STORYBOARD_PROMPT,
   DEEP_PACKAGE_CONTRACT,
+  DIRECTIONS_PROMPT,
+  QUALITY_PROMPT,
+  validateDirections,
+  reviewIssue,
   validateInsights,
   validateTreatment,
   validateStoryboard,
@@ -631,13 +635,16 @@ export class Worker {
         job,
         "directions",
         base,
-        "Develop 3 genuinely distinct executable concepts for this brief, not slogans. JSON {directions:[{title,concept,service,hook,feasibility,originality,mechanism,human_observation,brand_role,story,emotion,distinctive_device,execution_challenge,source_ids:[]}],missing_essential_information:[]}. Compare DIFFERENT narrative mechanisms, not alternative headlines. Link insights to execution and consider stored work/feedback. No chain-of-thought.",
+        deep
+          ? DIRECTIONS_PROMPT
+          : "Develop 3 genuinely distinct executable concepts for this brief, not slogans. JSON {directions:[{title,concept,service,hook,feasibility,originality,mechanism,human_observation,brand_role,story,emotion,distinctive_device,execution_challenge,source_ids:[]}],missing_essential_information:[]}. Compare DIFFERENT narrative mechanisms, not alternative headlines. Link insights to execution and consider stored work/feedback. No chain-of-thought.",
       );
       if (
         !Array.isArray(directions.directions) ||
         directions.directions.length < 3
       )
         throw new Error("لم ينتج النموذج اتجاهات كافية للمقارنة.");
+      if (deep) validateDirections(directions, sources);
       await this.store.checkpoint(job, "evaluating", { directions });
     }
     if (directions.missing_essential_information?.length)
@@ -667,7 +674,15 @@ export class Worker {
       !final && round < ctx.settings.rounds;
       round++
     ) {
-      if (round > 0 && job.checkpoint.research_mode !== "direct_references") {
+      const storyboardOnly =
+        deep &&
+        job.checkpoint.repair_scope === "storyboard" &&
+        job.checkpoint.proposal;
+      if (
+        round > 0 &&
+        !storyboardOnly &&
+        job.checkpoint.research_mode !== "direct_references"
+      ) {
         await this.store.checkpoint(job, "collecting_references", {});
         const extra = await this.research(
           job,
@@ -707,7 +722,8 @@ export class Worker {
       }
       await this.store.checkpoint(job, "preparing_plan", { round });
       const proposal =
-        job.checkpoint.proposal_round === round && job.checkpoint.proposal
+        (storyboardOnly || job.checkpoint.proposal_round === round) &&
+        job.checkpoint.proposal
           ? job.checkpoint.proposal
           : await this.modelJSON(
               job,
@@ -725,6 +741,7 @@ export class Worker {
         proposal_round: round,
       });
       let issue = "";
+      let repairScope = "package";
       try {
         validatePackage(proposal, sources);
         if (deep) validateTreatment(proposal);
@@ -743,6 +760,9 @@ export class Worker {
                   ...base,
                   proposal,
                   previous_quality_issue: job.checkpoint.quality_issue,
+                  previous_storyboard: storyboardOnly
+                    ? job.checkpoint.storyboard
+                    : undefined,
                 },
                 STORYBOARD_PROMPT,
               );
@@ -757,6 +777,7 @@ export class Worker {
           );
         } catch (e) {
           issue = e.message;
+          repairScope = "storyboard";
         }
       }
       if (!issue) {
@@ -765,15 +786,21 @@ export class Worker {
           job,
           "quality_review",
           { ...base, proposal },
-          "Review the finished package strictly for generic filler, concrete scene execution, unsupported claims, copied references, missing essential facts, feasibility including adaptation hours, chronology, company-only scope and repeated prior ideas. JSON {pass:boolean,issues:string[],summary:string}. Pass only if usable; list assets as dependencies, never invent them. No predictions of commercial certainty.",
+          deep
+            ? QUALITY_PROMPT
+            : "Review the finished package strictly for generic filler, concrete scene execution, unsupported claims, copied references, missing essential facts, feasibility including adaptation hours, chronology, company-only scope and repeated prior ideas. JSON {pass:boolean,issues:string[],summary:string}. Pass only if usable; list assets as dependencies, never invent them. No predictions of commercial certainty.",
         );
-        if (review.pass !== true)
-          issue = (review.issues || []).join("؛ ") || "لم يجتز فحص الجودة";
-        else
+        issue = deep
+          ? reviewIssue(review)
+          : review.pass !== true
+            ? (review.issues || []).join("؛ ") || "لم يجتز فحص الجودة"
+            : "";
+        if (!issue)
           final = {
             ...proposal,
             creative_version: deep ? 3 : 2,
             quality_review: review.summary,
+            quality_assessments: review.assessments || [],
             decision_rationale:
               selection.decision_rationale || proposal.decision_rationale,
           };
@@ -781,6 +808,7 @@ export class Worker {
       if (issue)
         await this.store.checkpoint(job, "improving", {
           quality_issue: issue,
+          repair_scope: repairScope,
           round: round + 1,
         });
     }

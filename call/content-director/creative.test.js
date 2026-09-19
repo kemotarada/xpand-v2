@@ -5,6 +5,8 @@ import {
   validateInsights,
   validateTreatment,
   validateWeek,
+  validateDirections,
+  reviewIssue,
 } from "./creative.js";
 import {
   availableWeek,
@@ -18,9 +20,92 @@ import {
   enqueue,
   mockStoryboard,
   TEST_USER,
+  mockProvider,
 } from "./test-support.js";
 import { localClock } from "./core.js";
 import { creativeView } from "../content-command/creative-view.js";
+test("creative gates require distinct mechanisms and a justified review, not automatic praise", () => {
+  const r = {
+    directions: ["demonstration", "narrative_reversal", "sound_led"].map(
+      (mechanism_type) => ({
+        mechanism_type,
+        problem: "مشكلة واضحة",
+        change: "تغير محدد",
+        service_proof: "إثبات للخدمة",
+        opening_action: "فعل افتتاحي",
+        final_reveal: "كشف واضح",
+        source_ids: [],
+      }),
+    ),
+  };
+  validateDirections(r, []);
+  r.directions[2].mechanism_type = "demonstration";
+  assert.throws(() => validateDirections(r, []));
+  assert.ok(reviewIssue({ pass: true, summary: "رائع" }));
+  const review = {
+    pass: true,
+    issues: [],
+    assessments: ["idea", "service", "evidence", "execution"].map(
+      (criterion) => ({
+        criterion,
+        score: 2,
+        reason: "قرار محدد قابل للمراجعة",
+      }),
+    ),
+  };
+  assert.equal(reviewIssue(review), "");
+  review.assessments[0].score = 1;
+  assert.ok(reviewIssue(review));
+  review.assessments[0].score = 2;
+  review.issues = ["اعتماد غير مبرر على كشف الشعار وحده"];
+  assert.ok(reviewIssue(review));
+});
+test("timing repair reuses the passed treatment and repairs only the storyboard within the existing cap", async () => {
+  const f = await fixture();
+  const normal = mockProvider();
+  let packages = 0,
+    boards = 0,
+    reviews = 0;
+  const w = workerFor(f, async (url, options) => {
+    if (url.includes("tavily")) return normal(url, options);
+    const prompt = JSON.parse(
+      JSON.parse(options.body).contents[0].parts[0].text,
+    );
+    if (prompt.instruction.startsWith("Return JSON with")) packages++;
+    if (prompt.instruction.startsWith("Review")) reviews++;
+    if (prompt.instruction.startsWith("STORYBOARD_V3")) {
+      boards++;
+      if (boards === 1) {
+        const broken = mockStoryboard();
+        broken.beats[2].end = 4;
+        return Response.json({
+          candidates: [
+            {
+              finishReason: "STOP",
+              content: { parts: [{ text: JSON.stringify(broken) }] },
+            },
+          ],
+        });
+      }
+      assert.ok(prompt.trusted_context.previous_storyboard);
+    }
+    return normal(url, options);
+  });
+  try {
+    const id = await enqueue(f);
+    await w.run(await w.claim());
+    const d = await f.api("/campaigns/" + id);
+    assert.equal(d.campaign.status, "completed", d.campaign.limitations);
+    assert.equal(packages, 1);
+    assert.equal(boards, 2);
+    assert.equal(reviews, 1);
+    assert.ok(d.calls.length <= 10);
+    validateStoryboard(d.campaign.result.storyboard, 20);
+  } finally {
+    w.stop();
+    await f.close();
+  }
+});
 test("storyboard presentation escapes untrusted text and manually edited time fields", () => {
   const storyboard = mockStoryboard();
   storyboard.duration_seconds = "<img src=x onerror=alert(1)>";

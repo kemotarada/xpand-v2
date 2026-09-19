@@ -169,6 +169,15 @@ export function mockProvider(counters = {}) {
         directions: [0, 1, 2].map((n) => ({
           title: "اتجاه اختبار " + n,
           concept: "تصور إبداعي للاختبار فقط",
+          mechanism_type: ["demonstration", "narrative_reversal", "sound_led"][
+            n
+          ],
+          problem: "مشكلة اتصال اختبارية",
+          change: "تغير المعنى في الاختبار",
+          service_proof: "قرار تصميم ظاهر للاختبار",
+          opening_action: "حدث افتتاحي للاختبار",
+          final_reveal: "كشف المعنى في الاختبار",
+          source_ids: [c.sources[0].id],
         })),
         missing_essential_information: [],
       };
@@ -179,7 +188,18 @@ export function mockProvider(counters = {}) {
         duplicate: false,
       };
     else if (i.startsWith("Review"))
-      result = { pass: true, summary: "فحص آلي تجريبي", issues: [] };
+      result = {
+        pass: true,
+        summary: "فحص آلي تجريبي",
+        issues: [],
+        assessments: ["idea", "service", "evidence", "execution"].map(
+          (criterion) => ({
+            criterion,
+            score: 2,
+            reason: "تقييم محاكاة لا يمثل حكمًا إبداعيًا",
+          }),
+        ),
+      };
     else if (i.startsWith("Identify"))
       result = {
         summary: "لا تغيير مفيد في الاختبار",
