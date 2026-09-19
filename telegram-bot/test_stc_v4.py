@@ -44,7 +44,7 @@ class STCV4Tests(unittest.TestCase):
 
     def test_stc_ad_brain_premium_copy(self):
         brain = STCAdBrain()
-        for family in ['merchant_payments', 'international_transfer', 'wealth_management', 'other']:
+        for family in ['merchant_payments', 'international_transfer', 'wealth_management', 'savings_vaults', 'business_financing', 'digital_wallets', 'card_issuing', 'other']:
             copies = brain.generate_premium_copy(family)
             self.assertTrue(len(copies) > 0)
             for copy in copies:
@@ -94,7 +94,7 @@ class STCV4Tests(unittest.TestCase):
         with patch.object(t,'run_creative_brain',return_value=rejected), \
              patch.object(t,'prepare_generation_input',side_effect=AssertionError('Must not generate')):
             with self.assertRaisesRegex(RuntimeError,'لم تجتز'):
-                t.generate_and_deliver(core,1,2,'بدي برومت لبنك STC بيئة بنفسجية')
+                t.generate_and_deliver(1,2,'بدي برومت لبنك STC بيئة بنفسجية')
 
     def test_standalone_prompt_has_no_repository_reference_ids(self):
         returned='Violet gradients across the planes, inspired by stc_curated_02, with satin contrast.'
