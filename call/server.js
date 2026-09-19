@@ -190,6 +190,20 @@ const INDEX_FILE =
     ? DIST_INDEX
     : ROOT_INDEX;
 
+// Separate XPAND editorial workspace, exposed from the same public service
+// as the call UI so Telegram can open it without a second deployment.
+const CONTENT_COMMAND_DIR =
+  path.join(
+    __dirname,
+    "content-command"
+  );
+
+const CONTENT_COMMAND_INDEX =
+  path.join(
+    CONTENT_COMMAND_DIR,
+    "index.html"
+  );
+
 
 // ======================================================
 // DATABASE
@@ -5722,6 +5736,28 @@ app.post(
 // ======================================================
 // STATIC UI
 // ======================================================
+
+app.get(
+  "/content-command",
+  (req, res) => {
+    if (fs.existsSync(CONTENT_COMMAND_INDEX)) {
+      return res.sendFile(CONTENT_COMMAND_INDEX);
+    }
+
+    return res.status(404).json({
+      ok: false,
+      error: "Content Command UI is not installed"
+    });
+  }
+);
+
+app.use(
+  "/content-command",
+  express.static(
+    CONTENT_COMMAND_DIR,
+    { index: false }
+  )
+);
 
 app.use(
   express.static(
