@@ -46,5 +46,5 @@ class TestSTCAdBrain(unittest.TestCase):
         self.assertTrue(copy.headline_en)
 
 
-if __name__ == "__main主要的test runner__":
+if __name__ == "__main__":
     unittest.main()
