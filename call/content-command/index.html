@@ -1,21 +1,14 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#062968" />
-    <title>XPAND Content Command</title>
-    <link rel="stylesheet" href="/content-command/style.css" />
-  </head>
-  <body>
-    <main class="shell">
-      <header><b><i>›</i> XPAND <small>CONTENT COMMAND</small></b><span>● غرفة العمل</span></header>
-      <section class="hero"><p>Expand what's possible</p><h1>نحوّل وجود XPAND إلى حملة مستمرة.</h1><p class="sub">خطة ذكية للمحتوى، الإنتاج، والمناسبات القادمة.</p><button>+ فكرة أو حملة جديدة</button></section>
-      <section class="metrics"><article><strong>12</strong><span>محتوى مخطط</span></article><article><strong>3</strong><span>قيد الإنتاج</span></article><article><strong>1</strong><span>قرار مطلوب</span></article></section>
-      <section class="grid"><div class="card tasks"><div class="title"><h2>خطة اليوم</h2><span>الجمعة، 19 سبتمبر</span></div><article class="task"><time>11:00</time><div><b>ريل: من الفكرة إلى الإعلان</b><p>لقطات سريعة من كواليس التصميم والمونتاج.</p></div><button>✓</button></article><article class="task"><time>16:00</time><div><b>ستوري تفاعل</b><p>صوّت: أي ستايل يلفت انتباهك أكثر؟</p></div><button>✓</button></article></div><div class="card occasion"><span class="tag">مناسبة قادمة</span><h2>عيد الأضحى</h2><p>باقي 7 أيام</p><hr /><b>فكرة الحملة</b><p>«اللحظة التي تجمعنا» — فيديو بصري يربط الحِرفة، الفرحة، والهوية المحلية.</p><button>عرض الـ Storyboard ←</button></div></section>
-      <section class="card idea"><div><span class="tag">فكرة الأسبوع</span><h2>سلسلة: خلف كل علامة قصة</h2><p>ثلاثة مقاطع قصيرة تشرح كيف تحوّل XPAND سؤال العميل إلى هوية حيّة.</p></div><button>فتح الفكرة</button></section>
-      <nav><span class="active">⌂<small>الرئيسية</small></span><span>▦<small>التقويم</small></span><span>✦<small>الأفكار</small></span><span>☷<small>المهام</small></span></nav>
-    </main>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/content-command/app.js"></script>
-  </body>
-</html>
+<html lang="ar" dir="rtl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#062968"/><title>XPAND | غرفة قيادة المحتوى</title><link rel="stylesheet" href="/content-command/style.css"/></head>
+<body><main class="shell">
+<header class="topbar"><div class="brand"><span class="brand-mark">›</span><div><b>XPAND</b><small>CONTENT COMMAND</small></div></div><button class="profile" data-action="profile"><span class="pulse"></span> إيهاب ⌄</button></header>
+<section class="hero"><div><p class="eyebrow">غرفة قيادة المحتوى · سبتمبر 2026</p><h1>نبني حضورًا يجعل العلامات<br/><em>مستحيلة التجاهل.</em></h1><p class="sub">خطّط، أنشئ، راقب، وانشر. XPAND يجمع فكرة الحملة، الإنتاج، والمواعيد في مكان واحد.</p></div><div class="hero-orbit" aria-hidden="true"><span>XP</span></div><button class="primary" data-action="new-idea">+ أنشئ حملة جديدة</button></section>
+<section class="alerts"><span class="alert-dot"></span><b>تنبيه الإنتاج</b><p>ريل «من الفكرة إلى الإعلان» موعده اليوم 11:00 — لم يُعلَّم كمنشور بعد.</p><button data-action="focus-task">راجع المهمة ←</button></section>
+<section class="metrics"><article><span class="metric-icon cyan">◈</span><div><strong id="planned-count">12</strong><span>محتوى مخطط</span></div><small>هذا الشهر</small></article><article><span class="metric-icon blue">↗</span><div><strong id="production-count">3</strong><span>قيد الإنتاج</span></div><small>+1 هذا الأسبوع</small></article><article><span class="metric-icon gold">!</span><div><strong>1</strong><span>قرار مطلوب</span></div><small>قبل النشر</small></article></section>
+<section class="workspace"><div class="card plan-card" id="today-card"><div class="section-title"><div><p class="eyebrow">تنفيذ</p><h2>خطة اليوم</h2></div><button class="ghost" data-view="tasks">كل المهام ←</button></div><p class="date-line">الجمعة، 19 سبتمبر</p><div class="task-list" id="task-list"></div><button class="add-task" data-action="new-task">＋ إضافة مهمة</button></div>
+<aside class="card occasion-card"><div class="occasion-head"><span class="tag">مناسبة قادمة</span><span>◌</span></div><p class="countdown">بعد 7 أيام</p><h2>عيد الأضحى</h2><p>حملة إنسانية تدفع الجمهور للتوقف، المشاركة، والتذكّر.</p><div class="concept"><span>اتجاه الحملة</span><b>«اللحظة التي تجمعنا»</b><p>لقطات حِرفة، فرحة، وهوية محلية تنتقل من يد إلى يد.</p></div><button class="outline" data-action="storyboard">عرض الـ Storyboard ←</button></aside></section>
+<section class="card weekly" id="calendar-view"><div class="section-title"><div><p class="eyebrow">استراتيجية</p><h2>إيقاع النشر لهذا الأسبوع</h2></div><button class="ghost" data-view="calendar">فتح التقويم ←</button></div><div class="week-grid"><article><span>السبت</span><i class="type-reel"></i><b>ريل كواليس</b></article><article><span>الأحد</span><i class="type-story"></i><b>ستوري سؤال</b></article><article><span>الإثنين</span><i class="type-post"></i><b>بوست قيمة</b></article><article><span>الثلاثاء</span><i class="type-reel"></i><b>ريل نتائج</b></article><article><span>الأربعاء</span><i class="type-story"></i><b>ستوري تفاعل</b></article></div></section>
+<section class="idea-feature card" id="ideas-view"><div class="idea-number">01</div><div><span class="tag">فكرة الأسبوع</span><h2>خلف كل علامة <em>قصة</em></h2><p>سلسلة من 3 مقاطع قصيرة: سؤال العميل، لحظة الاكتشاف، والتحوّل إلى هوية حيّة.</p><div class="idea-meta"><span>3 مقاطع</span><span>ريل + ستوري</span><span>هدف: ثقة</span></div></div><button class="primary small" data-action="open-idea">افتح الفكرة ←</button></section>
+<section class="card insight"><span class="spark">✦</span><div><p class="eyebrow">توصية XPAND</p><h2>الناس تتفاعل مع «العملية» قبل النتيجة.</h2><p>ابدأ ريل اليوم بلقطة فوضى خلاقة، ثم انتقل إلى النتيجة النهائية خلال أول 3 ثوانٍ.</p></div><button class="ghost" data-action="copy-tip">نسخ التوصية</button></section>
+<nav><button class="nav-item active" data-view="home"><b>⌂</b><span>الرئيسية</span></button><button class="nav-item" data-view="calendar"><b>▦</b><span>التقويم</span></button><button class="nav-item" data-view="ideas"><b>✦</b><span>الأفكار</span></button><button class="nav-item" data-view="tasks"><b>☷</b><span>المهام</span></button></nav>
+</main><dialog id="command-dialog"><button class="dialog-close" data-action="close-dialog">×</button><div id="dialog-content"></div></dialog><div class="toast" id="toast" role="status"></div><script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/content-command/app.js"></script></body></html>
