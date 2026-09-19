@@ -72,7 +72,10 @@ XPAND_CONTENT_COMMAND_URL = os.environ.get(
     "XPAND_CONTENT_COMMAND_URL",
     os.environ.get(
         "CONTENT_COMMAND_URL",
-        ""
+        # The public XPAND command center is served by the companion call
+        # service.  A stable fallback means Telegram can still open the
+        # content tool after a variable migration or a fresh deployment.
+        "https://kemo-call-production-42ef.up.railway.app/content-command"
     )
 ).strip().rstrip("/")
 
