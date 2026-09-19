@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { defaultProfile, defaultSettings, localClock, ZONE } from "./core.js";
+import { campaignPresentation } from "./providers.js";
 export const id = () => crypto.randomUUID();
 export async function transaction(pool, fn) {
   const db = await pool.connect();
@@ -92,7 +93,7 @@ export class Store {
           [user],
         ),
         this.pool.query(
-          "SELECT * FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY updated_at DESC) AS rn FROM xpand_director_records WHERE user_id=$1 AND kind IN ('idea','occasion','notification','worker')) t WHERE rn<=200 ORDER BY updated_at DESC",
+          "SELECT * FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY updated_at DESC) AS rn FROM xpand_director_records WHERE user_id=$1 AND kind IN ('idea','occasion','notification','worker','provider')) t WHERE rn<=200 ORDER BY updated_at DESC",
           [user],
         ),
         this.pool.query(
@@ -108,11 +109,13 @@ export class Store {
       ok: true,
       now: localClock(),
       ...config,
-      campaigns: campaigns.rows.map(
-        ({ checkpoint, worker_id, lease_until, ...r }) => r,
-      ),
+      campaigns: campaigns.rows.map(campaignPresentation),
       tasks: tasks.rows,
-      records: records.rows,
+      records: records.rows.map((r) =>
+        r.kind === "provider"
+          ? { ...r, data: { ...r.data, fingerprint: undefined } }
+          : r,
+      ),
       usage: usage.rows[0],
       metrics: metrics.rows[0],
       integrations: { analytics: false, automatic_publishing: false },
@@ -134,7 +137,11 @@ export class Store {
         throw new Error("انتهت مهلة المهمة.");
       const { settings: s } = await this.config(job.user_id, db);
       const costs =
-        provider === "search" ? s.search_call_usd : s.model_call_usd;
+        provider === "grounding"
+          ? s.search_call_usd + s.model_call_usd
+          : provider === "search"
+            ? s.search_call_usd
+            : s.model_call_usd;
       if (costs > 0 && !s.pricing_confirmed)
         throw new Error("أسعار الخدمات لم تعتمد بعد.");
       const u = (

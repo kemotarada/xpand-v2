@@ -19,6 +19,17 @@ Production entry point: `server.js` mounts authenticated `/api/content` routes a
 
 Required existing service env: `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALLOWED_USER_ID`, `GEMINI_API_KEY`, `TAVILY_API_KEY`. Optional `XPAND_CONTENT_MODEL` overrides the service's configured tool model. No additional API keys are required. Secrets never enter the client.
 
+### Provider availability and quota recovery
+
+- `search_provider` is `auto` (Tavily then Gemini Google Search), `tavily`, or `gemini`. `XPAND_SEARCH_MODEL` optionally selects the grounding model; otherwise it follows the content model. Google Search has its own model/project quota: working text generation does not prove grounding is available. Models are never silently rotated to evade provider limits.
+- Grounding is accepted only with actual `webSearchQueries`, source chunks and supported citation segments. Model-written URLs are insufficient. Search Suggestions from Google are preserved and rendered in an isolated, script-free iframe. The UI identifies synthesized grounded excerpts, not directly inspected pages or videos.
+- Each fallback attempt is reserved against the existing call caps. A grounding request reserves the configured search **plus** model maximum cost. Pricing must cover both; no new paid subscription or billing setting is enabled. Failed calls still count toward local limits.
+- Provider health/cooldowns persist across deploys. HTTP 432/433 means Tavily plan/spend limit, 429 quota/rate limit, and 404 unavailable model. Repeating a request cannot repair these. Periodic scans pause when all configured research routes, or the selected text model, are blocked. The authenticated recheck action permits a fresh attempt after the operator has repaired quota/configuration, without resetting usage.
+- Old `[object Object]` limitations are displayed honestly as incomplete legacy research. Original records and results are preserved, not rewritten or deleted. Successful new retries clear obsolete limitations.
+- Enabling Telegram records an activation cutoff. Pre-activation pending notices remain in-app and are not sent as a historical backlog. Quiet hours and daily delivery caps still apply independently of research availability.
+
+Official API references: [Tavily status codes](https://help.tavily.com/articles/8645538886-understanding-http-errors), [Tavily usage](https://docs.tavily.com/documentation/api-reference/endpoint/usage), [Gemini search grounding](https://ai.google.dev/gemini-api/docs/generate-content/google-search). An API key being configured is not proof of service readiness.
+
 Settings in the UI store daily/monthly call limits, per-task calls, rounds, concurrency (1–2), job timeout, quiet hours, and conservative **per-request maximum cost reservations**. These are not provider billing data. The operator must supply verified upper-bound prices (including tokens/search depth) or confirm free quota with paid billing disabled. Provider-level caps remain recommended. Zero price is never proof of a free plan. No recurring work is enabled by this release automatically.
 
 Railway: service root `/call`, continuous web process, Serverless must remain OFF. This was verified in the existing deployment's settings on 2026-09-19. Healthcheck endpoint should be `/api/content/health`. Multiple worker instances coordinate through PostgreSQL. Do not set a cron schedule on the web service.

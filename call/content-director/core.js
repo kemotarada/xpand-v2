@@ -134,6 +134,7 @@ export const defaultProfile = {
   weekly_videos: 3,
 };
 export const defaultSettings = {
+  search_provider: "auto",
   recurring: false,
   interval_hours: 2,
   daily_calls: 20,
@@ -155,6 +156,9 @@ export const defaultSettings = {
 };
 export function settingsInput(v = {}) {
   const o = { ...defaultSettings };
+  o.search_provider = ["auto", "tavily", "gemini"].includes(v.search_provider)
+    ? v.search_provider
+    : "auto";
   for (const k of ["recurring", "pricing_confirmed", "telegram"])
     o[k] = v[k] === true;
   const ranges = {

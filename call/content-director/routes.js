@@ -11,6 +11,7 @@ import {
   hash,
 } from "./core.js";
 import { id, transaction } from "./store.js";
+import { campaignPresentation, messageText } from "./providers.js";
 
 export function registerRoutes(app, store, { token, allowed }) {
   const db = store.pool;
@@ -36,13 +37,11 @@ export function registerRoutes(app, store, { token, allowed }) {
     res.set("Cache-Control", "no-store");
     const u = webAppUser(req.get("x-telegram-init-data"), token, allowed);
     if (!u)
-      return res
-        .status(401)
-        .json({
-          ok: false,
-          error:
-            "افتح الأداة من زر تيليجرام. إذا بقيت مفتوحة أكثر من يوم أغلقها وأعد فتحها.",
-        });
+      return res.status(401).json({
+        ok: false,
+        error:
+          "افتح الأداة من زر تيليجرام. إذا بقيت مفتوحة أكثر من يوم أغلقها وأعد فتحها.",
+      });
     req.contentUser = u.id;
     next();
   });
@@ -52,14 +51,12 @@ export function registerRoutes(app, store, { token, allowed }) {
         res.json({ ok: true, ...(await fn(req, res)) });
       } catch (e) {
         console.warn("Content route:", e.code || e.name);
-        res
-          .status(e.status || 400)
-          .json({
-            ok: false,
-            error: e.code
-              ? "تعذر حفظ التغيير؛ حدّث الصفحة وحاول مجددًا."
-              : text(e.message, 600),
-          });
+        res.status(e.status || 400).json({
+          ok: false,
+          error: e.code
+            ? "تعذر حفظ التغيير؛ حدّث الصفحة وحاول مجددًا."
+            : text(messageText(e), 600),
+        });
       }
     });
   const ownedId = (req) => {
@@ -90,7 +87,7 @@ export function registerRoutes(app, store, { token, allowed }) {
       ),
     ]);
     return {
-      campaign: c,
+      campaign: campaignPresentation(c),
       sources: sources.rows,
       calls: calls.rows,
       feedback: feedback.filter((f) => f.data.campaign_id === c.id),
@@ -149,14 +146,41 @@ export function registerRoutes(app, store, { token, allowed }) {
     return {};
   });
   route("post", "/campaigns/:id/retry", async (r) => {
+    const prior = (
+      await db.query(
+        "SELECT checkpoint FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2",
+        [ownedId(r), r.contentUser],
+      )
+    ).rows[0];
+    if (prior?.checkpoint?.provider_issue) {
+      const issue = prior.checkpoint.provider_issue;
+      const provider = (await store.records(r.contentUser, "provider")).find(
+        (p) => p.record_key === issue.service,
+      )?.data;
+      if (
+        provider?.status === "blocked" &&
+        Date.parse(provider.retry_at) > Date.now()
+      )
+        throw new Error(
+          "الخدمة ما زالت متوقفة عند الحصة. عالج حصة المزود ثم اضغط «أعد التحقق» من حالة التشغيل؛ لم نستهلك محاولة جديدة.",
+        );
+    }
     const x = await db.query(
-      "UPDATE xpand_content_campaigns SET checkpoint=CASE WHEN status='needs_information' THEN checkpoint-'directions'-'selection'-'round'-'quality_issue' ELSE checkpoint END,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
+      "UPDATE xpand_content_campaigns SET checkpoint=(CASE WHEN status='needs_information' THEN checkpoint-'directions'-'selection'-'round'-'quality_issue' ELSE checkpoint END)-'provider_issue',limitations=NULL,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
       [ownedId(r), r.contentUser],
     );
     if (!x.rowCount)
       throw new Error(
         "لا يمكن إعادة المحاولة؛ الحد ثلاث محاولات. يمكنك إنشاء طلب جديد.",
       );
+    return {};
+  });
+  route("post", "/providers/recheck", async (r) => {
+    // Explicit operator action permits one new provider attempt, never erases usage.
+    await db.query(
+      "UPDATE xpand_director_records SET data=(data-'retry_at') || '{\"status\":\"unchecked\"}'::jsonb,updated_at=NOW() WHERE user_id=$1 AND kind='provider'",
+      [r.contentUser],
+    );
     return {};
   });
   route("put", "/profile", async (r) => {
@@ -181,14 +205,17 @@ export function registerRoutes(app, store, { token, allowed }) {
       profile: await store.record(r.contentUser, "profile", "main", data),
     };
   });
-  route("put", "/settings", async (r) => ({
-    settings: await store.record(
-      r.contentUser,
-      "settings",
-      "main",
-      settingsInput(r.body),
-    ),
-  }));
+  route("put", "/settings", async (r) => {
+    const previous = (await store.config(r.contentUser)).settings;
+    const next = settingsInput(r.body);
+    next.telegram_since = next.telegram
+      ? (previous.telegram && previous.telegram_since) ||
+        new Date().toISOString()
+      : null;
+    return {
+      settings: await store.record(r.contentUser, "settings", "main", next),
+    };
+  });
   route("post", "/tasks", async (r) => {
     const title = text(r.body.title, 300);
     if (title.length < 3) throw new Error("اكتب اسم المهمة.");

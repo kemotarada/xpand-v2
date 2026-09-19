@@ -5,8 +5,18 @@ tg?.setHeaderColor("#062968");
 tg?.setBackgroundColor("#062968");
 const $ = (s) => document.querySelector(s),
   dialog = $("#command-dialog");
+const readable = (v) =>
+  v == null
+    ? ""
+    : typeof v === "object"
+      ? v.message
+        ? readable(v.message)
+        : v.error
+          ? readable(v.error)
+          : JSON.stringify(v, null, 2)
+      : String(v);
 const esc = (v) =>
-  String(v ?? "").replace(
+  readable(v).replace(
     /[&<>"']/g,
     (c) =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
@@ -28,7 +38,8 @@ const labels = {
   running: "يعمل الآن",
   completed: "اكتملت",
   failed: "تعذرت",
-  blocked: "متوقفة عند الحد",
+  blocked: "متوقفة — تحتاج معالجة",
+  unverified_result: "سجل قديم — البحث غير مكتمل",
   needs_information: "تحتاج معلومات",
   cancelled: "ملغاة",
   planned: "مخطط",
@@ -106,7 +117,7 @@ async function api(path, options = {}) {
     signal: AbortSignal.timeout(25000),
   });
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error || "تعذر إتمام الطلب.");
+  if (!r.ok) throw new Error(readable(data.error) || "تعذر إتمام الطلب.");
   return data;
 }
 function open(title, body) {
@@ -137,7 +148,8 @@ function showView(name) {
 const taskEntry = (t) =>
   `<article class="entry"><div>${badge(t.status)}${t.locked ? badge("اتجاه مثبت") : ""}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><p class="small-note">إنتاج: ${fmt(t.production_at)}<br>مراجعة: ${fmt(t.review_at)}<br>نشر مقترح: ${fmt(t.planned_at)}${t.actual_published_at ? "<br>النشر الفعلي: " + fmt(t.actual_published_at) : ""}</p>${button("task", "الحالة والمواعيد", t.id)}</article>`;
 function campaignEntry(c) {
-  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(c.status, ["failed", "blocked", "needs_information"].includes(c.status))}${badge(c.kind === "scan" ? "فحص دوري" : "حملة")}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(stages[c.stage] || labels[c.stage] || c.stage)}</p><p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "التفاصيل وسجل البحث", c.id)}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}</div></article>`;
+  const status = c.display_status || c.status;
+  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(status, ["failed", "blocked", "needs_information", "unverified_result"].includes(status))}${badge(c.kind === "scan" ? "فحص دوري" : "حملة")}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(status === "unverified_result" ? "المحتوى السابق محفوظ للمراجعة، وليس حملة موثّقة جاهزة" : stages[c.stage] || labels[c.stage] || c.stage)}</p><p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "التفاصيل وسجل البحث", c.id)}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}${status === "unverified_result" ? button("research-again", "بحث جديد لهذا الطلب", c.id) : ""}</div></article>`;
 }
 function notificationEntry(n) {
   return `<article class="entry">${!n.data.read ? badge("جديد") : ""}<p>${esc(n.data.message)}</p><small class="muted">${fmt(n.created_at)} · تيليجرام: ${esc({ pending: "بانتظار التفعيل أو وقت الإرسال", sent: "أُرسلت", sending: "إرسال غير مؤكد بعد", uncertain: "نتيجة الإرسال غير مؤكدة؛ لم نكرر الرسالة", failed: "تعذر الإرسال" }[n.data.delivery] || "غير مرسلة")}</small><div class="actions">${n.data.entity_id ? button("notice-target", "فتح السجل", n.data.entity_id) : ""}${!n.data.read ? button("read", "تمت القراءة", n.id) : ""}</div></article>`;
@@ -194,10 +206,15 @@ function render() {
     ns.map(notificationEntry).join("") || empty("لا تنبيهات مسجلة.");
   const runtime = s.records.find((r) => r.kind === "worker")?.data;
   const workerAlive =
-    runtime?.last_tick && Date.parse(s.now.iso) - Date.parse(runtime.last_tick) < 180000;
+    runtime?.last_tick &&
+    Date.parse(s.now.iso) - Date.parse(runtime.last_tick) < 180000;
   const p = s.settings;
+  const providerRows = s.records.filter((r) => r.kind === "provider");
+  const blockedProviders = providerRows.filter(
+    (r) => r.data.status === "blocked",
+  );
   $("#operations").innerHTML =
-    `<p>${badge(p.recurring && workerAlive ? "البحث الدوري يعمل" : p.recurring ? "البحث مفعّل؛ نبض العامل غير حديث" : "البحث الدوري غير مفعّل", !p.recurring || !workerAlive)} ${p.recurring ? `كل ${p.interval_hours} ساعة، ضمن الحدود` : "يلزم اعتماد حدود التشغيل في الإعدادات."}</p><p class="muted">طلبات الخدمات اليوم: ${s.usage.daily_calls} / ${p.daily_calls} · هذا الشهر: ${s.usage.monthly_calls} / ${p.monthly_calls}<br>تكلفة محجوزة تقديرية: ${Number(s.usage.daily_reserved_usd).toFixed(3)} دولار اليوم. ليست فاتورة المزود.<br>تحليلات الحسابات غير مربوطة حاليًا. النشر يدوي؛ لا أرقام أداء افتراضية.</p>${button("profile", "ضبط المعرفة والقدرة والحدود")}`;
+    `<p>${badge(runtime?.paused_for_provider ? "البحث متوقف عند مزود الخدمة" : p.recurring && workerAlive ? "البحث الدوري يعمل" : p.recurring ? "البحث مفعّل؛ نبض العامل غير حديث" : "البحث الدوري غير مفعّل", !p.recurring || !workerAlive || runtime?.paused_for_provider)} ${p.recurring ? `كل ${p.interval_hours} ساعة، ضمن الحدود` : "يلزم اعتماد حدود التشغيل في الإعدادات."}</p><p>تنبيهات تيليجرام: ${p.telegram ? `مفعّلة · بحد ${p.notification_cap} رسائل يوميًا · هدوء ${p.quiet_start}:00–${p.quiet_end}:00` : "غير مفعّلة"}</p><p class="muted">طلبات الخدمات اليوم: <bdi>${s.usage.daily_calls} / ${p.daily_calls}</bdi> · هذا الشهر: <bdi>${s.usage.monthly_calls} / ${p.monthly_calls}</bdi><br>تكلفة محجوزة تقديرية: ${Number(s.usage.daily_reserved_usd).toFixed(3)} دولار اليوم. ليست فاتورة المزود ولا دليل حصة متاحة.<br>تحليلات الحسابات غير مربوطة حاليًا. النشر يدوي؛ لا أرقام أداء افتراضية.</p>${blockedProviders.map((r) => `<div class="error"><bdi>${esc(r.record_key)}</bdi><p>${esc(r.data.message)}</p><small>آخر فحص: ${fmt(r.data.checked_at)} · إعادة محاولة مؤهلة بعد: ${fmt(r.data.retry_at)}</small></div>`).join("")}${blockedProviders.length ? button("provider-recheck", "أعد التحقق بعد معالجة حصة المزود") : ""}${button("profile", "ضبط المعرفة والقدرة والحدود")}`;
   renderTasks();
   renderCalendar();
   renderIdeas();
@@ -376,7 +393,7 @@ async function openCampaign(id) {
     quality_review: "خلاصة فحص الجودة",
     success_criterion: "معيار تقييم النتيجة",
   };
-  let body = `${badge(c.status)}<p class="muted">${esc(c.request_text)}</p><p class="small-note">بدأ: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)} · محاولة ${c.attempts} من 3</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<p>${esc(stages[c.stage] || labels[c.stage] || c.stage)}</p>`;
+  let body = `${badge(c.display_status || c.status)}<p class="muted">${esc(c.request_text)}</p><p class="small-note">بدأ: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)} · محاولة ${c.attempts} من 3</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<p>${esc(c.display_status === "unverified_result" ? "بحث سابق غير مكتمل" : stages[c.stage] || labels[c.stage] || c.stage)}</p>`;
   if (r.title) {
     body += `<div class="detail-grid">${Object.entries(sections)
       .filter(([k]) => r[k] !== null && r[k] !== undefined)
@@ -424,6 +441,21 @@ async function openCampaign(id) {
       })
       .join("") || empty("لا مراجع محفوظة بعد.")
   }</details>`;
+  const suggestions = [
+    ...new Set(
+      d.sources
+        .map((s) => {
+          try {
+            return JSON.parse(s.observation).search_suggestions;
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean),
+    ),
+  ];
+  if (suggestions.length)
+    body += `<section><h3>اقتراحات Google Search</h3>${suggestions.map((html) => `<iframe title="اقتراحات البحث من Google" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" style="width:100%;height:150px;border:0;background:white;border-radius:12px" srcdoc="${esc(`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; base-uri 'none'; form-action 'none'">` + html)}"></iframe>`).join("")}</section>`;
   body += `<details><summary>سجل اتصالات البحث والنموذج (${d.calls.length})</summary>${d.calls.map((x) => `<article class="entry"><b>${esc(x.provider)} · ${esc(x.status)}</b><p>${fmt(x.created_at)}<br>${esc(x.error || "")}</p><pre class="audit">${esc(JSON.stringify(x.usage || {}, null, 2))}</pre></article>`).join("") || empty("لم تُنفذ اتصالات بعد.")}<p class="small-note">حصة الطلب تُحجز قبل الاتصال لمنع تجاوز الحدود عند إعادة التشغيل. الحجز لا يعني نجاح الطلب.</p></details>`;
   if (c.status === "completed" && c.kind === "campaign")
     body += `<div class="actions">${button("edit-campaign", "تعديل المحتوى مع حفظ نسخة")}${button("feedback", "تقييم الفكرة أو تسجيل نتيجة")}${button("export", "تنزيل التفاصيل JSON")}</div><details><summary>الملاحظات والإصدارات (${d.feedback.length} / ${d.versions.length})</summary>${d.feedback.map((f) => `<p>${esc(f.data.type)}: ${esc(f.data.note)} · ${fmt(f.created_at)}</p>`).join("")}${d.versions.map((v) => `<details><summary>نسخة محفوظة ${fmt(v.created_at)}</summary><pre class="audit">${esc(JSON.stringify(v.snapshot.result || v.snapshot, null, 2))}</pre></details>`).join("")}</details>`;
@@ -478,6 +510,21 @@ function profileForm() {
         "",
       )}<label>عمق البحث<select name="depth"><option value="basic" ${s.depth === "basic" ? "selected" : ""}>أساسي</option><option value="advanced" ${s.depth === "advanced" ? "selected" : ""}>متقدم (تحقق من التكلفة)</option></select></label></div><label class="check-label"><input type="checkbox" name="pricing_confirmed" ${s.pricing_confirmed ? "checked" : ""}> تحققت من الأسعار / الحصة المجانية وحدود الإنفاق.</label><label class="check-label"><input type="checkbox" name="recurring" ${s.recurring ? "checked" : ""}> تفعيل البحث الدوري في الخلفية</label><label class="check-label"><input type="checkbox" name="telegram" ${s.telegram ? "checked" : ""}> إرسال تنبيهات لهذا المستخدم على تيليجرام</label><p class="small-note">كل الأوقات حسب الخليل. لا رسائل في ساعات الهدوء ولا رسائل إلى العملاء.</p><button class="primary dialog-submit">اعتماد إعدادات التشغيل</button></form>`,
   );
+  dialog.querySelector('[data-form="settings"] .fields').insertAdjacentHTML(
+    "afterbegin",
+    `<label class="full">مصدر البحث<select name="search_provider">${[
+      ["auto", "تلقائي: Tavily ثم بحث Google عبر Gemini عند التعذر"],
+      ["tavily", "Tavily فقط"],
+      ["gemini", "بحث Google عبر Gemini فقط"],
+    ]
+      .map(
+        ([v, name]) =>
+          `<option value="${v}" ${s.search_provider === v ? "selected" : ""}>${name}</option>`,
+      )
+      .join(
+        "",
+      )}</select><small>النموذج يحتاج حصة لأداة البحث نفسها. البديل ليس ضمانًا للمجانية أو تجاوزًا للحصة؛ يحتسب ضمن حدودك.</small></label>`,
+  );
   dialog
     .querySelectorAll("input[type=number]")
     .forEach(
@@ -520,7 +567,18 @@ document.addEventListener("click", async (e) => {
     else if (a === "autonomous") campaignForm(true);
     else if (a === "campaign") await openCampaign(id);
     else if (a === "profile") profileForm();
-    else if (a === "new-task") taskForm();
+    else if (a === "research-again")
+      campaignForm(
+        false,
+        state.campaigns.find((c) => c.id === id)?.request_text || "",
+      );
+    else if (a === "provider-recheck") {
+      await api("/providers/recheck", { method: "POST" });
+      toast(
+        "أُتيح فحص الخدمة عند استكمال الحملة. لم يُمسح الاستهلاك ولم تُفعّل فوترة.",
+      );
+      await load();
+    } else if (a === "new-task") taskForm();
     else if (a === "task") taskForm(state.tasks.find((t) => t.id === id));
     else if (a === "cancel" || a === "retry") {
       await api(`/campaigns/${id}/${a}`, { method: "POST" });

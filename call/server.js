@@ -5915,6 +5915,7 @@ async function start() {
   const contentWorker = new Worker(contentStore, {
     geminiKey: GEMINI_API_KEY, searchKey: TAVILY_API_KEY,
     model: process.env.XPAND_CONTENT_MODEL || TOOL_MODEL,
+    searchModel: process.env.XPAND_SEARCH_MODEL || process.env.XPAND_CONTENT_MODEL || TOOL_MODEL,
     token: TELEGRAM_BOT_TOKEN, allowed: TELEGRAM_ALLOWED_USER_ID
   }).start();
   process.on('SIGTERM', () => { contentWorker.stop(); setTimeout(() => process.exit(0), 1000).unref(); });

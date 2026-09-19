@@ -137,7 +137,7 @@ test("search failure is visible; cancellation prevents later stages", async () =
     );
     await worker.run(await worker.claim());
     const c = await f.api("/campaigns/" + campaignId);
-    assert.equal(c.campaign.status, "failed");
+    assert.equal(c.campaign.status, "blocked");
     assert.match(c.campaign.limitations, /429/);
     assert.equal((await f.api("/dashboard")).tasks.length, 0);
     const secondId = await enqueue(f);
