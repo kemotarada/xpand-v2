@@ -744,7 +744,8 @@ export class Worker {
       await tx.query("SELECT pg_advisory_xact_lock(884422110)");
       // Crash recovery retains checkpoints; retries never reset consumption.
       await tx.query(
-        "UPDATE xpand_content_campaigns SET status='failed',stage='failed',limitations='انتهت المهلة أو محاولات الاستعادة؛ العمل الجزئي محفوظ.',lease_until=NULL WHERE status IN ('queued','running') AND ((deadline_at IS NOT NULL AND deadline_at<NOW()) OR (attempts>=3 AND (lease_until IS NULL OR lease_until<NOW())))",
+        "UPDATE xpand_content_campaigns SET status='failed',stage='failed',limitations='انتهت المهلة أو محاولات الاستعادة؛ العمل الجزئي محفوظ.',lease_until=NULL WHERE user_id=$1 AND status IN ('queued','running') AND ((deadline_at IS NOT NULL AND deadline_at<NOW()) OR (attempts>=3 AND (lease_until IS NULL OR lease_until<NOW())))",
+        [this.allowed],
       );
       const rows = (
         await tx.query(
