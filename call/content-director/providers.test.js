@@ -202,7 +202,18 @@ test("Telegram opt-in does not send old pending notifications or reset its activ
     await f.pool.query(
       "UPDATE xpand_director_records SET created_at=NOW()-INTERVAL '1 day' WHERE record_key='before-opt-in'",
     );
+    let databaseClockReads = 0;
+    const query = f.pool.query;
+    f.pool.query = async (sql, params) => {
+      if (sql.includes("clock_timestamp() AS instant")) databaseClockReads++;
+      return query(sql, params);
+    };
     await f.api("/settings", "PUT", { ...defaultSettings, telegram: true });
+    assert.equal(
+      databaseClockReads,
+      1,
+      "cutoff must use the same database clock as notification creation",
+    );
     const first = (await f.store.config(TEST_USER)).settings;
     await f.api("/settings", "PUT", { ...first, daily_calls: 19 });
     assert.equal(

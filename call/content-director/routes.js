@@ -205,17 +205,32 @@ export function registerRoutes(app, store, { token, allowed }) {
       profile: await store.record(r.contentUser, "profile", "main", data),
     };
   });
-  route("put", "/settings", async (r) => {
-    const previous = (await store.config(r.contentUser)).settings;
-    const next = settingsInput(r.body);
-    next.telegram_since = next.telegram
-      ? (previous.telegram && previous.telegram_since) ||
-        new Date().toISOString()
-      : null;
-    return {
-      settings: await store.record(r.contentUser, "settings", "main", next),
-    };
-  });
+  route("put", "/settings", async (r) =>
+    transaction(db, async (tx) => {
+      await tx.query("SELECT pg_advisory_xact_lock($1::bigint)", [
+        r.contentUser,
+      ]);
+      const previous = (await store.config(r.contentUser, tx)).settings;
+      const next = settingsInput(r.body);
+      // Use the notification database's clock: even a few ms of host skew can exclude new notices.
+      const databaseNow = (
+        await tx.query("SELECT clock_timestamp() AS instant")
+      ).rows[0].instant;
+      next.telegram_since = next.telegram
+        ? (previous.telegram && previous.telegram_since) ||
+          new Date(databaseNow).toISOString()
+        : null;
+      return {
+        settings: await store.record(
+          r.contentUser,
+          "settings",
+          "main",
+          next,
+          tx,
+        ),
+      };
+    }),
+  );
   route("post", "/tasks", async (r) => {
     const title = text(r.body.title, 300);
     if (title.length < 3) throw new Error("اكتب اسم المهمة.");
