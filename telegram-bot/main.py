@@ -66,6 +66,16 @@ KEMO_CALL_URL = os.environ.get(
     ""
 ).strip().rstrip("/")
 
+# Public URL of the XPAND editorial Telegram Web App.  Keeping it separate
+# from the call URL lets one bot open both tools without coupling their UIs.
+XPAND_CONTENT_COMMAND_URL = os.environ.get(
+    "XPAND_CONTENT_COMMAND_URL",
+    os.environ.get(
+        "CONTENT_COMMAND_URL",
+        ""
+    )
+).strip().rstrip("/")
+
 KEMO_TIMEZONE = os.environ.get(
     "KEMO_TIMEZONE",
     "Asia/Hebron"

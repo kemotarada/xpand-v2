@@ -1256,11 +1256,81 @@ ORIGINAL_HANDLE_COMMAND = (
 )
 
 
+def xpand_content_command_markup():
+
+    if not core.XPAND_CONTENT_COMMAND_URL:
+        return None
+
+
+    return {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "✦ أداة محتوى XPAND",
+                    "web_app": {
+                        "url": core.XPAND_CONTENT_COMMAND_URL
+                    }
+                }
+            ]
+        ]
+    }
+
+
+def is_content_command_request(text):
+
+    normalized = str(text or "").strip().lower()
+    normalized = normalized.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+
+    triggers = (
+        "/content",
+        "/xpandcontent",
+        "افتح اداة المحتوى",
+        "اداة المحتوى",
+        "لوحة المحتوى",
+        "content command"
+    )
+
+    return any(
+        trigger in normalized
+        for trigger in triggers
+    )
+
+
 def xpand_handle_command(
     chat_id,
     user_id,
     text
 ):
+
+    if is_content_command_request(
+        text
+    ):
+
+        markup = xpand_content_command_markup()
+
+        if not markup:
+            core.send_message(
+                chat_id,
+                "أداة المحتوى جاهزة بالكود، لكن رابطها العام لم يُضبط بعد. "
+                "أضف XPAND_CONTENT_COMMAND_URL في إعدادات الخدمة."
+            )
+
+            return True
+
+
+        core.telegram_request(
+            "sendMessage",
+            {
+                "chat_id": chat_id,
+                "text": (
+                    "غرفة قيادة محتوى XPAND جاهزة يا إيهاب.\n\n"
+                    "من هنا تراجع خطة النشر، الأفكار، المناسبات والمهام المفتوحة."
+                ),
+                "reply_markup": markup
+            }
+        )
+
+        return True
 
     if str(
         text or ""
