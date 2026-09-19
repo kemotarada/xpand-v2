@@ -132,6 +132,27 @@ class STCAdBrain:
                     },
                     factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
                     brand_memory_tag="stc_bank_merchant_2024"
+                ),
+                AdCopy(
+                    copy_id="mp_premium_02",
+                    benefit_extracted="Unified merchant insights and instant reconciliation across all customer touchpoints.",
+                    hook_ar="رؤية شاملة لأعمالك.. كل معاملة في مكانها الصحيح.",
+                    hook_en="Comprehensive view of your business.. every transaction in its right place.",
+                    headline_ar="إدارة مالية توحّد نبض تجارتك",
+                    headline_en="Financial Management Unifying Your Commerce",
+                    body_copy_ar="راقب أداء مبيعاتك لحظة بلحظة واكتشف سهولة الإدارة المالية الموحدة مع حلول بنك stc المصممة لنمو أعمالك.",
+                    body_copy_en="Monitor your sales performance in real-time and discover the ease of unified financial management with stc bank solutions designed for business growth.",
+                    cta_ar="استكشف الحلول",
+                    cta_en="Explore solutions",
+                    saudi_cultural_fit="Matches the ambition of modern Saudi enterprises expanding rapidly across diverse channels.",
+                    channel_variants={
+                        "twitter": {
+                            "ar": "إدارة مبيعاتك أصبحت أكثر ذكاءً واطمئناناً. اكتشف حلول تجار بنك stc. 📊 #بنك_stc",
+                            "en": "Managing your sales is now smarter and more reassuring. Discover stc bank merchant solutions. 📊 #stc_bank"
+                        }
+                    },
+                    factuality_note="No specific revenue multipliers or reporting speed claims are made. Focuses on clarity and unified overview.",
+                    brand_memory_tag="stc_bank_merchant_insights_2024"
                 )
             ] 
         elif benefit_family == "international_transfer":
@@ -490,6 +511,7 @@ def run_validation() -> bool:
     assert "twitter" in copies[0].channel_variants, "Missing twitter variant"
     assert "instagram" in copies[0].channel_variants, "Missing instagram variant"
     assert "linkedin" in copies[0].channel_variants, "Missing linkedin variant"
+    assert copies[1].brand_memory_tag == "stc_bank_merchant_insights_2024", "Missing brand memory tag"
 
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
@@ -541,6 +563,7 @@ if __name__ == "__main__":
         print(f"  Hook AR: {copy.hook_ar}")
         print(f"  Saudi Fit: {copy.saudi_cultural_fit}")
         print(f"  Factuality: {copy.factuality_note}")
+        print(f"  Brand Memory: {copy.brand_memory_tag}")
     
     copies_it = brain.generate_premium_copy("international_transfer")
     print(f"generated_copies (intl) = {len(copies_it)}")
