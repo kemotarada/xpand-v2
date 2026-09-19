@@ -7,13 +7,19 @@
     <title>XPAND · المدير الإبداعي</title>
     <link rel="stylesheet" href="/content-command/style.css" />
     <link rel="stylesheet" href="/content-command/director.css" />
+    <link rel="stylesheet" href="/content-command/studio.css" />
   </head>
   <body>
     <main class="shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark">›</span>
-          <div><b>XPAND</b><small>CONTENT DIRECTOR</small></div>
+          <div class="brand-crop">
+            <img
+              src="/content-command/assets/xpand-logo.png"
+              alt="XPAND Creative Agency"
+            />
+          </div>
+          <small>CONTENT STUDIO / 03</small>
         </div>
         <button class="profile" data-action="profile">
           ملف الشركة والإعدادات
@@ -34,10 +40,12 @@
         <div class="actions">
           <button class="primary" data-action="new">＋ أنشئ حملة جديدة</button
           ><button class="ghost" data-action="autonomous">
-            خطّط حملة مناسبة الآن ←
+            اقترح اتجاهًا إبداعيًا ←
           </button>
         </div>
-        <div class="hero-orbit" aria-hidden="true"><span>XP</span></div>
+        <div class="hero-orbit chevrons" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </div>
       </section>
       <section
         id="metrics"
@@ -49,9 +57,13 @@
         <div class="workspace">
           <section class="card">
             <div class="section-title">
-              <h2>على طاولة الإنتاج اليوم</h2>
+              <h2>شغل اليوم · خطوة بخطوة</h2>
               <button class="ghost" data-view="tasks">كل المهام</button>
             </div>
+            <p class="section-help">
+              ما تعمل عليه اليوم: فكرة أو إنتاج أو مراجعة أو نشر. موعد النشر
+              وحده لا يحدد يوم العمل.
+            </p>
             <div id="today"></div>
           </section>
           <section class="card">
@@ -64,9 +76,13 @@
         </div>
         <section class="card spaced">
           <div class="section-title">
-            <h2>آخر الحملات</h2>
+            <h2>مكتبة الأفكار وملفات الإنتاج</h2>
             <button class="ghost" data-view="campaigns">السجل الكامل</button>
           </div>
+          <p class="section-help">
+            هنا آخر الأفكار التي طلبتها ونتائج البحث، وليست قائمة واجبات اليوم.
+            مواعيد تنفيذها تظهر في التقويم والمهام المرتبطة.
+          </p>
           <div id="campaign-preview"></div>
         </section>
         <section class="card spaced">
@@ -105,10 +121,24 @@
           </div>
         </div>
         <p class="muted">
-          بتوقيت الخليل · إنتاج / مراجعة / نشر مقترح / نشر فعلي. لا يُسجّل النشر
-          إلا بتأكيدكم.
+          اختر يومًا لترى المطلوب وكيف تنفذه. اليوم غير المخطط ليس يوم راحة
+          تلقائيًا. كل المواعيد بتوقيت الخليل، والنشر يبقى مقترحًا حتى تأكيدك.
         </p>
-        <div id="calendar" class="calendar-grid"></div>
+        <div class="calendar-toolbar">
+          <div class="calendar-legend">
+            <span class="production">● إنتاج</span
+            ><span class="review">● مراجعة</span
+            ><span class="publish">● نشر مقترح</span
+            ><span class="daily">● شغل يومي</span>
+          </div>
+          <button class="primary" data-action="plan-week">
+            خطّط 7 أيام عمل متنوع ＋
+          </button>
+        </div>
+        <div class="calendar-layout">
+          <div id="calendar" class="calendar-grid"></div>
+          <aside id="day-detail" class="card" aria-live="polite"></aside>
+        </div>
       </section>
       <section id="ideas-view" class="view" hidden>
         <h2>بنك الفرص الإبداعية</h2>

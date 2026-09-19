@@ -45,7 +45,7 @@ test("real SQL migration, authenticated API, durable pipeline and task history",
       details.campaign.limitations,
     );
     assert.equal(details.sources.length, 1);
-    assert.equal(calls.model, 4);
+    assert.equal(calls.model, 6);
     assert.equal(calls.search, 2);
     let dash = await f.api("/dashboard");
     assert.equal(dash.tasks.length, 1);

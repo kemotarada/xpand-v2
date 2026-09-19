@@ -1,3 +1,5 @@
+import { taskEvents, effortLabel } from "./planning.js";
+import { creativeView } from "./creative-view.js";
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
@@ -28,6 +30,7 @@ const ZONE = "Asia/Hebron",
 let state = null,
   loading = false,
   month = null,
+  selectedDay = null,
   serverAt = 0,
   receivedAt = 0,
   lastDay = "",
@@ -61,6 +64,12 @@ const stages = {
   understanding: "فهم الطلب والسياق",
   collecting_references: "جمع المراجع",
   reading_references: "قراءة مراجع إبداعية عامة مباشرة",
+  reading_sources: "فتح نصوص المصادر ومقارنتها",
+  extracting_insights: "ربط ملاحظات البحث بفرص إبداعية",
+  writing_storyboard: "كتابة الستوري بورد ثانية بثانية",
+  checking_timing: "فحص التوقيت والكلام والنصوص",
+  planning_week: "توزيع شغل متنوع على أيام الأسبوع",
+  saving_week: "حفظ خطة الأيام دون استبدال أعمالك",
   developing_directions: "تطوير اتجاهات مختلفة",
   evaluating: "تقييم واختيار الاتجاه",
   preparing_plan: "كتابة خطة الإنتاج",
@@ -147,14 +156,15 @@ function showView(name) {
     });
 }
 const taskEntry = (t) =>
-  `<article class="entry"><div>${badge(t.status)}${t.locked ? badge("اتجاه مثبت") : ""}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><p class="small-note">إنتاج: ${fmt(t.production_at)}<br>مراجعة: ${fmt(t.review_at)}<br>نشر مقترح: ${fmt(t.planned_at)}${t.actual_published_at ? "<br>النشر الفعلي: " + fmt(t.actual_published_at) : ""}</p>${button("task", "الحالة والمواعيد", t.id)}</article>`;
+  `<article class="entry"><div>${badge(t.status)}${t.locked ? badge("اتجاه مثبت") : ""}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><p class="small-note">إنتاج: ${fmt(t.production_at)}<br>مراجعة: ${fmt(t.review_at)}<br>نشر مقترح: ${fmt(t.planned_at)}${t.actual_published_at ? "<br>النشر الفعلي: " + fmt(t.actual_published_at) : ""}</p><div class="actions">${t.campaign_id ? button("campaign", "الفكرة والستوري بورد", t.campaign_id) : ""}${button("task", "الحالة والمواعيد", t.id)}</div></article>`;
 function campaignEntry(c) {
   const status = c.display_status || c.status;
   const evidence =
     c.result?.research_mode === "direct_references"
       ? badge("مراجع عامة مقروءة مباشرة")
       : "";
-  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(status, ["failed", "blocked", "needs_information", "unverified_result"].includes(status))}${badge(c.kind === "scan" ? "فحص دوري" : "حملة")}${evidence}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(status === "unverified_result" ? "المحتوى السابق محفوظ للمراجعة، وليس حملة موثّقة جاهزة" : stages[c.stage] || labels[c.stage] || c.stage)}</p><p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "التفاصيل وسجل البحث", c.id)}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}${status === "unverified_result" ? button("research-again", "بحث جديد لهذا الطلب", c.id) : ""}</div></article>`;
+  const task = state?.tasks.find((t) => t.campaign_id === c.id);
+  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(status, ["failed", "blocked", "needs_information", "unverified_result"].includes(status))}${badge(c.kind === "scan" ? "فحص دوري" : c.kind === "week" ? "خطة أسبوع" : "ملف فكرة وإنتاج")}${evidence}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(status === "unverified_result" ? "المحتوى السابق محفوظ للمراجعة، وليس حملة موثّقة جاهزة" : stages[c.stage] || labels[c.stage] || c.stage)}</p>${task ? `<p class="small-note">بدء العمل: ${fmt(task.production_at)} · النشر المقترح: ${fmt(task.planned_at)}</p>` : ""}<p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "الفكرة والتفاصيل وسجل البحث", c.id)}${task ? button("task", "مهمة التنفيذ المرتبطة", task.id) : ""}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}${status === "unverified_result" ? button("research-again", "بحث جديد لهذا الطلب", c.id) : ""}</div></article>`;
 }
 function notificationEntry(n) {
   return `<article class="entry">${!n.data.read ? badge("جديد") : ""}<p>${esc(n.data.message)}</p><small class="muted">${fmt(n.created_at)} · تيليجرام: ${esc({ pending: "بانتظار التفعيل أو وقت الإرسال", sent: "أُرسلت", sending: "إرسال غير مؤكد بعد", uncertain: "نتيجة الإرسال غير مؤكدة؛ لم نكرر الرسالة", failed: "تعذر الإرسال" }[n.data.delivery] || "غير مرسلة")}</small><div class="actions">${n.data.entity_id ? button("notice-target", "فتح السجل", n.data.entity_id) : ""}${!n.data.read ? button("read", "تمت القراءة", n.id) : ""}</div></article>`;
@@ -173,18 +183,7 @@ function render() {
         `<article><strong>${s.metrics[k]}</strong><span>${l}</span></article>`,
     )
     .join("");
-  const dayTasks = s.tasks
-    .filter((t) => !["published", "cancelled", "postponed"].includes(t.status))
-    .filter(
-      (t) =>
-        [t.production_at, t.review_at, t.planned_at].some(
-          (v) => v && localDate(v).date === s.now.localDate,
-        ) ||
-        (t.planned_at && new Date(t.planned_at) < new Date(s.now.iso)),
-    );
-  $("#today").innerHTML = dayTasks.length
-    ? dayTasks.slice(0, 5).map(taskEntry).join("")
-    : empty("لا مهام مستحقة اليوم. المواعيد غير المحددة تبقى في صفحة المهام.");
+  $("#today").innerHTML = dayAgenda(s.now.localDate, true);
   $("#jobs").innerHTML = s.campaigns
     .filter((c) => ["running", "queued"].includes(c.status))
     .map(campaignEntry)
@@ -225,7 +224,8 @@ function render() {
   $("#operations").innerHTML =
     `<p>${badge(runtime?.paused_for_provider ? "البحث متوقف عند مزود الخدمة" : p.recurring && workerAlive ? "البحث الدوري يعمل" : p.recurring ? "البحث مفعّل؛ نبض العامل غير حديث" : "البحث الدوري غير مفعّل", !p.recurring || !workerAlive || runtime?.paused_for_provider)} ${p.recurring ? `كل ${p.interval_hours} ساعة، ضمن الحدود` : "يلزم اعتماد حدود التشغيل في الإعدادات."}</p><p>تنبيهات تيليجرام: ${p.telegram ? `مفعّلة · بحد ${p.notification_cap} رسائل يوميًا · هدوء ${p.quiet_start}:00–${p.quiet_end}:00` : "غير مفعّلة"}</p><p class="muted">طلبات الخدمات اليوم: <bdi>${s.usage.daily_calls} / ${p.daily_calls}</bdi> · هذا الشهر: <bdi>${s.usage.monthly_calls} / ${p.monthly_calls}</bdi><br>تكلفة محجوزة تقديرية: ${Number(s.usage.daily_reserved_usd).toFixed(3)} دولار اليوم. ليست فاتورة المزود ولا دليل حصة متاحة.<br>تحليلات الحسابات غير مربوطة حاليًا. النشر يدوي؛ لا أرقام أداء افتراضية.</p>${blockedProviders.map((r) => `<div class="error"><bdi>${esc(r.record_key)}</bdi><p>${esc(r.data.message)}</p><small>آخر فحص: ${fmt(r.data.checked_at)} · إعادة محاولة مؤهلة بعد: ${fmt(r.data.retry_at)}</small></div>`).join("")}${blockedProviders.length ? button("provider-recheck", "أعد التحقق بعد معالجة حصة المزود") : ""}${button("profile", "ضبط المعرفة والقدرة والحدود")}`;
   renderTasks();
-  if (runtime?.paused_for_provider) $("#operations .badge").textContent = "البحث الشامل / الدوري متوقف";
+  if (runtime?.paused_for_provider)
+    $("#operations .badge").textContent = "البحث الشامل / الدوري متوقف";
   if (["auto", "direct"].includes(p.search_provider)) {
     const note = document.createElement("p");
     note.className = "small-note";
@@ -262,6 +262,11 @@ function renderTasks() {
 function renderCalendar() {
   if (!state) return;
   month ||= state.now.localDate.slice(0, 7);
+  if (!selectedDay || !selectedDay.startsWith(month))
+    selectedDay =
+      month === state.now.localDate.slice(0, 7)
+        ? state.now.localDate
+        : month + "-01";
   const start = new Date(month + "-01T12:00:00Z");
   const days = new Date(
     Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0),
@@ -288,26 +293,84 @@ function renderCalendar() {
   ).join("");
   for (let day = 1; day <= days; day++) {
     const date = month + "-" + String(day).padStart(2, "0");
-    let events = "";
-    for (const t of state.tasks.filter(
-      (t) => !["cancelled", "postponed"].includes(t.status),
-    )) {
-      for (const [key, label, cls] of [
-        ["production_at", "إنتاج", ""],
-        ["review_at", "مراجعة", "review"],
-        ["planned_at", "مقترح", "proposed"],
-        ["actual_published_at", "نُشر", "actual"],
-      ])
-        if (t[key] && localDate(t[key]).date === date)
-          events += `<button class="calendar-event ${cls}" data-action="task" data-id="${t.id}">${label} ${localDate(t[key]).time}<br>${esc(t.title)}</button>`;
-    }
-    html += `<div class="calendar-day ${date === state.now.localDate ? "today" : ""}"><span>${new Intl.DateTimeFormat("ar-PS", { timeZone: "UTC", weekday: "short" }).format(new Date(date + "T12:00:00Z"))} ${day}</span>${events}</div>`;
+    const events = taskEvents(state.tasks, date),
+      plan = state.records.find(
+        (r) => r.kind === "day_plan" && r.record_key === date,
+      );
+    const kinds = [
+      ...new Set(events.map((e) => e.kind)),
+      ...(plan ? ["daily"] : []),
+    ];
+    const description = kinds.length
+      ? kinds
+          .map(
+            (k) =>
+              ({
+                production: "إنتاج",
+                review: "مراجعة",
+                publish: "نشر مقترح",
+                actual: "منشور",
+                daily: plan?.data.status === "done" ? "أُنجز" : "شغل يومي",
+              })[k],
+          )
+          .join("، ")
+      : "غير مخطط";
+    html += `<button class="calendar-day ${date === state.now.localDate ? "today" : ""} ${date === selectedDay ? "selected" : ""}" data-action="select-day" data-id="${date}" aria-label="${date}: ${description}" aria-pressed="${date === selectedDay}"><strong>${day}</strong><span class="day-dots">${kinds.map((k) => `<i class="${k}"></i>`).join("")}</span><small>${description}</small></button>`;
   }
-  $("#calendar").innerHTML =
-    html +
-    (html.includes("calendar-event")
-      ? ""
-      : empty("لا توجد مواعيد مسجلة لهذا الشهر."));
+  $("#calendar").innerHTML = html;
+  $("#day-detail").innerHTML =
+    `<p class="eyebrow">تفاصيل اليوم المحدد</p><h2>${new Intl.DateTimeFormat("ar-PS", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(selectedDay + "T12:00:00Z"))}</h2>${dayAgenda(selectedDay)}`;
+}
+const activityLabel = {
+  idea: "تطوير فكرة",
+  production: "إنتاج",
+  review: "مراجعة",
+  publish: "تحضير للنشر",
+  engagement: "تفاعل ومتابعة",
+};
+function dayAgenda(date, compact = false) {
+  const plan = state.records.find(
+    (r) => r.kind === "day_plan" && r.record_key === date,
+  );
+  const events = taskEvents(state.tasks, date);
+  let html = "";
+  if (plan) {
+    const p = plan.data;
+    html += `<article class="daily-plan">${badge(p.status === "done" ? "أُنجز شغل اليوم" : activityLabel[p.activity])}<h3>${esc(p.title)}</h3><p>${esc(p.idea)}</p><p><b>المطلوب تسليمه:</b> ${esc(p.deliverable)}</p><p class="small-note">وقت إضافي مقدّر: ${esc(effortLabel(p.minutes))}. ${p.minutes === 0 ? "لا نضيف وقتًا فوق الأعمال المحجوزة لهذا اليوم." : "هذا جهد عمل، وليس مدة فيديو."}</p>${compact ? "" : `<ol>${p.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><p class="small-note">سبب توزيع هذا العمل اليوم: ${esc(p.why_this_day)}</p>`}<div class="actions">${p.campaign_id ? button("campaign", "الفكرة الكاملة والستوري بورد", p.campaign_id) : button("develop-day", "طوّر هذه الفكرة إلى ملف إنتاج", plan.id)}${button("day-status", p.status === "done" ? "إعادة فتح العمل" : "أنجزت شغل اليوم", plan.id)}${compact ? button("open-day", "تفاصيل اليوم", date) : button("campaign", "مراجع خطة الأسبوع", p.week_id)}</div><p class="small-note">فكرة اليوم بريف عمل؛ زر التطوير يبحث ويكتب المعالجة التفصيلية. الجدولة النهائية تراعي القدرة ولا تضمن التسليم في اليوم نفسه.</p></article>`;
+  }
+  for (const e of events)
+    html += `<article class="agenda-event ${e.kind}"><span class="badge">${e.label}${e.at ? " · " + localDate(e.at).time : ""}</span><h3>${esc(e.task.title)}</h3><div class="actions">${e.task.campaign_id ? button("campaign", "الفكرة وتعليمات التنفيذ", e.task.campaign_id) : ""}${button("task", "تحديث المهمة والمواعيد", e.task.id)}</div></article>`;
+  if (!plan && !events.length) {
+    const next = state.tasks
+      .filter(
+        (t) =>
+          !["cancelled", "published", "postponed"].includes(t.status) &&
+          t.production_at &&
+          localDate(t.production_at).date > date,
+      )
+      .sort(
+        (a, b) => Date.parse(a.production_at) - Date.parse(b.production_at),
+      )[0];
+    html =
+      empty(
+        "لم تُخصّص أعمال لهذا اليوم بعد؛ لا يعني ذلك أنه يوم راحة أو أن عليك نشر فيديو.",
+      ) +
+      (next
+        ? `<p class="small-note">أقرب بدء إنتاج: ${fmt(next.production_at)} — ${esc(next.title)}</p>`
+        : "") +
+      button("plan-week", "جهّز خطة شغل متنوعة لسبعة أيام");
+  }
+  if (compact) {
+    const late = state.tasks.filter(
+      (t) =>
+        !["published", "cancelled", "postponed"].includes(t.status) &&
+        t.planned_at &&
+        localDate(t.planned_at).date < date,
+    );
+    if (late.length)
+      html += `<p class="error">${late.length} موعد نشر سابق يحتاج متابعة — ليس عملًا جديدًا لليوم.</p>${button("show-tasks", "راجع المهام المتأخرة")}`;
+  }
+  return html;
 }
 function safeURL(v) {
   try {
@@ -356,6 +419,18 @@ async function load() {
     $("#connection").innerHTML = "";
     render();
     tickClock();
+    if (
+      dialog.open &&
+      activeCampaign &&
+      ["queued", "running"].includes(activeCampaign.campaign.status) &&
+      !dialog.querySelector("form")
+    ) {
+      const latest = d.campaigns.find(
+        (c) => c.id === activeCampaign.campaign.id,
+      );
+      if (latest && latest.updated_at !== activeCampaign.campaign.updated_at)
+        await openCampaign(latest.id);
+    }
   } catch (e) {
     $("#connection").innerHTML =
       `<p class="error">${esc(e.message)}${state ? "<br>السجلات المعروضة آخر نسخة وصلت؛ لا نعتبر الاتصال سليمًا." : ""}</p>`;
@@ -383,11 +458,16 @@ function tickClock() {
     load();
   }
 }
-function campaignForm(autonomous = false, brief = "") {
+function campaignForm(autonomous = false, brief = "", dayPlanId = "") {
   open(
     autonomous ? "خطّط حملة مناسبة الآن" : "أنشئ حملة جديدة",
     `<p class="muted">يُحفظ الطلب ثم يجري البحث على الخادم. تستطيع إغلاق الأداة والعودة. لا يوجد تأخير مصطنع ولا نشر تلقائي.</p><form data-form="campaign" data-mode="${autonomous ? "autonomous" : "brief"}" data-key="${crypto.randomUUID()}"><div class="fields">${area("request", "الهدف أو الطلب", brief || (autonomous ? "اختر حملة مناسبة الآن لتسويق XPAND بحسب ملف الشركة والمحتوى السابق والفرص الموثّقة." : ""))}${field("service", "الخدمة (اختياري)")}${field("audience", "الجمهور (اختياري)", state?.profile.audience || "")}${field("timeframe", "مدة الحملة أو قيد زمني (اختياري)")}</div><p class="small-note">حتى ${state?.settings.task_calls || 10} طلبات خدمات للمهمة ضمن الحد اليومي والشهري. مراجع البحث نصية؛ لا ندّعي مشاهدة فيديوهات.</p><button class="primary dialog-submit">ابدأ البحث الحقيقي ←</button></form>`,
   );
+  dialog.querySelector("form").dataset.day = dayPlanId;
+  dialog.querySelector(".muted").textContent =
+    "بحث وقراءة مصادر ← استخلاص فرص ← 3 اتجاهات ← نقد واختيار ← معالجة ← ستوري بورد ← فحص الجودة. المراحل محفوظة على الخادم حتى لو أغلقت الأداة.";
+  dialog.querySelector(".small-note").textContent =
+    `الفيديو المفصّل يحتاج عادة 6 طلبات للنموذج إضافة للبحث، ضمن حد المهمة (${state?.settings.task_calls || 10}) وحدود اليوم والشهر. إذا انتهت الحصة تُحفظ المراحل. الناتج ملف إنتاج، وليس فيديو مولّدًا أو منشورًا تلقائيًا.`;
 }
 const listHTML = (v) =>
   Array.isArray(v)
@@ -428,11 +508,15 @@ async function openCampaign(id) {
   if (r.title) {
     body += `<div class="detail-grid">${Object.entries(sections)
       .filter(([k]) => r[k] !== null && r[k] !== undefined)
-      .map(([k, l]) => `<article><b>${l}</b><p>${esc(r[k])}</p></article>`)
+      .map(
+        ([k, l]) =>
+          `<article><b>${l}</b><p>${esc(k === "effort_hours" ? effortLabel(r[k] * 60) + " — جهد للفريق وليس مدة الفيديو" : k === "format" ? { video: "فيديو", static: "تصميم ثابت", carousel: "منشور شرائح", story: "ستوري" }[r[k]] || r[k] : r[k])}</p></article>`,
+      )
       .join("")}</div>`;
-    if (r.scenes?.length)
+    body += creativeView(r, d.process, { esc, listHTML, effortLabel });
+    if (!r.storyboard && r.scenes?.length)
       body +=
-        "<h3>الستوري بورد · مشهد بمشهد</h3>" +
+        `<h3>ملخص اللقطات — ليس ستوري بورد تفصيليًا</h3><p class="small-note">ملف محفوظ من المسار السابق. التطوير الجديد يحفظ هذا الأصل دون استبداله.</p>${button("research-again", "طوّر معالجة تفصيلية جديدة", c.id)}` +
         r.scenes
           .map(
             (s, i) =>
@@ -447,7 +531,7 @@ async function openCampaign(id) {
       ["assumptions", "افتراضات"],
       ["limitations", "القيود"],
     ])
-      body += `<details><summary>${l}</summary>${k === "adaptations" ? (r[k] || []).map((a) => `<p><b>${esc(a.platform)}</b>: ${esc(a.instructions)} · ${esc(a.effort_hours)} ساعة</p>`).join("") : listHTML(r[k] || [])}</details>`;
+      body += `<details><summary>${l}</summary>${k === "adaptations" ? (r[k] || []).map((a) => `<p><b>${esc(a.platform)}</b>: ${esc(a.instructions)}<br>إعداد هذه النسخة: ${esc(effortLabel(a.effort_hours * 60))} — محسوب ضمن الإجمالي.</p>`).join("") : listHTML(r[k] || [])}</details>`;
     if (r.schedule)
       body += `<details open><summary>الخطة الأصلية · توقيت الخليل</summary><p>بدء الإنتاج: ${fmt(r.schedule.production_at)}<br>المراجعة: ${fmt(r.schedule.review_at)}<br>النشر المقترح: ${fmt(r.schedule.planned_at)}</p><p>${esc(r.schedule.rationale)}</p><p class="small-note">التعديلات اللاحقة على المواعيد تظهر في المهمة والتقويم.</p></details>`;
   } else if (c.result)
@@ -456,6 +540,10 @@ async function openCampaign(id) {
     )
       .map(([k, v]) => `<h3>${esc(k)}</h3>${listHTML(v)}`)
       .join("")}</details>`;
+  if (c.kind === "week" && r.days)
+    body += `<p>${esc(r.summary)}</p><p class="small-note">أفكار يومية أولية ضمن القدرة. لا تعني فيديو جديدًا كل يوم، ولا نشرًا تلقائيًا.</p>${r.days.map((day) => `<article class="scene"><b>${esc(day.date)} · ${esc(activityLabel[day.activity])}</b><h3>${esc(day.title)}</h3><p>${esc(day.idea)}</p><p>التسليم: ${esc(day.deliverable)}</p><p>جهد إضافي: ${esc(effortLabel(day.minutes))}</p>${listHTML(day.steps)}${r.skipped_dates?.includes(day.date) ? '<p class="error">لهذا اليوم خطة سابقة محفوظة؛ لم نستبدلها بهذا الاقتراح.</p>' : ""}${button("open-day", "فتح هذا اليوم في التقويم", day.date)}</article>`).join("")}`;
+  if (!r.title && d.process?.insights)
+    body += creativeView({}, d.process, { esc, listHTML, effortLabel });
   body += `<details><summary>المراجع التي وصلت فعليًا (${d.sources.length})</summary>${
     d.sources
       .map((s) => {
@@ -468,7 +556,7 @@ async function openCampaign(id) {
             inspected: "مقتطف نصي من الإصدار السابق",
           };
         }
-        return `<article class="entry"><a href="${esc(safeURL(s.url))}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><p>${esc(meta.observation)}</p><p class="small-note">${esc(meta.inspected)}<br>${esc(meta.limitations || "")}<br>الوصول: ${fmt(s.accessed_at)} · تاريخ النشر: ${esc(meta.published_at || "غير متاح")}${meta.reused ? " · أُعيد استخدام بحث حديث" : ""}</p></article>`;
+        return `<article class="entry" id="source-${esc(s.id)}"><a href="${esc(safeURL(s.url))}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a><p>${esc(meta.observation)}</p><p class="small-note">${esc(meta.inspected)}<br>${esc(meta.limitations || "")}<br>الوصول: ${fmt(s.accessed_at)} · تاريخ النشر: ${esc(meta.published_at || "غير متاح")}${meta.reused ? " · أُعيد استخدام بحث حديث" : ""}</p></article>`;
       })
       .join("") || empty("لا مراجع محفوظة بعد.")
   }</details>`;
@@ -576,6 +664,18 @@ function occasionForm(r = null) {
   );
 }
 document.addEventListener("click", async (e) => {
+  const sourceLink = e.target.closest('a[href^="#source-"]');
+  if (sourceLink) {
+    const source = document.getElementById(
+      sourceLink.getAttribute("href").slice(1),
+    );
+    if (source) {
+      e.preventDefault();
+      source.closest("details").open = true;
+      source.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    return;
+  }
   const nav = e.target.closest("[data-view]");
   if (nav) {
     showView(nav.dataset.view);
@@ -596,7 +696,38 @@ document.addEventListener("click", async (e) => {
     }
     if (!state) throw new Error("افتح الأداة من تيليجرام وانتظر تحميل سجلاتك.");
     if (a === "new") campaignForm();
-    else if (a === "autonomous") campaignForm(true);
+    else if (a === "plan-week")
+      open(
+        "خطة شغل متنوع لسبعة أيام",
+        `<p class="muted">أفكار وتصاميم وستوري وإنتاج ومراجعة، ضمن ${state.profile.daily_hours} ساعة يوميًا وحد ${state.profile.weekly_videos} فيديوهات أسبوعيًا. نحافظ على الأيام المخططة سابقًا. يُحفظ البحث والجدول على الخادم.</p><form data-form="week" data-key="${crypto.randomUUID()}">${field("start_date", "بداية الأسبوع · الخليل", state.now.localDate, "date")}${area("request", "أولوية الأسبوع (اختياري)", "التعريف بخدمات XPAND لأصحاب الأعمال في الخليل، مع تنويع الفكرة والمخرج اليومي.")}<button class="primary dialog-submit">ابدأ تخطيط الأسبوع</button></form>`,
+      );
+    else if (a === "select-day" || a === "open-day") {
+      selectedDay = id;
+      month = id.slice(0, 7);
+      renderCalendar();
+      if (a === "open-day") {
+        dialog.close();
+        showView("calendar");
+      }
+    } else if (a === "show-tasks") showView("tasks");
+    else if (a === "develop-day") {
+      const p = state.records.find((r) => r.id === id);
+      campaignForm(
+        false,
+        `${p.data.title}\nالفكرة: ${p.data.idea}\nالتسليم: ${p.data.deliverable}\n${p.data.steps.join("\n")}\nنوع المحتوى: ${p.data.format}. طوّر معالجة تنفيذية مع مراعاة السعة الفعلية.`,
+        p.id,
+      );
+    } else if (a === "day-status") {
+      const p = state.records.find((r) => r.id === id);
+      await api("/plan-days/" + id, {
+        method: "PATCH",
+        body: JSON.stringify({
+          version: p.version,
+          status: p.data.status === "done" ? "planned" : "done",
+        }),
+      });
+      await load();
+    } else if (a === "autonomous") campaignForm(true);
     else if (a === "campaign") await openCampaign(id);
     else if (a === "profile") profileForm();
     else if (a === "research-again")
@@ -661,7 +792,7 @@ document.addEventListener("click", async (e) => {
     } else if (a === "feedback")
       open(
         "ملاحظات تحسّن التوصيات",
-        `<form data-form="feedback"><label>نوع الملاحظة<select name="type"><option value="accepted">فكرة مقبولة</option><option value="rejected">رفض مع السبب</option><option value="revision">تفضيل أو تصحيح</option><option value="outcome">نتيجة فعلية مُدخلة يدويًا</option></select></label>${area("note", "التفاصيل والسبب / النتائج الموثّقة")}<label>نوع الأداء عند تسجيل نتيجة<select name="measurement_type"><option value="organic">عضوي</option><option value="paid">ممول</option></select></label>${field("period", "فترة القياس عند تسجيل نتيجة")}<button class="primary dialog-submit">حفظ الملاحظة</button></form>`,
+        `<form data-form="feedback"><label>نطاق الملاحظة<select name="scope"><option value="project">لهذا المشروع فقط</option><option value="preference">تفضيل شخصي</option><option value="brand">قاعدة دائمة لهوية XPAND</option></select></label><label>نوع الملاحظة<select name="type"><option value="accepted">فكرة مقبولة</option><option value="rejected">رفض مع السبب</option><option value="revision">تفضيل أو تصحيح</option><option value="outcome">نتيجة فعلية مُدخلة يدويًا</option></select></label>${area("note", "التفاصيل والسبب / النتائج الموثّقة")}<label>نوع الأداء عند تسجيل نتيجة<select name="measurement_type"><option value="organic">عضوي</option><option value="paid">ممول</option></select></label>${field("period", "فترة القياس عند تسجيل نتيجة")}<button class="primary dialog-submit">حفظ الملاحظة</button></form>`,
       );
     else if (a === "edit-campaign") {
       const r = activeCampaign.campaign.result;
@@ -723,9 +854,19 @@ document.addEventListener("submit", async (e) => {
       await api("/campaigns", {
         method: "POST",
         headers: { "Idempotency-Key": f.dataset.key },
-        body: JSON.stringify({ request, mode: f.dataset.mode }),
+        body: JSON.stringify({
+          request,
+          mode: f.dataset.mode,
+          day_plan_id: f.dataset.day || undefined,
+        }),
       });
-    } else if (type === "task")
+    } else if (type === "week")
+      await api("/week-plan", {
+        method: "POST",
+        headers: { "Idempotency-Key": f.dataset.key },
+        body: JSON.stringify(v),
+      });
+    else if (type === "task")
       await api("/tasks" + (f.dataset.id ? "/" + f.dataset.id : ""), {
         method: f.dataset.id ? "PATCH" : "POST",
         body: JSON.stringify({
@@ -770,7 +911,7 @@ document.addEventListener("submit", async (e) => {
       });
     dialog.close();
     toast(
-      type === "campaign"
+      type === "campaign" || type === "week"
         ? "حُفظ طلب البحث. تظهر الحالة هنا حتى لو أغلقت الأداة."
         : "حُفظ التغيير في قاعدة البيانات.",
     );

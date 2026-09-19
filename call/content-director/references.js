@@ -1,5 +1,6 @@
 // A small, reviewed reading list, not a substitute for current-event web search.
 // Never fetch user/model URLs, follow redirects, send credentials or execute HTML.
+import { load } from "cheerio";
 export const REFERENCES = Object.freeze([
   {
     url: "https://support.google.com/google-ads/answer/14783551?hl=en",
@@ -11,40 +12,41 @@ export const REFERENCES = Object.freeze([
     marker: "brand",
     title: "Adobe · بناء الهوية واتساق العلامة",
   },
+  {
+    url: "https://www.pentagram.com/work/mastercard",
+    marker: "Mastercard",
+    title: "Pentagram · دراسة بناء نظام هوية Mastercard",
+  },
 ]);
+export function selectReferences(request) {
+  return [
+    /شعار|هوي|logo|brand/i.test(request) ? REFERENCES[1] : REFERENCES[0],
+    REFERENCES[2],
+  ];
+}
 export const REFERENCE_LIMITATION =
   "تمت قراءة مراجع إبداعية عامة مباشرة؛ هذا ليس مسحًا للترندات أو السوق الفلسطيني أو المناسبات الحالية. الفكرة أصلية مبنية على طلبك وملف XPAND، وليست دليلًا على نتائج تجارية مضمونة.";
 
 export function referenceExcerpt(html, marker) {
-  const clean = html
-    .replace(/<!--[^]*?-->/g, " ")
-    .replace(
-      /<(script|style|noscript|svg|nav|header|footer)\b[^>]*>[^]*?<\/\1\s*>/gi,
-      " ",
-    );
-  const heading = /<h1\b[^>]*>([^]*?)<\/h1\s*>/i.exec(clean);
-  if (!heading || !heading[1].toLowerCase().includes(marker.toLowerCase()))
+  const $ = load(html);
+  // Article headers may contain the real project H1; navigation is removed separately.
+  $("script,style,noscript,svg,nav,footer,form,iframe").remove();
+  const heading = $("h1,h2")
+    .filter((_, e) => $(e).text().toLowerCase().includes(marker.toLowerCase()))
+    .first();
+  if (!heading.length)
     throw new Error("الصفحة لم تحتوِ المقال المتوقع؛ لم نستخدمها كمرجع.");
-  const content = clean
-    .slice(heading.index)
-    .replace(/<[^>]*>/g, " ")
-    .replace(
-      /&(nbsp|amp|lt|gt|quot|apos|#39);/g,
-      (_, k) =>
-        ({
-          nbsp: " ",
-          amp: "&",
-          lt: "<",
-          gt: ">",
-          quot: '"',
-          apos: "'",
-          "#39": "'",
-        })[k],
-    )
-    .replace(/\s+/g, " ")
-    .trim();
+  const article = heading.closest("article");
+  const main = heading.closest("main");
+  const root = article.length ? article : main.length ? main : $("body");
+  const paragraphs = root
+    .find("h1,h2,h3,p,li,blockquote")
+    .map((_, e) => $(e).text().replace(/\s+/g, " ").trim())
+    .get()
+    .filter((x) => x.length >= 15);
+  const content = [...new Set(paragraphs)].join("\n");
   if (content.length < 400) throw new Error("النص المسترجع لا يكفي كمرجع.");
-  return content.slice(0, 2400);
+  return content.slice(0, 12000);
 }
 
 export async function readReference(ref, fetcher = fetch, signal) {

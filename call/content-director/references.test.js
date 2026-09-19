@@ -59,9 +59,12 @@ test("exhausted search quotas still yield a real-source campaign, cache and hone
       }
       if (REFERENCES.some((r) => r.url === url)) {
         counts.reference++;
-        return new Response(page(url.includes("google") ? "ABCDs" : "brand"), {
-          headers: { "Content-Type": "text/html" },
-        });
+        return new Response(
+          page(REFERENCES.find((r) => r.url === url).marker),
+          {
+            headers: { "Content-Type": "text/html" },
+          },
+        );
       }
       if (JSON.parse(opts.body).tools) {
         counts.grounding++;
@@ -82,7 +85,7 @@ test("exhausted search quotas still yield a real-source campaign, cache and hone
       d.campaign.result.limitations.some((x) => x.includes("ليس مسحًا")),
     );
     assert.equal(d.sources.length, 2);
-    assert.equal(d.calls.length, 8);
+    assert.equal(d.calls.length, 10);
     assert.equal((await f.api("/dashboard")).tasks.length, 1);
     await enqueue(f);
     await worker.run(await worker.claim());
@@ -122,15 +125,46 @@ test("auto retry can leave a blocked search provider without resetting attempts 
   const f = await fixture();
   try {
     const cid = await enqueue(f);
-    const issue = {service:"grounding:test-model", status:"blocked", retry_at:new Date(Date.now()+3600000).toISOString()};
-    await f.pool.query("UPDATE xpand_content_campaigns SET status='blocked',attempts=2,checkpoint=$2 WHERE id=$1",[cid,JSON.stringify({provider_issue:issue})]);
-    await f.store.record(TEST_USER,"provider",issue.service,issue);
-    assert.equal((await f.api("/campaigns/"+cid+"/retry","POST")).status,200);
-    const row = (await f.pool.query("SELECT attempts,status FROM xpand_content_campaigns WHERE id=$1",[cid])).rows[0];
-    assert.equal(row.attempts,2);
-    assert.equal(row.status,"queued");
-    await f.pool.query("UPDATE xpand_content_campaigns SET status='blocked',checkpoint=$2 WHERE id=$1",[cid,JSON.stringify({provider_issue:{...issue,service:"gemini:test-model"}})]);
-    await f.store.record(TEST_USER,"provider","gemini:test-model",{...issue,service:"gemini:test-model"});
-    assert.equal((await f.api("/campaigns/"+cid+"/retry","POST")).status,400);
-  } finally {await f.close();}
+    const issue = {
+      service: "grounding:test-model",
+      status: "blocked",
+      retry_at: new Date(Date.now() + 3600000).toISOString(),
+    };
+    await f.pool.query(
+      "UPDATE xpand_content_campaigns SET status='blocked',attempts=2,checkpoint=$2 WHERE id=$1",
+      [cid, JSON.stringify({ provider_issue: issue })],
+    );
+    await f.store.record(TEST_USER, "provider", issue.service, issue);
+    assert.equal(
+      (await f.api("/campaigns/" + cid + "/retry", "POST")).status,
+      200,
+    );
+    const row = (
+      await f.pool.query(
+        "SELECT attempts,status FROM xpand_content_campaigns WHERE id=$1",
+        [cid],
+      )
+    ).rows[0];
+    assert.equal(row.attempts, 2);
+    assert.equal(row.status, "queued");
+    await f.pool.query(
+      "UPDATE xpand_content_campaigns SET status='blocked',checkpoint=$2 WHERE id=$1",
+      [
+        cid,
+        JSON.stringify({
+          provider_issue: { ...issue, service: "gemini:test-model" },
+        }),
+      ],
+    );
+    await f.store.record(TEST_USER, "provider", "gemini:test-model", {
+      ...issue,
+      service: "gemini:test-model",
+    });
+    assert.equal(
+      (await f.api("/campaigns/" + cid + "/retry", "POST")).status,
+      400,
+    );
+  } finally {
+    await f.close();
+  }
 });

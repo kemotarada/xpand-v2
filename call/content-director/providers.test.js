@@ -129,7 +129,7 @@ test("Tavily 432 uses bounded Gemini fallback, caches citations and completes a 
     assert.equal(details.campaign.limitations, "");
     assert.equal(calls.tavily, 1); // second query respects the persisted provider cooldown
     assert.equal(calls.grounding, 2);
-    assert.equal(details.calls.length, 7);
+    assert.equal(details.calls.length, 9);
     assert.equal(details.sources.length, 1);
     assert.equal(
       JSON.parse(details.sources[0].observation).engine,

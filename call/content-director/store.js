@@ -93,7 +93,7 @@ export class Store {
           [user],
         ),
         this.pool.query(
-          "SELECT * FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY updated_at DESC) AS rn FROM xpand_director_records WHERE user_id=$1 AND kind IN ('idea','occasion','notification','worker','provider')) t WHERE rn<=200 ORDER BY updated_at DESC",
+          "SELECT * FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY updated_at DESC) AS rn FROM xpand_director_records WHERE user_id=$1 AND kind IN ('idea','occasion','notification','worker','provider','day_plan')) t WHERE rn<=200 ORDER BY updated_at DESC",
           [user],
         ),
         this.pool.query(

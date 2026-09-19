@@ -92,6 +92,16 @@ export async function fixture() {
 export function mockProvider(counters = {}) {
   return async (url, options) => {
     if (url.includes("tavily")) {
+      if (url.endsWith("/extract"))
+        return Response.json({
+          results: JSON.parse(options.body).urls.map((url) => ({
+            url,
+            raw_content:
+              "Evidence about clear type-driven agency communication. ".repeat(
+                20,
+              ),
+          })),
+        });
       counters.search = (counters.search || 0) + 1;
       return Response.json({
         results: [
@@ -112,7 +122,49 @@ export function mockProvider(counters = {}) {
       i = prompt.instruction;
     let result;
     counters.model = (counters.model || 0) + 1;
-    if (i.startsWith("Develop 3"))
+    if (i.startsWith("INSIGHTS_V3"))
+      result = {
+        brief: {
+          service: "إنتاج فيديو",
+          objective: "التعريف بالخدمة",
+          audience: "أصحاب الأعمال",
+          current_belief: "فرضية أولية",
+          desired_belief: "وضوح الخدمة",
+          desired_feeling: "الفضول",
+          desired_action: "التواصل",
+          resources: "موشن أصلي",
+          production_method: "موشن جرافيك",
+        },
+        findings: [0, 1, 2].map((n) => ({
+          observation: "ملاحظة اختبار " + n,
+          evidence_type: "interpretation",
+          source_ids: [c.sources[0].id],
+          creative_opportunity: "فرصة بصرية اختبارية",
+          execution_translation: "حركة عناصر توضح الفكرة",
+        })),
+        missing_essential_information: [],
+      };
+    else if (i.startsWith("STORYBOARD_V3"))
+      result = mockStoryboard(c.proposal.duration_seconds);
+    else if (i.startsWith("WEEK_PLAN_V3"))
+      result = {
+        title: "خطة أسبوع اختبارية",
+        summary: "تنويع أعمال الفريق ضمن القدرة",
+        days: c.dates.map((d, n) => ({
+          date: d.date,
+          title: "عمل اليوم " + n,
+          activity: ["idea", "production", "review", "engagement"][n % 4],
+          format: ["story", "static", "work"][n % 3],
+          minutes: Math.min(45, d.remaining_minutes),
+          idea: "فكرة يومية اختبارية مختلفة " + n,
+          deliverable: "مخرج قابل للمراجعة " + n,
+          steps: ["تحضير العناصر المطلوبة", "مراجعة النتيجة قبل النشر"],
+          why_this_day: "توزيع العمل ضمن القدرة",
+          source_ids: [c.sources[0].id],
+          campaign_id: null,
+        })),
+      };
+    else if (i.startsWith("Develop 3"))
       result = {
         directions: [0, 1, 2].map((n) => ({
           title: "اتجاه اختبار " + n,
@@ -142,6 +194,30 @@ export function mockProvider(counters = {}) {
         ),
         title: "حملة اختبار معزولة · من التشويش إلى الوضوح",
         format: "video",
+        duration_seconds: 20,
+        treatment: Object.fromEntries(
+          [
+            "world",
+            "characters",
+            "visual_system",
+            "pacing",
+            "sound_design",
+            "ending",
+            "production_method",
+            "continuity",
+            "feasible_alternative",
+          ].map((k) => [k, "تفصيل تنفيذي للاختبار " + k]),
+        ),
+        emotion_arc: [
+          {
+            moment: "الافتتاح",
+            feeling: "الفضول",
+            cue: "حجب الجزء النهائي حتى الكشف",
+          },
+        ],
+        effort_breakdown: [
+          { task: "التصميم والتحريك والمراجعة والتكييف", minutes: 240 },
+        ],
         platforms: ["Instagram", "Facebook", "TikTok"],
         scenes: [
           {
@@ -183,6 +259,53 @@ export function mockProvider(counters = {}) {
       ],
       usageMetadata: { totalTokenCount: 100 },
     });
+  };
+}
+export function mockStoryboard(duration = 20) {
+  const cuts = [0, 3, 12, duration];
+  const scenes = [0, 1, 2].map((n) => ({
+    ...Object.fromEntries(
+      [
+        "visual",
+        "framing",
+        "focal_point",
+        "camera",
+        "action",
+        "performance",
+        "lighting",
+        "sound",
+        "transition",
+        "transition_reason",
+        "emotion",
+        "purpose",
+        "production_note",
+      ].map((k) => [k, "تفصيل تنفيذي اختباري " + k]),
+    ),
+    id: "shot-" + n,
+    start: cuts[n],
+    end: cuts[n + 1],
+  }));
+  return {
+    duration_seconds: duration,
+    scenes,
+    beats: Array.from({ length: duration }, (_, i) => ({
+      start: i,
+      end: i + 1,
+      shot_id: scenes.find((s) => s.start <= i && s.end > i).id,
+      visual_change: "تطور بصري في الثانية " + i,
+      sound_change: "تغير صوتي مقصود",
+      emotion: "فضول مقصود",
+      purpose: "توضيح الرسالة تدريجيًا",
+    })),
+    voiceover: [
+      {
+        start: 12,
+        end: 20,
+        text: "رسالة واضحة من XPAND",
+        delivery: "صوت هادئ مباشر",
+      },
+    ],
+    screen_text: [{ start: 12, end: 20, text: "XPAND Creative Agency" }],
   };
 }
 export const workerFor = (f, fetcher = mockProvider()) =>

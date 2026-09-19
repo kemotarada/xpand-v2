@@ -12,6 +12,7 @@ import {
 } from "./core.js";
 import { id, transaction } from "./store.js";
 import { campaignPresentation, messageText } from "./providers.js";
+import { registerWeekRoutes } from "./week.js";
 
 export function registerRoutes(app, store, { token, allowed }) {
   const db = store.pool;
@@ -22,7 +23,7 @@ export function registerRoutes(app, store, { token, allowed }) {
       const status = (await store.records(allowed, "worker"))[0]?.data;
       res.json({
         ok: true,
-        version: "content-director-v2",
+        version: "content-director-v3",
         database: true,
         worker_last_tick: status?.last_tick || null,
         worker_healthy:
@@ -30,7 +31,7 @@ export function registerRoutes(app, store, { token, allowed }) {
           Date.now() - Date.parse(status.last_tick) < 180000,
       });
     } catch {
-      res.status(503).json({ ok: false, version: "content-director-v2" });
+      res.status(503).json({ ok: false, version: "content-director-v3" });
     }
   });
   app.use("/api/content", (req, res, next) => {
@@ -64,6 +65,7 @@ export function registerRoutes(app, store, { token, allowed }) {
     return req.params.id;
   };
   route("get", "/dashboard", (r) => store.dashboard(r.contentUser));
+  registerWeekRoutes(route, store, ownedId);
   route("get", "/campaigns/:id", async (r) => {
     const c = (
       await db.query(
@@ -88,6 +90,11 @@ export function registerRoutes(app, store, { token, allowed }) {
     ]);
     return {
       campaign: campaignPresentation(c),
+      process: {
+        insights: c.checkpoint?.insights || null,
+        directions: c.checkpoint?.directions || null,
+        selection: c.checkpoint?.selection || null,
+      },
       sources: sources.rows,
       calls: calls.rows,
       feedback: feedback.filter((f) => f.data.campaign_id === c.id),
@@ -110,6 +117,20 @@ export function registerRoutes(app, store, { token, allowed }) {
         )
       ).rows[0];
       if (prior) return { campaign: prior };
+      let dayPlan = null;
+      if (r.body.day_plan_id) {
+        if (!uuid(r.body.day_plan_id))
+          throw new Error("معرّف خطة اليوم غير صالح.");
+        dayPlan = (
+          await tx.query(
+            "SELECT * FROM xpand_director_records WHERE id=$1 AND user_id=$2 AND kind='day_plan' FOR UPDATE",
+            [r.body.day_plan_id, r.contentUser],
+          )
+        ).rows[0];
+        if (!dayPlan) throw new Error("خطة اليوم غير موجودة.");
+        if (dayPlan.data.campaign_id)
+          return { campaign: { id: dayPlan.data.campaign_id } };
+      }
       const queued = (
         await tx.query(
           "SELECT count(*)::int AS n FROM xpand_content_campaigns WHERE user_id=$1 AND status IN ('queued','running')",
@@ -129,11 +150,22 @@ export function registerRoutes(app, store, { token, allowed }) {
             request,
             key,
             JSON.stringify({
+              creative_version: 3,
               mode: r.body.mode === "autonomous" ? "autonomous" : "brief",
             }),
           ],
         )
       ).rows[0];
+      if (dayPlan) {
+        await store.version(r.contentUser, dayPlan.id, "day_plan", dayPlan, tx);
+        await store.record(
+          r.contentUser,
+          "day_plan",
+          dayPlan.record_key,
+          { ...dayPlan.data, campaign_id: campaign.id },
+          tx,
+        );
+      }
       return { campaign };
     });
   });
@@ -172,7 +204,7 @@ export function registerRoutes(app, store, { token, allowed }) {
         );
     }
     const x = await db.query(
-      "UPDATE xpand_content_campaigns SET checkpoint=(CASE WHEN status='needs_information' THEN checkpoint-'directions'-'selection'-'round'-'quality_issue' ELSE checkpoint END)-'provider_issue',limitations=NULL,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
+      "UPDATE xpand_content_campaigns SET checkpoint=(CASE WHEN status='needs_information' THEN checkpoint-'insights'-'directions'-'selection'-'round'-'quality_issue'-'proposal'-'storyboard'-'final' ELSE checkpoint END)-'provider_issue',limitations=NULL,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
       [ownedId(r), r.contentUser],
     );
     if (!x.rowCount)
@@ -341,6 +373,12 @@ export function registerRoutes(app, store, { token, allowed }) {
       feedback: await store.record(r.contentUser, "feedback", id(), {
         campaign_id: campaign.id,
         type: r.body.type,
+        scope:
+          r.body.type === "outcome"
+            ? "outcome"
+            : ["preference", "project", "brand"].includes(r.body.scope)
+              ? r.body.scope
+              : "project",
         note,
         measurement_type:
           r.body.measurement_type === "paid" ? "paid" : "organic",
@@ -366,7 +404,7 @@ export function registerRoutes(app, store, { token, allowed }) {
         !result ||
         typeof result !== "object" ||
         Array.isArray(result) ||
-        JSON.stringify(result).length > 60000
+        JSON.stringify(result).length > 180000
       )
         throw new Error("تفاصيل غير صالحة.");
       await store.version(r.contentUser, c.id, "campaign", c, tx);
