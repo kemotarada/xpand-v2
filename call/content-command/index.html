@@ -1,14 +1,157 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="theme-color" content="#062968"/><title>XPAND | غرفة قيادة المحتوى</title><link rel="stylesheet" href="/content-command/style.css"/></head>
-<body><main class="shell">
-<header class="topbar"><div class="brand"><span class="brand-mark">›</span><div><b>XPAND</b><small>CONTENT COMMAND</small></div></div><button class="profile" data-action="profile"><span class="pulse"></span> إيهاب ⌄</button></header>
-<section class="hero"><div><p class="eyebrow">غرفة قيادة المحتوى · سبتمبر 2026</p><h1>نبني حضورًا يجعل العلامات<br/><em>مستحيلة التجاهل.</em></h1><p class="sub">خطّط، أنشئ، راقب، وانشر. XPAND يجمع فكرة الحملة، الإنتاج، والمواعيد في مكان واحد.</p></div><div class="hero-orbit" aria-hidden="true"><span>XP</span></div><button class="primary" data-action="new-idea">+ أنشئ حملة جديدة</button></section>
-<section class="alerts"><span class="alert-dot"></span><b>تنبيه الإنتاج</b><p>ريل «من الفكرة إلى الإعلان» موعده اليوم 11:00 — لم يُعلَّم كمنشور بعد.</p><button data-action="focus-task">راجع المهمة ←</button></section>
-<section class="metrics"><article><span class="metric-icon cyan">◈</span><div><strong id="planned-count">12</strong><span>محتوى مخطط</span></div><small>هذا الشهر</small></article><article><span class="metric-icon blue">↗</span><div><strong id="production-count">3</strong><span>قيد الإنتاج</span></div><small>+1 هذا الأسبوع</small></article><article><span class="metric-icon gold">!</span><div><strong>1</strong><span>قرار مطلوب</span></div><small>قبل النشر</small></article></section>
-<section class="workspace"><div class="card plan-card" id="today-card"><div class="section-title"><div><p class="eyebrow">تنفيذ</p><h2>خطة اليوم</h2></div><button class="ghost" data-view="tasks">كل المهام ←</button></div><p class="date-line">الجمعة، 19 سبتمبر</p><div class="task-list" id="task-list"></div><button class="add-task" data-action="new-task">＋ إضافة مهمة</button></div>
-<aside class="card occasion-card"><div class="occasion-head"><span class="tag">مناسبة قادمة</span><span>◌</span></div><p class="countdown">بعد 7 أيام</p><h2>عيد الأضحى</h2><p>حملة إنسانية تدفع الجمهور للتوقف، المشاركة، والتذكّر.</p><div class="concept"><span>اتجاه الحملة</span><b>«اللحظة التي تجمعنا»</b><p>لقطات حِرفة، فرحة، وهوية محلية تنتقل من يد إلى يد.</p></div><button class="outline" data-action="storyboard">عرض الـ Storyboard ←</button></aside></section>
-<section class="card weekly" id="calendar-view"><div class="section-title"><div><p class="eyebrow">استراتيجية</p><h2>إيقاع النشر لهذا الأسبوع</h2></div><button class="ghost" data-view="calendar">فتح التقويم ←</button></div><div class="week-grid"><article><span>السبت</span><i class="type-reel"></i><b>ريل كواليس</b></article><article><span>الأحد</span><i class="type-story"></i><b>ستوري سؤال</b></article><article><span>الإثنين</span><i class="type-post"></i><b>بوست قيمة</b></article><article><span>الثلاثاء</span><i class="type-reel"></i><b>ريل نتائج</b></article><article><span>الأربعاء</span><i class="type-story"></i><b>ستوري تفاعل</b></article></div></section>
-<section class="idea-feature card" id="ideas-view"><div class="idea-number">01</div><div><span class="tag">فكرة الأسبوع</span><h2>خلف كل علامة <em>قصة</em></h2><p>سلسلة من 3 مقاطع قصيرة: سؤال العميل، لحظة الاكتشاف، والتحوّل إلى هوية حيّة.</p><div class="idea-meta"><span>3 مقاطع</span><span>ريل + ستوري</span><span>هدف: ثقة</span></div></div><button class="primary small" data-action="open-idea">افتح الفكرة ←</button></section>
-<section class="card insight"><span class="spark">✦</span><div><p class="eyebrow">توصية XPAND</p><h2>الناس تتفاعل مع «العملية» قبل النتيجة.</h2><p>ابدأ ريل اليوم بلقطة فوضى خلاقة، ثم انتقل إلى النتيجة النهائية خلال أول 3 ثوانٍ.</p></div><button class="ghost" data-action="copy-tip">نسخ التوصية</button></section>
-<nav><button class="nav-item active" data-view="home"><b>⌂</b><span>الرئيسية</span></button><button class="nav-item" data-view="calendar"><b>▦</b><span>التقويم</span></button><button class="nav-item" data-view="ideas"><b>✦</b><span>الأفكار</span></button><button class="nav-item" data-view="tasks"><b>☷</b><span>المهام</span></button></nav>
-</main><dialog id="command-dialog"><button class="dialog-close" data-action="close-dialog">×</button><div id="dialog-content"></div></dialog><div class="toast" id="toast" role="status"></div><script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/content-command/app.js"></script></body></html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#062968" />
+    <title>XPAND · المدير الإبداعي</title>
+    <link rel="stylesheet" href="/content-command/style.css" />
+    <link rel="stylesheet" href="/content-command/director.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">›</span>
+          <div><b>XPAND</b><small>CONTENT DIRECTOR</small></div>
+        </div>
+        <button class="profile" data-action="profile">
+          ملف الشركة والإعدادات
+        </button>
+      </header>
+      <div class="runtime">
+        <span id="clock">جارٍ التحقق من وقت الخادم…</span
+        ><button class="ghost" data-action="refresh">تحديث ↻</button>
+      </div>
+      <div id="connection" role="status" aria-live="polite"></div>
+      <section class="hero">
+        <p class="eyebrow">الخليل، فلسطين · مساحة العمل الإبداعي</p>
+        <h1>فكرة تستحق التنفيذ.<br /><em>وخطة تحوّلها إلى واقع.</em></h1>
+        <p class="sub">
+          بحث موثّق، محتوى خاص بـ XPAND، ومتابعة فعلية للإنتاج. الفريق يصمّم
+          وينشر؛ المدير يخطّط ويتابع.
+        </p>
+        <div class="actions">
+          <button class="primary" data-action="new">＋ أنشئ حملة جديدة</button
+          ><button class="ghost" data-action="autonomous">
+            خطّط حملة مناسبة الآن ←
+          </button>
+        </div>
+        <div class="hero-orbit" aria-hidden="true"><span>XP</span></div>
+      </section>
+      <section
+        id="metrics"
+        class="metrics"
+        aria-label="إحصاءات السجلات"
+      ></section>
+      <section id="home-view" class="view">
+        <div id="jobs"></div>
+        <div class="workspace">
+          <section class="card">
+            <div class="section-title">
+              <h2>على طاولة الإنتاج اليوم</h2>
+              <button class="ghost" data-view="tasks">كل المهام</button>
+            </div>
+            <div id="today"></div>
+          </section>
+          <section class="card">
+            <div class="section-title">
+              <h2>التنبيهات</h2>
+              <button class="ghost" data-view="notifications">الكل</button>
+            </div>
+            <div id="notices-preview"></div>
+          </section>
+        </div>
+        <section class="card spaced">
+          <div class="section-title">
+            <h2>آخر الحملات</h2>
+            <button class="ghost" data-view="campaigns">السجل الكامل</button>
+          </div>
+          <div id="campaign-preview"></div>
+        </section>
+        <section class="card spaced">
+          <h2>حالة التشغيل</h2>
+          <div id="operations"></div>
+        </section>
+      </section>
+      <section id="campaigns-view" class="view" hidden>
+        <h2>الحملات والبحث</h2>
+        <p class="muted">
+          اتجاه واحد موصى به لكل طلب. تظهر مراحل العمل الفعلية، بما فيها التعثر.
+        </p>
+        <div id="campaigns"></div>
+      </section>
+      <section id="tasks-view" class="view" hidden>
+        <div class="section-title">
+          <h2>مهام الإنتاج</h2>
+          <button class="primary" data-action="new-task">＋ مهمة</button>
+        </div>
+        <label
+          >تصفية الحالة<select id="task-filter">
+            <option value="active">المهام المفتوحة</option>
+            <option value="all">كل المهام</option>
+            <option value="published">المنشورة فعليًا</option>
+          </select></label
+        >
+        <div id="tasks"></div>
+      </section>
+      <section id="calendar-view" class="view" hidden>
+        <div class="section-title">
+          <h2 id="calendar-title">التقويم</h2>
+          <div class="actions">
+            <button class="ghost" data-action="prev-month">السابق</button
+            ><button class="ghost" data-action="this-month">اليوم</button
+            ><button class="ghost" data-action="next-month">التالي</button>
+          </div>
+        </div>
+        <p class="muted">
+          بتوقيت الخليل · إنتاج / مراجعة / نشر مقترح / نشر فعلي. لا يُسجّل النشر
+          إلا بتأكيدكم.
+        </p>
+        <div id="calendar" class="calendar-grid"></div>
+      </section>
+      <section id="ideas-view" class="view" hidden>
+        <h2>بنك الفرص الإبداعية</h2>
+        <p class="muted">فرص منفصلة لا تستبدل الحملات قيد التنفيذ.</p>
+        <div id="ideas"></div>
+        <div class="section-title spaced">
+          <h2>سجل المناسبات</h2>
+          <button class="ghost" data-action="occasion-new">
+            ＋ توثيق مناسبة
+          </button>
+        </div>
+        <p class="muted">
+          لا عدّ تنازلي قبل تأكيد التاريخ. الاقتراحات المستخرجة من البحث تحتاج
+          مراجعة مصدرها.
+        </p>
+        <div id="occasions"></div>
+      </section>
+      <section id="notifications-view" class="view" hidden>
+        <h2>المتابعة والتنبيهات</h2>
+        <div id="notifications"></div>
+      </section>
+      <nav aria-label="التنقل الرئيسي">
+        <button class="nav-item active" data-view="home">
+          <b>⌂</b><span>الرئيسية</span></button
+        ><button class="nav-item" data-view="campaigns">
+          <b>✦</b><span>الحملات</span></button
+        ><button class="nav-item" data-view="calendar">
+          <b>▦</b><span>التقويم</span></button
+        ><button class="nav-item" data-view="ideas">
+          <b>◈</b><span>الفرص</span></button
+        ><button class="nav-item" data-view="tasks">
+          <b>☷</b><span>المهام</span>
+        </button>
+      </nav>
+    </main>
+    <dialog id="command-dialog">
+      <button class="dialog-close" data-action="close" aria-label="إغلاق">
+        ×
+      </button>
+      <div id="dialog-content"></div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/content-command/app.js" type="module"></script>
+  </body>
+</html>

@@ -26,6 +26,9 @@
 // ======================================================
 
 import express from "express";
+import { Store } from './content-director/store.js';
+import { registerRoutes } from './content-director/routes.js';
+import { Worker } from './content-director/worker.js';
 import pg from "pg";
 import crypto from "node:crypto";
 import path from "node:path";
@@ -5077,81 +5080,7 @@ function sanitizeTranscript(
 // EXPRESS
 // ======================================================
 
-function hebronNow() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: XPAND_TIMEZONE, weekday: "long", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false
-  }).formatToParts(new Date()).reduce((out, part) => ({ ...out, [part.type]: part.value }), {});
-  return { timezone: XPAND_TIMEZONE, iso: new Date().toISOString(),
-    localDate: `${parts.year}-${parts.month}-${parts.day}`,
-    weekday: new Intl.DateTimeFormat("ar-PS", { timeZone: XPAND_TIMEZONE, weekday: "long" }).format(new Date()),
-    time: `${parts.hour}:${parts.minute}:${parts.second}` };
-}
-
-function telegramWebAppUser(req) {
-  const raw = String(req.get("x-telegram-init-data") || "");
-  if (!raw || !TELEGRAM_BOT_TOKEN) return null;
-  try {
-    const params = new URLSearchParams(raw), received = params.get("hash");
-    if (!received) return null;
-    params.delete("hash");
-    const check = [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`).join("\n");
-    const secret = crypto.createHmac("sha256", "WebAppData").update(TELEGRAM_BOT_TOKEN).digest();
-    const expected = crypto.createHmac("sha256", secret).update(check).digest("hex");
-    if (!crypto.timingSafeEqual(Buffer.from(received), Buffer.from(expected))) return null;
-    const user = JSON.parse(params.get("user") || "{}");
-    if (!user?.id || (TELEGRAM_ALLOWED_USER_ID && String(user.id) !== TELEGRAM_ALLOWED_USER_ID)) return null;
-    return { id: Number(user.id), name: cleanText(user.first_name || PRIMARY_USER_NAME, 100) };
-  } catch { return null; }
-}
-
-function contentUser(req) {
-  const telegramUser = telegramWebAppUser(req);
-  // Local browser testing remains possible only when Railway explicitly opts in.
-  if (telegramUser) return telegramUser;
-  if (process.env.XPAND_CONTENT_ALLOW_UNAUTHENTICATED === "true") return { id: Number(TELEGRAM_ALLOWED_USER_ID || 0), name: PRIMARY_USER_NAME };
-  return null;
-}
-
-async function contentGeminiJson(prompt) {
-  if (!GEMINI_API_KEY) throw new Error("Gemini is not configured");
-  let lastError;
-  for (const model of toolModels()) {
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-        method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.65, maxOutputTokens: 3600, responseMimeType: "application/json" } })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error?.message || "Gemini generation failed");
-      return parseJsonText(extractGeminiText(data));
-    } catch (error) { lastError = error; }
-  }
-  throw lastError || new Error("Creative generation failed");
-}
-
-async function runContentCampaign(campaignId, userId) {
-  const set = (stage, extra = {}) => pool.query("UPDATE xpand_content_campaigns SET stage=$2, status=$3, updated_at=NOW(), started_at=COALESCE(started_at,NOW()) WHERE id=$1", [campaignId, stage, extra.status || "running"]);
-  try {
-    const campaign = (await pool.query("SELECT request_text FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2", [campaignId, userId])).rows[0];
-    if (!campaign) return;
-    await set("collecting_references");
-    let search = { results: [] }, researchLimitation = "";
-    try { search = await searchWeb(`creative agency advertising campaign ideas Palestine Hebron ${campaign.request_text}`); }
-    catch (error) { researchLimitation = `تعذر الوصول إلى البحث الخارجي: ${cleanText(error.message, 300)}`; }
-    const sources = (search.results || []).slice(0, 4).map(item => ({ title: cleanText(item.title, 300), url: cleanText(item.url, 2000), observation: cleanText(item.content || item.snippet || "مرجع متاح للقراءة.", 900) }));
-    for (const source of sources) await pool.query("INSERT INTO xpand_content_sources (id,campaign_id,title,url,source_type,observation) VALUES ($1,$2,$3,$4,'reference',$5)", [crypto.randomUUID(), campaignId, source.title || "مرجع", source.url, source.observation]);
-    await set("developing_concept");
-    const local = hebronNow();
-    const prompt = `أنت XPAND Content Director. أنشئ حملة واحدة فقط لشركة XPAND Creative Agency في الخليل، فلسطين، وليس لعميل. الطلب: ${campaign.request_text}\nالوقت الموثوق: ${local.weekday} ${local.localDate} ${local.time} في ${local.timezone}.\nمراجع تم الوصول إليها فعليًا: ${JSON.stringify(sources.map(s => ({title:s.title,url:s.url,observation:s.observation})))}\nلا تخترع عملاء أو نتائج أو أسعار أو ترندات محلية. استخدم هذه المراجع للإلهام فقط، واذكر القيود بصدق. أعد JSON فقط بالمفاتيح العربية التالية: الاسم،الهدف،الخدمة،الجمهور،لماذا_الآن،الرسالة،الفكرة_الإبداعية،التوجيه_البصري،الافتتاحية،النوع،المنصات،المدة،المشاهد،نص_على_الشاشة،تعليق_صوتي،الكابشن،الدعوة_للتواصل،تعليمات_التنفيذ،المواد_المطلوبة،الجهد،موعد_بدء_مقترح،موعد_مراجعة_مقترح،موعد_نشر_مقترح،مبرر_الجدولة،معيار_نجاح،افتراضات_وقيود. المشاهد مصفوفة كائنات {الزمن,المشهد,النص}.`;
-    const result = await contentGeminiJson(prompt);
-    await set("saving_plan");
-    await pool.query("UPDATE xpand_content_campaigns SET status='completed',stage='completed',result=$2,limitations=$3,completed_at=NOW(),updated_at=NOW() WHERE id=$1", [campaignId, JSON.stringify(result), researchLimitation || null]);
-    await pool.query("INSERT INTO xpand_content_tasks (id,campaign_id,user_id,title,description,status) VALUES ($1,$2,$3,$4,$5,'awaiting_start')", [crypto.randomUUID(), campaignId, userId, cleanText(result.الاسم || "حملة XPAND", 300), cleanText(result.تعليمات_التنفيذ || "راجع الفكرة واعتمد بدء التنفيذ.", 2000)]);
-  } catch (error) {
-    await pool.query("UPDATE xpand_content_campaigns SET status='failed',stage='failed',limitations=$2,updated_at=NOW() WHERE id=$1", [campaignId, cleanText(error.message, 1000)]);
-  }
-}
+const contentStore = new Store(pool);
 
 const app =
   express();
@@ -5864,41 +5793,7 @@ app.post(
 // STATIC UI
 // ======================================================
 
-app.get("/api/content/dashboard", async (req, res) => {
-  const user = contentUser(req);
-  if (!user) return res.status(401).json({ ok: false, error: "افتح الأداة من زر تيليجرام للوصول الآمن." });
-  try {
-    const [campaigns, tasks] = await Promise.all([
-      pool.query("SELECT id,request_text,status,stage,result,limitations,created_at,completed_at FROM xpand_content_campaigns WHERE user_id=$1 ORDER BY created_at DESC LIMIT 12", [user.id]),
-      pool.query("SELECT id,campaign_id,title,description,status,planned_at,actual_published_at,locked,created_at FROM xpand_content_tasks WHERE user_id=$1 ORDER BY created_at DESC LIMIT 30", [user.id])
-    ]);
-    res.json({ ok: true, now: hebronNow(), campaigns: campaigns.rows, tasks: tasks.rows, occasions: [], note: "لا توجد مناسبات معروضة قبل التحقق من مصدر وتاريخ مناسبين." });
-  } catch (error) { res.status(500).json({ ok: false, error: "تعذر تحميل غرفة القيادة.", detail: cleanText(error.message, 300) }); }
-});
-
-app.post("/api/content/campaigns", async (req, res) => {
-  const user = contentUser(req);
-  if (!user) return res.status(401).json({ ok: false, error: "افتح الأداة من زر تيليجرام للوصول الآمن." });
-  const requestText = cleanText(req.body?.request, 2000);
-  if (requestText.length < 8) return res.status(400).json({ ok: false, error: "اكتب هدف الحملة أو الخدمة التي تريد الترويج لها." });
-  const id = crypto.randomUUID();
-  try {
-    await pool.query("INSERT INTO xpand_content_campaigns (id,user_id,request_text,status,stage) VALUES ($1,$2,$3,'queued','queued')", [id, user.id, requestText]);
-    setImmediate(() => runContentCampaign(id, user.id));
-    res.status(202).json({ ok: true, campaign: { id, status: "queued", stage: "queued", request_text: requestText } });
-  } catch (error) { res.status(500).json({ ok: false, error: "تعذر بدء مهمة الحملة.", detail: cleanText(error.message, 300) }); }
-});
-
-app.patch("/api/content/tasks/:id", async (req, res) => {
-  const user = contentUser(req);
-  if (!user) return res.status(401).json({ ok: false, error: "غير مصرح." });
-  const allowed = new Set(["planned","awaiting_start","in_production","in_review","ready_to_publish","published","postponed","cancelled"]);
-  const status = cleanText(req.body?.status, 60);
-  if (!allowed.has(status)) return res.status(400).json({ ok: false, error: "حالة المهمة غير صالحة." });
-  const updated = await pool.query("UPDATE xpand_content_tasks SET status=$3, locked=CASE WHEN $3='in_production' THEN TRUE ELSE locked END, actual_published_at=CASE WHEN $3='published' THEN NOW() ELSE actual_published_at END, updated_at=NOW() WHERE id=$1 AND user_id=$2 RETURNING *", [req.params.id, user.id, status]);
-  if (!updated.rows[0]) return res.status(404).json({ ok: false, error: "المهمة غير موجودة." });
-  res.json({ ok: true, task: updated.rows[0] });
-});
+registerRoutes(app, contentStore, { token: TELEGRAM_BOT_TOKEN, allowed: TELEGRAM_ALLOWED_USER_ID });
 
 app.get(
   "/content-command",
@@ -6016,6 +5911,13 @@ async function start() {
 
 
   await initDatabase();
+  await contentStore.migrate();
+  const contentWorker = new Worker(contentStore, {
+    geminiKey: GEMINI_API_KEY, searchKey: TAVILY_API_KEY,
+    model: process.env.XPAND_CONTENT_MODEL || TOOL_MODEL,
+    token: TELEGRAM_BOT_TOKEN, allowed: TELEGRAM_ALLOWED_USER_ID
+  }).start();
+  process.on('SIGTERM', () => { contentWorker.stop(); setTimeout(() => process.exit(0), 1000).unref(); });
 
 
   const master =
