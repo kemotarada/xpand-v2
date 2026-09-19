@@ -1,9 +1,33 @@
 // Local-only UI acceptance fixture; never imported by production server.
 import fs from "node:fs";
 import express from "express";
-import { fixture, signedData, enqueue, workerFor } from "./test-support.js";
+import {
+  fixture,
+  signedData,
+  enqueue,
+  workerFor,
+  mockProvider,
+} from "./test-support.js";
+import { REFERENCES } from "./references.js";
 const f = await fixture();
-const worker = workerFor(f);
+const normal = mockProvider();
+const worker = workerFor(
+  f,
+  process.argv.includes("--fallback")
+    ? async (url, opts) => {
+        const reference = REFERENCES.find((r) => r.url === url);
+        if (reference)
+          return new Response(
+            `<h1>${reference.marker}</h1><p>${"مقتطف محاكاة للمراجعة المحلية فقط. ".repeat(40)}</p>`,
+            { headers: { "Content-Type": "text/html" } },
+          );
+        if (url.includes("tavily")) return Response.json({}, { status: 432 });
+        if (JSON.parse(opts.body).tools)
+          return Response.json({}, { status: 429 });
+        return normal(url, opts);
+      }
+    : normal,
+);
 await enqueue(f);
 await worker.run(await worker.claim());
 const root = new URL("../content-command/", import.meta.url);

@@ -60,6 +60,7 @@ const stages = {
   queued: "الانتظار",
   understanding: "فهم الطلب والسياق",
   collecting_references: "جمع المراجع",
+  reading_references: "قراءة مراجع إبداعية عامة مباشرة",
   developing_directions: "تطوير اتجاهات مختلفة",
   evaluating: "تقييم واختيار الاتجاه",
   preparing_plan: "كتابة خطة الإنتاج",
@@ -149,7 +150,11 @@ const taskEntry = (t) =>
   `<article class="entry"><div>${badge(t.status)}${t.locked ? badge("اتجاه مثبت") : ""}</div><h3>${esc(t.title)}</h3><p>${esc(t.description)}</p><p class="small-note">إنتاج: ${fmt(t.production_at)}<br>مراجعة: ${fmt(t.review_at)}<br>نشر مقترح: ${fmt(t.planned_at)}${t.actual_published_at ? "<br>النشر الفعلي: " + fmt(t.actual_published_at) : ""}</p>${button("task", "الحالة والمواعيد", t.id)}</article>`;
 function campaignEntry(c) {
   const status = c.display_status || c.status;
-  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(status, ["failed", "blocked", "needs_information", "unverified_result"].includes(status))}${badge(c.kind === "scan" ? "فحص دوري" : "حملة")}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(status === "unverified_result" ? "المحتوى السابق محفوظ للمراجعة، وليس حملة موثّقة جاهزة" : stages[c.stage] || labels[c.stage] || c.stage)}</p><p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "التفاصيل وسجل البحث", c.id)}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}${status === "unverified_result" ? button("research-again", "بحث جديد لهذا الطلب", c.id) : ""}</div></article>`;
+  const evidence =
+    c.result?.research_mode === "direct_references"
+      ? badge("مراجع عامة مقروءة مباشرة")
+      : "";
+  return `<article class="card spaced ${c.status === "running" ? "job running" : ""}">${badge(status, ["failed", "blocked", "needs_information", "unverified_result"].includes(status))}${badge(c.kind === "scan" ? "فحص دوري" : "حملة")}${evidence}<h3>${esc(c.result?.title || c.result?.الاسم || c.request_text)}</h3><p class="muted">${esc(status === "unverified_result" ? "المحتوى السابق محفوظ للمراجعة، وليس حملة موثّقة جاهزة" : stages[c.stage] || labels[c.stage] || c.stage)}</p><p class="small-note">البداية: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)}</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<div class="actions">${button("campaign", "التفاصيل وسجل البحث", c.id)}${["queued", "running"].includes(c.status) ? button("cancel", "إلغاء البحث", c.id) : ""}${["failed", "blocked", "needs_information", "cancelled"].includes(c.status) && c.attempts < 3 ? button("retry", "استكمال المحاولة", c.id) : ""}${status === "unverified_result" ? button("research-again", "بحث جديد لهذا الطلب", c.id) : ""}</div></article>`;
 }
 function notificationEntry(n) {
   return `<article class="entry">${!n.data.read ? badge("جديد") : ""}<p>${esc(n.data.message)}</p><small class="muted">${fmt(n.created_at)} · تيليجرام: ${esc({ pending: "بانتظار التفعيل أو وقت الإرسال", sent: "أُرسلت", sending: "إرسال غير مؤكد بعد", uncertain: "نتيجة الإرسال غير مؤكدة؛ لم نكرر الرسالة", failed: "تعذر الإرسال" }[n.data.delivery] || "غير مرسلة")}</small><div class="actions">${n.data.entity_id ? button("notice-target", "فتح السجل", n.data.entity_id) : ""}${!n.data.read ? button("read", "تمت القراءة", n.id) : ""}</div></article>`;
@@ -213,9 +218,32 @@ function render() {
   const blockedProviders = providerRows.filter(
     (r) => r.data.status === "blocked",
   );
+  const referenceReady = providerRows.some(
+    (r) =>
+      r.record_key === "direct_references" && r.data.status === "available",
+  );
   $("#operations").innerHTML =
     `<p>${badge(runtime?.paused_for_provider ? "البحث متوقف عند مزود الخدمة" : p.recurring && workerAlive ? "البحث الدوري يعمل" : p.recurring ? "البحث مفعّل؛ نبض العامل غير حديث" : "البحث الدوري غير مفعّل", !p.recurring || !workerAlive || runtime?.paused_for_provider)} ${p.recurring ? `كل ${p.interval_hours} ساعة، ضمن الحدود` : "يلزم اعتماد حدود التشغيل في الإعدادات."}</p><p>تنبيهات تيليجرام: ${p.telegram ? `مفعّلة · بحد ${p.notification_cap} رسائل يوميًا · هدوء ${p.quiet_start}:00–${p.quiet_end}:00` : "غير مفعّلة"}</p><p class="muted">طلبات الخدمات اليوم: <bdi>${s.usage.daily_calls} / ${p.daily_calls}</bdi> · هذا الشهر: <bdi>${s.usage.monthly_calls} / ${p.monthly_calls}</bdi><br>تكلفة محجوزة تقديرية: ${Number(s.usage.daily_reserved_usd).toFixed(3)} دولار اليوم. ليست فاتورة المزود ولا دليل حصة متاحة.<br>تحليلات الحسابات غير مربوطة حاليًا. النشر يدوي؛ لا أرقام أداء افتراضية.</p>${blockedProviders.map((r) => `<div class="error"><bdi>${esc(r.record_key)}</bdi><p>${esc(r.data.message)}</p><small>آخر فحص: ${fmt(r.data.checked_at)} · إعادة محاولة مؤهلة بعد: ${fmt(r.data.retry_at)}</small></div>`).join("")}${blockedProviders.length ? button("provider-recheck", "أعد التحقق بعد معالجة حصة المزود") : ""}${button("profile", "ضبط المعرفة والقدرة والحدود")}`;
   renderTasks();
+  if (runtime?.paused_for_provider) $("#operations .badge").textContent = "البحث الشامل / الدوري متوقف";
+  if (["auto", "direct"].includes(p.search_provider)) {
+    const note = document.createElement("p");
+    note.className = "small-note";
+    note.textContent = referenceReady
+      ? "قراءة المراجع المباشرة متاحة: يمكن للحملات استخدام هذا المسار ضمن حصة توليد النص وحدود التشغيل. لا يرصد الترندات أو المناسبات الجديدة. تعطل البحث الشامل لا يوقف هذا البديل."
+      : "عند تعطل البحث الشامل، تحاول الحملات قراءة مراجع إبداعية عامة مباشرة ثم توليد فكرة وخطة إنتاج. لا تُختلق ترندات أو مناسبات. توليد النص يبقى ضمن حصة Gemini وحدود التشغيل.";
+    $("#operations").prepend(note);
+  }
+  $("#operations")
+    .querySelectorAll(".error")
+    .forEach((error) => {
+      const details = document.createElement("details"),
+        summary = document.createElement("summary");
+      summary.textContent =
+        "تفاصيل تعطل المزود · " + error.querySelector("bdi").textContent;
+      error.replaceWith(details);
+      details.append(summary, error);
+    });
   renderCalendar();
   renderIdeas();
 }
@@ -394,6 +422,9 @@ async function openCampaign(id) {
     success_criterion: "معيار تقييم النتيجة",
   };
   let body = `${badge(c.display_status || c.status)}<p class="muted">${esc(c.request_text)}</p><p class="small-note">بدأ: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)} · محاولة ${c.attempts} من 3</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<p>${esc(c.display_status === "unverified_result" ? "بحث سابق غير مكتمل" : stages[c.stage] || labels[c.stage] || c.stage)}</p>`;
+  if (r.research_mode === "direct_references")
+    body +=
+      '<p class="small-note">حملة مبنية على قراءة مباشرة لمراجع إبداعية عامة وملف XPAND. ليست دراسة حديثة للسوق أو المناسبات. المقترح يحتاج مراجعة الفريق قبل الإنتاج والنشر.</p>';
   if (r.title) {
     body += `<div class="detail-grid">${Object.entries(sections)
       .filter(([k]) => r[k] !== null && r[k] !== undefined)
@@ -513,7 +544,8 @@ function profileForm() {
   dialog.querySelector('[data-form="settings"] .fields').insertAdjacentHTML(
     "afterbegin",
     `<label class="full">مصدر البحث<select name="search_provider">${[
-      ["auto", "تلقائي: Tavily ثم بحث Google عبر Gemini عند التعذر"],
+      ["auto", "تلقائي: بحث شامل ثم مراجع عامة مباشرة للحملات عند التعذر"],
+      ["direct", "مراجع عامة مباشرة للحملات — دون بحث ترندات أو مناسبات"],
       ["tavily", "Tavily فقط"],
       ["gemini", "بحث Google عبر Gemini فقط"],
     ]

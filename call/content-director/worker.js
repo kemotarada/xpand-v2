@@ -1,4 +1,9 @@
 import fs from "node:fs";
+import {
+  REFERENCES,
+  REFERENCE_LIMITATION,
+  readReference,
+} from "./references.js";
 import { id, transaction } from "./store.js";
 import {
   ProviderError,
@@ -350,8 +355,75 @@ export class Worker {
         .map((x) => x.data),
     };
   }
+  async directReferences(job) {
+    const results = [];
+    for (const ref of REFERENCES) {
+      await this.check(job);
+      const stage = "reference:" + hash(ref.url);
+      const cached = (
+        await this.pool.query(
+          "SELECT result,completed_at FROM xpand_director_calls WHERE user_id=$1 AND provider='reference' AND stage=$2 AND status='completed' AND completed_at>NOW()-INTERVAL '24 hours' ORDER BY completed_at DESC LIMIT 1",
+          [job.user_id, stage],
+        )
+      ).rows[0];
+      if (cached) {
+        results.push({
+          ...cached.result,
+          accessed_at: cached.completed_at,
+          reused: true,
+        });
+        continue;
+      }
+      const call = await this.store.reserve(job, "reference", stage);
+      try {
+        const item = await readReference(
+          ref,
+          this.fetcher,
+          this.active.get(job.id).signal,
+        );
+        await this.check(job);
+        await this.store.saveCall(call, item, { api_credits: 0 }, null);
+        results.push({
+          ...item,
+          accessed_at: new Date().toISOString(),
+          reused: false,
+        });
+      } catch (e) {
+        await this.store.saveCall(call, null, {}, messageText(e));
+        await this.check(job);
+      }
+    }
+    if (!results.length)
+      throw new Error(
+        "تعذرت قراءة المراجع العامة أيضًا؛ لم ننشئ مصادر أو بحثًا وهميًا.",
+      );
+    await this.store.record(job.user_id, "provider", "direct_references", {
+      service: "direct_references",
+      status: "available",
+      checked_at: new Date().toISOString(),
+      message: REFERENCE_LIMITATION,
+    });
+    return results.map((item) => ({
+      id: id(),
+      title: item.title,
+      url: item.url,
+      observation: item.content,
+      accessed_at: item.accessed_at,
+      reused: item.reused,
+      published_at: null,
+      source_type: "creative_reference",
+      engine: "direct_reference",
+      inspected:
+        "قراءة نص الصفحة العامة مباشرة؛ لم نفحص الصور أو الفيديوهات. وقت الوصول ليس تاريخ نشر المقال.",
+      limitations: REFERENCE_LIMITATION,
+    }));
+  }
   async collect(job, ctx) {
     if (job.checkpoint.sources?.length) return job.checkpoint.sources;
+    if (job.kind === "scan" && ctx.settings.search_provider === "direct")
+      throw new Error(
+        "قراءة المراجع العامة لا تتحقق من المناسبات الحالية؛ اختر خدمة بحث متاحة للدورات الدورية.",
+      );
     await this.store.checkpoint(job, "collecting_references", {});
     // Public topic-only queries never include private portfolio, contacts or raw user briefs.
     const topic = /فيديو|موشن|video|motion/i.test(job.request_text)
@@ -368,32 +440,65 @@ export class Worker {
             `creative agency self promotion ${topic} campaign case study`,
             `${topic} فلسطين الخليل أعمال تسويق ${ctx.now.localDate.slice(0, 7)}`,
           ];
-    const sources = [];
-    for (const query of queryList) {
-      const search = await this.research(job, query, ctx.settings.depth);
-      for (const item of search.data.results || []) {
-        const url = safeURL(item.url);
-        if (!url || sources.some((x) => x.url === url)) continue;
-        sources.push({
-          id: id(),
-          title: text(item.title, 300),
-          url,
-          source_type:
-            job.kind === "scan" ? "market_signal" : "creative_reference",
-          observation: text(item.content, 2400),
-          published_at: item.published_date || null,
-          accessed_at: search.accessed_at,
-          inspected:
-            search.data.engine === "gemini_grounding"
-              ? "ملخص نصي من بحث Google عبر Gemini، مرتبط بالمصدر في بيانات الاستشهاد؛ لم نشاهد الفيديو أو الصورة."
-              : "مقتطف نصي أعادته خدمة البحث؛ لم يُفحص الفيديو أو الصورة.",
-          engine: search.data.engine || "tavily",
-          search_suggestions: search.data.search_suggestions || "",
-          limitations:
-            "مرجع للإلهام وليس دليل فعالية أو ترند فلسطيني. تحقق مستقل مطلوب للأرقام والمواعيد.",
-          reused: search.reused,
+    let sources = [];
+    let researchMode = job.checkpoint.research_mode || "web_search";
+    const direct =
+      job.kind !== "scan" &&
+      (ctx.settings.search_provider === "direct" ||
+        researchMode === "direct_references");
+    try {
+      if (direct) {
+        sources = await this.directReferences(job);
+        researchMode = "direct_references";
+      } else {
+        for (const query of queryList) {
+          const search = await this.research(job, query, ctx.settings.depth);
+          for (const item of search.data.results || []) {
+            const url = safeURL(item.url);
+            if (!url || sources.some((x) => x.url === url)) continue;
+            sources.push({
+              id: id(),
+              title: text(item.title, 300),
+              url,
+              source_type:
+                job.kind === "scan" ? "market_signal" : "creative_reference",
+              observation: text(item.content, 2400),
+              published_at: item.published_date || null,
+              accessed_at: search.accessed_at,
+              inspected:
+                search.data.engine === "gemini_grounding"
+                  ? "ملخص نصي من بحث Google عبر Gemini، مرتبط بالمصدر في بيانات الاستشهاد؛ لم نشاهد الفيديو أو الصورة."
+                  : "مقتطف نصي أعادته خدمة البحث؛ لم يُفحص الفيديو أو الصورة.",
+              engine: search.data.engine || "tavily",
+              search_suggestions: search.data.search_suggestions || "",
+              limitations:
+                "مرجع للإلهام وليس دليل فعالية أو ترند فلسطيني. تحقق مستقل مطلوب للأرقام والمواعيد.",
+              reused: search.reused,
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Never bypass local budgets, cancellation, text-model quotas, or explicit provider choice.
+      if (
+        job.kind === "scan" ||
+        ctx.settings.search_provider !== "auto" ||
+        !e.issue
+      )
+        throw e;
+      await this.store.checkpoint(job, "reading_references", {
+        research_mode: "direct_references",
+      });
+      try {
+        sources = await this.directReferences(job);
+      } catch (fallback) {
+        if (fallback.message.includes("حد الاستهلاك")) throw fallback;
+        throw new ProviderError({
+          ...e.issue,
+          message: e.issue.message + "\n" + fallback.message,
         });
       }
+      researchMode = "direct_references";
     }
     if (!sources.length) throw new Error("لم يُجمع أي مصدر صالح.");
     await transaction(this.pool, async (tx) => {
@@ -419,14 +524,28 @@ export class Worker {
         );
       await tx.query(
         "UPDATE xpand_content_campaigns SET checkpoint=checkpoint || $3::jsonb,updated_at=NOW() WHERE id=$1 AND worker_id=$2",
-        [job.id, job.worker_id, JSON.stringify({ sources })],
+        [
+          job.id,
+          job.worker_id,
+          JSON.stringify({ sources, research_mode: researchMode }),
+        ],
       );
     });
     job.checkpoint.sources = sources;
+    job.checkpoint.research_mode = researchMode;
     return sources;
   }
   async campaign(job, ctx, sources) {
-    const base = { ...ctx, sources };
+    const base = {
+      ...ctx,
+      sources,
+      research_mode: job.checkpoint.research_mode,
+      evidence_boundary:
+        job.checkpoint.research_mode === "direct_references"
+          ? REFERENCE_LIMITATION +
+            " Do not claim current market research, trends, date verification, competitor analysis or account inspection. Produce an evergreen company-introduction concept. Missing optional portfolio assets must not block a concept that can be made from original typography/motion; list them as dependencies only if genuinely needed."
+          : "Use only supplied evidence; no invented observations.",
+    };
     let directions = job.checkpoint.directions;
     if (!directions) {
       await this.store.checkpoint(job, "developing_directions", {});
@@ -470,7 +589,7 @@ export class Worker {
       !final && round < ctx.settings.rounds;
       round++
     ) {
-      if (round > 0) {
+      if (round > 0 && job.checkpoint.research_mode !== "direct_references") {
         await this.store.checkpoint(job, "collecting_references", {});
         const extra = await this.research(
           job,
@@ -555,6 +674,11 @@ export class Worker {
         "الفكرة تحتاج تطويرًا ولم تُعلن مكتملة: " +
           text(job.checkpoint.quality_issue),
       );
+    final.research_mode = job.checkpoint.research_mode || "web_search";
+    if (final.research_mode === "direct_references")
+      final.limitations = [
+        ...new Set([...final.limitations, REFERENCE_LIMITATION]),
+      ];
     await this.store.checkpoint(job, "saving_plan", { final });
     await this.finishCampaign(job, ctx, final);
   }
@@ -627,7 +751,7 @@ export class Worker {
       };
       result.limitations = [
         ...result.limitations,
-        "المراجع نصوص بحث فقط؛ لم نفحص صورًا أو فيديوهات. تحليلات الحسابات غير مربوطة.",
+        "المراجع نصية فقط؛ لم نفحص صورًا أو فيديوهات. تحليلات الحسابات غير مربوطة.",
       ];
       await tx.query(
         "UPDATE xpand_content_campaigns SET status='completed',stage='completed',result=$3,limitations=NULL,checkpoint=checkpoint-'provider_issue',completed_at=NOW(),updated_at=NOW(),lease_until=NULL WHERE id=$1 AND worker_id=$2",
@@ -914,12 +1038,14 @@ export class Worker {
         (p) => p.service === service && Date.parse(p.retry_at) > Date.now(),
       );
     const searchBlocked =
-      s.search_provider === "tavily"
-        ? unavailable("tavily")
-        : s.search_provider === "gemini"
-          ? unavailable("grounding:" + this.searchModel)
-          : unavailable("tavily") &&
-            unavailable("grounding:" + this.searchModel);
+      s.search_provider === "direct"
+        ? true
+        : s.search_provider === "tavily"
+          ? unavailable("tavily")
+          : s.search_provider === "gemini"
+            ? unavailable("grounding:" + this.searchModel)
+            : unavailable("tavily") &&
+              unavailable("grounding:" + this.searchModel);
     const providerBlocked =
       searchBlocked || unavailable("gemini:" + this.model);
     if (

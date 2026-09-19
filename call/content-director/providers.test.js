@@ -156,6 +156,7 @@ test("both providers blocked: no fake campaign, no rapid retries, scheduler paus
       ...defaultSettings,
       recurring: true,
       pricing_confirmed: true,
+      search_provider: "gemini",
     });
     let outbound = 0;
     const worker = workerFor(f, async (url) => {
@@ -177,18 +178,18 @@ test("both providers blocked: no fake campaign, no rapid retries, scheduler paus
     const dash = await f.api("/dashboard");
     assert.equal(dash.campaigns.length, 1);
     assert.equal(dash.tasks.length, 0);
-    assert.equal(dash.usage.daily_calls, 2);
+    assert.equal(dash.usage.daily_calls, 1);
     assert.equal(
       dash.records.find((r) => r.kind === "worker").data.paused_for_provider,
       true,
     );
-    assert.equal(outbound, 2);
+    assert.equal(outbound, 1);
     await f.api("/providers/recheck", "POST");
     assert.equal(
       (await f.api("/campaigns/" + cid + "/retry", "POST")).status,
       200,
     );
-    assert.equal((await f.api("/dashboard")).usage.daily_calls, 2);
+    assert.equal((await f.api("/dashboard")).usage.daily_calls, 1);
     worker.stop();
   } finally {
     await f.close();

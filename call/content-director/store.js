@@ -137,11 +137,13 @@ export class Store {
         throw new Error("انتهت مهلة المهمة.");
       const { settings: s } = await this.config(job.user_id, db);
       const costs =
-        provider === "grounding"
-          ? s.search_call_usd + s.model_call_usd
-          : provider === "search"
-            ? s.search_call_usd
-            : s.model_call_usd;
+        provider === "reference"
+          ? 0
+          : provider === "grounding"
+            ? s.search_call_usd + s.model_call_usd
+            : provider === "search"
+              ? s.search_call_usd
+              : s.model_call_usd;
       if (costs > 0 && !s.pricing_confirmed)
         throw new Error("أسعار الخدمات لم تعتمد بعد.");
       const u = (

@@ -148,16 +148,22 @@ export function registerRoutes(app, store, { token, allowed }) {
   route("post", "/campaigns/:id/retry", async (r) => {
     const prior = (
       await db.query(
-        "SELECT checkpoint FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2",
+        "SELECT checkpoint,kind FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2",
         [ownedId(r), r.contentUser],
       )
     ).rows[0];
     if (prior?.checkpoint?.provider_issue) {
       const issue = prior.checkpoint.provider_issue;
+      const { settings } = await store.config(r.contentUser);
+      const canUseReferences =
+        prior.kind === "campaign" &&
+        ["auto", "direct"].includes(settings.search_provider) &&
+        (issue.service === "tavily" || issue.service?.startsWith("grounding:"));
       const provider = (await store.records(r.contentUser, "provider")).find(
         (p) => p.record_key === issue.service,
       )?.data;
       if (
+        !canUseReferences &&
         provider?.status === "blocked" &&
         Date.parse(provider.retry_at) > Date.now()
       )

@@ -156,7 +156,9 @@ export const defaultSettings = {
 };
 export function settingsInput(v = {}) {
   const o = { ...defaultSettings };
-  o.search_provider = ["auto", "tavily", "gemini"].includes(v.search_provider)
+  o.search_provider = ["auto", "tavily", "gemini", "direct"].includes(
+    v.search_provider,
+  )
     ? v.search_provider
     : "auto";
   for (const k of ["recurring", "pricing_confirmed", "telegram"])
