@@ -74,6 +74,27 @@ export class Store {
       ],
     );
   }
+  async assertAllowance(user, campaignId = null, db = this.pool) {
+    const { settings: s } = await this.config(user, db);
+    const usage = (
+      await db.query(
+        `SELECT count(*) FILTER(WHERE (created_at AT TIME ZONE $2)::date=(NOW() AT TIME ZONE $2)::date)::int AS day,count(*) FILTER(WHERE date_trunc('month',created_at AT TIME ZONE $2)=date_trunc('month',NOW() AT TIME ZONE $2))::int AS month,count(*) FILTER(WHERE campaign_id=$3)::int AS task FROM xpand_director_calls WHERE user_id=$1`,
+        [user, ZONE, campaignId],
+      )
+    ).rows[0];
+    if (usage.day >= s.daily_calls)
+      throw new Error(
+        "اكتمل حد اليوم. يتجدد عند منتصف الليل بتوقيت الخليل، أو عدّل الحد المعتمد. لم نستهلك محاولة ولم ننشئ طلبًا جديدًا.",
+      );
+    if (usage.month >= s.monthly_calls)
+      throw new Error(
+        "اكتمل حد الشهر. لم نستهلك محاولة جديدة؛ يلزم تجدد الحد أو تعديله.",
+      );
+    if (campaignId && usage.task >= s.task_calls)
+      throw new Error(
+        "وصل هذا الطلب لحد المهمة؛ زيادة حد اليوم وحدها لا تكفي. عدّل حد المهمة المعتمد للاستكمال، دون مسح الاستهلاك السابق.",
+      );
+  }
   async version(user, entity, kind, snapshot, db = this.pool) {
     await db.query(
       "INSERT INTO xpand_director_versions(id,user_id,entity_id,kind,snapshot) VALUES($1,$2,$3,$4,$5)",
@@ -85,7 +106,7 @@ export class Store {
       await Promise.all([
         this.config(user),
         this.pool.query(
-          "SELECT * FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY created_at DESC) AS rn FROM xpand_content_campaigns WHERE user_id=$1) t WHERE rn<=60 ORDER BY created_at DESC",
+          "SELECT t.*,(SELECT count(*)::int FROM xpand_director_calls c WHERE c.campaign_id=t.id) AS call_count FROM (SELECT *,row_number() OVER(PARTITION BY kind ORDER BY created_at DESC) AS rn FROM xpand_content_campaigns WHERE user_id=$1) t WHERE rn<=60 ORDER BY created_at DESC",
           [user],
         ),
         this.pool.query(

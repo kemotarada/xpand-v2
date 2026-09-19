@@ -24,6 +24,82 @@ import {
 } from "./test-support.js";
 import { localClock } from "./core.js";
 import { creativeView } from "../content-command/creative-view.js";
+import { libraryCard } from "../content-command/library.js";
+test("library distinguishes unfinished requests from results and explains each exhausted cap", () => {
+  const c = {
+    status: "blocked",
+    attempts: 1,
+    request_text: "طلب طويل ".repeat(50),
+    call_count: 10,
+  };
+  const limits = { daily_calls: 20, monthly_calls: 200, task_calls: 10 };
+  let card = libraryCard(c, { daily_calls: 27, monthly_calls: 27 }, limits);
+  assert.ok(card.heading.length < 60);
+  assert.equal(card.complete, false);
+  assert.equal(card.canRetry, false);
+  assert.match(card.budgetReason, /حد اليوم/);
+  card = libraryCard(c, { daily_calls: 2, monthly_calls: 2 }, limits);
+  assert.match(card.budgetReason, /حد المهمة/);
+  assert.equal(
+    libraryCard(
+      { ...c, status: "completed", result: { title: "فكرة محفوظة" } },
+      {},
+      limits,
+    ).heading,
+    "فكرة محفوظة",
+  );
+});
+test("exhausted retry/new/week requests do not consume attempts or create junk cards", async () => {
+  const f = await fixture();
+  const w = workerFor(f);
+  try {
+    const id = await enqueue(f);
+    await w.run(await w.claim());
+    const initial = await f.api("/campaigns/" + id);
+    await f.pool.query(
+      "UPDATE xpand_content_campaigns SET status='blocked' WHERE id=$1",
+      [id],
+    );
+    const settings = (await f.store.config(TEST_USER)).settings;
+    await f.store.record(TEST_USER, "settings", "main", {
+      ...settings,
+      daily_calls: 1,
+    });
+    assert.equal(
+      (await f.api("/campaigns/" + id + "/retry", "POST")).status,
+      400,
+    );
+    assert.equal(
+      (
+        await f.api(
+          "/campaigns",
+          "POST",
+          { request: "فكرة جديدة لا تنشأ فوق الحد" },
+          { "Idempotency-Key": "blocked-new" },
+        )
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await f.api(
+          "/week-plan",
+          "POST",
+          {},
+          { "Idempotency-Key": "blocked-week" },
+        )
+      ).status,
+      400,
+    );
+    const after = await f.api("/campaigns/" + id);
+    assert.equal(after.campaign.attempts, initial.campaign.attempts);
+    assert.equal(after.calls.length, initial.calls.length);
+    assert.equal((await f.api("/dashboard")).campaigns.length, 1);
+  } finally {
+    w.stop();
+    await f.close();
+  }
+});
 test("creative gates require distinct mechanisms and a justified review, not automatic praise", () => {
   const r = {
     directions: ["demonstration", "narrative_reversal", "sound_led"].map(

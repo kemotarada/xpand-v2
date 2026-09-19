@@ -137,6 +137,7 @@ export function registerRoutes(app, store, { token, allowed }) {
           [r.contentUser],
         )
       ).rows[0].n;
+      await store.assertAllowance(r.contentUser, null, tx);
       if (queued >= 3)
         throw new Error(
           "هناك ثلاث مهام قيد الانتظار أو التنفيذ. انتظر أو ألغِ مهمة.",
@@ -178,6 +179,7 @@ export function registerRoutes(app, store, { token, allowed }) {
     return {};
   });
   route("post", "/campaigns/:id/retry", async (r) => {
+    await store.assertAllowance(r.contentUser, ownedId(r));
     const prior = (
       await db.query(
         "SELECT checkpoint,kind FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2",

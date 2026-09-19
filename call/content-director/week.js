@@ -127,6 +127,7 @@ export function registerWeekRoutes(route, store, ownedId) {
         )
       ).rows[0];
       if (old) return { campaign: old };
+      await store.assertAllowance(r.contentUser, null, tx);
       const active = (
         await tx.query(
           "SELECT count(*)::int AS n FROM xpand_content_campaigns WHERE user_id=$1 AND status IN ('queued','running')",

@@ -170,8 +170,8 @@ test("budget reservations stop model execution; retry does not erase spend", asy
       "blocked",
     );
     assert.equal((await f.api("/dashboard")).usage.daily_calls, 1);
-    await f.api("/campaigns/" + campaignId + "/retry", "POST");
-    await worker.run(await worker.claim());
+    assert.equal((await f.api("/campaigns/" + campaignId + "/retry", "POST")).status, 400);
+    assert.equal(await worker.claim(), null); // exhausted retries are rejected before consuming an attempt
     assert.equal((await f.api("/dashboard")).usage.daily_calls, 1);
     worker.stop();
   } finally {
