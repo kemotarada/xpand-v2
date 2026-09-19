@@ -59,6 +59,10 @@ class STCV4Tests(unittest.TestCase):
                 self.assertTrue(copy.saudi_cultural_fit)
                 self.assertTrue(copy.factuality_note)
                 self.assertTrue(copy.brand_memory_tag)
+                if family == 'business_financing':
+                    self.assertIn('business', copy.brand_memory_tag)
+                elif family == 'digital_wallets':
+                    self.assertIn('wallet', copy.brand_memory_tag)
 
     def test_prompt_resume_never_generates(self):
         brief='بدي برومت لبنك STC عن شريحة السفر 4:5'
@@ -75,7 +79,7 @@ class STCV4Tests(unittest.TestCase):
         winner=CreativeConcept(core_idea='A traveler pauses at the departure bench with luggage and phone.',
             quality_gate_passed=True,evaluation_valid=True)
         reviewed=SimpleNamespace(winner=winner,ok=True,metadata={'quality_gate_passed':True})
-        with patch.object(t,'prepare_generation_input',side_effect=AssertionError('Must not generate')), \
+        with patch.object(t,'prepare_generation_input',side_effect=AssertionError('Must not generate')),
              patch.object(t,'run_creative_brain',return_value=reviewed) as brain:
             result=t.generate_and_deliver(core,901,902,request)
         self.assertEqual(brain.call_count,1)
