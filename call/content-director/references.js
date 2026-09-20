@@ -19,6 +19,9 @@ export const REFERENCES = Object.freeze([
   },
 ]);
 export function selectReferences(request) {
+  // Video intent wins even when the brief says "do not repeat a logo".
+  if (/فيديو|موشن|video|motion/i.test(request))
+    return [REFERENCES[0], REFERENCES[1]];
   return [
     /شعار|هوي|logo|brand/i.test(request) ? REFERENCES[1] : REFERENCES[0],
     REFERENCES[2],

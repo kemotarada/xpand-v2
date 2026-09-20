@@ -11,6 +11,27 @@ function seconds(value) {
   return value;
 }
 
+export function stockMechanismIssue(plan) {
+  for (const item of plan.items || []) {
+    const story = [
+      item.concept,
+      item.mechanism,
+      item.composition,
+      ...(item.scenes || []).map((s) => s.visual + " " + s.action),
+    ].join(" ");
+    const tidyReveal =
+      /تشويش|مشتت|مشوش|فوضى|مزدحم|غباش/.test(story) &&
+      /نظيف|وضوح|واضح|منظم|ترتيب|انسجام|يرتب/.test(story);
+    const animateShapes =
+      /ثابت|جامد|جمود/.test(story) &&
+      /أشكال|دائر|شعار/.test(story) &&
+      /حرك|تتحرك|موشن/.test(story);
+    if (tidyReveal || animateShapes)
+      return `«${item.title}» تعيد قالبًا مستبعدًا: فوضى تصبح ترتيبًا أو أشكال جامدة تتحرك ثم شعار. ابتكر حدثًا إعلانيًا مختلفًا، لا تغييرًا في الكلمات أو الستايل.`;
+  }
+  return null;
+}
+
 export function validateCampaignPlan(plan, days, sources) {
   if (
     !plan?.title ||
@@ -123,7 +144,8 @@ export async function campaignPlan(worker, job, ctx, sources) {
             previous_editorial_issue: job.checkpoint.plan_feedback || null,
             research_mode: job.checkpoint.research_mode,
           },
-          instruction,
+          instruction +
+            " ABSOLUTELY EXCLUDED STOCK PLOTS: clutter/noise/blur becomes tidy/clear; static shapes become moving shapes; geometric logo assembly. These are rejected even if the reviewer praises them. Use a concrete original event (a visual riddle with an earned answer, a decision with an unexpected consequence, a meaningful object interaction), demonstrating what an advertising decision changes. Name the exact objects and exact final line. Opening, central event and payoff must differ between all assets and excluded_concept. Sound and words must carry the same story as the images. Do not merely assert an abstract object is professional. The campaign may share brand palette, never share the same plot.",
         )),
       days,
       sources,
@@ -132,14 +154,17 @@ export async function campaignPlan(worker, job, ctx, sources) {
       campaign_plan: result,
     });
   }
-  const review = await worker.modelJSON(
-    job,
-    "campaign_plan_review",
-    { ...ctx, sources, package: result },
-    QUALITY_PROMPT +
-      " Additionally reject repeated central ideas between items or previous_campaigns/excluded_concept. Review each concise scene sequence, not a per-second production script. Do not require unrequested detailed camera fields.",
-  );
-  const issue = reviewIssue(review);
+  const stockIssue = stockMechanismIssue(result);
+  const review = stockIssue
+    ? null
+    : await worker.modelJSON(
+        job,
+        "campaign_plan_review",
+        { ...ctx, sources, package: result },
+        QUALITY_PROMPT +
+          " Additionally reject repeated central ideas between items or previous_campaigns/excluded_concept. Review each concise scene sequence, not a per-second production script. Do not require unrequested detailed camera fields.",
+      );
+  const issue = stockIssue || reviewIssue(review);
   if (issue) {
     if (!job.checkpoint.plan_revision) {
       await worker.store.checkpoint(job, "developing_directions", {

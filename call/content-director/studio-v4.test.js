@@ -2,13 +2,49 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { parseModelObject } from "./model-output.js";
-import { validateCampaignPlan } from "./campaign-plan.js";
+import { validateCampaignPlan, stockMechanismIssue } from "./campaign-plan.js";
+import { selectReferences } from "./references.js";
 import { compactStoryboard } from "../content-command/compact-view.js";
 import { Worker } from "./worker.js";
 import { fixture, workerFor, mockProvider } from "./test-support.js";
 
 const response = (text) => ({
   candidates: [{ finishReason: "STOP", content: { parts: [{ text }] } }],
+});
+test("temporary model errors retry once after cooldown, quota errors never spin", async () => {
+  const worker = Object.create(Worker.prototype);
+  worker.geminiKey = "test-only";
+  worker.active = new Map([["test", new AbortController()]]);
+  worker.store = {
+    checkpoint: async (j, s, d) => Object.assign(j.checkpoint, d),
+  };
+  let calls = 0;
+  const job = { id: "test", checkpoint: {} };
+  worker.request = async () => {
+    calls++;
+    if (calls === 1) {
+      const e = new Error("temporary");
+      e.issue = { http_status: 503, retry_at: new Date().toISOString() };
+      throw e;
+    }
+    return response('{"ok":true}');
+  };
+  assert.deepEqual(await worker.modelJSON(job, "review", {}, "test"), {
+    ok: true,
+  });
+  assert.equal(calls, 2);
+  assert.equal(job.checkpoint.transient_retry_review, true);
+  calls = 0;
+  worker.request = async () => {
+    calls++;
+    const e = new Error("quota");
+    e.issue = { http_status: 429, retry_at: new Date().toISOString() };
+    throw e;
+  };
+  await assert.rejects(
+    worker.modelJSON({ id: "test", checkpoint: {} }, "review", {}, "test"),
+  );
+  assert.equal(calls, 1);
 });
 test("model JSON accepts a whole fenced object but never partial/fake results", () => {
   assert.deepEqual(parseModelObject(response('```json\n{"title":"ok"}\n```')), {
@@ -79,6 +115,11 @@ function plan() {
   };
 }
 test("campaign plans need distinct mixed assets within duration and complete shot coverage", () => {
+  const repetitive = plan();
+  repetitive.items[0].concept = "فوضى تتحول إلى ترتيب واضح";
+  assert.match(stockMechanismIssue(repetitive), /قالبًا/);
+  assert.equal(stockMechanismIssue(plan()), null);
+  assert.match(selectReferences("فيديو لا تكرر الشعار")[0].url, /google/);
   assert.equal(validateCampaignPlan(plan(), 7, sources).items.length, 2);
   const clockPlan = plan();
   for (const s of clockPlan.items[0].scenes) {

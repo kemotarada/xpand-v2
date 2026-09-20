@@ -239,10 +239,11 @@ function render() {
   $("#operations")
     .querySelectorAll(".error")
     .forEach((error) => {
+      const providerName = error.querySelector("bdi");
+      if (!providerName) return; // A budget warning is not a provider diagnostic.
       const details = document.createElement("details"),
         summary = document.createElement("summary");
-      summary.textContent =
-        "تفاصيل تعطل المزود · " + error.querySelector("bdi").textContent;
+      summary.textContent = "تفاصيل تعطل المزود · " + providerName.textContent;
       error.replaceWith(details);
       details.append(summary, error);
     });

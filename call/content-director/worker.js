@@ -810,6 +810,17 @@ export class Worker {
         }
       }
       if (!issue) {
+        const { stockMechanismIssue } = await import("./campaign-plan.js");
+        issue = stockMechanismIssue({
+          items: [
+            {
+              ...proposal,
+              scenes: proposal.storyboard?.scenes || proposal.scenes,
+            },
+          ],
+        });
+      }
+      if (!issue) {
         await this.store.checkpoint(job, "quality_review", { proposal });
         const review = await this.modelJSON(
           job,
