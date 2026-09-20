@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { outputSchema } from "./output-schema.js";
 import { planWeek } from "./week.js";
 import {
   selectReferences,
@@ -234,6 +235,9 @@ export class Worker {
               : 0.65,
             maxOutputTokens: 10000,
             responseMimeType: "application/json",
+            ...(outputSchema(stage, context)
+              ? { responseJsonSchema: outputSchema(stage, context) }
+              : {}),
           },
         },
         { "x-goog-api-key": this.geminiKey },

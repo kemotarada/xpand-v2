@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { parseModelObject } from "./model-output.js";
+import { outputSchema } from "./output-schema.js";
 import {
   validateCampaignPlan,
   stockMechanismIssue,
@@ -14,6 +15,37 @@ import { fixture, workerFor, mockProvider } from "./test-support.js";
 
 const response = (text) => ({
   candidates: [{ finishReason: "STOP", content: { parts: [{ text }] } }],
+});
+test("storyboard generation constrains every field and resumes with saved proposal", async () => {
+  const schema = outputSchema("storyboard", {
+    proposal: { duration_seconds: 15 },
+  });
+  assert.deepEqual(schema.properties.duration_seconds.enum, [15]);
+  assert.equal(schema.properties.beats.minItems, 15);
+  assert.equal(schema.properties.beats.maxItems, 15);
+  assert.ok(schema.properties.scenes.items.required.includes("visual"));
+  assert.ok(schema.properties.beats.items.required.includes("visual_change"));
+  assert.equal(outputSchema("insights", {}), undefined);
+  const worker = Object.create(Worker.prototype);
+  worker.geminiKey = "test-only";
+  const proposal = { duration_seconds: 15, concept: "saved concept" };
+  const job = {
+    id: "test",
+    checkpoint: { proposal, output_repair_storyboard: true },
+  };
+  let calls = 0;
+  worker.request = async (j, provider, stage, url, body) => {
+    calls++;
+    assert.deepEqual(body.generationConfig.responseJsonSchema, schema);
+    assert.deepEqual(
+      JSON.parse(body.contents[0].parts[0].text).trusted_context.proposal,
+      proposal,
+    );
+    return response('{"duration_seconds":15}');
+  };
+  await worker.modelJSON(job, "storyboard", { proposal }, "test");
+  assert.equal(calls, 1);
+  assert.equal(job.checkpoint.output_repair_storyboard, true);
 });
 test("temporary model errors retry once after cooldown, quota errors never spin", async () => {
   const worker = Object.create(Worker.prototype);
