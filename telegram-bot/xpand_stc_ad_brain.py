@@ -457,7 +457,6 @@ class STCAdBrain:
                 headline_strategy="Built for every way customers buy across the Kingdom.",
                 core_idea="A specific contemporary Saudi merchant category is captured at the instant an online order becomes an in-person handoff, with the POS action driving the moment.",
                 visual_mechanism="Foreground/background cause and effect: a contactless acceptance action leads the eye to a real order handoff in one continuous premium environment.",
-                benefit_translation="STC Bank helps Saudi merchants serve online and in-store customers through one connected financial service.",
                 environment="Specific modern Saudi specialty retailer with controlled STC purple architectural accents, tactile local material culture and no stock-office staging.",
                 hero_subject="Merchant hands and customer handoff; faces remain secondary.",
                 scene_structure="Eye-level oblique 4:5 environmental close shot, real depth, dark purple practical light and integrated side copy space.",
