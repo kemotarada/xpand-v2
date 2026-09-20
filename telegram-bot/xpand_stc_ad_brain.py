@@ -533,10 +533,12 @@ def run_validation() -> bool:
     copies_dw = brain.generate_premium_copy("digital_wallets")
     assert len(copies_dw) > 0, "Expected digital wallets copy"
     assert copies_dw[0].headline_ar, "Missing digital wallets Arabic headline"
+    assert "twitter" in copies_dw[0].channel_variants, "Missing twitter variant"
 
     copies_ci = brain.generate_premium_copy("card_issuing")
     assert len(copies_ci) > 0, "Expected card issuing copy"
     assert copies_ci[0].headline_ar, "Missing card issuing Arabic headline"
+    assert "instagram" in copies_ci[0].channel_variants, "Missing instagram variant"
 
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
