@@ -585,7 +585,9 @@ if __name__ == "__main__":
     for copy in copies_bf:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
 
-    copies_dw = brain.generate_premium_copy("digital_wallets")
+    copies_dw = brain.generate_premium_copy(
+        "digital_wallets"
+    )
     print(f"generated_copies (wallets) = {len(copies_dw)}")
     for copy in copies_dw:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
