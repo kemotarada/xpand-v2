@@ -12,7 +12,24 @@ function seconds(value) {
 }
 
 export function stockMechanismIssue(plan) {
+  if (/قرار شراء فوري|تضمن المبيعات|تزيد المبيعات/.test(plan.summary || ""))
+    return "ملخص الحملة يعد بنتيجة تجارية غير مثبتة؛ يلزم صياغة هدف لا ضمان.";
   for (const item of plan.items || []) {
+    const copy = JSON.stringify(item);
+    if (
+      /قرار شراء فوري|يختار المنتج بثقة|بلا تردد|أنك الأفضل|تزيد المبيعات|تضمن المبيعات/.test(
+        copy,
+      )
+    )
+      return `«${item.title}» تتضمن وعدًا تجاريًا غير مثبت. اكتب فائدة الخدمة كهدف مقصود، لا كقرار شراء أو نتيجة مضمونة.`;
+    if (
+      (item.scenes || []).some((s) =>
+        /(?:موشن جرافيك|عنصر بصري).*(?:يوضح الفكرة|يختصر الخدمة|تفاعلي|يوصل المعنى)/.test(
+          s.visual || "",
+        ),
+      )
+    )
+      return `«${item.title}» لا تحدد ما يظهر على الشاشة. سمِّ الأشياء والكلمات والحركة والكشف النهائي؛ عبارة موشن يوضح الفكرة ليست ستوري بورد.`;
     const story = [
       item.concept,
       item.mechanism,
@@ -99,7 +116,11 @@ export function validateCampaignPlan(plan, days, sources) {
       }
       if (end !== item.duration_seconds)
         throw new Error("اللقطات لا تغطي مدة الفيديو.");
-    } else if (!item.composition)
+    } else if (
+      !item.composition ||
+      typeof item.headline !== "string" ||
+      item.headline.trim().length < 3
+    )
       throw new Error("البوستر يحتاج شرح توزيع العناصر والنص.");
   }
   if (
@@ -145,6 +166,7 @@ export async function campaignPlan(worker, job, ctx, sources) {
             research_mode: job.checkpoint.research_mode,
           },
           instruction +
+            " For each static asset add headline:string containing the EXACT public-facing headline, not a description such as bold heading. For each video, every scene must name the concrete objects/words and what happens: an animated element explains the service is a missing scene. Never promise immediate purchase, guaranteed attention/sales or that a client is the best. Story must demonstrate a communication choice, not claim an inevitable audience reaction. " +
             " ABSOLUTELY EXCLUDED STOCK PLOTS: clutter/noise/blur becomes tidy/clear; static shapes become moving shapes; geometric logo assembly. These are rejected even if the reviewer praises them. Use a concrete original event (a visual riddle with an earned answer, a decision with an unexpected consequence, a meaningful object interaction), demonstrating what an advertising decision changes. Name the exact objects and exact final line. Opening, central event and payoff must differ between all assets and excluded_concept. Sound and words must carry the same story as the images. Do not merely assert an abstract object is professional. The campaign may share brand palette, never share the same plot.",
         )),
       days,

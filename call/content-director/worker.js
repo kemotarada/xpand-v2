@@ -229,7 +229,9 @@ export class Worker {
             },
           ],
           generationConfig: {
-            temperature: 0.65,
+            temperature: ["campaign_plan", "directions"].includes(stage)
+              ? 0.9
+              : 0.65,
             maxOutputTokens: 10000,
             responseMimeType: "application/json",
           },

@@ -101,6 +101,7 @@ function plan() {
       },
       {
         title: "بوستر المسافة",
+        headline: "اترك مساحة لفكرتك",
         format: "static",
         day: 2,
         concept: "المسافة بين سطرين تصبح بابا",
@@ -119,6 +120,12 @@ test("campaign plans need distinct mixed assets within duration and complete sho
   repetitive.items[0].concept = "فوضى تتحول إلى ترتيب واضح";
   assert.match(stockMechanismIssue(repetitive), /قالبًا/);
   assert.equal(stockMechanismIssue(plan()), null);
+  const promise = plan();
+  promise.items[0].caption = "يجعل العميل يشتري بلا تردد";
+  assert.match(stockMechanismIssue(promise), /غير مثبت/);
+  const vague = plan();
+  vague.items[0].scenes[0].visual = "ظهور موشن جرافيك تفاعلي يختصر الخدمة";
+  assert.match(stockMechanismIssue(vague), /لا تحدد/);
   assert.match(selectReferences("فيديو لا تكرر الشعار")[0].url, /google/);
   assert.equal(validateCampaignPlan(plan(), 7, sources).items.length, 2);
   const clockPlan = plan();

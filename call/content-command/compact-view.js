@@ -2,6 +2,8 @@
 export function compactStoryboard(result, esc) {
   const board = result.storyboard;
   const shots = board?.scenes || result.scenes || [];
+  if (result.format === "static" && result.headline)
+    return `<p><b>النص على البوستر:</b> ${esc(result.headline)}</p>`;
   if (!shots.length) return "";
   return `<section class="compact-storyboard"><h3>الستوري بورد · كيف سيبدو الإعلان؟</h3>${shots
     .map((s, i) => {
