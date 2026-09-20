@@ -961,6 +961,7 @@ document.addEventListener("submit", async (e) => {
         : "حُفظ التغيير في قاعدة البيانات.",
     );
     await load();
+    if (type === "campaign" || type === "week") showView("campaigns");
   } catch (err) {
     dialog.querySelector(".form-message").textContent = err.message;
   } finally {

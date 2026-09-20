@@ -1,5 +1,15 @@
 import { transaction } from "./store.js";
 import { reviewIssue, QUALITY_PROMPT } from "./creative.js";
+import { parseModelObject } from "./model-output.js";
+
+// Lossless format normalization, not inferred timing or gap filling.
+function seconds(value) {
+  if (typeof value === "string" && /^\d{1,2}:[0-5]\d$/.test(value)) {
+    const [m, s] = value.split(":").map(Number);
+    return m * 60 + s;
+  }
+  return value;
+}
 
 export function validateCampaignPlan(plan, days, sources) {
   if (
@@ -53,6 +63,8 @@ export function validateCampaignPlan(plan, days, sources) {
         throw new Error("الفيديو يحتاج مدة واضحة وثلاثًا إلى ست لقطات.");
       let end = 0;
       for (const s of item.scenes) {
+        s.start = seconds(s.start);
+        s.end = seconds(s.end);
         if (
           s.start !== end ||
           !Number.isFinite(s.end) ||
@@ -83,18 +95,36 @@ export async function campaignPlan(worker, job, ctx, sources) {
   let result = job.checkpoint.campaign_plan;
   if (!result) {
     await worker.store.checkpoint(job, "developing_directions", {});
+    // Reuse the provider response if a formatting gate or process restart stopped validation.
+    let candidate = null;
+    if (!job.checkpoint.plan_revision) {
+      const saved = (
+        await worker.pool.query(
+          "SELECT result FROM xpand_director_calls WHERE campaign_id=$1 AND stage=$2 AND status=$3 ORDER BY created_at DESC LIMIT 1",
+          [job.id, "campaign_plan", "completed"],
+        )
+      ).rows[0];
+      if (saved?.result) {
+        try {
+          candidate = parseModelObject(saved.result);
+        } catch {
+          /* normal bounded generation below */
+        }
+      }
+    }
     result = validateCampaignPlan(
-      await worker.modelJSON(
-        job,
-        "campaign_plan",
-        {
-          ...ctx,
-          sources,
-          previous_editorial_issue: job.checkpoint.plan_feedback || null,
-          research_mode: job.checkpoint.research_mode,
-        },
-        instruction,
-      ),
+      candidate ||
+        (await worker.modelJSON(
+          job,
+          "campaign_plan",
+          {
+            ...ctx,
+            sources,
+            previous_editorial_issue: job.checkpoint.plan_feedback || null,
+            research_mode: job.checkpoint.research_mode,
+          },
+          instruction,
+        )),
       days,
       sources,
     );

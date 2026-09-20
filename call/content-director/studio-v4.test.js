@@ -80,6 +80,15 @@ function plan() {
 }
 test("campaign plans need distinct mixed assets within duration and complete shot coverage", () => {
   assert.equal(validateCampaignPlan(plan(), 7, sources).items.length, 2);
+  const clockPlan = plan();
+  for (const s of clockPlan.items[0].scenes) {
+    s.start = `00:0${s.start}`;
+    s.end = `00:0${s.end}`;
+  }
+  assert.equal(
+    validateCampaignPlan(clockPlan, 7, sources).items[0].scenes[1].start,
+    2,
+  );
   let p = plan();
   p.items[1].concept = p.items[0].concept;
   assert.throws(() => validateCampaignPlan(p, 7, sources), /تكرر/);
