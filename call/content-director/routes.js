@@ -165,6 +165,8 @@ export function registerRoutes(app, store, { token, allowed }) {
         throw new Error(
           "هناك ثلاث مهام قيد الانتظار أو التنفيذ. انتظر أو ألغِ مهمة.",
         );
+      const visualEngine = (await store.config(r.contentUser, tx)).settings
+        .visual_engine;
       const campaign = (
         await tx.query(
           "INSERT INTO xpand_content_campaigns(id,user_id,request_text,status,stage,idempotency_key,checkpoint) VALUES($1,$2,$3,'queued','queued',$4,$5) RETURNING id,status",
@@ -175,6 +177,8 @@ export function registerRoutes(app, store, { token, allowed }) {
             key,
             JSON.stringify({
               creative_version: 3,
+              visual_prompts: visualEngine === true,
+              ...(visualEngine ? { model: "gemini-3.8-flash" } : {}),
               campaign_days: days,
               excluded_concept: excluded,
               mode: r.body.mode === "autonomous" ? "autonomous" : "brief",
@@ -202,6 +206,51 @@ export function registerRoutes(app, store, { token, allowed }) {
     );
     if (!x.rowCount) throw new Error("المهمة ليست قيد التنفيذ.");
     return {};
+  });
+  route("post", "/campaigns/:id/prompts", async (r) => {
+    return transaction(db, async (tx) => {
+      await tx.query("SELECT pg_advisory_xact_lock($1::bigint)", [
+        r.contentUser,
+      ]);
+      const source = (
+        await tx.query(
+          "SELECT id,result FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2 AND status='completed'",
+          [ownedId(r), r.contentUser],
+        )
+      ).rows[0];
+      if (!source?.result) throw new Error("اختر فكرة مكتملة أولًا.");
+      const pending = (
+        await tx.query(
+          "SELECT id FROM xpand_content_campaigns WHERE user_id=$1 AND status IN ('queued','running') AND checkpoint->'prompt_source'->>'id'=$2",
+          [r.contentUser, source.id],
+        )
+      ).rows[0];
+      if (pending) return { campaign: pending };
+      await store.assertAllowance(r.contentUser, null, tx);
+      const n = (
+        await tx.query(
+          "SELECT count(*)::int AS n FROM xpand_content_campaigns WHERE user_id=$1 AND status IN ('queued','running')",
+          [r.contentUser],
+        )
+      ).rows[0].n;
+      if (n >= 3) throw new Error("انتظر اكتمال أحد الطلبات الجارية.");
+      const campaign = (
+        await tx.query(
+          "INSERT INTO xpand_content_campaigns(id,user_id,request_text,status,stage,kind,checkpoint) VALUES($1,$2,$3,'queued','queued','prompts',$4) RETURNING id,status",
+          [
+            id(),
+            r.contentUser,
+            "تجهيز برومبتات: " + source.result.title,
+            JSON.stringify({
+              prompt_source: source,
+              visual_prompts: true,
+              model: "gemini-3.8-flash",
+            }),
+          ],
+        )
+      ).rows[0];
+      return { campaign };
+    });
   });
   route("post", "/campaigns/:id/retry", async (r) => {
     await store.assertAllowance(r.contentUser, ownedId(r));

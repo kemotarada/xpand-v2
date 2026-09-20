@@ -61,6 +61,9 @@ const labels = {
   archived: "مؤرشفة",
 };
 const stages = {
+  visual_dna: "تثبيت الهوية البصرية للحملة",
+  writing_visual_prompts: "كتابة برومبتات الصورة والتحريك للمشاهد",
+  checking_visual_consistency: "مراجعة استمرارية الإضاءة والألوان والمشاهد",
   queued: "الانتظار",
   understanding: "فهم الطلب والسياق",
   collecting_references: "جمع المراجع",
@@ -546,6 +549,8 @@ async function openCampaign(id) {
       )
       .join("")}</div>`;
     body += compactStoryboard(r, esc);
+    if (c.status === "completed")
+      body += `<p class="small-note">برومبتات إنجليزية بهوية زرقاء موحدة، مع الحفاظ على قصة الإعلان. هذه تعليمات إنتاج وليست صورًا أو فيديوهات مولّدة.</p>${button("prepare-prompts", "جهّز برومبتات الصورة والتحريك", c.id)}`;
     body += `<div class="actions">${button("research-again", "ابحث عن فكرة مختلفة بالكامل ↻", c.id)}</div><details><summary>تفاصيل إضافية للمخرج وسجل البحث (اختياري)</summary>`;
     body += creativeView(r, d.process, { esc, listHTML, effortLabel });
     if (!r.storyboard && r.scenes?.length)
@@ -738,6 +743,32 @@ document.addEventListener("click", async (e) => {
   const a = b.dataset.action,
     id = b.dataset.id;
   try {
+    if (a === "copy-scene-prompt") {
+      const input = b.closest(".scene-prompt").querySelector("textarea");
+      try {
+        await navigator.clipboard.writeText(input.value);
+        b.textContent = "تم النسخ ✓";
+      } catch {
+        input.focus();
+        input.select();
+        b.textContent = "حددنا النص — انسخه يدويًا";
+      }
+      return;
+    }
+    if (a === "prepare-prompts") {
+      b.disabled = true;
+      try {
+        const response = await api("/campaigns/" + id + "/prompts", {
+          method: "POST",
+          body: "{}",
+        });
+        await load();
+        await openCampaign(response.campaign.id);
+      } finally {
+        b.disabled = false;
+      }
+      return;
+    }
     if (a === "close") {
       dialog.close();
       return;
@@ -969,6 +1000,7 @@ document.addEventListener("submit", async (e) => {
           telegram: v.telegram === "on",
           pricing_confirmed: v.pricing_confirmed === "on",
           unlimited_calls: v.unlimited_calls === "on",
+          visual_engine: state.settings.visual_engine === true,
         }),
       });
     else if (type === "occasion")

@@ -237,6 +237,10 @@ export async function campaignPlan(worker, job, ctx, sources) {
     quality_assessments: review.assessments,
     proposed: true,
   };
+  if (job.checkpoint.visual_prompts) {
+    const { addVisualPrompts } = await import("./visual-prompts.js");
+    result = await addVisualPrompts(worker, job, result);
+  }
   await transaction(worker.pool, async (tx) => {
     const saved = await tx.query(
       "UPDATE xpand_content_campaigns SET status='completed',stage='completed',result=$3,limitations=NULL,completed_at=NOW(),updated_at=NOW(),lease_until=NULL WHERE id=$1 AND worker_id=$2 AND status='running' RETURNING id",

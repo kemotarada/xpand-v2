@@ -1,3 +1,4 @@
+import { visualSchema } from "./visual-prompts.js";
 // Provider-side structure prevents unescaped Arabic prose from breaking JSON.
 // Semantic validation (timing, readability, quality) still runs after generation.
 const string = { type: "string" };
@@ -13,6 +14,8 @@ const strings = (keys) =>
 const array = (items) => ({ type: "array", items });
 
 export function outputSchema(stage, context) {
+  const visual = visualSchema(stage);
+  if (visual) return visual;
   if (stage !== "storyboard") return undefined;
   const duration = context?.proposal?.duration_seconds;
   return object({

@@ -141,6 +141,7 @@ export const defaultSettings = {
   monthly_calls: 200,
   task_calls: 10,
   unlimited_calls: false,
+  visual_engine: false,
   rounds: 2,
   depth: "basic",
   concurrency: 1,
@@ -167,6 +168,7 @@ export function settingsInput(v = {}) {
     "pricing_confirmed",
     "telegram",
     "unlimited_calls",
+    "visual_engine",
   ])
     o[k] = v[k] === true;
   const ranges = {
