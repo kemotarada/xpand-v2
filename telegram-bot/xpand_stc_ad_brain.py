@@ -413,7 +413,7 @@ class STCAdBrain:
                 shot_language="Macro-adjacent close-up, 70mm product realism, focus on contact and material tension, no face-led framing.",
                 lighting_language="Soft violet side key, narrow real reflections on metal/glass, controlled negative fill and attached hand/object shadows.",
                 materials_language="Graphite hardware, satin violet surface, natural cardboard/fabric, skin texture and physically correct screen glass.",
-                brand_fit_reason="STC identity comes from confident restraint, precise action, purple architecture and premium material separation—not generic fintech graphics.",
+                brand_fit_reason="The STC identity comes from confident restraint, precise action, purple architecture and premium material separation—not generic fintech graphics.",
                 originality_score=92, brand_fit_score=94, clarity_score=95,
                 diversity_tags=["handoff", "hands", "macro", "timing"],
             ),
