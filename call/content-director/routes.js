@@ -104,6 +104,10 @@ export function registerRoutes(app, store, { token, allowed }) {
   route("post", "/campaigns", async (r) => {
     const request = text(r.body.request, 3000);
     if (request.length < 8) throw new Error("اكتب الهدف أو الخدمة المطلوبة.");
+    const days =
+      r.body.campaign_days == null ? null : Number(r.body.campaign_days);
+    if (days != null && (!Number.isInteger(days) || days < 2 || days > 28))
+      throw new Error("مدة الحملة من يومين إلى 28 يومًا.");
     const key = text(r.get("Idempotency-Key"), 100);
     if (!key) throw new Error("مفتاح الطلب مفقود.");
     return transaction(db, async (tx) => {
@@ -117,6 +121,25 @@ export function registerRoutes(app, store, { token, allowed }) {
         )
       ).rows[0];
       if (prior) return { campaign: prior };
+      let excluded = null;
+      if (r.body.alternative_to) {
+        if (!uuid(r.body.alternative_to))
+          throw new Error("معرّف الفكرة السابقة غير صالح.");
+        const old = (
+          await tx.query(
+            "SELECT result FROM xpand_content_campaigns WHERE id=$1 AND user_id=$2",
+            [r.body.alternative_to, r.contentUser],
+          )
+        ).rows[0];
+        if (!old?.result) throw new Error("الفكرة السابقة غير موجودة.");
+        excluded = {
+          id: r.body.alternative_to,
+          title: old.result.title,
+          concept: old.result.concept,
+          storyboard: old.result.storyboard,
+          items: old.result.items,
+        };
+      }
       let dayPlan = null;
       if (r.body.day_plan_id) {
         if (!uuid(r.body.day_plan_id))
@@ -152,6 +175,8 @@ export function registerRoutes(app, store, { token, allowed }) {
             key,
             JSON.stringify({
               creative_version: 3,
+              campaign_days: days,
+              excluded_concept: excluded,
               mode: r.body.mode === "autonomous" ? "autonomous" : "brief",
             }),
           ],

@@ -1,5 +1,6 @@
 import { taskEvents, effortLabel } from "./planning.js";
 import { creativeView } from "./creative-view.js";
+import { compactStoryboard } from "./compact-view.js";
 const tg = window.Telegram?.WebApp;
 tg?.ready();
 tg?.expand();
@@ -185,24 +186,15 @@ function render() {
     .filter((c) => ["running", "queued"].includes(c.status))
     .map(campaignEntry)
     .join("");
-  $("#campaign-preview").innerHTML =
-    s.campaigns
-      .filter((c) => c.kind === "campaign")
-      .slice(0, 2)
-      .map(campaignEntry)
-      .join("") ||
-    empty(
-      "لا حملة محفوظة بعد. ابدأ بطلب واضح أو دع المدير يقترح حملة مناسبة الآن.",
-    );
   $("#campaigns").innerHTML =
-    s.campaigns.map(campaignEntry).join("") || empty("لم يبدأ أي بحث بعد.");
+    s.campaigns
+      .filter(
+        (c) =>
+          c.kind === "campaign" && !["running", "queued"].includes(c.status),
+      )
+      .map(campaignEntry)
+      .join("") || empty("لا حملات محفوظة بعد.");
   const ns = s.records.filter((r) => r.kind === "notification");
-  $("#notices-preview").innerHTML =
-    ns
-      .filter((r) => !r.data.read)
-      .slice(0, 3)
-      .map(notificationEntry)
-      .join("") || empty("لا تنبيهات جديدة.");
   $("#notifications").innerHTML =
     ns.map(notificationEntry).join("") || empty("لا تنبيهات مسجلة.");
   const runtime = s.records.find((r) => r.kind === "worker")?.data;
@@ -348,8 +340,12 @@ function dayAgenda(date, compact = false) {
     const p = plan.data;
     html += `<article class="daily-plan">${badge(p.status === "done" ? "أُنجز شغل اليوم" : activityLabel[p.activity])}<h3>${esc(p.title)}</h3><p>${esc(p.idea)}</p><p><b>المطلوب تسليمه:</b> ${esc(p.deliverable)}</p><p class="small-note">وقت إضافي مقدّر: ${esc(effortLabel(p.minutes))}. ${p.minutes === 0 ? "لا نضيف وقتًا فوق الأعمال المحجوزة لهذا اليوم." : "هذا جهد عمل، وليس مدة فيديو."}</p>${compact ? "" : `<ol>${p.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol><p class="small-note">سبب توزيع هذا العمل اليوم: ${esc(p.why_this_day)}</p>`}<div class="actions">${p.campaign_id ? button("campaign", "الفكرة الكاملة والستوري بورد", p.campaign_id) : button("develop-day", "طوّر هذه الفكرة إلى ملف إنتاج", plan.id)}${button("day-status", p.status === "done" ? "إعادة فتح العمل" : "أنجزت شغل اليوم", plan.id)}${compact ? button("open-day", "تفاصيل اليوم", date) : button("campaign", "مراجع خطة الأسبوع", p.week_id)}</div><p class="small-note">فكرة اليوم بريف عمل؛ زر التطوير يبحث ويكتب المعالجة التفصيلية. الجدولة النهائية تراعي القدرة ولا تضمن التسليم في اليوم نفسه.</p></article>`;
   }
-  for (const e of events)
+  for (const e of events) {
+    if (e.kind === "production")
+      html +=
+        '<p class="small-note">استكمال إنتاج العمل المحجوز أدناه؛ ظهور الحملة في أكثر من يوم لا يعني أنها فكرة جديدة أو فيديو جديد كل يوم.</p>';
     html += `<article class="agenda-event ${e.kind}"><span class="badge">${e.label}${e.at ? " · " + localDate(e.at).time : ""}</span><h3>${esc(e.task.title)}</h3><div class="actions">${e.task.campaign_id ? button("campaign", "الفكرة وتعليمات التنفيذ", e.task.campaign_id) : ""}${button("task", "تحديث المهمة والمواعيد", e.task.id)}</div></article>`;
+  }
   if (!plan && !events.length) {
     const next = state.tasks
       .filter(
@@ -474,10 +470,32 @@ function campaignForm(autonomous = false, brief = "", dayPlanId = "") {
     `<p class="muted">يُحفظ الطلب ثم يجري البحث على الخادم. تستطيع إغلاق الأداة والعودة. لا يوجد تأخير مصطنع ولا نشر تلقائي.</p><form data-form="campaign" data-mode="${autonomous ? "autonomous" : "brief"}" data-key="${crypto.randomUUID()}"><div class="fields">${area("request", "الهدف أو الطلب", brief || (autonomous ? "اختر حملة مناسبة الآن لتسويق XPAND بحسب ملف الشركة والمحتوى السابق والفرص الموثّقة." : ""))}${field("service", "الخدمة (اختياري)")}${field("audience", "الجمهور (اختياري)", state?.profile.audience || "")}${field("timeframe", "مدة الحملة أو قيد زمني (اختياري)")}</div><p class="small-note">حتى ${state?.settings.task_calls || 10} طلبات خدمات للمهمة ضمن الحد اليومي والشهري. مراجع البحث نصية؛ لا ندّعي مشاهدة فيديوهات.</p><button class="primary dialog-submit">ابدأ البحث الحقيقي ←</button></form>`,
   );
   dialog.querySelector("form").dataset.day = dayPlanId;
+  if (!brief && !autonomous) {
+    const label = document.createElement("label");
+    label.textContent = "مدة الحملة بالأيام (2–28)";
+    const input = document.createElement("input");
+    Object.assign(input, {
+      name: "campaign_days",
+      type: "number",
+      min: "2",
+      max: "28",
+      value: "7",
+      required: true,
+    });
+    label.append(input);
+    dialog.querySelector(".fields").append(label);
+  }
   dialog.querySelector(".muted").textContent =
     "بحث وقراءة مصادر ← استخلاص فرص ← 3 اتجاهات ← نقد واختيار ← معالجة ← ستوري بورد ← فحص الجودة. المراحل محفوظة على الخادم حتى لو أغلقت الأداة.";
   dialog.querySelector(".small-note").textContent =
     `الفيديو المفصّل يحتاج عادة 6 طلبات للنموذج إضافة للبحث، ضمن حد المهمة (${state?.settings.task_calls || 10}) وحدود اليوم والشهر. إذا انتهت الحصة تُحفظ المراحل. الناتج ملف إنتاج، وليس فيديو مولّدًا أو منشورًا تلقائيًا.`;
+  if (!brief && !autonomous) {
+    dialog.querySelector(".muted").textContent =
+      "نبحث ونجهز أفكار فيديوهات وبوسترات مترابطة ومختلفة خلال مدة الحملة. يمكنك إغلاق الأداة؛ العمل محفوظ على الخادم.";
+    dialog.querySelector(".small-note").textContent =
+      "الأيام في الخطة مقترحة وليست مواعيد إنتاج محجوزة. اختر الفكرة التي تريد تنفيذها لتجهيز مهمتها ضمن قدرة الفريق. استهلاك البحث والنموذج يُحسب ضمن حدودك الحالية.";
+    dialog.querySelector('[name="timeframe"]').closest("label").remove();
+  }
 }
 const listHTML = (v) =>
   Array.isArray(v)
@@ -491,31 +509,21 @@ async function openCampaign(id) {
     r = c.result || {};
   const sections = {
     objective: "الهدف",
-    service: "الخدمة",
-    audience: "الجمهور",
-    why_now: "لماذا الآن؟",
     message: "الرسالة",
     concept: "الفكرة الإبداعية",
-    visual_direction: "التوجيه البصري",
-    hook: "الافتتاحية",
-    format: "نوع المحتوى",
+    visual_direction: "الستايل",
     duration_seconds: "المدة بالثواني",
     headline: "العنوان الرئيسي",
     composition: "تكوين التصميم",
     caption: "الكابشن",
-    cta: "الدعوة للتواصل",
-    production_instructions: "تعليمات التنفيذ",
-    effort_hours: "الجهد الإجمالي بالساعات",
-    decision_rationale: "سبب اختيار الاتجاه",
-    research_summary: "ملخص البحث",
-    quality_review: "خلاصة فحص الجودة",
-    success_criterion: "معيار تقييم النتيجة",
   };
   let body = `${badge(c.display_status || c.status)}<p class="muted">${esc(c.request_text)}</p><p class="small-note">بدأ: ${fmt(c.started_at)} · آخر نشاط: ${fmt(c.updated_at)} · محاولة ${c.attempts} من 3</p>${c.limitations ? `<p class="error">${esc(c.limitations)}</p>` : ""}<p>${esc(c.display_status === "unverified_result" ? "بحث سابق غير مكتمل" : stages[c.stage] || labels[c.stage] || c.stage)}</p>`;
   if (r.research_mode === "direct_references")
     body +=
       '<p class="small-note">حملة مبنية على قراءة مباشرة لمراجع إبداعية عامة وملف XPAND. ليست دراسة حديثة للسوق أو المناسبات. المقترح يحتاج مراجعة الفريق قبل الإنتاج والنشر.</p>';
   if (r.title) {
+    if (r.items?.length)
+      body += `<p>${esc(r.summary)}</p><p class="info-strip">حملة ${esc(r.campaign_days)} أيام · التوزيع التالي مقترح، وليس مهام مستحقة اليوم. تجهيز مهمة التنفيذ يحدد المواعيد حسب قدرة الفريق.</p>${r.items.map((item, index) => `<article class="card spaced">${badge(`اليوم ${item.day} · ${item.format === "video" ? "فيديو" : "بوستر"}`)}<h3>${esc(item.title)}</h3><p><b>الفكرة:</b> ${esc(item.concept)}</p><p><b>الرسالة:</b> ${esc(item.message)}</p><p><b>الستايل:</b> ${esc(item.visual_direction)}</p>${item.duration_seconds ? `<p>مدة الفيديو: ${esc(item.duration_seconds)} ثانية</p>` : `<p>${esc(item.composition)}</p>`}<p><b>الكابشن:</b> ${esc(item.caption)}</p>${compactStoryboard(item, esc)}${button("develop-asset", "جهّز مهمة تنفيذ هذه الفكرة", String(index))}</article>`).join("")}`;
     body += `<div class="detail-grid">${Object.entries(sections)
       .filter(([k]) => r[k] !== null && r[k] !== undefined)
       .map(
@@ -523,6 +531,8 @@ async function openCampaign(id) {
           `<article><b>${l}</b><p>${esc(k === "effort_hours" ? effortLabel(r[k] * 60) + " — جهد للفريق وليس مدة الفيديو" : k === "format" ? { video: "فيديو", static: "تصميم ثابت", carousel: "منشور شرائح", story: "ستوري" }[r[k]] || r[k] : r[k])}</p></article>`,
       )
       .join("")}</div>`;
+    body += compactStoryboard(r, esc);
+    body += `<div class="actions">${button("research-again", "ابحث عن فكرة مختلفة بالكامل ↻", c.id)}</div><details><summary>تفاصيل إضافية للمخرج وسجل البحث (اختياري)</summary>`;
     body += creativeView(r, d.process, { esc, listHTML, effortLabel });
     if (!r.storyboard && r.scenes?.length)
       body +=
@@ -588,6 +598,7 @@ async function openCampaign(id) {
   body += `<details><summary>سجل اتصالات البحث والنموذج (${d.calls.length})</summary>${d.calls.map((x) => `<article class="entry"><b>${esc(x.provider)} · ${esc(x.status)}</b><p>${fmt(x.created_at)}<br>${esc(x.error || "")}</p><pre class="audit">${esc(JSON.stringify(x.usage || {}, null, 2))}</pre></article>`).join("") || empty("لم تُنفذ اتصالات بعد.")}<p class="small-note">حصة الطلب تُحجز قبل الاتصال لمنع تجاوز الحدود عند إعادة التشغيل. الحجز لا يعني نجاح الطلب.</p></details>`;
   if (c.status === "completed" && c.kind === "campaign")
     body += `<div class="actions">${button("edit-campaign", "تعديل المحتوى مع حفظ نسخة")}${button("feedback", "تقييم الفكرة أو تسجيل نتيجة")}${button("export", "تنزيل التفاصيل JSON")}</div><details><summary>الملاحظات والإصدارات (${d.feedback.length} / ${d.versions.length})</summary>${d.feedback.map((f) => `<p>${esc(f.data.type)}: ${esc(f.data.note)} · ${fmt(f.created_at)}</p>`).join("")}${d.versions.map((v) => `<details><summary>نسخة محفوظة ${fmt(v.created_at)}</summary><pre class="audit">${esc(JSON.stringify(v.snapshot.result || v.snapshot, null, 2))}</pre></details>`).join("")}</details>`;
+  if (r.title) body += "</details>";
   open(r.title || r.الاسم || "تفاصيل البحث", body);
 }
 function taskForm(t = null) {
@@ -740,12 +751,31 @@ document.addEventListener("click", async (e) => {
     } else if (a === "autonomous") campaignForm(true);
     else if (a === "campaign") await openCampaign(id);
     else if (a === "profile") profileForm();
-    else if (a === "research-again")
+    else if (a === "develop-asset") {
+      const item = activeCampaign?.campaign?.result?.items?.[Number(id)];
+      if (!item) throw new Error("حدّث الحملة ثم اختر الفكرة.");
       campaignForm(
         false,
-        state.campaigns.find((c) => c.id === id)?.request_text || "",
+        "جهّز معالجة تنفيذية لهذه الفكرة المختارة دون تغيير الحدث أو الرسالة. نوع المحتوى: " +
+          item.format +
+          "\n" +
+          JSON.stringify(item),
       );
-    else if (a === "provider-recheck") {
+    } else if (a === "research-again") {
+      const old =
+        activeCampaign?.campaign?.id === id
+          ? activeCampaign.campaign
+          : state.campaigns.find((c) => c.id === id);
+      campaignForm(
+        false,
+        (old?.request_text || "") +
+          "\nأريد فكرة بديلة بالكامل، لا إعادة صياغة أو تغيير الألوان. حافظ على الهدف، وغيّر الحدث والاستعارة والافتتاحية والنهاية. لا تكرر هذه الفكرة: " +
+          (old?.result?.concept || old?.result?.title || ""),
+      );
+      dialog.querySelector("form").dataset.alternative = id;
+      if (old?.result?.campaign_days)
+        dialog.querySelector("form").dataset.days = old.result.campaign_days;
+    } else if (a === "provider-recheck") {
       await api("/providers/recheck", { method: "POST" });
       toast(
         "أُتيح فحص الخدمة عند استكمال الحملة. لم يُمسح الاستهلاك ولم تُفعّل فوترة.",
@@ -868,6 +898,11 @@ document.addEventListener("submit", async (e) => {
           request,
           mode: f.dataset.mode,
           day_plan_id: f.dataset.day || undefined,
+          alternative_to: f.dataset.alternative || undefined,
+          campaign_days:
+            v.campaign_days || f.dataset.days
+              ? Number(v.campaign_days || f.dataset.days)
+              : undefined,
         }),
       });
     } else if (type === "week")

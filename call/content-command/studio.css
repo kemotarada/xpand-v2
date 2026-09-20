@@ -719,3 +719,20 @@ a {
     scroll-behavior: auto !important;
   }
 }
+/* Native hidden must win over layout display rules on every tab. */
+[hidden] {
+  display: none !important;
+}
+.compact-storyboard .scene {
+  border-inline-start: 3px solid #50d8ee;
+  padding: 18px;
+  margin-block: 14px;
+}
+.compact-storyboard h4 {
+  font-size: 1.05rem;
+  line-height: 1.9;
+  margin-block: 12px;
+}
+.compact-storyboard p {
+  line-height: 1.9;
+}

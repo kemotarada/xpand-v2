@@ -5799,6 +5799,7 @@ app.get(
   "/content-command",
   (req, res) => {
     if (fs.existsSync(CONTENT_COMMAND_INDEX)) {
+      res.setHeader("Cache-Control", "no-store");
       return res.sendFile(CONTENT_COMMAND_INDEX);
     }
 
@@ -5813,7 +5814,7 @@ app.use(
   "/content-command",
   express.static(
     CONTENT_COMMAND_DIR,
-    { index: false }
+    { index: false, maxAge: 0, setHeaders: (res) => res.setHeader("Cache-Control", "no-cache") }
   )
 );
 

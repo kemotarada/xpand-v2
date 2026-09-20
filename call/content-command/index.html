@@ -30,7 +30,7 @@
         ><button class="ghost" data-action="refresh">تحديث ↻</button>
       </div>
       <div id="connection" role="status" aria-live="polite"></div>
-      <section class="hero">
+      <section class="hero" hidden>
         <p class="eyebrow">الخليل، فلسطين · مساحة العمل الإبداعي</p>
         <h1>فكرة تستحق التنفيذ.<br /><em>وخطة تحوّلها إلى واقع.</em></h1>
         <p class="sub">
@@ -49,12 +49,12 @@
       </section>
       <section
         id="metrics"
+        hidden
         class="metrics"
         aria-label="إحصاءات السجلات"
       ></section>
       <section id="home-view" class="view">
-        <div id="jobs"></div>
-        <div class="workspace">
+        <div>
           <section class="card">
             <div class="section-title">
               <h2>شغل اليوم · خطوة بخطوة</h2>
@@ -66,35 +66,18 @@
             </p>
             <div id="today"></div>
           </section>
-          <section class="card">
-            <div class="section-title">
-              <h2>التنبيهات</h2>
-              <button class="ghost" data-view="notifications">الكل</button>
-            </div>
-            <div id="notices-preview"></div>
-          </section>
         </div>
-        <section class="card spaced">
-          <div class="section-title">
-            <h2>مكتبة الأفكار وملفات الإنتاج</h2>
-            <button class="ghost" data-view="campaigns">السجل الكامل</button>
-          </div>
-          <p class="section-help">
-            هنا آخر الأفكار التي طلبتها ونتائج البحث، وليست قائمة واجبات اليوم.
-            مواعيد تنفيذها تظهر في التقويم والمهام المرتبطة.
-          </p>
-          <div id="campaign-preview"></div>
-        </section>
-        <section class="card spaced">
-          <h2>حالة التشغيل</h2>
-          <div id="operations"></div>
-        </section>
       </section>
       <section id="campaigns-view" class="view" hidden>
-        <h2>الحملات والبحث</h2>
+        <div class="section-title">
+          <h2>الحملات</h2>
+          <button class="primary" data-action="new">＋ حملة جديدة</button>
+        </div>
         <p class="muted">
-          اتجاه واحد موصى به لكل طلب. تظهر مراحل العمل الفعلية، بما فيها التعثر.
+          اكتب الهدف وحدد المدة. هنا تتابع البحث والنتائج؛ أعمال اليوم في
+          الرئيسية ومواعيد التنفيذ في التقويم.
         </p>
+        <div id="jobs"></div>
         <div id="campaigns"></div>
       </section>
       <section id="tasks-view" class="view" hidden>
@@ -159,6 +142,10 @@
       <section id="notifications-view" class="view" hidden>
         <h2>المتابعة والتنبيهات</h2>
         <div id="notifications"></div>
+        <details class="card spaced">
+          <summary>حالة الخدمات وحدود التشغيل</summary>
+          <div id="operations"></div>
+        </details>
       </section>
       <nav aria-label="التنقل الرئيسي">
         <button class="nav-item active" data-view="home">
@@ -169,8 +156,8 @@
           <b>▦</b><span>التقويم</span></button
         ><button class="nav-item" data-view="ideas">
           <b>◈</b><span>الفرص</span></button
-        ><button class="nav-item" data-view="tasks">
-          <b>☷</b><span>المهام</span>
+        ><button class="nav-item" data-view="notifications">
+          <b>♧</b><span>التنبيهات</span>
         </button>
       </nav>
     </main>
