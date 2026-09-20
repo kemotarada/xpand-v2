@@ -9,6 +9,22 @@ import {
 import { compactStoryboard } from "../content-command/compact-view.js";
 import { fixture, workerFor, TEST_USER } from "./test-support.js";
 import { randomUUID } from "node:crypto";
+import {settingsInput} from "./core.js";
+test("selected fallback resumes 503 jobs without resetting attempts or saved directions",async()=>{
+ const f=await fixture();
+ try {
+  const settings=settingsInput({visual_engine:true,visual_model:"gemini-3.5-flash-lite"});
+  await f.store.record(TEST_USER,"settings","main",settings);
+  const id=randomUUID();
+  await f.pool.query("INSERT INTO xpand_content_campaigns(id,user_id,request_text,status,stage,attempts,checkpoint) VALUES($1,$2,$3,$4,$4,1,$5)",[id,TEST_USER,"prompts","blocked",JSON.stringify({visual_prompts:true,model:"gemini-3.8-flash",saved_direction:"keep",provider_issue:{http_status:503,service:"gemini:gemini-3.8-flash"}})]);
+  assert.equal((await f.api(`/campaigns/${id}/retry`,"POST",{})).status,200);
+  const row=(await f.pool.query("SELECT attempts,checkpoint FROM xpand_content_campaigns WHERE id=$1",[id])).rows[0];
+  assert.equal(row.attempts,1);
+  assert.equal(row.checkpoint.model,"gemini-3.5-flash-lite");
+  assert.equal(row.checkpoint.saved_direction,"keep");
+  assert.equal(settingsInput({visual_model:"https://bad.example"}).visual_model,"gemini-3.8-flash");
+ } finally {await f.close();}
+});
 const fill = (schema) =>
   Object.fromEntries(
     Object.keys(schema.properties).map((k) => [

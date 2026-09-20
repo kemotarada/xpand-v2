@@ -178,7 +178,12 @@ export function registerRoutes(app, store, { token, allowed }) {
             JSON.stringify({
               creative_version: 3,
               visual_prompts: visualEngine === true,
-              ...(visualEngine ? { model: "gemini-3.8-flash" } : {}),
+              ...(visualEngine
+                ? {
+                    model: (await store.config(r.contentUser, tx)).settings
+                      .visual_model,
+                  }
+                : {}),
               campaign_days: days,
               excluded_concept: excluded,
               mode: r.body.mode === "autonomous" ? "autonomous" : "brief",
@@ -244,7 +249,8 @@ export function registerRoutes(app, store, { token, allowed }) {
             JSON.stringify({
               prompt_source: source,
               visual_prompts: true,
-              model: "gemini-3.8-flash",
+              model: (await store.config(r.contentUser, tx)).settings
+                .visual_model,
             }),
           ],
         )
@@ -260,6 +266,13 @@ export function registerRoutes(app, store, { token, allowed }) {
         [ownedId(r), r.contentUser],
       )
     ).rows[0];
+    const currentSettings = (await store.config(r.contentUser)).settings;
+    const switchModel =
+      prior?.checkpoint?.visual_prompts &&
+      [502, 503, 504].includes(
+        prior?.checkpoint?.provider_issue?.http_status,
+      ) &&
+      currentSettings.visual_model !== prior.checkpoint.model;
     if (prior?.checkpoint?.provider_issue) {
       const issue = prior.checkpoint.provider_issue;
       const { settings } = await store.config(r.contentUser);
@@ -272,6 +285,7 @@ export function registerRoutes(app, store, { token, allowed }) {
       )?.data;
       if (
         !canUseReferences &&
+        !switchModel &&
         provider?.status === "blocked" &&
         Date.parse(provider.retry_at) > Date.now()
       )
@@ -280,8 +294,19 @@ export function registerRoutes(app, store, { token, allowed }) {
         );
     }
     const x = await db.query(
-      "UPDATE xpand_content_campaigns SET checkpoint=(CASE WHEN status='needs_information' THEN checkpoint-'insights'-'directions'-'selection'-'round'-'quality_issue'-'proposal'-'storyboard'-'final' ELSE checkpoint END)-'provider_issue',limitations=NULL,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
-      [ownedId(r), r.contentUser],
+      "UPDATE xpand_content_campaigns SET checkpoint=((CASE WHEN status='needs_information' THEN checkpoint-'insights'-'directions'-'selection'-'round'-'quality_issue'-'proposal'-'storyboard'-'final' ELSE checkpoint END)-'provider_issue') || $3::jsonb,limitations=NULL,status='queued',stage='queued',worker_id=NULL,lease_until=NULL,deadline_at=NULL,updated_at=NOW() WHERE id=$1 AND user_id=$2 AND status IN ('failed','blocked','needs_information','cancelled') AND attempts<3 RETURNING id",
+      [
+        ownedId(r),
+        r.contentUser,
+        JSON.stringify(
+          switchModel
+            ? {
+                model: currentSettings.visual_model,
+                previous_model: prior.checkpoint.model,
+              }
+            : {},
+        ),
+      ],
     );
     if (!x.rowCount)
       throw new Error(

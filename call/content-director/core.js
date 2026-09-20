@@ -142,6 +142,7 @@ export const defaultSettings = {
   task_calls: 10,
   unlimited_calls: false,
   visual_engine: false,
+  visual_model: "gemini-3.8-flash",
   rounds: 2,
   depth: "basic",
   concurrency: 1,
@@ -158,6 +159,11 @@ export const defaultSettings = {
 };
 export function settingsInput(v = {}) {
   const o = { ...defaultSettings };
+  o.visual_model = ["gemini-3.8-flash", "gemini-3.5-flash-lite"].includes(
+    v.visual_model,
+  )
+    ? v.visual_model
+    : defaultSettings.visual_model;
   o.search_provider = ["auto", "tavily", "gemini", "direct"].includes(
     v.search_provider,
   )

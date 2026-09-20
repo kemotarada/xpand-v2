@@ -1186,7 +1186,7 @@ export class Worker {
         (await this.store.config(job.user_id)).settings.visual_engine
       ) {
         await this.store.checkpoint(job, job.stage, {
-          model: "gemini-3.8-flash",
+          model: (await this.store.config(job.user_id)).settings.visual_model,
           visual_prompts: job.kind !== "week" && job.kind !== "scan",
         });
       }
@@ -1270,8 +1270,8 @@ export class Worker {
   async schedule() {
     const settings = await this.store.records(this.allowed, "settings");
     const s = (await this.store.config(this.allowed)).settings;
-    const model = s.visual_engine ? "gemini-3.8-flash" : this.model;
-    const searchModel = s.visual_engine ? "gemini-3.8-flash" : this.searchModel;
+    const model = s.visual_engine ? s.visual_model : this.model;
+    const searchModel = s.visual_engine ? s.visual_model : this.searchModel;
     const providers = (await this.store.records(this.allowed, "provider")).map(
       (r) => r.data,
     );
@@ -1286,10 +1286,8 @@ export class Worker {
           ? unavailable("tavily")
           : s.search_provider === "gemini"
             ? unavailable("grounding:" + searchModel)
-            : unavailable("tavily") &&
-              unavailable("grounding:" + searchModel);
-    const providerBlocked =
-      searchBlocked || unavailable("gemini:" + model);
+            : unavailable("tavily") && unavailable("grounding:" + searchModel);
+    const providerBlocked = searchBlocked || unavailable("gemini:" + model);
     if (
       settings.length &&
       s.recurring &&

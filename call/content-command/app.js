@@ -1001,6 +1001,7 @@ document.addEventListener("submit", async (e) => {
           pricing_confirmed: v.pricing_confirmed === "on",
           unlimited_calls: v.unlimited_calls === "on",
           visual_engine: state.settings.visual_engine === true,
+          visual_model: state.settings.visual_model,
         }),
       });
     else if (type === "occasion")
