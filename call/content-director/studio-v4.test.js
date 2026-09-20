@@ -21,8 +21,9 @@ test("storyboard generation constrains every field and resumes with saved propos
     proposal: { duration_seconds: 15 },
   });
   assert.deepEqual(schema.properties.duration_seconds.enum, [15]);
-  assert.equal(schema.properties.beats.minItems, 15);
-  assert.equal(schema.properties.beats.maxItems, 15);
+  assert.equal(schema.properties.beats.minItems, undefined);
+  assert.equal(schema.properties.beats.maxItems, undefined);
+  assert.equal(outputSchema("storyboard", { proposal: { duration_seconds: 60 } }).properties.beats.maxItems, undefined);
   assert.ok(schema.properties.scenes.items.required.includes("visual"));
   assert.ok(schema.properties.beats.items.required.includes("visual_change"));
   assert.equal(outputSchema("insights", {}), undefined);

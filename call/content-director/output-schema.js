@@ -41,9 +41,8 @@ export function outputSchema(stage, context) {
           ...strings("shot_id visual_change sound_change emotion purpose"),
         }),
       ),
-      ...(Number.isInteger(duration)
-        ? { minItems: duration, maxItems: duration }
-        : {}),
+      // Do not unroll a large fixed-length tuple in the provider grammar.
+      // Exact per-second coverage is enforced by validateStoryboard locally.
     },
     voiceover: array(
       object({ start: number, end: number, text: string, delivery: string }),
