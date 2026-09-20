@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { parseModelObject } from "./model-output.js";
-import { validateCampaignPlan, stockMechanismIssue } from "./campaign-plan.js";
+import {
+  validateCampaignPlan,
+  stockMechanismIssue,
+  validateOrRepairPlan,
+} from "./campaign-plan.js";
 import { selectReferences } from "./references.js";
 import { compactStoryboard } from "../content-command/compact-view.js";
 import { Worker } from "./worker.js";
@@ -158,6 +162,29 @@ test("compact storyboard escapes content and shows timed scenes without technica
   assert.ok(html.includes("&lt;script>"));
   assert.ok(!html.includes("<table"));
   assert.ok(html.includes("0–2 ثانية"));
+});
+test("a missing campaign field is repaired once without accepting a partial plan", async () => {
+  const bad = plan();
+  delete bad.items[0].visual_direction;
+  let calls = 0;
+  const job = { checkpoint: {} };
+  const worker = {
+    store: { checkpoint: async (j, s, d) => Object.assign(j.checkpoint, d) },
+    modelJSON: async () => {
+      calls++;
+      return plan();
+    },
+  };
+  assert.equal(
+    (await validateOrRepairPlan(worker, job, bad, 7, sources, {}, "test")).items
+      .length,
+    2,
+  );
+  assert.equal(calls, 1);
+  await assert.rejects(
+    validateOrRepairPlan(worker, job, bad, 7, sources, {}, "test"),
+  );
+  assert.equal(calls, 1);
 });
 test("home has today only and notifications own their navigation", () => {
   const html = fs.readFileSync(
