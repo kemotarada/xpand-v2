@@ -516,29 +516,40 @@ def run_validation() -> bool:
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
     assert copies_it[0].headline_ar, "Missing intl Arabic headline"
+    assert copies_it[0].brand_memory_tag == "stc_bank_remittance_2024", "Missing intl brand memory tag"
     assert "tiktok" in copies_it[0].channel_variants, "Missing tiktok variant"
 
     copies_wm = brain.generate_premium_copy("wealth_management")
     assert len(copies_wm) > 0, "Expected wealth management copy"
     assert copies_wm[0].headline_ar, "Missing wealth management Arabic headline"
+    assert copies_wm[0].brand_memory_tag == "stc_bank_wealth_2024", "Missing wealth brand memory tag"
+    assert "linkedin" in copies_wm[0].channel_variants, "Missing wealth linkedin variant"
 
     copies_sv = brain.generate_premium_copy("savings_vaults")
     assert len(copies_sv) > 0, "Expected savings vaults copy"
     assert copies_sv[0].headline_ar, "Missing savings vaults Arabic headline"
+    assert copies_sv[0].brand_memory_tag == "stc_bank_savings_2024", "Missing savings brand memory tag"
+    assert "instagram" in copies_sv[0].channel_variants, "Missing savings instagram variant"
 
     copies_bf = brain.generate_premium_copy("business_financing")
     assert len(copies_bf) > 0, "Expected business financing copy"
     assert copies_bf[0].headline_ar, "Missing business financing Arabic headline"
+    assert copies_bf[0].brand_memory_tag == "stc_bank_business_2024", "Missing business brand memory tag"
+    assert "linkedin" in copies_bf[0].channel_variants, "Missing business linkedin variant"
 
     copies_dw = brain.generate_premium_copy("digital_wallets")
     assert len(copies_dw) > 0, "Expected digital wallets copy"
     assert copies_dw[0].headline_ar, "Missing digital wallets Arabic headline"
+    assert copies_dw[0].brand_memory_tag == "stc_bank_wallet_2024", "Missing wallet brand memory tag"
     assert "twitter" in copies_dw[0].channel_variants, "Missing twitter variant"
+    assert "instagram" in copies_dw[0].channel_variants, "Missing instagram variant"
 
     copies_ci = brain.generate_premium_copy("card_issuing")
     assert len(copies_ci) > 0, "Expected card issuing copy"
     assert copies_ci[0].headline_ar, "Missing card issuing Arabic headline"
+    assert copies_ci[0].brand_memory_tag == "stc_bank_cards_2024", "Missing card brand memory tag"
     assert "instagram" in copies_ci[0].channel_variants, "Missing instagram variant"
+    assert "twitter" in copies_ci[0].channel_variants, "Missing twitter variant"
 
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
