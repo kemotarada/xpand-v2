@@ -1272,7 +1272,8 @@ export class Worker {
         )
       ).rows[0];
       const exhausted =
-        usage.day + 2 > s.daily_calls || usage.month + 2 > s.monthly_calls;
+        !s.unlimited_calls &&
+        (usage.day + 2 > s.daily_calls || usage.month + 2 > s.monthly_calls);
       if (exhausted)
         await this.store.notify(
           this.allowed,

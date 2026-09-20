@@ -214,17 +214,28 @@ function render() {
     `<p>${badge(runtime?.paused_for_provider ? "البحث متوقف عند مزود الخدمة" : p.recurring && workerAlive ? "البحث الدوري يعمل" : p.recurring ? "البحث مفعّل؛ نبض العامل غير حديث" : "البحث الدوري غير مفعّل", !p.recurring || !workerAlive || runtime?.paused_for_provider)} ${p.recurring ? `كل ${p.interval_hours} ساعة، ضمن الحدود` : "يلزم اعتماد حدود التشغيل في الإعدادات."}</p><p>تنبيهات تيليجرام: ${p.telegram ? `مفعّلة · بحد ${p.notification_cap} رسائل يوميًا · هدوء ${p.quiet_start}:00–${p.quiet_end}:00` : "غير مفعّلة"}</p><p class="muted">طلبات الخدمات اليوم: <bdi>${s.usage.daily_calls} / ${p.daily_calls}</bdi> · هذا الشهر: <bdi>${s.usage.monthly_calls} / ${p.monthly_calls}</bdi><br>تكلفة محجوزة تقديرية: ${Number(s.usage.daily_reserved_usd).toFixed(3)} دولار اليوم. ليست فاتورة المزود ولا دليل حصة متاحة.<br>تحليلات الحسابات غير مربوطة حاليًا. النشر يدوي؛ لا أرقام أداء افتراضية.</p>${blockedProviders.map((r) => `<div class="error"><bdi>${esc(r.record_key)}</bdi><p>${esc(r.data.message)}</p><small>آخر فحص: ${fmt(r.data.checked_at)} · إعادة محاولة مؤهلة بعد: ${fmt(r.data.retry_at)}</small></div>`).join("")}${blockedProviders.length ? button("provider-recheck", "أعد التحقق بعد معالجة حصة المزود") : ""}${button("profile", "ضبط المعرفة والقدرة والحدود")}`;
   renderTasks();
   const productionNote = document.createElement("p");
-  const remaining = Math.max(
-    0,
-    Math.min(
-      p.daily_calls - s.usage.daily_calls,
-      p.monthly_calls - s.usage.monthly_calls,
-    ),
-  );
+  if (p.unlimited_calls) {
+    const counts = $("#operations").querySelectorAll("p.muted bdi");
+    if (counts[0])
+      counts[0].textContent = `${s.usage.daily_calls} — بلا سقف داخلي`;
+    if (counts[1])
+      counts[1].textContent = `${s.usage.monthly_calls} — بلا سقف داخلي`;
+  }
+  const remaining = p.unlimited_calls
+    ? Infinity
+    : Math.max(
+        0,
+        Math.min(
+          p.daily_calls - s.usage.daily_calls,
+          p.monthly_calls - s.usage.monthly_calls,
+        ),
+      );
   productionNote.className = remaining ? "info-strip" : "error";
-  productionNote.textContent = remaining
-    ? `توليد الأفكار عند الطلب: متاح ضمن الحدود — المتبقي ${remaining} طلب خدمة. الفيديو المفصل يحتاج عدة طلبات، وليس طلبًا واحدًا. هذا مستقل عن فحص المناسبات الدوري.`
-    : "توليد الأفكار متوقف حاليًا عند حد الأداة الداخلي. حد اليوم يتجدد عند منتصف الليل بتوقيت الخليل. الاستكمال لا يمسح الاستهلاك السابق.";
+  productionNote.textContent = p.unlimited_calls
+    ? "توليد الأفكار بلا سقف داخلي لعدد الطلبات يوميًا أو شهريًا أو لكل مهمة. حصص المزوّد وحماية التكرار والإنفاق تبقى سارية. لا يعني ذلك تفعيل فوترة أو حصة مجانية غير محدودة."
+    : remaining
+      ? `توليد الأفكار عند الطلب: متاح ضمن الحدود — المتبقي ${remaining} طلب خدمة. الفيديو المفصل يحتاج عدة طلبات، وليس طلبًا واحدًا. هذا مستقل عن فحص المناسبات الدوري.`
+      : "توليد الأفكار متوقف حاليًا عند حد الأداة الداخلي. حد اليوم يتجدد عند منتصف الليل بتوقيت الخليل. الاستكمال لا يمسح الاستهلاك السابق.";
   $("#operations").prepend(productionNote);
   if (runtime?.paused_for_provider)
     $("#operations .badge").textContent = "البحث الشامل / الدوري متوقف";
@@ -488,8 +499,10 @@ function campaignForm(autonomous = false, brief = "", dayPlanId = "") {
   }
   dialog.querySelector(".muted").textContent =
     "بحث وقراءة مصادر ← استخلاص فرص ← 3 اتجاهات ← نقد واختيار ← معالجة ← ستوري بورد ← فحص الجودة. المراحل محفوظة على الخادم حتى لو أغلقت الأداة.";
-  dialog.querySelector(".small-note").textContent =
-    `الفيديو المفصّل يحتاج عادة 6 طلبات للنموذج إضافة للبحث، ضمن حد المهمة (${state?.settings.task_calls || 10}) وحدود اليوم والشهر. إذا انتهت الحصة تُحفظ المراحل. الناتج ملف إنتاج، وليس فيديو مولّدًا أو منشورًا تلقائيًا.`;
+  dialog.querySelector(".small-note").textContent = state?.settings
+    .unlimited_calls
+    ? "لا يوجد سقف داخلي لعدد طلبات التوليد. تبقى حصة المزوّد وحماية التكرار والإنفاق سارية. الناتج فكرة وستوري بورد، وليس فيديو مولّدًا تلقائيًا."
+    : `الفيديو المفصّل يحتاج عادة 6 طلبات للنموذج إضافة للبحث، ضمن حد المهمة (${state?.settings.task_calls || 10}) وحدود اليوم والشهر. إذا انتهت الحصة تُحفظ المراحل. الناتج ملف إنتاج، وليس فيديو مولّدًا أو منشورًا تلقائيًا.`;
   if (!brief && !autonomous) {
     dialog.querySelector(".muted").textContent =
       "نبحث ونجهز أفكار فيديوهات وبوسترات مترابطة ومختلفة خلال مدة الحملة. يمكنك إغلاق الأداة؛ العمل محفوظ على الخادم.";
@@ -651,6 +664,23 @@ function profileForm() {
         "",
       )}<label>عمق البحث<select name="depth"><option value="basic" ${s.depth === "basic" ? "selected" : ""}>أساسي</option><option value="advanced" ${s.depth === "advanced" ? "selected" : ""}>متقدم (تحقق من التكلفة)</option></select></label></div><label class="check-label"><input type="checkbox" name="pricing_confirmed" ${s.pricing_confirmed ? "checked" : ""}> تحققت من الأسعار / الحصة المجانية وحدود الإنفاق.</label><label class="check-label"><input type="checkbox" name="recurring" ${s.recurring ? "checked" : ""}> تفعيل البحث الدوري في الخلفية</label><label class="check-label"><input type="checkbox" name="telegram" ${s.telegram ? "checked" : ""}> إرسال تنبيهات لهذا المستخدم على تيليجرام</label><p class="small-note">كل الأوقات حسب الخليل. لا رسائل في ساعات الهدوء ولا رسائل إلى العملاء.</p><button class="primary dialog-submit">اعتماد إعدادات التشغيل</button></form>`,
   );
+  dialog
+    .querySelector('[data-form="settings"] .fields')
+    .insertAdjacentHTML(
+      "beforebegin",
+      `<label class="check-label"><input type="checkbox" name="unlimited_calls" ${s.unlimited_calls ? "checked" : ""}> بدون سقف داخلي لعدد الطلبات (يومي / شهري / مهمة). لا يلغي حصة المزوّد أو حدود الإنفاق.</label>`,
+    );
+  if (s.unlimited_calls) {
+    for (const name of ["daily_calls", "monthly_calls", "task_calls"])
+      dialog.querySelector(`[name="${name}"]`).closest("label").hidden = true;
+  }
+  dialog
+    .querySelector('[name="unlimited_calls"]')
+    .addEventListener("change", (e) => {
+      for (const name of ["daily_calls", "monthly_calls", "task_calls"])
+        dialog.querySelector(`[name="${name}"]`).closest("label").hidden =
+          e.target.checked;
+    });
   dialog.querySelector('[data-form="settings"] .fields').insertAdjacentHTML(
     "afterbegin",
     `<label class="full">مصدر البحث<select name="search_provider">${[
@@ -938,6 +968,7 @@ document.addEventListener("submit", async (e) => {
           recurring: v.recurring === "on",
           telegram: v.telegram === "on",
           pricing_confirmed: v.pricing_confirmed === "on",
+          unlimited_calls: v.unlimited_calls === "on",
         }),
       });
     else if (type === "occasion")

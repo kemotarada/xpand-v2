@@ -140,6 +140,7 @@ export const defaultSettings = {
   daily_calls: 20,
   monthly_calls: 200,
   task_calls: 10,
+  unlimited_calls: false,
   rounds: 2,
   depth: "basic",
   concurrency: 1,
@@ -161,7 +162,12 @@ export function settingsInput(v = {}) {
   )
     ? v.search_provider
     : "auto";
-  for (const k of ["recurring", "pricing_confirmed", "telegram"])
+  for (const k of [
+    "recurring",
+    "pricing_confirmed",
+    "telegram",
+    "unlimited_calls",
+  ])
     o[k] = v[k] === true;
   const ranges = {
     interval_hours: [2, 24],
@@ -186,7 +192,11 @@ export function settingsInput(v = {}) {
     o[k] = k.includes("usd") ? n : Math.floor(n);
   }
   o.depth = v.depth === "advanced" ? "advanced" : "basic";
-  if (o.recurring && (!o.pricing_confirmed || o.daily_calls > o.monthly_calls))
+  if (
+    o.recurring &&
+    (!o.pricing_confirmed ||
+      (!o.unlimited_calls && o.daily_calls > o.monthly_calls))
+  )
     throw new Error(
       "اضبط حدود الاستهلاك وأكّد أسعار الخدمات أو حصتها المجانية قبل البحث الدوري.",
     );

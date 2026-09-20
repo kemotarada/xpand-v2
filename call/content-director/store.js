@@ -82,15 +82,15 @@ export class Store {
         [user, ZONE, campaignId],
       )
     ).rows[0];
-    if (usage.day >= s.daily_calls)
+    if (!s.unlimited_calls && usage.day >= s.daily_calls)
       throw new Error(
         "اكتمل حد اليوم. يتجدد عند منتصف الليل بتوقيت الخليل، أو عدّل الحد المعتمد. لم نستهلك محاولة ولم ننشئ طلبًا جديدًا.",
       );
-    if (usage.month >= s.monthly_calls)
+    if (!s.unlimited_calls && usage.month >= s.monthly_calls)
       throw new Error(
         "اكتمل حد الشهر. لم نستهلك محاولة جديدة؛ يلزم تجدد الحد أو تعديله.",
       );
-    if (campaignId && usage.task >= s.task_calls)
+    if (!s.unlimited_calls && campaignId && usage.task >= s.task_calls)
       throw new Error(
         "وصل هذا الطلب لحد المهمة؛ زيادة حد اليوم وحدها لا تكفي. عدّل حد المهمة المعتمد للاستكمال، دون مسح الاستهلاك السابق.",
       );
@@ -180,9 +180,10 @@ export class Store {
         )
       ).rows[0].n;
       if (
-        u.daily >= s.daily_calls ||
-        u.monthly >= s.monthly_calls ||
-        n >= s.task_calls ||
+        (!s.unlimited_calls &&
+          (u.daily >= s.daily_calls ||
+            u.monthly >= s.monthly_calls ||
+            n >= s.task_calls)) ||
         (costs > 0 &&
           (u.usd_day + costs > s.daily_usd ||
             u.usd_month + costs > s.monthly_usd))

@@ -12,8 +12,9 @@ export function libraryCard(c, usage = {}, settings = {}) {
       : c.kind === "scan"
         ? "فحص فرص — غير مكتمل"
         : "طلب تطوير فكرة — غير مكتمل";
-  const budgetReason =
-    Number(usage.daily_calls) >= Number(settings.daily_calls)
+  const budgetReason = settings.unlimited_calls
+    ? ""
+    : Number(usage.daily_calls) >= Number(settings.daily_calls)
       ? "اكتمل حد اليوم؛ يتجدد عند منتصف الليل بتوقيت الخليل، أو بعد تعديل الحد المعتمد."
       : Number(usage.monthly_calls) >= Number(settings.monthly_calls)
         ? "اكتمل حد الشهر؛ انتظر تجدد الحد أو عدّل الحد المعتمد."
