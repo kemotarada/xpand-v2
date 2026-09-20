@@ -1270,6 +1270,8 @@ export class Worker {
   async schedule() {
     const settings = await this.store.records(this.allowed, "settings");
     const s = (await this.store.config(this.allowed)).settings;
+    const model = s.visual_engine ? "gemini-3.8-flash" : this.model;
+    const searchModel = s.visual_engine ? "gemini-3.8-flash" : this.searchModel;
     const providers = (await this.store.records(this.allowed, "provider")).map(
       (r) => r.data,
     );
@@ -1283,11 +1285,11 @@ export class Worker {
         : s.search_provider === "tavily"
           ? unavailable("tavily")
           : s.search_provider === "gemini"
-            ? unavailable("grounding:" + this.searchModel)
+            ? unavailable("grounding:" + searchModel)
             : unavailable("tavily") &&
-              unavailable("grounding:" + this.searchModel);
+              unavailable("grounding:" + searchModel);
     const providerBlocked =
-      searchBlocked || unavailable("gemini:" + this.model);
+      searchBlocked || unavailable("gemini:" + model);
     if (
       settings.length &&
       s.recurring &&
@@ -1393,8 +1395,8 @@ export class Worker {
       version: "content-director-v3",
       recurring: s.recurring,
       paused_for_provider: providerBlocked,
-      model: this.model,
-      search_model: this.searchModel,
+      model,
+      search_model: searchModel,
     });
   }
   async deliver(settings) {
