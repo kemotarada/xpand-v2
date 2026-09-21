@@ -707,7 +707,7 @@ export class Worker {
         job,
         "selection",
         { ...base, directions },
-        "Evaluate candidates: clarity, service relevance, Palestinian audience fit (hypothesis unless evidenced), originality, hook, feasibility and purpose. Return {selected_index:0-based number,decision_rationale:string,weaknesses:[],improvements:[],duplicate:false,comparisons:[{title,strength,weakness,logo_swap_test,feasibility_test,decision}]}. Select ONE; reject interchangeable generic concepts and repetition of history. Concise editorial conclusions, not private reasoning or commercial predictions.",
+        "Evaluate candidates: clarity, service relevance, Palestinian audience fit (hypothesis unless evidenced), originality, hook, feasibility and purpose. Apply a strict brand-role test (XPAND is the agency, not the client/product/location), a premise-truth test (no invented office/contact/client) and an AI-production risk test (no fragile hand-object transformations unless live action). Prefer one concrete ownable advertising observation over a generic before/after transformation. Return {selected_index:0-based number,decision_rationale:string,weaknesses:[],improvements:[],duplicate:false,comparisons:[{title,strength,weakness,logo_swap_test,feasibility_test,decision}]}. Select ONE; reject interchangeable generic concepts and repetition of history. Concise editorial conclusions, not private reasoning or commercial predictions.",
       );
       if (
         !Number.isInteger(selection.selected_index) ||
@@ -735,7 +735,7 @@ export class Worker {
         await this.store.checkpoint(job, "collecting_references", {});
         const extra = await this.research(
           job,
-          "creative agency self promotion concrete visual metaphor low budget motion design case study",
+          text(job.request_text, 320) + " advertising concept concrete service demonstration original visual mechanism production-safe live action or motion case study",
           ctx.settings.depth,
         );
         for (const item of extra.data.results || []) {
