@@ -550,6 +550,12 @@ def run_validation() -> bool:
     assert "instagram" in copies_ci[0].channel_variants, "Missing instagram variant"
     assert "twitter" in copies_ci[0].channel_variants, "Missing twitter variant"
 
+    # Additional validation check for all copy items having non-empty factuality notes and valid to_dict outputs
+    for c_list in [copies, copies_it, copies_wm, copies_sv, copies_bf, copies_dw, copies_ci]:
+        for item in c_list:
+            assert item.factuality_note, f"Missing factuality note in {item.copy_id}"
+            assert isinstance(item.to_dict(), dict), f"to_dict() failed for {item.copy_id}"
+
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
 
