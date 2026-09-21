@@ -186,7 +186,7 @@ class STCAdBrain:
                     factuality_note="No specific exchange rates, transfer fees, or delivery times are claimed. Focuses on instant processing and security.",
                     brand_memory_tag="stc_bank_remittance_2024"
                 )
-            ]
+            ] 
         elif benefit_family == "wealth_management":
             return [
                 AdCopy(
