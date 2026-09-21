@@ -36,6 +36,11 @@ export function stockMechanismIssue(plan) {
       item.composition,
       ...(item.scenes || []).map((s) => s.visual + " " + s.action),
     ].join(" ");
+    const realLiveAction = /real live.action|live.action footage|تصوير حقيقي/u.test(copy);
+    if (/(?:XPAND.{0,80}(?:منيو|قائمة طعام|كتاب|عبوة|منتج|واجهة محل|مقر|مكتب استقبال)|(?:منيو|قائمة طعام|كتاب|عبوة|منتج|واجهة محل|مقر|مكتب استقبال).{0,80}(?:شعار|هوية|باسم) XPAND)/iu.test(story))
+      return "«" + item.title + "» تخلط دور XPAND بالعميل أو المنتج وتخترع أصلًا ماديًا للشركة. أبقِ XPAND وكالةً خلف العمل وضع شعارها فقط على بطاقة نهاية منفصلة.";
+    if (!realLiveAction && /(?:يفتح|فتح|يمسك|يسحب|يدفع).{0,35}(?:باب|مقبض)|(?:يقلب|تقليب|يفتح).{0,25}(?:صفحة|منيو|كتاب)/u.test(story))
+      return "«" + item.title + "» تعتمد تفاعل يد مع باب أو صفحة يصعب تحريكه واقعيًا من صورة ثابتة. استخدم تصويرًا حقيقيًا أو لقطتين ثابتتين يفصل بينهما قطع.";
     const tidyReveal =
       /تشويش|مشتت|مشوش|فوضى|مزدحم|غباش/.test(story) &&
       /نظيف|وضوح|واضح|منظم|ترتيب|انسجام|يرتب/.test(story);
@@ -197,7 +202,7 @@ export async function campaignPlan(worker, job, ctx, sources) {
           },
           instruction +
             " For each static asset add headline:string containing the EXACT public-facing headline, not a description such as bold heading. For each video, every scene must name the concrete objects/words and what happens: an animated element explains the service is a missing scene. Never promise immediate purchase, guaranteed attention/sales or that a client is the best. Story must demonstrate a communication choice, not claim an inevitable audience reaction. " +
-            " ABSOLUTELY EXCLUDED STOCK PLOTS: clutter/noise/blur becomes tidy/clear; static shapes become moving shapes; geometric logo assembly. These are rejected even if the reviewer praises them. Use a concrete original event (a visual riddle with an earned answer, a decision with an unexpected consequence, a meaningful object interaction), demonstrating what an advertising decision changes. Name the exact objects and exact final line. Opening, central event and payoff must differ between all assets and excluded_concept. Sound and words must carry the same story as the images. Do not merely assert an abstract object is professional. The campaign may share brand palette, never share the same plot.",
+            " ABSOLUTELY EXCLUDED STOCK PLOTS: clutter/noise/blur becomes tidy/clear; static shapes become moving shapes; geometric logo assembly. These are rejected even if the reviewer praises them. Use a concrete original event (a visual riddle with an earned answer, a decision with an unexpected consequence, a meaningful object interaction), demonstrating what an advertising decision changes. Name the exact objects and exact final line. Opening, central event and payoff must differ between all assets and excluded_concept. Sound and words must carry the same story as the images. Do not merely assert an abstract object is professional. The campaign may share brand palette, never share the same plot. XPAND is the agency, never a restaurant/shop/product: do not put its logo on a client menu, book, package or storefront and never invent an XPAND office, address, phone or website. For AI-assisted production, do not build a scene around hands opening doors, turning pages, passing objects or morphing identities; use stable shots and editorial cuts unless real live-action capture is explicitly chosen.",
         )),
       days,
       sources,

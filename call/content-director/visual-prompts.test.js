@@ -87,6 +87,10 @@ test("each standalone prompt includes the locked palette and campaign DNA", () =
     for (const colour of Object.values(VISUAL_DNA.palette))
       assert.ok(p[key].includes(colour));
   assert.match(p.motion_prompt, /4-second/);
+  assert.match(p.image_prompt, /XPAND is the agency/);
+  assert.match(p.image_prompt, /No XPAND logo on client artifacts/);
+  assert.match(p.motion_prompt, /No morphing/);
+  assert.match(p.motion_prompt, /door opening or page turning/);
   assert.throws(() => composePrompts(dna, { image: {} }, 4), /ناقصة/);
 });
 test("prompt generation preserves the original story and resumes saved scene directions", async () => {

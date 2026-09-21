@@ -163,6 +163,12 @@ test("campaign plans need distinct mixed assets within duration and complete sho
   const vague = plan();
   vague.items[0].scenes[0].visual = "ظهور موشن جرافيك تفاعلي يختصر الخدمة";
   assert.match(stockMechanismIssue(vague), /لا تحدد/);
+  const leakedBrand = plan();
+  leakedBrand.items[0].concept = "منيو مطعم يحمل شعار XPAND";
+  assert.match(stockMechanismIssue(leakedBrand), /تخلط دور XPAND/);
+  const fragileMotion = plan();
+  fragileMotion.items[0].scenes[0].action = "يد صاحب العمل تفتح مقبض باب زجاجي";
+  assert.match(stockMechanismIssue(fragileMotion), /تفاعل يد/);
   assert.match(selectReferences("فيديو لا تكرر الشعار")[0].url, /google/);
   assert.equal(validateCampaignPlan(plan(), 7, sources).items.length, 2);
   const clockPlan = plan();
