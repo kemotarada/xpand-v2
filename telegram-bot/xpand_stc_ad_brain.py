@@ -115,7 +115,7 @@ class STCAdBrain:
                     body_copy_en="With stc bank merchant solutions, unify your sales channels and accept payments with absolute ease and security. An integrated system built for the speed of your business in the Kingdom.",
                     cta_ar="طوّر أعمالك اليوم",
                     cta_en="Empower your business today",
-                    saudi_cultural_fit="Reflects the modern, fast-paced Saudi entrepreneurial spirit, aligning with Vision 2030's digital economy goals.",
+                    saudi_cultural_fit="Reflects the modern, fast-paced Saudi entrepreneurial spirit, championing local commerce and aligning with Vision 2030's digital economy goals.",
                     channel_variants={
                         "twitter": {
                             "ar": "تبسيط عمليات البيع يبدأ من هنا. وحّد متجرك الإلكتروني ونقاط البيع مع حلول تجار بنك stc. 💼✨ #بنك_stc",
@@ -126,8 +126,8 @@ class STCAdBrain:
                             "en": "For every Saudi merchant aiming for growth: smart payment solutions that seamlessly connect your online store with physical POS. 📈"
                         },
                         "linkedin": {
-                            "ar": "تمكين قطاع التجزئة والمنشآت الصغيرة في المملكة بحلول دفع موحدة وموثوقة من بنك stc. استثمر في كفاءة أعمالك.",
-                            "en": "Empowering retail and SMEs in the Kingdom with unified, reliable payment solutions from stc bank. Invest in your business efficiency."
+                            "ar": "تمكين قطاع التجزئة والمنشآت الصغيرة في المملكة بحلول دفع موحدة وموثوقة من بنك stc. استثمر في كفاءة أعمالك ودعم الاقتصاد الرقمي.",
+                            "en": "Empowering retail and SMEs in the Kingdom with unified, reliable payment solutions from stc bank. Invest in your business efficiency and digital economy."
                         }
                     },
                     factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
@@ -140,15 +140,19 @@ class STCAdBrain:
                     hook_en="Comprehensive view of your business.. every transaction in its right place.",
                     headline_ar="إدارة مالية توحّد نبض تجارتك",
                     headline_en="Financial Management Unifying Your Commerce",
-                    body_copy_ar="راقب أداء مبيعاتك لحظة بلحظة واكتشف سهولة الإدارة المالية الموحدة مع حلول بنك stc المصممة لنمو أعمالك.",
-                    body_copy_en="Monitor your sales performance in real-time and discover the ease of unified financial management with stc bank solutions designed for business growth.",
+                    body_copy_ar="راقب أداء مبيعاتك لحظة بلحظة واكتشف سهولة الإدارة المالية الموحدة مع حلول بنك stc المصممة لنمو أعمالك في السوق السعودي.",
+                    body_copy_en="Monitor your sales performance in real-time and discover the ease of unified financial management with stc bank solutions designed for business growth in the Saudi market.",
                     cta_ar="استكشف الحلول",
                     cta_en="Explore solutions",
-                    saudi_cultural_fit="Matches the ambition of modern Saudi enterprises expanding rapidly across diverse channels.",
+                    saudi_cultural_fit="Matches the ambition and agility of modern Saudi enterprises expanding rapidly across diverse channels with transparency.",
                     channel_variants={
                         "twitter": {
                             "ar": "إدارة مبيعاتك أصبحت أكثر ذكاءً واطمئناناً. اكتشف حلول تجار بنك stc. 📊 #بنك_stc",
                             "en": "Managing your sales is now smarter and more reassuring. Discover stc bank merchant solutions. 📊 #stc_bank"
+                        },
+                        "instagram": {
+                            "ar": "رؤية واضحة وموثوقة لجميع مبيعاتك مع حلول التجار من بنك stc. 💡",
+                            "en": "Clear and reliable visibility for all your sales with stc bank merchant solutions. 💡"
                         }
                     },
                     factuality_note="No specific revenue multipliers or reporting speed claims are made. Focuses on clarity and unified overview.",
@@ -168,7 +172,7 @@ class STCAdBrain:
                     body_copy_en="Send money internationally to your family and business with absolute confidence via stc bank app. Instant transfer, complete transparency, and unmatched peace of mind.",
                     cta_ar="حوّل الآن بكل سهولة",
                     cta_en="Transfer now with ease",
-                    saudi_cultural_fit="Addresses the deep-rooted Saudi value of family support and global business connectivity, using respectful and warm language.",
+                    saudi_cultural_fit="Addresses the deep-rooted Saudi values of family support, generosity, and global business connectivity, using respectful, warm, and reassuring language.",
                     channel_variants={
                         "twitter": {
                             "ar": "عائلتك قريبة دائماً مهما كانت المسافات. حوّل دولياً فوراً وبأمان تام عبر تطبيق بنك stc. 🌍✈️ #بنك_stc",
@@ -200,7 +204,7 @@ class STCAdBrain:
                     body_copy_en="Invest and save smartly with stc bank tools specifically designed to empower your wealth management and financial aspirations in the Kingdom.",
                     cta_ar="ابدأ رحلة الادخار اليوم",
                     cta_en="Start your savings journey today",
-                    saudi_cultural_fit="Aligns with personal financial responsibility, prudent savings, and long-term planning valued in Saudi culture and Vision 2030.",
+                    saudi_cultural_fit="Aligns with personal financial responsibility, prudent savings, and long-term planning highly valued in Saudi culture and Vision 2030.",
                     channel_variants={
                         "twitter": {
                             "ar": "مستقبلك المالي يستحق التخطيط الأذكى. اكتشف أدوات الادخار والاستثمار من بنك stc. 📊💡 #بنك_stc",
@@ -211,7 +215,7 @@ class STCAdBrain:
                             "en": "Plan your next financial step with confidence. Smart tools to manage and grow your savings securely with stc bank app. 🌿"
                         },
                         "linkedin": {
-                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي والفردي مع حلول بنك stc المبتكرة.",
+                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي وفردي مع حلول بنك stc المبتكرة والموثوقة.",
                             "en": "Building wealth and managing financial planning with institutional and personal awareness using stc bank innovative solutions."
                         }
                     },
@@ -232,7 +236,7 @@ class STCAdBrain:
                     body_copy_en="Create dedicated vaults for every goal in your life via stc bank app. Organize your savings easily and track their growth step by step.",
                     cta_ar="أنشئ حصالتك الآن",
                     cta_en="Create your vault now",
-                    saudi_cultural_fit="Resonates with personal discipline, family milestones, and smart future preparation.",
+                    saudi_cultural_fit="Resonates with personal discipline, family milestones, and smart future preparation for the next generation.",
                     channel_variants={
                         "twitter": {
                             "ar": "خطط لأحلامك ونظم مدخراتك بذكاء مع حصالات بنك stc الرقمية. 🎯💰 #بنك_stc",
@@ -260,15 +264,15 @@ class STCAdBrain:
                     body_copy_en="Access flexible and agile business financing solutions from stc bank, custom-designed to support SMEs and enterprises in the Kingdom.",
                     cta_ar="اكتشف حلول الأعمال",
                     cta_en="Explore business solutions",
-                    saudi_cultural_fit="Directly supports Saudi SMEs and entrepreneurs contributing to the vibrant Vision 2030 economic landscape.",
+                    saudi_cultural_fit="Directly supports Saudi SMEs and entrepreneurs contributing to the vibrant Vision 2030 economic landscape and national growth.",
                     channel_variants={
                         "twitter": {
                             "ar": "طموح شركتك يستحق شريكاً يثق بقدراتك. اكتشف حلول تمويل الأعمال من بنك stc. 📈🤝 #بنك_stc",
                             "en": "Your company's ambition deserves a partner that trusts your capability. Discover business financing from stc bank. 📈🤝 #stc_bank"
                         },
                         "linkedin": {
-                            "ar": "تمكين المنشآت الصغيرة والمتوسطة بحلول تمويلية مرنة تدفع عجلة الاقتصاد الوطني في المملكة.",
-                            "en": "Empowering SMEs with flexible financing solutions driving the national economy in the Kingdom."
+                            "ar": "تمكين المنشآت الصغيرة والمتوسطة بحلول تمويلية مرنة تدفع عجلة الاقتصاد الوطني في المملكة نحو آفاق جديدة.",
+                            "en": "Empowering SMEs with flexible financing solutions driving the national economy in the Kingdom toward new horizons."
                         }
                     },
                     factuality_note="No loan amounts, approval timelines, or interest rates are explicitly claimed. Focuses on partnership and enterprise enablement.",
@@ -288,7 +292,7 @@ class STCAdBrain:
                     body_copy_en="Handle your daily payments and transfer money to friends in one touch via stc bank digital wallet. Ultimate ease matching the rhythm of your life.",
                     cta_ar="حمل التطبيق وابدأ الآن",
                     cta_en="Download the app and start now",
-                    saudi_cultural_fit="Fits the cashless, tech-savvy lifestyle of modern Saudi consumers and youth.",
+                    saudi_cultural_fit="Fits the cashless, tech-savvy lifestyle of modern Saudi consumers, youth, and busy professionals.",
                     channel_variants={
                         "twitter": {
                             "ar": "ادفع وحوّل بكل مرونة وسرعة. محفظة بنك stc رفيقك الرقمي لكل يوم. 📱💳 #بنك_stc",
@@ -316,7 +320,7 @@ class STCAdBrain:
                     body_copy_en="Order your stc bank card via the app and enjoy wide global acceptance and advanced security standards for all your local and international purchases.",
                     cta_ar="اطلب بطاقتك الآن",
                     cta_en="Order your card now",
-                    saudi_cultural_fit="Appeals to premium lifestyle preferences and travelers seeking instant, reliable payment instruments.",
+                    saudi_cultural_fit="Appeals to premium lifestyle preferences, frequent travelers, and users seeking instant, reliable payment instruments.",
                     channel_variants={
                         "twitter": {
                             "ar": "جاهزة للاستخدام المحلي والدولي لحظة إصدارها. اكتشف بطاقات بنك stc. 💳✈️ #بنك_stc",
