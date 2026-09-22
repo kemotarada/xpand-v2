@@ -215,7 +215,7 @@ class STCAdBrain:
                             "en": "Plan your next financial step with confidence. Smart tools to manage and grow your savings securely with stc bank app. 🌿"
                         },
                         "linkedin": {
-                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي وفردي مع حلول بنك stc المبتكرة والموثوقة.",
+                            "ar": "بناء الثروة وإدارة التخطيط المالي بوعي مؤسسي والفردي مع حلول بنك stc المبتكرة والموثوقة.",
                             "en": "Building wealth and managing financial planning with institutional and personal awareness using stc bank innovative solutions."
                         }
                     },
@@ -333,6 +333,34 @@ class STCAdBrain:
                     },
                     factuality_note="No specific annual fees, FX markups, or reward tier points are claimed. Focuses on instant issuance and acceptance.",
                     brand_memory_tag="stc_bank_cards_2024"
+                )
+            ]
+        elif benefit_family == "corporate_expense_management":
+            return [
+                AdCopy(
+                    copy_id="cem_premium_01",
+                    benefit_extracted="Streamlined corporate expense cards and real-time tracking for business teams across the Kingdom.",
+                    hook_ar="نظم مصروفات شركتك بكل مرونة وسهولة.",
+                    hook_en="Manage your company expenses with absolute flexibility and ease.",
+                    headline_ar="تحكم ذكي بمصروفات فريقك العملي",
+                    headline_en="Smart Control Over Your Team Expenses",
+                    body_copy_ar="تابع نفقات الشركة وأصدر بطاقات المصروفات لفريقك بضغطة زر واحدة عبر حلول بنك stc المخصصة لرواد الأعمال والشركات.",
+                    body_copy_en="Track company expenses and issue team cards with a single click via stc bank solutions built for entrepreneurs and enterprises.",
+                    cta_ar="نظم مصروفاتك اليوم",
+                    cta_en="Streamline your expenses today",
+                    saudi_cultural_fit="Empowers corporate governance and operational efficiency for modern Saudi businesses scaling rapidly.",
+                    channel_variants={
+                        "linkedin": {
+                            "ar": "ارتقِ بكفاءة الإدارة المالية لشركتك. حلول مصروفات الشركات الموحدة من بنك stc تدعم نمو عملك بثقة.",
+                            "en": "Elevate your company's financial management efficiency. Unified corporate expense solutions from stc bank support your business growth with confidence."
+                        },
+                        "twitter": {
+                            "ar": "إدارة نفقات فريقك أصبحت أسهل وأكثر شفافية. اكتشف حلول الشركات من بنك stc. 💼📊 #بنك_stc",
+                            "en": "Managing team expenses is now easier and more transparent. Discover stc bank corporate solutions. 💼📊 #stc_bank"
+                        }
+                    },
+                    factuality_note="No specific credit limits, interest rates, or card issuance fees are claimed. Focuses on control and transparency.",
+                    brand_memory_tag="stc_bank_corporate_2024"
                 )
             ]
         
@@ -554,8 +582,14 @@ def run_validation() -> bool:
     assert "instagram" in copies_ci[0].channel_variants, "Missing instagram variant"
     assert "twitter" in copies_ci[0].channel_variants, "Missing twitter variant"
 
+    copies_cem = brain.generate_premium_copy("corporate_expense_management")
+    assert len(copies_cem) > 0, "Expected corporate expense management copy"
+    assert copies_cem[0].headline_ar, "Missing corporate expense Arabic headline"
+    assert copies_cem[0].brand_memory_tag == "stc_bank_corporate_2024", "Missing corporate brand memory tag"
+    assert "linkedin" in copies_cem[0].channel_variants, "Missing linkedin variant"
+
     # Additional validation check for all copy items having non-empty factuality notes and valid to_dict outputs
-    for c_list in [copies, copies_it, copies_wm, copies_sv, copies_bf, copies_dw, copies_ci]:
+    for c_list in [copies, copies_it, copies_wm, copies_sv, copies_bf, copies_dw, copies_ci, copies_cem]:
         for item in c_list:
             assert item.factuality_note, f"Missing factuality note in {item.copy_id}"
             assert isinstance(item.to_dict(), dict), f"to_dict() failed for {item.copy_id}"
@@ -617,6 +651,11 @@ if __name__ == "__main__":
     copies_ci = brain.generate_premium_copy("card_issuing")
     print(f"generated_copies (cards) = {len(copies_ci)}")
     for copy in copies_ci:
+        print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
+
+    copies_cem = brain.generate_premium_copy("corporate_expense_management")
+    print(f"generated_copies (corporate) = {len(copies_cem)}")
+    for copy in copies_cem:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
         
     run_validation()
