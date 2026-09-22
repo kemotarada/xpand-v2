@@ -353,7 +353,7 @@ class STCAdBrain:
                 },
                 factuality_note="No specific financial claims, rates, or offers are made.",
                 brand_memory_tag="stc_bank_generic_2024"
-             зовут
+            )
         ]
 
     def _merchant_payments_concepts(self, visual_family: str) -> List[AdConcept]:
