@@ -635,7 +635,7 @@ if __name__ == "__main__":
     print(f"generated_copies (savings) = {len(copies_sv)}")
     for copy in copies_sv:
         print(f"- {copy.copy_id} | Headline: {copy.headline_ar} / {copy.headline_en}")
-
+    
     copies_bf = brain.generate_premium_copy("business_financing")
     print(f"generated_copies (financing) = {len(copies_bf)}")
     for copy in copies_bf:
