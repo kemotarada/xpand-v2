@@ -128,6 +128,10 @@ class STCAdBrain:
                         "linkedin": {
                             "ar": "تمكين قطاع التجزئة والمنشآت الصغيرة في المملكة بحلول دفع موحدة وموثوقة من بنك stc. استثمر في كفاءة أعمالك ودعم الاقتصاد الرقمي.",
                             "en": "Empowering retail and SMEs in the Kingdom with unified, reliable payment solutions from stc bank. Invest in your business efficiency and digital economy."
+                        },
+                        "whatsapp": {
+                            "ar": "مرحباً بك شريكنا النجاح. تعرّف على كيفية توحيد مدفوعاتك الإلكترونية ونقاط البيع مع بنك stc. 💼",
+                            "en": "Welcome business partner. Discover how to unify your online payments and POS with stc bank. 💼"
                         }
                     },
                     factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
@@ -542,6 +546,7 @@ def run_validation() -> bool:
     assert "twitter" in copies[0].channel_variants, "Missing twitter variant"
     assert "instagram" in copies[0].channel_variants, "Missing instagram variant"
     assert "linkedin" in copies[0].channel_variants, "Missing linkedin variant"
+    assert "whatsapp" in copies[0].channel_variants, "Missing whatsapp variant"
     assert copies[1].brand_memory_tag == "stc_bank_merchant_insights_2024", "Missing brand memory tag"
 
     copies_it = brain.generate_premium_copy("international_transfer")
