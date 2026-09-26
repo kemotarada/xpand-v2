@@ -599,6 +599,8 @@ def run_validation() -> bool:
             assert item.factuality_note, f"Missing factuality note in {item.copy_id}"
             assert isinstance(item.to_dict(), dict), f"to_dict() failed for {item.copy_id}"
             assert item.brand_memory_tag.startswith("stc_bank_"), f"Invalid brand memory tag prefix in {item.copy_id}"
+            assert item.benefit_extracted, f"Missing benefit extracted in {item.copy_id}"
+            assert item.cta_ar and item.cta_en, f"Missing CTA in {item.copy_id}"
 
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
