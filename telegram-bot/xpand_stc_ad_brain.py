@@ -276,7 +276,7 @@ class STCAdBrain:
                         },
                         "linkedin": {
                             "ar": "تمكين المنشآت الصغيرة والمتوسطة بحلول تمويلية مرنة تدفع عجلة الاقتصاد الوطني في المملكة نحو آفاق جديدة.",
-                            "en": "Empowering SMEs with flexible financing solutions driving the national economy in the Kingdom toward new horizons."
+                            "en": "Empowering SMEs with flexible financing solutions driving the national economy in the Kingdom towards new horizons."
                         }
                     },
                     factuality_note="No loan amounts, approval timelines, or interest rates are explicitly claimed. Focuses on partnership and enterprise enablement.",
