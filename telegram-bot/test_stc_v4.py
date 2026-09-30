@@ -44,7 +44,7 @@ class STCV4Tests(unittest.TestCase):
 
     def test_stc_ad_brain_premium_copy(self):
         brain = STCAdBrain()
-        for family in ['merchant_payments', 'international_transfer', 'wealth_management', 'savings_vaults', 'business_financing', 'digital_wallets', 'card_issuing', 'other']:
+        for family in ['merchant_payments', 'international_transfer', 'wealth_management', 'savings_vaults', 'business_financing', 'digital_wallets', 'card_issuing', 'corporate_expense_management', 'other']:
             copies = brain.generate_premium_copy(family)
             self.assertTrue(len(copies) > 0)
             for copy in copies:
@@ -59,10 +59,13 @@ class STCV4Tests(unittest.TestCase):
                 self.assertTrue(copy.saudi_cultural_fit)
                 self.assertTrue(copy.factuality_note)
                 self.assertTrue(copy.brand_memory_tag)
+                self.assertTrue(isinstance(copy.to_dict(), dict))
                 if family == 'business_financing':
                     self.assertIn('business', copy.brand_memory_tag)
                 elif family == 'digital_wallets':
                     self.assertIn('wallet', copy.brand_memory_tag)
+                elif family == 'corporate_expense_management':
+                    self.assertIn('corporate', copy.brand_memory_tag)
 
     def test_prompt_resume_never_generates(self):
         brief='بدي برومت لبنك STC عن شريحة السفر 4:5'
