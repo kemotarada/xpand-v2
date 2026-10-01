@@ -601,6 +601,8 @@ def run_validation() -> bool:
             assert item.brand_memory_tag.startswith("stc_bank_"), f"Invalid brand memory tag prefix in {item.copy_id}"
             assert item.benefit_extracted, f"Missing benefit extracted in {item.copy_id}"
             assert item.cta_ar and item.cta_en, f"Missing CTA in {item.copy_id}"
+            assert item.saudi_cultural_fit, f"Missing Saudi cultural fit note in {item.copy_id}"
+            assert isinstance(item.channel_variants, dict) and len(item.channel_variants) > 0, f"Missing channel variants in {item.copy_id}"
 
     print("STC Ad Brain Validation Passed Successfully ✅")
     return True
