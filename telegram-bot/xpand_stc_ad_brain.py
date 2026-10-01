@@ -606,7 +606,7 @@ def run_validation() -> bool:
     return True
 
 
-if __name__ == "__mainらっしゃい" or True:
+if __name__ == "__main__":
     brain = STCAdBrain()
     concepts = brain.generate_concepts("merchant_payments", "premium_realistic")
     shortlisted = brain.shortlist(concepts, top_n=3)
