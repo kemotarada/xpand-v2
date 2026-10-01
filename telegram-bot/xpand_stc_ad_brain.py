@@ -134,8 +134,8 @@ class STCAdBrain:
                             "en": "Welcome business partner. Discover how to unify your online payments and POS with stc bank. 💼"
                         }
                     },
-                    factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience.",
-                    brand_memory_tag="stc_bank_merchant_2024"
+                    factuality_note="No specific transaction fees, setup rates, or hardware costs are claimed. Focuses purely on integration and convenience under regulatory compliance standards.",
+                    brand_memory_tag="stc_bank_merchant_2024_v2"
                 ),
                 AdCopy(
                     copy_id="mp_premium_02",
@@ -160,7 +160,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific revenue multipliers or reporting speed claims are made. Focuses on clarity and unified overview.",
-                    brand_memory_tag="stc_bank_merchant_insights_2024"
+                    brand_memory_tag="stc_bank_merchant_insights_2024_v2"
                 )
             ] 
         elif benefit_family == "international_transfer":
@@ -192,7 +192,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific exchange rates, transfer fees, or delivery times are claimed. Focuses on instant processing and security.",
-                    brand_memory_tag="stc_bank_remittance_2024"
+                    brand_memory_tag="stc_bank_remittance_2024_v2"
                 )
             ] 
         elif benefit_family == "wealth_management":
@@ -224,7 +224,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific investment yields, guaranteed returns, or fund percentages are claimed. Focuses purely on smart planning and financial tools.",
-                    brand_memory_tag="stc_bank_wealth_2024"
+                    brand_memory_tag="stc_bank_wealth_2024_v2"
                 )
             ]
         elif benefit_family == "savings_vaults":
@@ -252,7 +252,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific interest rates or tiered APY figures are promised. Focuses entirely on goal setting and organization.",
-                    brand_memory_tag="stc_bank_savings_2024"
+                    brand_memory_tag="stc_bank_savings_2024_v2"
                 )
             ]
         elif benefit_family == "business_financing":
@@ -280,7 +280,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No loan amounts, approval timelines, or interest rates are explicitly claimed. Focuses on partnership and enterprise enablement.",
-                    brand_memory_tag="stc_bank_business_2024"
+                    brand_memory_tag="stc_bank_business_2024_v2"
                 )
             ]
         elif benefit_family == "digital_wallets":
@@ -308,7 +308,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific cash-back percentages or wallet limits are claimed. Focuses on everyday usability and security.",
-                    brand_memory_tag="stc_bank_wallet_2024"
+                    brand_memory_tag="stc_bank_wallet_2024_v2"
                 )
             ]
         elif benefit_family == "card_issuing":
@@ -336,7 +336,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific annual fees, FX markups, or reward tier points are claimed. Focuses on instant issuance and acceptance.",
-                    brand_memory_tag="stc_bank_cards_2024"
+                    brand_memory_tag="stc_bank_cards_2024_v2"
                 )
             ]
         elif benefit_family == "corporate_expense_management":
@@ -364,7 +364,7 @@ class STCAdBrain:
                         }
                     },
                     factuality_note="No specific credit limits, interest rates, or card issuance fees are claimed. Focuses on control and transparency.",
-                    brand_memory_tag="stc_bank_corporate_2024"
+                    brand_memory_tag="stc_bank_corporate_2024_v2"
                 )
             ]
         
@@ -388,7 +388,7 @@ class STCAdBrain:
                     }
                 },
                 factuality_note="No specific financial claims, rates, or offers are made.",
-                brand_memory_tag="stc_bank_generic_2024"
+                brand_memory_tag="stc_bank_generic_2024_v2"
             )
         ]
 
@@ -547,50 +547,50 @@ def run_validation() -> bool:
     assert "instagram" in copies[0].channel_variants, "Missing instagram variant"
     assert "linkedin" in copies[0].channel_variants, "Missing linkedin variant"
     assert "whatsapp" in copies[0].channel_variants, "Missing whatsapp variant"
-    assert copies[1].brand_memory_tag == "stc_bank_merchant_insights_2024", "Missing brand memory tag"
+    assert copies[1].brand_memory_tag == "stc_bank_merchant_insights_2024_v2", "Missing brand memory tag"
 
     copies_it = brain.generate_premium_copy("international_transfer")
     assert len(copies_it) > 0, "Expected international transfer copy"
     assert copies_it[0].headline_ar, "Missing intl Arabic headline"
-    assert copies_it[0].brand_memory_tag == "stc_bank_remittance_2024", "Missing intl brand memory tag"
+    assert copies_it[0].brand_memory_tag == "stc_bank_remittance_2024_v2", "Missing intl brand memory tag"
     assert "tiktok" in copies_it[0].channel_variants, "Missing tiktok variant"
 
     copies_wm = brain.generate_premium_copy("wealth_management")
     assert len(copies_wm) > 0, "Expected wealth management copy"
     assert copies_wm[0].headline_ar, "Missing wealth management Arabic headline"
-    assert copies_wm[0].brand_memory_tag == "stc_bank_wealth_2024", "Missing wealth brand memory tag"
+    assert copies_wm[0].brand_memory_tag == "stc_bank_wealth_2024_v2", "Missing wealth brand memory tag"
     assert "linkedin" in copies_wm[0].channel_variants, "Missing wealth linkedin variant"
 
     copies_sv = brain.generate_premium_copy("savings_vaults")
     assert len(copies_sv) > 0, "Expected savings vaults copy"
     assert copies_sv[0].headline_ar, "Missing savings vaults Arabic headline"
-    assert copies_sv[0].brand_memory_tag == "stc_bank_savings_2024", "Missing savings brand memory tag"
+    assert copies_sv[0].brand_memory_tag == "stc_bank_savings_2024_v2", "Missing savings brand memory tag"
     assert "instagram" in copies_sv[0].channel_variants, "Missing savings instagram variant"
 
     copies_bf = brain.generate_premium_copy("business_financing")
     assert len(copies_bf) > 0, "Expected business financing copy"
     assert copies_bf[0].headline_ar, "Missing business financing Arabic headline"
-    assert copies_bf[0].brand_memory_tag == "stc_bank_business_2024", "Missing business brand memory tag"
+    assert copies_bf[0].brand_memory_tag == "stc_bank_business_2024_v2", "Missing business brand memory tag"
     assert "linkedin" in copies_bf[0].channel_variants, "Missing business linkedin variant"
 
     copies_dw = brain.generate_premium_copy("digital_wallets")
     assert len(copies_dw) > 0, "Expected digital wallets copy"
     assert copies_dw[0].headline_ar, "Missing digital wallets Arabic headline"
-    assert copies_dw[0].brand_memory_tag == "stc_bank_wallet_2024", "Missing wallet brand memory tag"
+    assert copies_dw[0].brand_memory_tag == "stc_bank_wallet_2024_v2", "Missing wallet brand memory tag"
     assert "twitter" in copies_dw[0].channel_variants, "Missing twitter variant"
     assert "instagram" in copies_dw[0].channel_variants, "Missing instagram variant"
 
     copies_ci = brain.generate_premium_copy("card_issuing")
     assert len(copies_ci) > 0, "Expected card issuing copy"
     assert copies_ci[0].headline_ar, "Missing card issuing Arabic headline"
-    assert copies_ci[0].brand_memory_tag == "stc_bank_cards_2024", "Missing card brand memory tag"
+    assert copies_ci[0].brand_memory_tag == "stc_bank_cards_2024_v2", "Missing card brand memory tag"
     assert "instagram" in copies_ci[0].channel_variants, "Missing instagram variant"
     assert "twitter" in copies_ci[0].channel_variants, "Missing twitter variant"
 
     copies_cem = brain.generate_premium_copy("corporate_expense_management")
     assert len(copies_cem) > 0, "Expected corporate expense management copy"
     assert copies_cem[0].headline_ar, "Missing corporate expense Arabic headline"
-    assert copies_cem[0].brand_memory_tag == "stc_bank_corporate_2024", "Missing corporate brand memory tag"
+    assert copies_cem[0].brand_memory_tag == "stc_bank_corporate_2024_v2", "Missing corporate brand memory tag"
     assert "linkedin" in copies_cem[0].channel_variants, "Missing linkedin variant"
 
     # Additional validation check for all copy items having non-empty factuality notes and valid to_dict outputs
