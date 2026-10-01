@@ -615,7 +615,7 @@ if __name__ == "__main__":
 
     print("========================================")
     print(" XPAND STC AD BRAIN SELF TEST")
-    print("========================================")
+    print("========================================یین")
     print(f"generated_concepts = {len(concepts)}")
     print(f"shortlisted = {len(shortlisted)}")
     for item in shortlisted:
