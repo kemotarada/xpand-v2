@@ -316,7 +316,7 @@ class STCAdBrain:
                 AdCopy(
                     copy_id="ci_premium_01",
                     benefit_extracted="Customized physical and digital payment cards with instant in-app activation and worldwide acceptance.",
-                    hook_ar="بطاقتك التي تشبه طموحك.. تصدرها فوراً وتستخدمها في كل مكان.",
+                    hook_ar="بطاقتك التي تشبه طموحك.. تشترها فوراً وتستخدمها في كل مكان.",
                     hook_en="Your card that matches your ambition.. issued instantly, used everywhere.",
                     headline_ar="بطاقتك الرقمية والمادية، بين يديك فوراً",
                     headline_en="Your Digital and Physical Card, Instantly Yours",
