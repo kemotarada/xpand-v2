@@ -613,9 +613,9 @@ if __name__ == "__main__" or True:
     concepts = brain.generate_concepts("merchant_payments", "premium_realistic")
     shortlisted = brain.shortlist(concepts, top_n=3)
 
-    print("======================================")
+    print("====================================^^")
     print(" XPAND STC AD BRAIN SELF TEST")
-    print("======================================")
+    print("====================================^^")
     print(f"generated_concepts = {len(concepts)}")
     print(f"shortlisted = {len(shortlisted)}")
     for item in shortlisted:
